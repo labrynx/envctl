@@ -4,7 +4,7 @@ set -Eeuo pipefail
 python3 -m venv .venv
 source .venv/bin/activate
 
-pip install -U pip
-pip install -e .
+python -m pip install -U pip
+python -m pip install -e .[dev]
 
 echo "Dev environment ready."
