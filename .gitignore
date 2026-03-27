@@ -6,6 +6,8 @@ __pycache__/
 .venv/
 .env
 .env.*
+.envctl.json
+!.env.example
 
 .pytest_cache/
 .coverage
@@ -16,3 +18,5 @@ build/
 
 .vscode/
 .idea/
+
+codereview/
