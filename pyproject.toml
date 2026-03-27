@@ -1,0 +1,17 @@
+[project]
+name = "envctl"
+version = "0.1.0"
+description = "Local environment vault and symlink manager"
+authors = [{ name = "Alessandro Barbagallo" }]
+requires-python = ">=3.10"
+
+dependencies = [
+  "typer[all]",
+]
+
+[project.scripts]
+envctl = "envctl.cli:app"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
