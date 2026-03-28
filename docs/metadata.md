@@ -1,85 +1,114 @@
-# Repository metadata format
+# Local state and project identity
 
-When a repository is initialized with `envctl init`, a metadata file (default `.envctl.json`) is created inside the repository root. This file stores information needed to connect the repository to its vault entry.
+`envctl` v2 does not treat a repository-local metadata file as the primary source of truth.
 
-## File location
+The project contract lives in the repository. Local values live in user-owned local storage. Project identity is derived from the current repository and configuration.
+
+## Core principle
+
+`envctl` separates these concerns intentionally:
+
+- **contract**: what the project needs
+- **local state**: which values are available on this machine
+- **projection**: how the resolved environment is exposed to tools
+- **identity**: how the current repository is recognized consistently
+
+A repository should not need a mandatory link file just to connect itself to its local environment state.
+
+## Repository identity
+
+Project identity is derived dynamically from the current repository.
+
+Typical identity inputs may include:
+
+- Git remote URL when available
+- repository root path as a fallback
+- repository directory name as a human-readable slug
+
+That identity is used to derive stable local storage locations without requiring the repository to own secret linkage state.
+
+## Local state
+
+Local state refers to the values that exist on the current machine for the current project.
+
+Examples include:
+
+- values written with `envctl set`
+- values collected with `envctl fill`
+- values stored by the default local provider
+
+This state is local by design and should not be committed to source control.
+
+## Optional cache or helper files
+
+`envctl` may use local cache files or helper artifacts for performance or compatibility.
+
+If such files exist, they should follow these rules:
+
+- they are not the source of truth
+- they do not contain the project contract
+- they are safe to delete and regenerate
+- they are ignored by Git where appropriate
+- they do not redefine project identity
+
+## What the repository owns
+
+The repository owns the shared contract:
 
 ```text
-<repo-root>/.envctl.json
-````
-
-## Format (version 1)
-
-The file is a JSON object with the following fields:
-
-| Field               | Type   | Description                                                                                                   |
-| ------------------- | ------ | ------------------------------------------------------------------------------------------------------------- |
-| `version`           | int    | Metadata version (currently `1`).                                                                             |
-| `project_slug`      | string | User-friendly, filesystem-safe slug (e.g. `my-app`).                                                          |
-| `project_id`        | string | Unique identifier derived from repository fingerprint (12 characters).                                        |
-| `env_filename`      | string | Name of the environment file (default `.env.local`).                                                          |
-| `vault_project_dir` | string | Absolute path to the vault project directory (e.g. `/home/user/.envctl/vault/projects/my-app--abc123def456`). |
-| `vault_env_path`    | string | Absolute path to the managed vault env file.                                                                  |
-| `repo_fingerprint`  | string | SHA-256 hash of the repository identity (origin remote URL or absolute path).                                 |
-
-Example:
-
-```json
-{
-  "version": 1,
-  "project_slug": "my-app",
-  "project_id": "abc123def456",
-  "env_filename": ".env.local",
-  "vault_project_dir": "/home/user/.envctl/vault/projects/my-app--abc123def456",
-  "vault_env_path": "/home/user/.envctl/vault/projects/my-app--abc123def456/.env.local",
-  "repo_fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-}
+<repo-root>/.envctl.schema.yaml
 ```
 
-## Purpose
+That file may define:
 
-This file exists to connect the repository and the vault deterministically.
+* required and optional variables
+* descriptions
+* types
+* non-sensitive defaults
+* sensitivity flags
 
-It allows `envctl` to answer questions such as:
+The repository does **not** own the user's local secret state.
 
-* which vault file belongs to this repository
-* whether the repository has been initialized
-* where the managed env file should exist
-* whether repair or status operations can be resolved safely
+## What local storage owns
 
-## What metadata is not
+Local storage owns the machine-specific values used to satisfy the contract.
 
-The metadata file is not:
+Those values may differ from one developer machine to another. That is expected.
 
-* a secret store
-* a project schema
-* a validation contract
-* a source of default values
+Local storage should remain private, explicit, and outside the repository.
 
-Those concerns are intentionally separate:
+## What projected files are
 
-* secrets live in the vault
-* contract definitions belong in `.envctl.schema.yaml`
-* metadata only links repository and vault
+A projected file such as `.env.local` produced by `envctl sync` is a generated artifact.
 
-## Versioning
+It is:
 
-The `version` field allows future upgrades. When a new metadata version is introduced, `envctl` will:
+* useful for compatibility
+* derived from resolved state
+* not the source of truth
+* safe to regenerate
 
-* continue reading older versions where possible
-* migrate to the newer version when a command explicitly supports migration
-
-## Potential future additions
-
-Fields that may be useful later for diagnostics and lifecycle visibility:
-
-* `remote_url`
-* `created_at`
-* `updated_at`
-* `last_validation`
-
-These are useful for traceability, but they are not required for the core v1 model.
+This distinction is important. It avoids confusion between stored secrets, declared contract, and materialized outputs.
 
 ## Security note
 
-This file does **not** contain secrets. It only stores paths and identifiers. However, it should still be kept private because it reveals the vault location and local repository linkage.
+Any local cache, stored value file, or generated env artifact may reveal information about the developer environment.
+
+Even when such files do not contain the full secret model, they should still be treated carefully:
+
+* keep them out of version control
+* store them in private locations
+* do not assume they are portable across machines
+
+## Future evolution
+
+Future versions may introduce:
+
+* richer local provider state formats
+* optional provider-specific caches
+* migration helpers for legacy repository metadata
+* clearer machine-readable state inspection
+
+Even then, the core rule should remain the same:
+
+the repository contract is shared, local values are local, and generated artifacts are not the source of truth.

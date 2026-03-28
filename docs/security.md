@@ -4,71 +4,153 @@
 
 ## Principles
 
-- Secrets stay outside repositories.
-- Repository files are symlinks, not secret copies.
-- The CLI refuses dangerous overwrites.
-- Secret values are never printed in normal command output.
-- The repository may describe the environment contract, but it must not contain secret values.
-- Validation must not mutate secret state implicitly.
+The security posture of `envctl` is intentionally simple and explicit.
+
+Core principles:
+
+- secrets stay outside repositories
+- project contracts do not contain secret values
+- read-only commands do not mutate local state
+- projection is explicit, not hidden
+- generated files are artifacts, not sources of truth
+- dangerous overwrites must remain visible and controlled
+
+`envctl` is not trying to be a full secret manager. It is trying to be a safe local control plane for environment workflows.
 
 ## Core model
 
-`envctl` separates three concerns on purpose:
+`envctl` separates these concerns on purpose:
 
 - **contract**: what variables the project needs
-- **storage**: where secret values live
-- **linkage**: how the repository connects to the vault
+- **storage**: where concrete values live
+- **resolution**: how values are selected and validated
+- **projection**: how the resolved environment is exposed to tools
 
 In practice, that means:
 
 - `.envctl.schema.yaml` describes requirements only
-- the vault stores real values
-- `.envctl.json` links repository and vault
-- validation commands do not invent or provide values
+- local provider state stores real values
+- `check` validates but does not invent values
+- `run`, `sync`, and `export` project already resolved state
 
 This separation reduces confusion and avoids competing sources of truth.
 
-## v1 protections
+## Contract security rules
 
-- Vault directories are created with `0700` permissions (user-only access).
-- Vault files are created with `0600` permissions (user-only read/write).
-- The config file is created with `0600` permissions.
-- `doctor` warns if the vault directory is world-writable.
-- Permissions are applied best-effort; errors are ignored on filesystems without POSIX support.
-
-## Contract workflow security rules
-
-The future schema-based workflow must preserve the same security posture.
+The repository contract is versioned with the project, so it must remain safe to share.
 
 ### Allowed
 
-- versioning a schema file in the repository
 - declaring required and optional variables
 - storing descriptions or onboarding notes
-- validating current vault contents against the schema
+- declaring basic validation rules
+- marking variables as sensitive
+- providing non-sensitive defaults where appropriate
 
 ### Not allowed
 
-- storing secret values in the schema
-- providing operational default values from the schema
-- automatically generating secrets
-- mutating the vault during read-only validation commands
+- storing secret values in the contract
+- embedding machine-specific local paths in the contract
+- automatically generating secrets during validation
+- mutating local state during read-only commands
 
-`envctl` should act as a judge and a storage tool, not as an invisible provider of configuration values.
+The contract describes needs. It does not act as a hidden provider of values.
+
+## Local storage protections
+
+The default local provider stores values outside repositories.
+
+Typical protections include:
+
+- restrictive directory permissions such as `0700`
+- restrictive file permissions such as `0600`
+- user-owned local paths
+- explicit write operations through commands such as `set` and `fill`
+
+Permissions are applied on a best-effort basis and depend on the underlying filesystem.
+
+## Projection security rules
+
+Projection commands must stay explicit.
+
+### `envctl run`
+
+- injects values into a subprocess environment in memory
+- avoids writing an env file to disk for that workflow
+- is generally the safest projection mode when supported by the target tool
+
+### `envctl sync`
+
+- writes a derived env artifact such as `.env.local`
+- must validate before writing
+- should make it clear that the file is generated
+- should follow safe overwrite rules
+
+### `envctl export`
+
+- prints shell export lines
+- should quote values safely
+- should avoid accidental leakage through misleading formatting
+
+Projection should never silently redefine the source of truth.
+
+## Read-only command guarantees
+
+Commands such as these should remain read-only:
+
+- `check`
+- `inspect`
+- `explain`
+- `doctor`
+- `status`
+
+They may analyze contract and local state, but they should not:
+
+- write missing values
+- repair local state implicitly
+- generate new secrets
+- materialize files as a side effect
+
+That distinction is important for user trust.
 
 ## Limitations
 
-- No encryption at rest.
-- No OS keyring integration.
-- No remote access control model.
-- No guarantee against exposure on insecure filesystems or compromised local accounts.
+`envctl` has explicit non-goals and limitations.
+
+Current limitations include:
+
+- no encryption at rest in the core model
+- no OS keyring integration by default
+- no remote access control model
+- no protection against a compromised local account
+- no guarantee against exposure on insecure filesystems
+
+These are not hidden limitations. They are part of the deliberate scope of the tool.
 
 ## User responsibilities
 
-- Keep the local account secure.
-- Back up the vault carefully.
-- Ensure vault directories have appropriate permissions.
-- Avoid storing the vault on shared or insecure filesystems.
-- Keep project schemas free of secrets.
+Users remain responsible for local system security.
 
-The `doctor` command can help verify local readiness, but the final responsibility for local system security remains with the user.
+That includes:
+
+- keeping the local account secure
+- storing the vault on a private location
+- avoiding shared or insecure filesystems
+- keeping generated env artifacts out of version control
+- keeping project contracts free of secrets
+- understanding when `sync` writes values to disk
+
+`envctl doctor` can help identify obvious readiness or storage problems, but it cannot replace host security.
+
+## Future security direction
+
+Future improvements may include:
+
+- optional provider integrations
+- optional encryption helpers outside the core model
+- richer diagnostics for insecure local setups
+- better shell-specific safety around exports
+
+Even as the tool evolves, the core security rule should remain the same:
+
+`envctl` should make local environment handling more explicit and less error-prone, not more magical.

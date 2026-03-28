@@ -1,44 +1,56 @@
-# envctl
+# envctl v2
 
-`envctl` is a local-first CLI tool that centralizes `.env.local` files in a user-owned vault and links them back into repositories using symlinks.
+`envctl` is a local environment control plane.
 
-It enforces a simple and explicit model:
+Instead of linking `.env.local` files with symlinks, v2 resolves environment state from a
+project contract and projects that state explicitly:
 
-- the repository declares what it needs
-- the vault stores the secret values
-- the link between both is explicit and local
+- `envctl check` validates a contract
+- `envctl fill` completes missing values
+- `envctl inspect` shows resolved values with masking
+- `envctl explain KEY` shows where a value came from
+- `envctl run -- <command>` injects the resolved environment in memory
+- `envctl sync` materializes `.env.local` as a generated artifact
+- `envctl export` prints shell-safe exports
 
-No hidden behavior. No implicit state. No duplication.
+## Contract file
 
----
+The repository contract lives in:
 
-## Why envctl
+```text
+<repo-root>/.envctl.schema.yaml
+```
 
-Managing `.env` files across multiple repositories is error-prone:
+Example:
 
-- secrets end up duplicated
-- values drift between projects
-- onboarding is inconsistent
-- local setups become hard to trust
+```yaml
+version: 1
+variables:
+  APP_NAME:
+    type: string
+    required: true
+    description: Application name
+  PORT:
+    type: int
+    required: true
+    default: 3000
+  DATABASE_URL:
+    type: url
+    required: true
+    sensitive: true
+```
 
-`envctl` solves this by separating structure, storage, and validation.
+## Quick start
 
----
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -U pip
+python -m pip install -e .[dev]
 
-## Goals
-
-- Keep secrets outside repositories
-- Avoid duplicated `.env.local` files
-- Use explicit, deterministic local-only workflows
-- Fail safely when the filesystem is not in the expected state
-- Make environment setup understandable and verifiable
-
-## Non-goals
-
-- No automatic syncing
-- No hidden behavior
-- No implicit environment creation
-- No secret management beyond the local filesystem
-- No default-value provisioning from project schemas
-
-Everything is explicit and local.
+envctl config init
+envctl init
+envctl fill
+envctl check
+envctl run -- python app.py
+```

@@ -9,80 +9,174 @@
 Creates the default envctl config file in the user's XDG config directory.
 
 - creates `~/.config/envctl/config.json`
-- refuses to overwrite an existing config file
+- refuses to overwrite an existing config file unless future options explicitly allow it
 - writes readable default values
-- sets file permissions to `0600` (user-only read/write)
+- sets file permissions to `0600` when supported
 - keeps configuration creation explicit
+
+The config file controls local tool behavior only. It does not store project contracts or secrets.
 
 ## envctl init [PROJECT]
 
-Registers the current Git repository in the vault, creates a unique project directory for it, creates the managed environment file, and creates the repository symlink when safe.
+Initializes the current repository for `envctl` v2 workflows.
 
 - `[PROJECT]` is optional
 - if omitted, the repository directory name is used as the readable slug
-- the vault directory is unique even when multiple repositories share the same visible name
-- ensures all vault directories have `0700` permissions and the vault file `0600`
-- creates repository metadata used to reconnect the repository to its vault entry
-- is responsible for structure only
+- ensures the local vault structure exists when needed
+- prepares the repository for contract-driven resolution workflows
+- does not require a repository symlink
+- does not require a repository metadata link file as a source of truth
 
 Important:
 
 - `init` does **not** ask for secret values
-- `init` does **not** read schema files to populate the vault
+- `init` does **not** mutate the project contract
+- `init` does **not** materialize `.env.local` unless a future explicit flag says so
 - `init` must remain deterministic and safe for repeated execution
-
-## envctl repair
-
-Validates and repairs the repository `.env.local` symlink using existing local envctl metadata.
-
-- does not create a new vault project
-- does not modify repository metadata
-- will prompt before replacing a regular file
-- supports `--yes` / `-y` to skip confirmation prompts
-
-## envctl unlink
-
-Removes the repository-managed symlink if present.
-
-- if no managed symlink exists, no action is taken
-- existing regular files are left untouched
-- does not modify the vault or repository metadata
-
-## envctl status
-
-Shows the current repository envctl state in a human-friendly format.
-
-- reports whether the repository is healthy, broken, not initialized, or missing its managed vault file
-- explains the current repository and vault env state
-- suggests the next command when action is needed
-- validates the repository-to-vault relationship only
-
-`status` does not validate whether the vault file contains all variables required by the project contract. That responsibility belongs to `check`.
 
 ## envctl set KEY VALUE
 
-Creates or updates a key/value pair in the managed vault env file for the current initialized repository.
+Creates or updates one explicit key/value pair in the local provider for the current repository.
 
-- requires valid local envctl metadata
-- requires the managed vault env file to already exist
-- does not create missing repository or vault structure automatically
-- does not print the stored value
-- updates one explicit key at a time
+- requires a valid project context
+- writes one key at a time
+- does not print the stored value back to the terminal
+- does not treat the repository as the source of truth
+- is intended as an explicit local storage command
+
+This command is useful for local setup and for testing contract-driven workflows.
+
+## envctl fill
+
+Interactively fills missing values required by the project contract.
+
+Expected behavior:
+
+- reads `.envctl.schema.yaml` from the repository root
+- compares the contract against the current locally available values
+- prompts only for missing required keys
+- does not echo existing secret values back to the console
+- writes only the values the user explicitly provides
+- leaves already satisfied values unchanged unless future flags explicitly change this behavior
+
+`fill` is intentionally separate from `init` so that initialization remains deterministic.
+
+## envctl check
+
+Validates the resolved environment against the project contract.
+
+Expected behavior:
+
+- reads `.envctl.schema.yaml` from the repository root
+- resolves the current environment from supported sources
+- reports missing required variables
+- reports invalid values when type validation fails
+- may report unexpected keys when the command is configured to do so
+- exits non-zero when the contract is not satisfied
+- never modifies files or stored values
+
+`check` is a read-only validation command.
+
+## envctl inspect
+
+Displays the resolved environment in a human-readable form.
+
+Expected behavior:
+
+- shows which keys are currently resolved
+- masks sensitive values
+- may include whether a value is present, defaulted, or explicitly stored
+- does not expose secret values in normal output
+
+`inspect` is for visibility, not mutation.
+
+## envctl explain KEY
+
+Explains how one variable is resolved.
+
+Expected behavior:
+
+- identifies whether the key is declared in the contract
+- shows whether the value is missing, defaulted, or explicitly provided
+- explains the resolution path for that key
+- does not print raw sensitive values unless a future explicit debug mode allows it
+
+This command is useful for debugging confusing local setups.
+
+## envctl sync
+
+Materializes a derived environment file in the repository.
+
+Expected behavior:
+
+- resolves the current environment
+- validates it before writing
+- writes the target file (by default `.env.local`) as a generated artifact
+- may include a generated header
+- treats the generated file as a projection, not as a source of truth
+- follows safe overwrite rules
+
+`sync` exists for compatibility with tools that expect a real env file on disk.
+
+## envctl export
+
+Prints the resolved environment as shell export lines.
+
+Expected behavior:
+
+- resolves the current environment
+- validates it before output
+- prints shell-safe lines suitable for POSIX shells
+- quotes values safely for shell consumption
+- does not mutate files or stored state
+
+This command is useful for manual shell workflows and integration with other local tooling.
+
+## envctl run -- <command>
+
+Runs a command with the resolved environment injected into the subprocess.
+
+Expected behavior:
+
+- resolves the current environment
+- validates it before execution
+- spawns the child process with the resolved values injected in memory
+- does not require writing `.env.local` to disk
+- returns the child process exit code
+
+This is the cleanest projection mode when the target tool can consume environment variables directly.
+
+## envctl status
+
+Shows the current repository envctl status in a human-friendly format.
+
+Typical output may include:
+
+- whether a contract is present
+- whether required values are missing
+- whether the local provider has been initialized
+- whether the repository is ready for `run`, `sync`, or `check`
+- which next command is likely to help
+
+`status` is a workflow-oriented summary command. It is broader than `check`, but should still avoid hidden mutation.
 
 ## envctl doctor
 
-Runs read-only diagnostics for the local envctl environment.
+Runs read-only diagnostics for the local `envctl` environment.
 
-- checks configuration loading
-- checks the resolved vault path
-- checks vault path permissions when the vault exists
-- checks Git repository detection from the current working directory
-- checks whether symlink creation works on the current system
-- never modifies files or state (read-only)
+Typical checks may include:
 
-The command uses a checklist-style output with `[OK]`, `[WARN]`, and `[FAIL]` states.
+- configuration loading
+- resolved vault path
+- vault path permissions when the vault exists
+- Git repository detection from the current working directory
+- contract file detection
+- shell or subprocess readiness where relevant
+- local environment sanity checks
 
-`doctor` is about host and local setup readiness, not repository contract validation.
+The command uses checklist-style output such as `[OK]`, `[WARN]`, and `[FAIL]`.
+
+`doctor` is about host and local tool readiness, not about mutating project state.
 
 ## envctl help [COMMAND]
 
@@ -92,50 +186,22 @@ Shows help for envctl or for a specific command.
 - `envctl help init` shows help for `init`
 - this is a convenience alias for Typer's built-in help output
 
-## envctl remove
+## Command model summary
 
-Removes envctl management for the current repository.
+The v2 command model is centered on three responsibilities:
 
-- prompts before destructive changes
-- supports `--yes` / `-y` to skip confirmation prompts
-- restores a real repository `.env.local` file from the managed vault file (local only, not committed)
-- removes repository metadata
-- removes the managed vault env file
-- removes the managed vault project directory when it becomes empty
-- never deletes or overwrites a regular repository `.env.local` file
+- **contract**
+  - `check`
+  - `inspect`
+  - `explain`
 
----
+- **resolution**
+  - `set`
+  - `fill`
 
-## Planned commands
+- **projection**
+  - `run`
+  - `sync`
+  - `export`
 
-The following commands are part of the intended command model but are not available in v1 yet.
-
-## envctl check
-
-Validates the current managed vault env file against the project schema file.
-
-Expected behavior:
-
-- reads `.envctl.schema.yaml` from the repository root
-- compares the declared contract with the current vault env file
-- reports missing required variables
-- reports optional missing variables separately when useful
-- exits non-zero when the contract is not met
-- never modifies files or state
-
-`check` is a read-only validation command.
-
-## envctl fill
-
-Interactively fills missing required variables declared by the project schema.
-
-Expected behavior:
-
-- reads `.envctl.schema.yaml` from the repository root
-- detects which required variables are missing from the vault
-- prompts the user only for missing required values
-- writes them to the vault using the same explicit model as `set`
-- does not change repository metadata
-- does not change the meaning of `init`
-
-`fill` is intentionally separate from `init` so that initialization remains deterministic.
+`init`, `status`, `doctor`, and `config init` support the workflow around those three core responsibilities.

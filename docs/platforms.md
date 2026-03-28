@@ -1,42 +1,117 @@
 # Platform support
 
-`envctl` is designed to work on Unix-like systems (Linux, macOS, WSL) where symlinks and POSIX permissions are available. It may work on other platforms with limitations.
+`envctl` is designed to work on Unix-like systems first, including Linux, macOS, and WSL.
 
-## Symlinks
+The v2 model reduces platform coupling by avoiding symlinks as a core requirement. The central workflows are now based on:
 
-`envctl` relies on symbolic links to link repository `.env.local` files to the vault. On systems where symlinks are not supported (for example native Windows without developer mode), the tool will fail with an error. The `doctor` command checks symlink support and will warn if it is not available.
+- contract loading
+- local resolution
+- subprocess environment injection
+- optional file materialization
 
-This dependency on symlinks is central to the current model:
+That makes the tool easier to support across heterogeneous environments.
 
-- the repository holds a link
-- the vault holds the secret
-- the two must remain separate
+## Core assumptions
+
+`envctl` assumes the platform can provide, at minimum:
+
+- filesystem access for local storage
+- subprocess execution for `envctl run`
+- standard text file handling for contracts and generated env files
+
+The tool works best in environments that also provide:
+
+- Git command availability
+- POSIX-like permissions
+- predictable shell behavior
 
 ## Permissions
 
-The tool attempts to set `0700` for directories and `0600` for files to keep secrets user-private. On filesystems that do not support POSIX permissions (for example FAT, exFAT, some network shares), these `chmod` calls will fail silently.
+The tool attempts to use restrictive permissions for local storage, typically:
 
-In such cases, it is the user’s responsibility to ensure the vault directory is not accessible by other users, for example by using appropriate filesystem-level permissions or storing the vault on a private volume.
+- `0700` for directories
+- `0600` for files
 
-## Windows
+On filesystems that do not support POSIX permissions, these operations may fail silently or only partially apply.
 
-- **Git Bash / WSL**: `envctl` works normally if run inside a Unix-like environment that provides symlink and `chmod` support.
-- **Native Windows (cmd/PowerShell)**: symlinks may require developer mode or administrator privileges. The `doctor` command will indicate whether symlink creation works. Permissions are not enforced via `chmod`; users should store the vault on a secure location.
+In such cases, users are responsible for choosing a secure storage location and avoiding shared or insecure filesystems.
 
-## Schema and team workflows
+## Linux and macOS
 
-The future schema-based workflow (`.envctl.schema.yaml`, `check`, `fill`) is platform-neutral in concept, but still depends on the same repository-to-vault model underneath.
+Linux and macOS are the primary target environments.
 
-That means platform limitations remain fundamentally tied to:
+Typical behavior is straightforward:
 
-- symlink support
-- local filesystem behavior
-- vault privacy guarantees
+- local storage works as expected
+- Git detection is predictable
+- subprocess execution for `run` is reliable
+- `sync` and `export` workflows behave naturally
+
+## WSL
+
+WSL is expected to work well when `envctl` is run inside the Linux environment.
+
+This is usually the best option on Windows when you want predictable permissions and shell behavior.
+
+## Native Windows
+
+Native Windows support is possible, but behavior depends more heavily on the execution environment.
+
+Important considerations include:
+
+- `chmod`-style permission semantics do not map directly
+- shell export behavior differs between shells
+- subprocess behavior may vary depending on PowerShell, cmd, or other terminals
+- path conventions differ from Unix-like environments
+
+The v2 architecture is still more portable than a symlink-based model, but shell-specific and permission-specific differences remain relevant.
+
+## Shell compatibility
+
+`envctl export` is primarily aimed at POSIX-like shells.
+
+If broader shell support is added later, it should be explicit rather than implicit. For example, future support may include shell-specific output modes instead of trying to guess the target shell automatically.
+
+## Generated files
+
+`envctl sync` produces plain text env artifacts such as `.env.local`.
+
+This is generally platform-neutral, but the consuming tools may still behave differently across platforms. For that reason:
+
+- `sync` should remain explicit
+- generated files should be easy to inspect
+- users should not rely on hidden platform-specific behavior
+
+## Diagnostics
+
+`envctl doctor` is intended to help users identify local readiness issues such as:
+
+- invalid config
+- missing contract
+- insecure local storage location
+- repository detection problems
+- environment compatibility issues
+
+Diagnostics should remain read-only and descriptive.
 
 ## Possible future improvements
 
-- Better Windows support, for example alternative linking strategies where safe and predictable
-- More diagnostics around platform limitations
-- Clearer machine-readable reporting for unsupported features
+Potential future platform work may include:
 
-If you encounter platform-specific issues, please open an issue on GitHub.
+- clearer Windows-specific guidance
+- shell-specific export formats
+- more detailed readiness diagnostics
+- better reporting for unsupported permission models
+
+## Summary
+
+The v2 model is less fragile across platforms because it no longer depends on repository symlinks as a core mechanism.
+
+The main portability concerns now are:
+
+- filesystem security
+- shell behavior
+- subprocess execution
+- path handling
+
+That is a much healthier platform surface than the previous link-based model.

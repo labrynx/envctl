@@ -1,8 +1,8 @@
 # Roadmap
 
-## v1 (current release)
+## v1 (completed baseline)
 
-The first stable version focuses on a solid, secure, and deterministic foundation.
+The first stable version focused on a solid, secure, and deterministic foundation for managing environment files locally.
 
 - **Core architecture**
   - Layered design (CLI, services, domain, repository, config, utils)
@@ -10,84 +10,99 @@ The first stable version focuses on a solid, secure, and deterministic foundatio
   - XDG-based configuration with optional JSON config file
   - Unique project identification using repository fingerprint (remote URL or local path)
   - Per-project vault directories (`<slug>--<id>`)
+  - Conservative local-first operating model
 
-- **Commands**
-  - `envctl config init` – create default config with restrictive permissions
-  - `envctl init [PROJECT]` – register repository, create vault file and symlink
-  - `envctl repair` – fix broken or missing symlink; supports `--yes` / `-y`
-  - `envctl unlink` – remove repository symlink only
-  - `envctl status` – show human-readable repository state with actionable suggestions
-  - `envctl set KEY VALUE` – update a variable in the vault file
-  - `envctl doctor` – diagnostic checks (config, vault permissions, Git detection, symlink support)
-  - `envctl remove` – unregister repository; supports `--yes` / `-y`
+- **Foundation**
+  - Safe local storage outside repositories
+  - Deterministic initialization
+  - Explicit user-driven mutation
+  - Focus on small commands and predictable flows
 
-- **Security & safety**
-  - Vault directories created with `0700` permissions
-  - Vault files created with `0600` permissions
-  - Config file created with `0600` permissions
-  - Never overwrites regular files without confirmation
-  - Never prints stored secrets in normal output
-  - `doctor` warns about world-writable vault directories
+## v2.0 (current branch target)
 
-- **Testing & reliability**
-  - Extensive test suite covering all implemented commands and key edge cases
-  - Isolated test environment (home directory, XDG vars, temporary repositories)
-  - Tests for permissions, confirmation flows, and error conditions
+The next iteration redefines `envctl` as a local environment control plane, shifting from file management to environment resolution, validation, and projection.
 
-## v1.1 (next planned release)
+- **Core paradigm shift**
+  - Environment is treated as a resolved state, not just a file
+  - Repository is decoupled from vault location and filesystem links
+  - Project contract becomes the center of the model
+  - Projection modes become explicit workflow choices
 
-The next iteration should make `envctl` more useful in daily development workflows without changing its core philosophy.
+- **Environment contract**
+  - `.envctl.schema.yaml` becomes the source of truth
+  - Defines required and optional variables
+  - Supports descriptions, basic types, non-sensitive defaults, and sensitivity flags
+  - Keeps secret values out of source control
 
-- **Environment contract validation**
-  - `envctl check` – validate the managed vault env file against a project contract
-  - Initial support for `.env.example` comparison
-  - Initial support for `.envctl.schema.yaml` as an explicit validation contract
-  - Detection of missing required keys
-  - Detection of unexpected or unknown keys
-  - Simple type validation for common cases such as `int`, `bool`, `url`, and `string`
+- **Resolution model**
+  - Deterministic resolution pipeline
+  - Local provider remains the default value source
+  - Explicit local mutation through commands such as `set` and `fill`
+  - Clear distinction between missing, defaulted, and explicitly provided values
 
-- **Interactive completion**
-  - `envctl fill` – guide the user through missing required values
-  - Prompt only for missing keys
-  - Never print existing secret values back to the console
-  - Optionally initialize values from `.env.example` defaults when explicitly allowed
+- **Projection model**
+  - `envctl run -- <command>` injects the resolved environment in memory
+  - `envctl sync` materializes `.env.local` as a derived artifact
+  - `envctl export` prints shell export lines
+  - Generated files are treated as artifacts, not sources of truth
 
-- **Repository adoption & recovery**
-  - `init --adopt-existing` – migrate an existing real `.env.local` into the vault
-  - `init --force` – recover from inconsistent states in explicit expert workflows
-  - `repair --backup` / `--no-backup` – control backup behaviour when replacing a regular file
-  - `config init --force` – explicitly overwrite an existing config file
+- **Visibility and diagnostics**
+  - `envctl check` validates contract satisfaction
+  - `envctl inspect` shows resolved state safely
+  - `envctl explain KEY` explains one variable’s resolution path
+  - `envctl status` summarizes workflow readiness
+  - `envctl doctor` checks local environment readiness
 
-- **Automation & machine-readable output**
-  - `doctor --json` for scripting and automation
-  - `status --json` for scripting and automation
-  - Stable output shapes for machine consumers
+## v2.1
 
-- **Metadata improvements**
-  - Store remote URL for easier diagnostics
-  - Store initialization timestamp
-  - Store last validation timestamp
+Once the control plane model is stable, the next step is to strengthen extensibility and validation.
 
-## v1.2+
+- **Provider system**
+  - Pluggable resolution providers
+  - Local provider remains the default
+  - Optional external providers introduced carefully
+  - Provider hints supported in the contract model
+  - Deterministic fallback and explicit error handling
 
-Once validation and adoption flows are stable, the next improvements should reduce friction even more.
+- **Validation improvements**
+  - Richer type validation
+  - Better error messages and reporting
+  - Contract linting and authoring guidance
+  - Optional unknown-key reporting modes
 
-- Shell completions
-- Dry-run mode for destructive commands
-- Better support for multiple managed environment files per repository
-- Better Git worktree support
-- Smarter doctor flows, including optional guided repair
-- Optional shell integration helpers for auto-loading workflows
+- **Machine-readable output**
+  - Stable JSON output for selected commands
+  - Better scripting and automation support
+  - Output models aligned with domain result types
+
+## v2.2+
+
+Further improvements should reduce friction without weakening the explicit local-first model.
+
+- **Multiple environments**
+  - Profile-aware workflows such as `dev`, `test`, `staging`, and `prod`
+  - Profile-aware resolution and projection
+  - Explicit profile selection in commands
+
+- **Developer onboarding**
+  - Better first-run workflows
+  - Improved guided completion for missing values
+  - More helpful readiness and recovery messaging
+
+- **Import/export workflows**
+  - Explicit import helpers
+  - Safer export workflows
+  - No hidden synchronization between developers
 
 ## Later
 
-These ideas are valuable, but should only be explored once the local-first core is mature.
+These ideas are valuable but should only be explored once the control plane model is mature.
 
-- Import/export helpers
-- Optional encryption helpers
-- Optional team-oriented sync workflows
-- Optional pluggable storage backends
-- Optional integrations with external secret sources
+- Extended provider ecosystem
+- Read-only CI validation mode
+- IDE integrations
+- Advanced contract features introduced carefully
+- Optional encryption helpers outside the core model
 
 ## Out of scope (for now)
 
@@ -95,7 +110,8 @@ These are intentionally excluded from the short-term roadmap.
 
 - Cloud-first sync as a required part of the product
 - Mandatory remote storage
-- Secret manager integrations as a core dependency
-- CI/CD integration
+- External secret providers as a core dependency
+- Implicit synchronization between developers
+- Hidden background daemons or automatic watchers
 - Full encryption-at-rest inside the vault by default
-- A terminal UI as a priority over validation and adoption workflows
+- A terminal UI as a priority over contract, resolution, and projection workflows
