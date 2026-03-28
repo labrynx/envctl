@@ -1,38 +1,61 @@
 ---
 name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
-assignees: ''
+about: Report a bug in envctl
+title: "[bug] "
+labels: bug
+---
+
+## Description
+
+What happened?
+
+## Steps to reproduce
+
+```bash
+# exact commands used
+````
+
+## Expected behavior
+
+What should have happened?
+
+## Environment
+
+* OS:
+* Shell:
+* Python version:
+* envctl version:
+
+## Additional context
+
+Logs, screenshots, or notes if relevant.
+
+````
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+### Feature request (mejorado)
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+```markdown
+---
+name: Feature request
+about: Propose a feature for envctl
+title: "[feature] "
+labels: enhancement
+---
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+## Problem
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+What problem are you trying to solve?
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+## Proposed solution
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+What should envctl do?
 
-**Additional context**
-Add any other context about the problem here.
+## Alternatives considered
+
+Any other approaches?
+
+## Notes
+
+Constraints, edge cases, or design concerns.
