@@ -2,31 +2,56 @@
 
 `envctl` is a local CLI tool that centralizes repository `.env.local` files into a user-owned vault and links them back into repositories using symlinks.
 
+It is designed around a simple model:
+
+- the repository declares what it needs
+- the vault stores the secret values
+- the link between both is explicit and local
+
 ## Goals
 
-- Keep secrets outside repositories.
-- Avoid duplicated `.env.local` files.
-- Use explicit, deterministic local-only workflows.
-- Fail safely when the filesystem is not in the expected state.
+- Keep secrets outside repositories
+- Avoid duplicated `.env.local` files
+- Use explicit, deterministic local-only workflows
+- Fail safely when the filesystem is not in the expected state
+- Make environment setup understandable and verifiable
 
-## Non‑goals
+## Non-goals
 
 - No automatic syncing
 - No hidden behavior
 - No implicit environment creation
-- No secret management beyond local filesystem
+- No secret management beyond the local filesystem
+- No default-value provisioning from project schemas
 
 Everything is explicit and local.
 
-## v1 Commands
+## Current commands
 
 - `envctl init [PROJECT]`
-- `envctl repair` (supports `--yes`/`-y`)
-- `envctl unlink` (removes the managed symlink if present; no-op otherwise)
+- `envctl repair` (supports `--yes` / `-y`)
+- `envctl unlink`
 - `envctl status`
 - `envctl set KEY VALUE`
 - `envctl doctor`
-- `envctl remove` (supports `--yes`/`-y`)
+- `envctl remove` (supports `--yes` / `-y`)
+- `envctl config init`
+
+## Command model
+
+Each command has a narrow responsibility:
+
+- `init`: create vault structure, metadata, and repository link
+- `doctor`: validate local machine and envctl readiness
+- `status`: validate repository-to-vault state
+- `set`: update one explicit key in the vault
+- `repair`: restore a broken or missing link safely
+- `remove`: detach the repository from envctl management
+
+Planned additions complete the model rather than change it:
+
+- `check`: validate vault contents against a project schema
+- `fill`: interactively provide missing required values
 
 ## Installation
 
@@ -37,7 +62,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -U pip
 pip install -e .[dev]
-```
+````
 
 ### Run
 
@@ -59,7 +84,7 @@ Vault root:
 ~/.envctl/vault
 ```
 
-Project env file:
+Managed project env file:
 
 ```text
 ~/.envctl/vault/projects/<project-slug>--<project-id>/.env.local
@@ -71,39 +96,86 @@ Repository link:
 <repo>/.env.local -> ~/.envctl/vault/projects/<project-slug>--<project-id>/.env.local
 ```
 
-## Examples
+Repository metadata:
 
-Check the version:
+```text
+<repo>/.envctl.json
+```
 
-```bash
-envctl --version
-...
+Planned project schema file:
 
-Initialize using the current directory name:
+```text
+<repo>/.envctl.schema.yaml
+```
+
+## Example workflow
+
+Initialize the repository:
 
 ```bash
 envctl init
 ```
 
-Initialize with an explicit project name:
+Set a variable explicitly:
 
 ```bash
-envctl init my-app
+envctl set APP_ENV development
 ```
 
-Repair the repository link (non‑interactive):
-
-```bash
-envctl repair --yes
-```
-
-Inspect current repository state:
+Inspect repository state:
 
 ```bash
 envctl status
 ```
 
-Example status output:
+Run local diagnostics:
+
+```bash
+envctl doctor
+```
+
+Repair the repository link non-interactively:
+
+```bash
+envctl repair --yes
+```
+
+Remove envctl management and restore a local env file:
+
+```bash
+envctl remove --yes
+```
+
+## Why the schema matters
+
+A future `.envctl.schema.yaml` file will allow a project to declare its environment contract without storing any secret values.
+
+That makes it possible to separate:
+
+* **contract**: what variables should exist
+* **storage**: where the values live
+* **validation**: whether the current vault satisfies the project
+
+This leads to a clean workflow:
+
+* `doctor` checks the machine
+* `status` checks the bridge
+* `check` checks the contract
+* `fill` helps complete missing required values
+
+## Important design rule
+
+`init` is intentionally structural only.
+
+It must not:
+
+* prompt for secret values
+* populate the vault from a schema
+* provide defaults
+
+Interactive onboarding belongs in `fill`, not in `init`. This keeps initialization deterministic and safe for repeated execution.
+
+## Example status output
 
 ```text
 On project my-app (abc123def456)
@@ -116,13 +188,7 @@ Repository env: linked
 Vault env: present
 ```
 
-Run environment diagnostics:
-
-```bash
-envctl doctor
-```
-
-Example doctor output:
+## Example doctor output
 
 ```text
 [OK] config: Using defaults (no config file at /home/user/.config/envctl/config.json)
@@ -132,27 +198,16 @@ Example doctor output:
 [OK] symlink_support: Symlink creation works
 ```
 
-Set a variable:
-
-```bash
-envctl set APP_ENV development
-```
-
-Restore a real repository env file and remove envctl management:
-
-```bash
-envctl remove --yes
-```
-
 ## Security notes
 
-- Vault directories are created with `0700` permissions; vault files with `0600`.
-- The config file is created with `0600` permissions.
-- `envctl` never prints stored secret values.
-- `unlink` does not copy secrets back into the repository.
-- `repair` never invents a missing vault file and will advise using `init`.
-- `status` reports repository state without modifying files.
-- `set` updates only the managed vault env file and requires prior initialization.
+* Vault directories are created with `0700` permissions; vault files with `0600`.
+* The config file is created with `0600` permissions.
+* `envctl` never prints stored secret values.
+* `unlink` does not copy secrets back into the repository.
+* `repair` never invents a missing vault file.
+* `status` reports repository state without modifying files.
+* `set` updates only the managed vault env file and requires prior initialization.
+* Future schema files must never contain secrets or defaults.
 
 ## Development
 
@@ -161,4 +216,4 @@ envctl remove --yes
 ./scripts/test.sh
 ```
 
-For more details, see the [docs](docs/) directory.
+For more detail, see the `docs/` directory.
