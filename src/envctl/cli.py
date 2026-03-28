@@ -8,6 +8,7 @@ from typing import Any
 
 import typer
 
+from envctl import __version__
 from envctl.errors import EnvctlError
 from envctl.services.config_service import run_config_init
 from envctl.services.doctor_service import run_doctor
@@ -24,6 +25,28 @@ config_app = typer.Typer(help="Manage envctl configuration.")
 app.add_typer(config_app, name="config")
 
 
+def version_callback(value: bool) -> None:
+    """Print version and exit if --version is passed."""
+    if value:
+        typer.echo(f"envctl {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+    version: bool = typer.Option(
+        None,
+        "--version",
+        "-V",
+        help="Show the version and exit.",
+        callback=version_callback,
+        is_eager=True,
+    ),
+) -> None:
+    """envctl - local environment vault manager."""
+    pass
+
+
 def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
     """Wrap CLI commands and convert domain errors into exit code 1."""
 
@@ -36,6 +59,11 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
             raise typer.Exit(code=1) from exc
 
     return wrapper
+
+
+def _typer_confirm(message: str, default: bool) -> bool:
+    """Bridge confirmation prompts from services to Typer."""
+    return typer.confirm(message, default=default)
 
 
 @app.command()
@@ -100,7 +128,7 @@ def repair(
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompts"),
 ) -> None:
     """Repair the repository env symlink using existing envctl metadata."""
-    context = run_repair(force=yes)
+    context = run_repair(force=yes, confirm=_typer_confirm)
     print_success(f"Repaired project '{context.project_slug}'")
     print_kv("project_slug", context.project_slug)
     print_kv("project_id", context.project_id)
@@ -129,7 +157,7 @@ def remove(
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompts"),
 ) -> None:
     """Remove envctl management for the current repository."""
-    result = run_remove(force=yes)
+    result = run_remove(force=yes, confirm=_typer_confirm)
 
     print_success(f"Removed envctl management for '{result.context.project_slug}'")
     typer.echo()
