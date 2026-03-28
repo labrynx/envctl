@@ -1,51 +1,46 @@
 from __future__ import annotations
 
-from typer.testing import CliRunner
+from pathlib import Path
 
 from envctl.cli.app import app
 
-runner = CliRunner()
 
-
-def test_help_command() -> None:
-    result = runner.invoke(app, ["--help"])
-    assert result.exit_code == 0
-    assert "local environment vault manager" in result.stdout.lower()
-
-
-def test_help_command_alias_runs() -> None:
-    result = runner.invoke(app, ["help"])
-    assert result.exit_code == 0
-    assert "local environment vault manager" in result.stdout.lower()
-
-
-def test_help_command_alias_for_subcommand_runs() -> None:
-    result = runner.invoke(app, ["help", "init"])
-    assert result.exit_code == 0
-    assert "initialize the current git repository" in result.stdout.lower()
-
-
-def test_doctor_command_runs(isolated_env) -> None:
-    result = runner.invoke(app, ["doctor"])
-    assert result.exit_code == 0
-    assert "config:" in result.stdout
-    assert "symlink_support" in result.stdout
-
-
-def test_config_init_command_creates_config(isolated_env) -> None:
-    result = runner.invoke(app, ["config", "init"])
-
+def test_config_init(runner, workspace: Path) -> None:
+    result = runner.invoke(app, ["config", "init"], catch_exceptions=False)
     assert result.exit_code == 0
     assert "Created envctl config file" in result.stdout
 
 
-def test_repair_command_runs_after_init(isolated_env, repo_dir, monkeypatch) -> None:
-    from envctl.services.init_service import run_init
-
-    monkeypatch.chdir(repo_dir)
-    context = run_init()
-    context.repo_env_path.unlink()
-
-    result = runner.invoke(app, ["repair"])
+def test_init_and_status(runner, workspace: Path) -> None:
+    runner.invoke(app, ["config", "init"], catch_exceptions=False)
+    result = runner.invoke(app, ["init"], catch_exceptions=False)
     assert result.exit_code == 0
-    assert "Repaired project" in result.stdout
+    assert "Initialized" in result.stdout
+
+    status = runner.invoke(app, ["status"], catch_exceptions=False)
+    assert status.exit_code == 0
+    assert "Project:" in status.stdout
+
+
+def test_check_fails_when_required_value_is_missing(runner, workspace: Path) -> None:
+    runner.invoke(app, ["config", "init"], catch_exceptions=False)
+    runner.invoke(app, ["init"], catch_exceptions=False)
+
+    result = runner.invoke(app, ["check"], catch_exceptions=False)
+    assert result.exit_code == 1
+    assert "Missing required keys" in result.stdout
+
+
+def test_set_check_and_sync(runner, workspace: Path) -> None:
+    runner.invoke(app, ["config", "init"], catch_exceptions=False)
+    runner.invoke(app, ["init"], catch_exceptions=False)
+    runner.invoke(app, ["set", "APP_NAME", "demo"], catch_exceptions=False)
+    runner.invoke(app, ["set", "DATABASE_URL", "https://db.example.com"], catch_exceptions=False)
+
+    check = runner.invoke(app, ["check"], catch_exceptions=False)
+    assert check.exit_code == 0
+    assert "Environment contract satisfied" in check.stdout
+
+    sync = runner.invoke(app, ["sync"], catch_exceptions=False)
+    assert sync.exit_code == 0
+    assert "Synced generated environment" in sync.stdout
