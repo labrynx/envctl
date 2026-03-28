@@ -5,9 +5,9 @@ from types import SimpleNamespace
 import pytest
 
 import envctl.services.run_service as run_service
-from envctl.domain.resolution import ResolutionReport, ResolvedValue
 from envctl.errors import ExecutionError, ValidationError
 from envctl.services.run_service import run_command
+from tests.support.builders import make_resolution_report, make_resolved_value
 
 
 def test_run_command_fails_when_command_is_empty() -> None:
@@ -18,12 +18,7 @@ def test_run_command_fails_when_command_is_empty() -> None:
 def test_run_command_fails_when_resolved_environment_is_invalid(monkeypatch) -> None:
     context = SimpleNamespace()
     contract = object()
-    report = ResolutionReport(
-        values={},
-        missing_required=["API_KEY"],
-        unknown_keys=[],
-        invalid_keys=[],
-    )
+    report = make_resolution_report(missing_required=["API_KEY"])
 
     monkeypatch.setattr(run_service, "load_project_context", lambda: (SimpleNamespace(), context))
     monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: contract)
@@ -36,28 +31,22 @@ def test_run_command_fails_when_resolved_environment_is_invalid(monkeypatch) -> 
 def test_run_command_executes_subprocess_with_injected_environment(monkeypatch) -> None:
     context = SimpleNamespace()
     contract = object()
-    report = ResolutionReport(
+    report = make_resolution_report(
         values={
-            "APP_NAME": ResolvedValue(
+            "APP_NAME": make_resolved_value(
                 key="APP_NAME",
                 value="demo",
                 source="vault",
-                masked=False,
                 valid=True,
-                detail=None,
             ),
-            "DATABASE_URL": ResolvedValue(
+            "DATABASE_URL": make_resolved_value(
                 key="DATABASE_URL",
                 value="https://db.example.com",
                 source="system",
                 masked=True,
                 valid=True,
-                detail=None,
             ),
-        },
-        missing_required=[],
-        unknown_keys=[],
-        invalid_keys=[],
+        }
     )
 
     captured: dict[str, object] = {}

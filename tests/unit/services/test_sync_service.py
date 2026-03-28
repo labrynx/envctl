@@ -6,37 +6,32 @@ from types import SimpleNamespace
 import pytest
 
 import envctl.services.sync_service as sync_service
-from envctl.domain.resolution import ResolutionReport, ResolvedValue
 from envctl.errors import ValidationError
 from envctl.services.sync_service import run_sync
+from tests.support.builders import make_resolution_report, make_resolved_value
 
 
-def test_run_sync_writes_materialized_env_when_resolution_is_valid(monkeypatch, tmp_path: Path) -> None:
+def test_run_sync_writes_materialized_env_when_resolution_is_valid(
+    monkeypatch, tmp_path: Path
+) -> None:
     repo_env_path = tmp_path / ".env.local"
     context = SimpleNamespace(repo_env_path=repo_env_path)
     contract = object()
-    report = ResolutionReport(
+    report = make_resolution_report(
         values={
-            "APP_NAME": ResolvedValue(
+            "APP_NAME": make_resolved_value(
                 key="APP_NAME",
                 value="demo",
                 source="vault",
-                masked=False,
                 valid=True,
-                detail=None,
             ),
-            "PORT": ResolvedValue(
+            "PORT": make_resolved_value(
                 key="PORT",
                 value="3000",
                 source="default",
-                masked=False,
                 valid=True,
-                detail=None,
             ),
-        },
-        missing_required=[],
-        unknown_keys=[],
-        invalid_keys=[],
+        }
     )
 
     written: dict[str, str] = {}
@@ -63,16 +58,14 @@ def test_run_sync_raises_when_environment_is_invalid(monkeypatch, tmp_path: Path
     repo_env_path = tmp_path / ".env.local"
     context = SimpleNamespace(repo_env_path=repo_env_path)
     contract = object()
-    report = ResolutionReport(
-        values={},
-        missing_required=["APP_NAME"],
-        unknown_keys=[],
-        invalid_keys=[],
-    )
+    report = make_resolution_report(missing_required=["APP_NAME"])
 
     monkeypatch.setattr(sync_service, "load_project_context", lambda: (SimpleNamespace(), context))
     monkeypatch.setattr(sync_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(sync_service, "resolve_environment", lambda _context, _contract: report)
 
-    with pytest.raises(ValidationError, match="Cannot sync because the resolved environment is invalid"):
+    with pytest.raises(
+        ValidationError,
+        match="Cannot sync because the resolved environment is invalid",
+    ):
         run_sync()

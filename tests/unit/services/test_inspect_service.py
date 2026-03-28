@@ -2,27 +2,23 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from envctl.domain.resolution import ResolutionReport, ResolvedValue
 from envctl.services.inspect_service import run_inspect
+from tests.support.builders import make_resolution_report, make_resolved_value
 
 
 def test_run_inspect_returns_context_and_resolution_report(monkeypatch) -> None:
     context = SimpleNamespace(project_slug="demo")
     contract = object()
-    report = ResolutionReport(
+    report = make_resolution_report(
         values={
-            "APP_NAME": ResolvedValue(
+            "APP_NAME": make_resolved_value(
                 key="APP_NAME",
                 value="demo-app",
                 source="vault",
-                masked=False,
                 valid=True,
-                detail=None,
             )
         },
-        missing_required=[],
         unknown_keys=["LEGACY_KEY"],
-        invalid_keys=[],
     )
 
     monkeypatch.setattr(

@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from envctl.errors import ContractError
 import envctl.repository.contract_repository as contract_repository
+from envctl.errors import ContractError
 from envctl.repository.contract_repository import load_contract
 
 
@@ -210,6 +210,7 @@ variables:
 
     with pytest.raises(ContractError, match="'choices' must be a list of strings"):
         load_contract(contract_path)
+
 
 def test_load_contract_raises_when_file_cannot_be_read(monkeypatch, tmp_path: Path) -> None:
     contract_path = tmp_path / ".envctl.schema.yaml"

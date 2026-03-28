@@ -1,0 +1,113 @@
+from __future__ import annotations
+
+from envctl.domain.contract import Contract, VariableSpec
+
+
+def make_variable_spec(
+    *,
+    name: str,
+    type: str = "string",
+    required: bool = True,
+    description: str = "",
+    sensitive: bool = False,
+    default: object | None = None,
+    provider: str | None = None,
+    example: str | None = None,
+    pattern: str | None = None,
+    choices: tuple[str, ...] = (),
+) -> VariableSpec:
+    """Build a variable spec with sensible test defaults."""
+    return VariableSpec(
+        name=name,
+        type=type,
+        required=required,
+        description=description,
+        sensitive=sensitive,
+        default=default,
+        provider=provider,
+        example=example,
+        pattern=pattern,
+        choices=choices,
+    )
+
+
+def make_contract(
+    variables: dict[str, VariableSpec] | None = None,
+    *,
+    version: int = 1,
+) -> Contract:
+    """Build a contract with optional variables."""
+    return Contract(
+        version=version,
+        variables=variables or {},
+    )
+
+
+def make_standard_contract() -> Contract:
+    """Build the standard contract used across many tests."""
+    return make_contract(
+        {
+            "APP_NAME": make_variable_spec(
+                name="APP_NAME",
+                type="string",
+                required=True,
+                sensitive=False,
+            ),
+            "PORT": make_variable_spec(
+                name="PORT",
+                type="int",
+                required=True,
+                sensitive=False,
+                default=3000,
+            ),
+            "DEBUG": make_variable_spec(
+                name="DEBUG",
+                type="bool",
+                required=False,
+                sensitive=False,
+            ),
+            "DATABASE_URL": make_variable_spec(
+                name="DATABASE_URL",
+                type="url",
+                required=True,
+                sensitive=True,
+            ),
+            "ENVIRONMENT": make_variable_spec(
+                name="ENVIRONMENT",
+                type="string",
+                required=False,
+                sensitive=False,
+                choices=("dev", "prod"),
+            ),
+            "SLUG": make_variable_spec(
+                name="SLUG",
+                type="string",
+                required=False,
+                sensitive=False,
+                pattern=r"^[a-z0-9-]+$",
+            ),
+        }
+    )
+
+
+def make_fill_contract() -> Contract:
+    """Build the contract used in fill-service tests."""
+    return make_contract(
+        {
+            "API_KEY": make_variable_spec(
+                name="API_KEY",
+                type="string",
+                required=True,
+                description="API key",
+                sensitive=True,
+            ),
+            "PORT": make_variable_spec(
+                name="PORT",
+                type="int",
+                required=True,
+                description="Port number",
+                sensitive=False,
+                default=3000,
+            ),
+        }
+    )

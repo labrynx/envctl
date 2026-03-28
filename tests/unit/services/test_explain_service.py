@@ -4,28 +4,21 @@ from types import SimpleNamespace
 
 import pytest
 
-from envctl.domain.resolution import ResolvedValue, ResolutionReport
 from envctl.errors import ValidationError
 from envctl.services.explain_service import run_explain
+from tests.support.builders import make_resolution_report, make_resolved_value
 
 
 def test_run_explain_returns_resolved_value(monkeypatch) -> None:
     context = SimpleNamespace(project_slug="demo")
     contract = object()
-    resolved = ResolvedValue(
+    resolved = make_resolved_value(
         key="APP_NAME",
         value="demo-app",
         source="vault",
-        masked=False,
         valid=True,
-        detail=None,
     )
-    report = ResolutionReport(
-        values={"APP_NAME": resolved},
-        missing_required=[],
-        unknown_keys=[],
-        invalid_keys=[],
-    )
+    report = make_resolution_report(values={"APP_NAME": resolved})
 
     monkeypatch.setattr(
         "envctl.services.explain_service.load_project_context",
@@ -52,12 +45,7 @@ def test_run_explain_returns_resolved_value(monkeypatch) -> None:
 def test_run_explain_raises_when_key_is_not_resolved(monkeypatch) -> None:
     context = SimpleNamespace(project_slug="demo")
     contract = object()
-    report = ResolutionReport(
-        values={},
-        missing_required=["APP_NAME"],
-        unknown_keys=[],
-        invalid_keys=[],
-    )
+    report = make_resolution_report(missing_required=["APP_NAME"])
 
     monkeypatch.setattr(
         "envctl.services.explain_service.load_project_context",

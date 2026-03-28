@@ -4,8 +4,8 @@ import pytest
 import typer
 
 import envctl.cli.commands.check as check_command_module
-from envctl.domain.resolution import ResolutionReport
 from envctl.cli.commands.check import check_command
+from envctl.domain.resolution import ResolutionReport
 
 
 def test_check_command_exits_when_report_is_valid_but_unknown_keys_exist(monkeypatch) -> None:

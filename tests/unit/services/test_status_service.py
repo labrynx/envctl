@@ -4,38 +4,20 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import envctl.services.status_service as status_service
-from envctl.domain.resolution import ResolutionReport, ResolvedValue
 from envctl.errors import ContractError
 from envctl.services.status_service import run_status
-
-
-def make_context(
-    tmp_path: Path,
-    *,
-    contract_exists: bool,
-    vault_exists: bool,
-) -> SimpleNamespace:
-    repo_contract_path = tmp_path / ".envctl.schema.yaml"
-    vault_values_path = tmp_path / "vault.env"
-
-    if contract_exists:
-        repo_contract_path.write_text("version: 1\nvariables:\n  APP_NAME: {}\n", encoding="utf-8")
-    if vault_exists:
-        vault_values_path.write_text('APP_NAME="demo"\n', encoding="utf-8")
-
-    return SimpleNamespace(
-        project_slug="demo",
-        project_id="abc123",
-        repo_root=tmp_path,
-        repo_contract_path=repo_contract_path,
-        vault_values_path=vault_values_path,
-    )
+from tests.support.builders import make_resolution_report, make_resolved_value
+from tests.support.contexts import make_status_context
 
 
 def test_run_status_reports_missing_contract(tmp_path: Path, monkeypatch) -> None:
-    context = make_context(tmp_path, contract_exists=False, vault_exists=False)
+    context = make_status_context(tmp_path, contract_exists=False, vault_exists=False)
 
-    monkeypatch.setattr(status_service, "load_project_context", lambda: (SimpleNamespace(), context))
+    monkeypatch.setattr(
+        status_service,
+        "load_project_context",
+        lambda: (SimpleNamespace(), context),
+    )
 
     report = run_status()
 
@@ -50,9 +32,13 @@ def test_run_status_reports_missing_contract(tmp_path: Path, monkeypatch) -> Non
 
 
 def test_run_status_reports_invalid_contract(tmp_path: Path, monkeypatch) -> None:
-    context = make_context(tmp_path, contract_exists=True, vault_exists=True)
+    context = make_status_context(tmp_path, contract_exists=True, vault_exists=True)
 
-    monkeypatch.setattr(status_service, "load_project_context", lambda: (SimpleNamespace(), context))
+    monkeypatch.setattr(
+        status_service,
+        "load_project_context",
+        lambda: (SimpleNamespace(), context),
+    )
 
     def raise_contract_error(_context):
         raise ContractError("Contract is broken")
@@ -70,27 +56,30 @@ def test_run_status_reports_invalid_contract(tmp_path: Path, monkeypatch) -> Non
 
 
 def test_run_status_reports_valid_environment(tmp_path: Path, monkeypatch) -> None:
-    context = make_context(tmp_path, contract_exists=True, vault_exists=True)
+    context = make_status_context(tmp_path, contract_exists=True, vault_exists=True)
     contract = object()
-    resolution = ResolutionReport(
+    resolution = make_resolution_report(
         values={
-            "APP_NAME": ResolvedValue(
+            "APP_NAME": make_resolved_value(
                 key="APP_NAME",
                 value="demo",
                 source="vault",
-                masked=False,
                 valid=True,
-                detail=None,
             )
-        },
-        missing_required=[],
-        unknown_keys=[],
-        invalid_keys=[],
+        }
     )
 
-    monkeypatch.setattr(status_service, "load_project_context", lambda: (SimpleNamespace(), context))
+    monkeypatch.setattr(
+        status_service,
+        "load_project_context",
+        lambda: (SimpleNamespace(), context),
+    )
     monkeypatch.setattr(status_service, "load_contract_for_context", lambda _context: contract)
-    monkeypatch.setattr(status_service, "resolve_environment", lambda _context, _contract: resolution)
+    monkeypatch.setattr(
+        status_service,
+        "resolve_environment",
+        lambda _context, _contract: resolution,
+    )
 
     report = run_status()
 
@@ -99,19 +88,21 @@ def test_run_status_reports_valid_environment(tmp_path: Path, monkeypatch) -> No
     assert report.resolved_valid is True
     assert report.issues == []
     assert report.suggested_action is None
-    assert report.summary == "The project contract is satisfied and the environment can be projected safely."
+    assert (
+        report.summary
+        == "The project contract is satisfied and the environment can be projected safely."
+    )
 
 
 def test_run_status_reports_missing_invalid_and_unknown_values(tmp_path: Path, monkeypatch) -> None:
-    context = make_context(tmp_path, contract_exists=True, vault_exists=True)
+    context = make_status_context(tmp_path, contract_exists=True, vault_exists=True)
     contract = object()
-    resolution = ResolutionReport(
+    resolution = make_resolution_report(
         values={
-            "PORT": ResolvedValue(
+            "PORT": make_resolved_value(
                 key="PORT",
                 value="abc",
                 source="vault",
-                masked=False,
                 valid=False,
                 detail="Expected an integer",
             )
@@ -121,9 +112,17 @@ def test_run_status_reports_missing_invalid_and_unknown_values(tmp_path: Path, m
         invalid_keys=["PORT"],
     )
 
-    monkeypatch.setattr(status_service, "load_project_context", lambda: (SimpleNamespace(), context))
+    monkeypatch.setattr(
+        status_service,
+        "load_project_context",
+        lambda: (SimpleNamespace(), context),
+    )
     monkeypatch.setattr(status_service, "load_contract_for_context", lambda _context: contract)
-    monkeypatch.setattr(status_service, "resolve_environment", lambda _context, _contract: resolution)
+    monkeypatch.setattr(
+        status_service,
+        "resolve_environment",
+        lambda _context, _contract: resolution,
+    )
 
     report = run_status()
 

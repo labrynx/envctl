@@ -2,52 +2,18 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from envctl.domain.contract import Contract, VariableSpec
-from envctl.domain.resolution import ResolutionReport, ResolvedValue
 from envctl.services.fill_service import run_fill
-
-
-def build_contract() -> Contract:
-    return Contract(
-        version=1,
-        variables={
-            "API_KEY": VariableSpec(
-                name="API_KEY",
-                type="string",
-                required=True,
-                description="API key",
-                sensitive=True,
-                default=None,
-                provider=None,
-                example=None,
-                pattern=None,
-                choices=(),
-            ),
-            "PORT": VariableSpec(
-                name="PORT",
-                type="int",
-                required=True,
-                description="Port number",
-                sensitive=False,
-                default=3000,
-                provider=None,
-                example=None,
-                pattern=None,
-                choices=(),
-            ),
-        },
-    )
+from tests.support.builders import make_resolution_report, make_resolved_value
+from tests.support.contexts import make_project_context
+from tests.support.contracts import make_fill_contract
 
 
 def test_run_fill_prompts_for_missing_required_keys_and_writes_file(monkeypatch, tmp_path) -> None:
     vault_values_path = tmp_path / "vault.env"
-    context = SimpleNamespace(vault_values_path=vault_values_path)
-    contract = build_contract()
-    report = ResolutionReport(
-        values={},
+    context = make_project_context(vault_values_path=vault_values_path)
+    contract = make_fill_contract()
+    report = make_resolution_report(
         missing_required=["API_KEY", "PORT"],
-        unknown_keys=[],
-        invalid_keys=[],
     )
 
     written: dict[str, str] = {}
@@ -72,10 +38,7 @@ def test_run_fill_prompts_for_missing_required_keys_and_writes_file(monkeypatch,
         "envctl.services.fill_service.resolve_environment",
         lambda _context, _contract: report,
     )
-    monkeypatch.setattr(
-        "envctl.services.fill_service.load_env_file",
-        lambda _path: {},
-    )
+    monkeypatch.setattr("envctl.services.fill_service.load_env_file", lambda _path: {})
     monkeypatch.setattr(
         "envctl.services.fill_service.write_text_atomic",
         lambda path, content: written.update({str(path): content}),
@@ -103,14 +66,9 @@ def test_run_fill_prompts_for_missing_required_keys_and_writes_file(monkeypatch,
 
 def test_run_fill_skips_blank_answers_without_defaults(monkeypatch, tmp_path) -> None:
     vault_values_path = tmp_path / "vault.env"
-    context = SimpleNamespace(vault_values_path=vault_values_path)
-    contract = build_contract()
-    report = ResolutionReport(
-        values={},
-        missing_required=["API_KEY"],
-        unknown_keys=[],
-        invalid_keys=[],
-    )
+    context = make_project_context(vault_values_path=vault_values_path)
+    contract = make_fill_contract()
+    report = make_resolution_report(missing_required=["API_KEY"])
 
     write_calls: list[str] = []
 
@@ -126,10 +84,7 @@ def test_run_fill_skips_blank_answers_without_defaults(monkeypatch, tmp_path) ->
         "envctl.services.fill_service.resolve_environment",
         lambda _context, _contract: report,
     )
-    monkeypatch.setattr(
-        "envctl.services.fill_service.load_env_file",
-        lambda _path: {},
-    )
+    monkeypatch.setattr("envctl.services.fill_service.load_env_file", lambda _path: {})
     monkeypatch.setattr(
         "envctl.services.fill_service.write_text_atomic",
         lambda path, content: write_calls.append(f"{path}:{content}"),
@@ -146,24 +101,22 @@ def test_run_fill_skips_blank_answers_without_defaults(monkeypatch, tmp_path) ->
     assert write_calls == []
 
 
-def test_run_fill_preserves_existing_values_and_only_writes_changed_keys(monkeypatch, tmp_path) -> None:
+def test_run_fill_preserves_existing_values_and_only_writes_changed_keys(
+    monkeypatch, tmp_path
+) -> None:
     vault_values_path = tmp_path / "vault.env"
-    context = SimpleNamespace(vault_values_path=vault_values_path)
-    contract = build_contract()
-    report = ResolutionReport(
+    context = make_project_context(vault_values_path=vault_values_path)
+    contract = make_fill_contract()
+    report = make_resolution_report(
         values={
-            "ALREADY_SET": ResolvedValue(
+            "ALREADY_SET": make_resolved_value(
                 key="ALREADY_SET",
                 value="yes",
                 source="vault",
-                masked=False,
                 valid=True,
-                detail=None,
             )
         },
         missing_required=["API_KEY"],
-        unknown_keys=[],
-        invalid_keys=[],
     )
 
     written: dict[str, str] = {}

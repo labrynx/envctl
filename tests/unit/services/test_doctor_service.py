@@ -7,7 +7,9 @@ from envctl.errors import ProjectDetectionError
 from envctl.services.doctor_service import run_doctor
 
 
-def test_run_doctor_reports_ok_for_existing_private_vault_and_git_repo(monkeypatch, tmp_path: Path) -> None:
+def test_run_doctor_reports_ok_for_existing_private_vault_and_git_repo(
+    monkeypatch, tmp_path: Path
+) -> None:
     vault_dir = tmp_path / "vault"
     vault_dir.mkdir()
 

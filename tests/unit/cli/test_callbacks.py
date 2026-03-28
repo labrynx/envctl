@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import typer
 import pytest
+import typer
 
 from envctl.cli.callbacks import typer_prompt, version_callback
 

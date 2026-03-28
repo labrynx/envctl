@@ -3,88 +3,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import envctl.services.resolution_service as resolution_service
-from envctl.domain.contract import Contract, VariableSpec
 from envctl.services.resolution_service import load_contract_for_context, resolve_environment
-
-
-def build_contract() -> Contract:
-    return Contract(
-        version=1,
-        variables={
-            "APP_NAME": VariableSpec(
-                name="APP_NAME",
-                type="string",
-                required=True,
-                description="",
-                sensitive=False,
-                default=None,
-                provider=None,
-                example=None,
-                pattern=None,
-                choices=(),
-            ),
-            "PORT": VariableSpec(
-                name="PORT",
-                type="int",
-                required=True,
-                description="",
-                sensitive=False,
-                default=3000,
-                provider=None,
-                example=None,
-                pattern=None,
-                choices=(),
-            ),
-            "DEBUG": VariableSpec(
-                name="DEBUG",
-                type="bool",
-                required=False,
-                description="",
-                sensitive=False,
-                default=None,
-                provider=None,
-                example=None,
-                pattern=None,
-                choices=(),
-            ),
-            "DATABASE_URL": VariableSpec(
-                name="DATABASE_URL",
-                type="url",
-                required=True,
-                description="",
-                sensitive=True,
-                default=None,
-                provider=None,
-                example=None,
-                pattern=None,
-                choices=(),
-            ),
-            "ENVIRONMENT": VariableSpec(
-                name="ENVIRONMENT",
-                type="string",
-                required=False,
-                description="",
-                sensitive=False,
-                default=None,
-                provider=None,
-                example=None,
-                pattern=None,
-                choices=("dev", "prod"),
-            ),
-            "SLUG": VariableSpec(
-                name="SLUG",
-                type="string",
-                required=False,
-                description="",
-                sensitive=False,
-                default=None,
-                provider=None,
-                example=None,
-                pattern=r"^[a-z0-9-]+$",
-                choices=(),
-            ),
-        },
-    )
+from tests.support.contracts import make_contract, make_standard_contract, make_variable_spec
 
 
 def test_load_contract_for_context_uses_repo_contract_path(monkeypatch) -> None:
@@ -104,7 +24,7 @@ def test_load_contract_for_context_uses_repo_contract_path(monkeypatch) -> None:
 
 
 def test_resolve_environment_prefers_system_over_vault_and_default(monkeypatch) -> None:
-    contract = build_contract()
+    contract = make_standard_contract()
     context = SimpleNamespace(vault_values_path="/tmp/vault.env")
 
     monkeypatch.setattr(
@@ -141,7 +61,7 @@ def test_resolve_environment_prefers_system_over_vault_and_default(monkeypatch) 
 
 
 def test_resolve_environment_marks_missing_required_keys(monkeypatch) -> None:
-    contract = build_contract()
+    contract = make_standard_contract()
     context = SimpleNamespace(vault_values_path="/tmp/vault.env")
 
     monkeypatch.setattr(resolution_service, "load_env_file", lambda _path: {})
@@ -159,7 +79,7 @@ def test_resolve_environment_marks_missing_required_keys(monkeypatch) -> None:
 
 
 def test_resolve_environment_marks_invalid_int_bool_url_choice_and_pattern(monkeypatch) -> None:
-    contract = build_contract()
+    contract = make_standard_contract()
     context = SimpleNamespace(vault_values_path="/tmp/vault.env")
 
     monkeypatch.setattr(
@@ -203,22 +123,15 @@ def test_resolve_environment_marks_invalid_int_bool_url_choice_and_pattern(monke
 
 
 def test_resolve_environment_accepts_valid_bool_variants(monkeypatch) -> None:
-    contract = Contract(
-        version=1,
-        variables={
-            "DEBUG": VariableSpec(
+    contract = make_contract(
+        {
+            "DEBUG": make_variable_spec(
                 name="DEBUG",
                 type="bool",
                 required=True,
-                description="",
                 sensitive=False,
-                default=None,
-                provider=None,
-                example=None,
-                pattern=None,
-                choices=(),
             ),
-        },
+        }
     )
     context = SimpleNamespace(vault_values_path="/tmp/vault.env")
 
@@ -234,3 +147,29 @@ def test_resolve_environment_accepts_valid_bool_variants(monkeypatch) -> None:
 
         assert report.invalid_keys == []
         assert report.values["DEBUG"].valid is True
+
+
+def test_resolve_environment_marks_unsupported_type_as_invalid(monkeypatch) -> None:
+    contract = make_contract(
+        {
+            "WEIRD": make_variable_spec(
+                name="WEIRD",
+                type="mystery",
+                required=True,
+                sensitive=False,
+            ),
+        }
+    )
+    context = SimpleNamespace(vault_values_path="/tmp/vault.env")
+
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"WEIRD": "value"},
+    )
+
+    report = resolve_environment(context, contract)
+
+    assert report.invalid_keys == ["WEIRD"]
+    assert report.values["WEIRD"].valid is False
+    assert report.values["WEIRD"].detail == "Unsupported type: mystery"

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from envctl.cli.formatters import render_doctor_checks, render_resolution, render_status
 from envctl.domain.doctor import DoctorCheck
-from envctl.domain.resolution import ResolvedValue, ResolutionReport
+from envctl.domain.resolution import ResolutionReport, ResolvedValue
 from envctl.domain.status import StatusReport
 from envctl.utils.masking import mask_value
 
