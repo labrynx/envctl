@@ -61,14 +61,31 @@ envctl/
 ├── docs/               # User and contributor documentation
 ├── scripts/            # Development helper scripts
 ├── src/envctl/         # Main package
-│   ├── cli.py          # Typer CLI entry points
+│   ├── cli/            # Typer CLI (commands, formatting, callbacks)
 │   ├── config/         # XDG config handling
-│   ├── services/       # Core logic (each command one service)
-│   ├── utils/          # Filesystem, permissions, output helpers
-│   └── models.py       # Immutable data structures
+│   ├── domain/         # Core domain models and result objects
+│   ├── repository/     # Metadata and project context resolution
+│   ├── services/       # Command orchestration (business logic)
+│   ├── utils/          # Filesystem, permissions, helpers
+│   ├── constants.py
+│   ├── errors.py
+│   └── __main__.py
 ├── tests/              # Test suite
 └── README.md
 ```
+
+### Architectural note
+
+The project follows a layered structure:
+
+* **CLI layer** → handles user input/output (Typer)
+* **Service layer** → orchestrates command behavior
+* **Domain layer** → defines structured data and results
+* **Repository layer** → resolves project metadata and context
+* **Config layer** → loads and resolves configuration
+* **Utils layer** → pure helpers (filesystem, parsing, etc.)
+
+This separation ensures that business logic remains testable and independent from the CLI framework.
 
 ## Adding a new command
 

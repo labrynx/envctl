@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refined the documentation to describe `envctl` as an explicit environment lifecycle model rather than only a symlink utility.
 - Clarified that `init` must remain deterministic and must not prompt for secret values.
 - Clarified that future schema files must declare requirements only and must not contain defaults or secrets.
+- Refactored internal architecture to introduce explicit layers: `domain`, `repository`, and modular CLI structure.
+- Replaced flat module structure with a layered design for better separation of concerns and testability.
 
 ### Fixed
 

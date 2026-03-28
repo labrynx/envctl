@@ -5,7 +5,7 @@
 The first stable version focuses on a solid, secure, and deterministic foundation.
 
 - **Core architecture**
-  - Layered design (CLI, services, config, utils, models)
+  - Layered design (CLI, services, domain, repository, config, utils)
   - Framework-aware CLI with service-oriented command orchestration
   - XDG-based configuration with optional JSON config file
   - Unique project identification using repository fingerprint (remote URL or local path)

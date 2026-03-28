@@ -10,6 +10,35 @@
 - **Utility layer**: filesystem, permissions, path resolution, and output helpers.
 - **Model layer**: immutable data structures passed between services.
 
+## Internal structure
+
+The codebase is organized into explicit layers:
+
+- **CLI (`cli/`)**
+  - Handles command definitions, argument parsing, and output formatting
+  - Delegates all logic to services
+
+- **Services (`services/`)**
+  - One module per command
+  - Orchestrates operations using config, domain models, and repositories
+  - Does not depend on CLI frameworks
+
+- **Domain (`domain/`)**
+  - Defines core data structures and result objects
+  - Represents command outcomes explicitly
+
+- **Repository (`repository/`)**
+  - Handles metadata loading and project context resolution
+  - Acts as the bridge between filesystem state and domain objects
+
+- **Config (`config/`)**
+  - Loads user configuration and resolves default paths
+
+- **Utils (`utils/`)**
+  - Pure helper functions (filesystem, parsing, symlinks, etc.)
+
+This separation allows the system to remain deterministic, testable, and extensible.
+
 ## Main concepts
 
 ### Vault
