@@ -9,16 +9,24 @@
 - Use explicit, deterministic local-only workflows.
 - Fail safely when the filesystem is not in the expected state.
 
+## Non‑goals
+
+- No automatic syncing
+- No hidden behavior
+- No implicit environment creation
+- No secret management beyond local filesystem
+
+Everything is explicit and local.
+
 ## v1 Commands
 
 - `envctl init [PROJECT]`
-- `envctl repair`
+- `envctl repair` (supports `--yes`/`-y`)
 - `envctl unlink` (removes the managed symlink if present; no-op otherwise)
 - `envctl status`
 - `envctl set KEY VALUE`
 - `envctl doctor`
-- `envctl remove`
-- `envctl help [COMMAND]`
+- `envctl remove` (supports `--yes`/`-y`)
 
 ## Installation
 
@@ -65,6 +73,12 @@ Repository link:
 
 ## Examples
 
+Check the version:
+
+```bash
+envctl --version
+...
+
 Initialize using the current directory name:
 
 ```bash
@@ -77,10 +91,10 @@ Initialize with an explicit project name:
 envctl init my-app
 ```
 
-Repair the repository link:
+Repair the repository link (non‑interactive):
 
 ```bash
-envctl repair
+envctl repair --yes
 ```
 
 Inspect current repository state:
@@ -127,16 +141,18 @@ envctl set APP_ENV development
 Restore a real repository env file and remove envctl management:
 
 ```bash
-envctl remove
+envctl remove --yes
 ```
 
 ## Security notes
 
-* `envctl` never prints stored secret values.
-* `unlink` does not copy secrets back into the repository.
-* `repair` never invents a missing vault file and will advise using `init`.
-* `status` reports repository state without modifying files.
-* `set` updates only the managed vault env file and requires prior initialization.
+- Vault directories are created with `0700` permissions; vault files with `0600`.
+- The config file is created with `0600` permissions.
+- `envctl` never prints stored secret values.
+- `unlink` does not copy secrets back into the repository.
+- `repair` never invents a missing vault file and will advise using `init`.
+- `status` reports repository state without modifying files.
+- `set` updates only the managed vault env file and requires prior initialization.
 
 ## Development
 
@@ -144,3 +160,5 @@ envctl remove
 ./scripts/dev.sh
 ./scripts/test.sh
 ```
+
+For more details, see the [docs](docs/) directory.

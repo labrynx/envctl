@@ -1,5 +1,9 @@
 # Commands
 
+## Global options
+
+- `--version`, `-V`: Show the version and exit.
+
 ## envctl config init
 
 Creates the default envctl config file in the user's XDG config directory.
@@ -7,6 +11,7 @@ Creates the default envctl config file in the user's XDG config directory.
 - creates `~/.config/envctl/config.json`
 - refuses to overwrite an existing config file
 - writes readable default values
+- sets file permissions to `0600` (user-only read/write)
 - keeps configuration creation explicit
 
 ## envctl init [PROJECT]
@@ -16,6 +21,7 @@ Registers the current Git repository in the vault, creates a unique project dire
 - `[PROJECT]` is optional
 - if omitted, the repository directory name is used as the readable slug
 - the vault directory is unique even when multiple repositories share the same visible name
+- ensures all vault directories have `0700` permissions and the vault file `0600`
 
 ## envctl repair
 
@@ -60,8 +66,9 @@ Runs read-only diagnostics for the local envctl environment.
 - checks vault path permissions when the vault exists
 - checks Git repository detection from the current working directory
 - checks whether symlink creation works on the current system
+- never modifies files or state (read‑only)
 
-The command uses a checklist-style output with `OK`, `WARN`, and `FAIL` states.
+The command uses a checklist-style output with `[OK]`, `[WARN]`, and `[FAIL]` states.
 
 ## envctl help [COMMAND]
 
@@ -77,7 +84,7 @@ Removes envctl management for the current repository.
 
 - prompts before destructive changes
 - supports `--yes` / `-y` to skip confirmation prompts
-- restores a real repository `.env.local` file from the managed vault file when the current symlink is valid
+- restores a real repository `.env.local` file from the managed vault file (local only, not committed)
 - removes repository metadata
 - removes the managed vault env file
 - removes the managed vault project directory when it becomes empty
