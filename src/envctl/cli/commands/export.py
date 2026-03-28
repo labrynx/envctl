@@ -10,5 +10,6 @@ from envctl.services.export_service import run_export
 
 @handle_errors
 def export_command() -> None:
-    """Print shell export lines."""
-    typer.echo(run_export(), nl=False)
+    """Print shell export lines for the resolved environment."""
+    for line in run_export():
+        typer.echo(line)
