@@ -217,3 +217,5 @@ Vault env: present
 ```
 
 For more detail, see the [docs](docs) directory.
+
+For contributor-oriented architectural detail, see [architecture-in-depth.md](docs/dev/architecture-in-depth.md).

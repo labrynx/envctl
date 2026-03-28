@@ -107,6 +107,7 @@ This separation ensures that business logic remains testable and independent fro
    * Add the command to `docs/commands.md`.
    * Update `docs/architecture.md` if the command changes the command model or lifecycle story.
    * Update `README.md` if the command affects user-facing workflows.
+   * Update `docs/dev/architecture-in-depth.md` if the internal layering or dependency flow changes.
 
 4. **Write tests**
 
