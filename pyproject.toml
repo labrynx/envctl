@@ -22,7 +22,7 @@ dev = [
 ]
 
 [project.scripts]
-envctl = "envctl.cli:app"
+envctl = "envctl.cli.app:app"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
