@@ -5,11 +5,9 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-import typer
-
 from envctl.config.loader import load_config
 from envctl.errors import LinkError, ProjectDetectionError
-from envctl.models import ProjectContext
+from envctl.models import ConfirmFn, ProjectContext
 from envctl.utils.paths import require_project_context
 
 
@@ -19,21 +17,20 @@ def _build_backup_path(repo_env_path: Path) -> Path:
     return repo_env_path.with_name(f"{repo_env_path.name}.backup-{timestamp}")
 
 
-def run_repair(force: bool = False) -> ProjectContext:
+def run_repair(
+    *,
+    force: bool = False,
+    confirm: ConfirmFn | None = None,
+) -> ProjectContext:
     """Repair the repository symlink using existing envctl metadata.
 
-    Behavior:
-    - requires valid local envctl metadata
-    - requires the managed vault env file to exist
-    - recreates the symlink if missing
-    - fixes an incorrect symlink
-    - if a regular file exists, prompts the user before backing it up and replacing it
+    Args:
+        force: Skip confirmation prompts.
+        confirm: Function used to request confirmation from the caller.
 
-    TODO(v1.1):
-    - add `--yes` for non-interactive confirmation
-    - add `--backup` and `--no-backup`
-    - add `--force` for expert-only recovery flows
-    - support richer metadata repair workflows when local metadata is partially inconsistent
+    Raises:
+        ProjectDetectionError: If the managed vault env file is missing.
+        LinkError: If repair is aborted by the user.
     """
     config = load_config()
     context = require_project_context(config=config)
@@ -57,14 +54,19 @@ def run_repair(force: bool = False) -> ProjectContext:
 
     if context.repo_env_path.exists():
         should_backup = True
+
         if not force:
-            should_backup = typer.confirm(
+            if confirm is None:
+                raise LinkError("Confirmation handler is required when force is false")
+
+            should_backup = confirm(
                 (
                     f"A regular file already exists at '{context.repo_env_path}'. "
                     "Do you want to back it up and replace it with the managed symlink?"
                 ),
-                default=True,
+                True,
             )
+
         if not should_backup:
             raise LinkError("Repair aborted by user")
 
