@@ -2,37 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from envctl.config.loader import load_config
-from envctl.models import ProjectContext
-from envctl.utils.paths import require_project_context
-
-
-@dataclass(frozen=True)
-class UnlinkResult:
-    """Result of an unlink operation."""
-
-    context: ProjectContext
-    removed: bool
-    message: str
+from envctl.domain.unlink import UnlinkResult
+from envctl.repository.project_context import require_project_context
 
 
 def run_unlink() -> UnlinkResult:
-    """Remove the repository symlink only when present.
-
-    Behavior:
-    - requires valid repository metadata
-    - removes the repository env symlink if present
-    - if no symlink exists, performs no action
-    - does not modify a regular file
-    - does not remove repository metadata
-    - does not remove the managed vault file
-
-    TODO(v1.1):
-    - add a dedicated `detach` or `remove` command for explicit local materialization
-    - support richer unlink diagnostics for scripting
-    """
+    """Remove the repository symlink only when present."""
     config = load_config()
     context = require_project_context(config=config)
 

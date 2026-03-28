@@ -6,12 +6,12 @@ from datetime import datetime
 from pathlib import Path
 
 from envctl.config.loader import load_config
+from envctl.domain.project import ConfirmFn, ProjectContext
 from envctl.errors import LinkError, ProjectDetectionError
-from envctl.models import ConfirmFn, ProjectContext
-from envctl.utils.paths import require_project_context
+from envctl.repository.project_context import require_project_context
 
 
-def _build_backup_path(repo_env_path: Path) -> Path:
+def build_backup_path(repo_env_path: Path) -> Path:
     """Return a timestamped backup path for a conflicting repository env file."""
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     return repo_env_path.with_name(f"{repo_env_path.name}.backup-{timestamp}")
@@ -22,16 +22,7 @@ def run_repair(
     force: bool = False,
     confirm: ConfirmFn | None = None,
 ) -> ProjectContext:
-    """Repair the repository symlink using existing envctl metadata.
-
-    Args:
-        force: Skip confirmation prompts.
-        confirm: Function used to request confirmation from the caller.
-
-    Raises:
-        ProjectDetectionError: If the managed vault env file is missing.
-        LinkError: If repair is aborted by the user.
-    """
+    """Repair the repository symlink using existing envctl metadata."""
     config = load_config()
     context = require_project_context(config=config)
 
@@ -70,7 +61,7 @@ def run_repair(
         if not should_backup:
             raise LinkError("Repair aborted by user")
 
-        backup_path = _build_backup_path(context.repo_env_path)
+        backup_path = build_backup_path(context.repo_env_path)
         context.repo_env_path.rename(backup_path)
         context.repo_env_path.symlink_to(context.vault_env_path)
         return context

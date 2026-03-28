@@ -1,0 +1,23 @@
+"""Application configuration domain model."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+from envctl.constants import DEFAULT_PROJECTS_DIRNAME
+
+
+@dataclass(frozen=True)
+class AppConfig:
+    """Resolved application configuration."""
+
+    config_path: Path
+    vault_dir: Path
+    env_filename: str
+    metadata_filename: str
+
+    @property
+    def projects_dir(self) -> Path:
+        """Return the managed projects directory inside the vault."""
+        return self.vault_dir / DEFAULT_PROJECTS_DIRNAME

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typer.testing import CliRunner
 
-from envctl.cli import app
+from envctl.cli.app import app
 
 runner = CliRunner()
 

@@ -32,11 +32,7 @@ def get_default_config_path() -> Path:
 
 
 def get_default_vault_dir() -> Path:
-    """Return the default vault root directory.
-
-    envctl keeps its managed vault in a user-visible home directory location
-    instead of under XDG data to improve discoverability.
-    """
+    """Return the default vault root directory."""
     return (get_home_dir() / ".envctl" / "vault").resolve()
 
 

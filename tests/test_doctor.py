@@ -54,7 +54,7 @@ def test_doctor_reports_repo_detection_ok_inside_git_repo(
     assert str(repo_dir) in repo_check.detail
 
 
-def test_doctor_reports_invalid_config_as_fail(isolated_env, tmp_path, monkeypatch) -> None:
+def test_doctor_reports_invalid_config_as_fail(isolated_env, tmp_path) -> None:
     config_dir = tmp_path / "config" / "envctl"
     config_dir.mkdir(parents=True, exist_ok=True)
     (config_dir / "config.json").write_text("{ invalid json", encoding="utf-8")

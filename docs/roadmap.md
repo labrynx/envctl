@@ -4,150 +4,98 @@
 
 The first stable version focuses on a solid, secure, and deterministic foundation.
 
-### Core architecture
+- **Core architecture**
+  - Layered design (CLI, services, config, utils, models)
+  - Framework-aware CLI with service-oriented command orchestration
+  - XDG-based configuration with optional JSON config file
+  - Unique project identification using repository fingerprint (remote URL or local path)
+  - Per-project vault directories (`<slug>--<id>`)
 
-- Layered design (CLI, services, config, utils, models)
-- XDG-based configuration with optional JSON config file
-- Unique project identification using repository fingerprint (remote URL or local path)
-- Per-project vault directories (`<slug>--<id>`)
+- **Commands**
+  - `envctl config init` – create default config with restrictive permissions
+  - `envctl init [PROJECT]` – register repository, create vault file and symlink
+  - `envctl repair` – fix broken or missing symlink; supports `--yes` / `-y`
+  - `envctl unlink` – remove repository symlink only
+  - `envctl status` – show human-readable repository state with actionable suggestions
+  - `envctl set KEY VALUE` – update a variable in the vault file
+  - `envctl doctor` – diagnostic checks (config, vault permissions, Git detection, symlink support)
+  - `envctl remove` – unregister repository; supports `--yes` / `-y`
 
-### Commands
+- **Security & safety**
+  - Vault directories created with `0700` permissions
+  - Vault files created with `0600` permissions
+  - Config file created with `0600` permissions
+  - Never overwrites regular files without confirmation
+  - Never prints stored secrets in normal output
+  - `doctor` warns about world-writable vault directories
 
-- `envctl config init` — create default config with restrictive permissions
-- `envctl init [PROJECT]` — register repository, create vault file and symlink
-- `envctl repair` — fix broken or missing symlink; supports `--yes` / `-y`
-- `envctl unlink` — remove repository symlink only
-- `envctl status` — show human-readable repository state with actionable suggestions
-- `envctl set KEY VALUE` — update a variable in the vault file
-- `envctl doctor` — diagnostic checks (config, vault permissions, Git detection, symlink support)
-- `envctl remove` — unregister repository; supports `--yes` / `-y`
+- **Testing & reliability**
+  - Extensive test suite covering all implemented commands and key edge cases
+  - Isolated test environment (home directory, XDG vars, temporary repositories)
+  - Tests for permissions, confirmation flows, and error conditions
 
-### Security and safety
+## v1.1 (next planned release)
 
-- Vault directories created with `0700` permissions
-- Vault files created with `0600` permissions
-- Config file created with `0600` permissions
-- Never overwrites regular files without confirmation
-- Never prints stored secrets in normal output
-- `doctor` warns about world-writable vault directories
+The next iteration should make `envctl` more useful in daily development workflows without changing its core philosophy.
 
-### Testing and reliability
+- **Environment contract validation**
+  - `envctl check` – validate the managed vault env file against a project contract
+  - Initial support for `.env.example` comparison
+  - Initial support for `.envctl.schema.yaml` as an explicit validation contract
+  - Detection of missing required keys
+  - Detection of unexpected or unknown keys
+  - Simple type validation for common cases such as `int`, `bool`, `url`, and `string`
 
-- Extensive test suite covering all commands and edge cases
-- Isolated test environment (home directory, XDG vars)
-- Tests for permissions, confirmation flows, and error conditions
+- **Interactive completion**
+  - `envctl fill` – guide the user through missing required values
+  - Prompt only for missing keys
+  - Never print existing secret values back to the console
+  - Optionally initialize values from `.env.example` defaults when explicitly allowed
 
----
+- **Repository adoption & recovery**
+  - `init --adopt-existing` – migrate an existing real `.env.local` into the vault
+  - `init --force` – recover from inconsistent states in explicit expert workflows
+  - `repair --backup` / `--no-backup` – control backup behaviour when replacing a regular file
+  - `config init --force` – explicitly overwrite an existing config file
 
-## Next major step: environment contract workflow
+- **Automation & machine-readable output**
+  - `doctor --json` for scripting and automation
+  - `status --json` for scripting and automation
+  - Stable output shapes for machine consumers
 
-The next meaningful evolution of `envctl` is not more automation inside `init`, but a clearer lifecycle around project environment contracts.
+- **Metadata improvements**
+  - Store remote URL for easier diagnostics
+  - Store initialization timestamp
+  - Store last validation timestamp
 
-The intended model is:
+## v1.2+
 
-- `doctor` validates host readiness
-- `status` validates repository-to-vault linkage
-- `check` validates vault contents against a project schema
-- `fill` interactively collects missing required values
-- `set` remains the explicit one-key mutation command
+Once validation and adoption flows are stable, the next improvements should reduce friction even more.
 
-This keeps command identities clear and preserves the deterministic nature of `init`.
+- Shell completions
+- Dry-run mode for destructive commands
+- Better support for multiple managed environment files per repository
+- Better Git worktree support
+- Smarter doctor flows, including optional guided repair
+- Optional shell integration helpers for auto-loading workflows
 
-### Shared project schema
+## Later
 
-Planned schema filename:
+These ideas are valuable, but should only be explored once the local-first core is mature.
 
-```text
-<repo-root>/.envctl.schema.yaml
-````
+- Import/export helpers
+- Optional encryption helpers
+- Optional team-oriented sync workflows
+- Optional pluggable storage backends
+- Optional integrations with external secret sources
 
-Design intent:
+## Out of scope (for now)
 
-* versioned in the repository
-* contains no secrets
-* contains no default values
-* declares the environment contract only
+These are intentionally excluded from the short-term roadmap.
 
-Possible schema responsibilities:
-
-* declare required variables
-* declare optional variables
-* attach short descriptions or notes for onboarding
-
-### `envctl check`
-
-Planned responsibilities:
-
-* read `.envctl.schema.yaml`
-* compare declared variables with the managed vault env file
-* report missing required variables
-* return a non-zero exit code when the contract is not met
-* remain fully read-only
-
-### `envctl fill`
-
-Planned responsibilities:
-
-* read `.envctl.schema.yaml`
-* detect missing required variables
-* prompt the user only for missing required values
-* write them to the vault explicitly
-* remain separate from `init`
-
-This separation is important. `fill` is the interactive onboarding bridge; `init` remains structural and deterministic.
-
----
-
-## Additional future improvements
-
-These are useful extensions, but secondary to the contract workflow above.
-
-### Configuration
-
-* YAML support for user config
-* config format detection by extension
-* optional overwrite mode for `config init`
-
-### Diagnostics and output
-
-* `doctor --json` for scripting
-* `status --json` for scripting
-* richer `check` output modes
-* clearer exit-code semantics across validation commands
-
-### Repository management
-
-* `init --adopt-existing`
-* `init --force` for expert recovery scenarios
-* configurable repair backup behavior
-* `list` command for managed repositories
-* vault diagnostics for orphaned or inconsistent entries
-
-### Advanced workflows
-
-* better Git worktree support
-* support for multiple managed env files per repository
-* import/export helpers for vault data
-
----
-
-## Out of scope for the core model
-
-These are intentionally excluded to keep the tool simple, explicit, and local-first:
-
-* cloud sync or remote storage
-* secret manager integrations as a core feature
-* CI/CD integration as a first-class responsibility
-* default-value provisioning from schemas
-* hidden mutation during validation commands
-
----
-
-## Guiding principles
-
-* Explicit over implicit
-* Local-first, no hidden behavior
-* Deterministic and reproducible environments
-* Safety by default
-* One responsibility per command
-* Repository declares the contract, vault stores the secret
+- Cloud-first sync as a required part of the product
+- Mandatory remote storage
+- Secret manager integrations as a core dependency
+- CI/CD integration
+- Full encryption-at-rest inside the vault by default
+- A terminal UI as a priority over validation and adoption workflows

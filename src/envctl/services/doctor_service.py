@@ -2,50 +2,18 @@
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 
 from envctl.config.loader import load_config
+from envctl.domain.doctor import DoctorCheck
 from envctl.errors import ConfigError
-from envctl.models import DoctorCheck
-from envctl.utils.paths import detect_repo_root
+from envctl.utils.git import detect_repo_root
 from envctl.utils.permissions import is_path_world_writable
-
-
-def _check_symlink_support() -> DoctorCheck:
-    """Check whether symlink creation works in the current environment."""
-    with tempfile.TemporaryDirectory() as tmp:
-        root = Path(tmp)
-        source = root / "source.txt"
-        target = root / "target.txt"
-        source.write_text("ok", encoding="utf-8")
-
-        try:
-            target.symlink_to(source)
-            ok = target.is_symlink() and target.resolve() == source.resolve()
-            return DoctorCheck(
-                name="symlink_support",
-                status="ok" if ok else "fail",
-                detail="Symlink creation works",
-            )
-        except OSError as exc:
-            return DoctorCheck(
-                name="symlink_support",
-                status="fail",
-                detail=f"Symlink creation failed: {exc}",
-            )
+from envctl.utils.symlinks import check_symlink_support
 
 
 def run_doctor() -> list[DoctorCheck]:
-    """Run read-only diagnostics for the local environment.
-
-    v1 focuses on environment readiness:
-    - configuration loading
-    - vault path presence
-    - vault path permissions
-    - repository detection
-    - symlink support
-    """
+    """Run read-only diagnostics for the local environment."""
     try:
         config = load_config()
     except ConfigError as exc:
@@ -55,7 +23,7 @@ def run_doctor() -> list[DoctorCheck]:
                 status="fail",
                 detail=str(exc),
             ),
-            _check_symlink_support(),
+            check_symlink_support(),
         ]
 
     repo_root = detect_repo_root(Path.cwd())
@@ -126,5 +94,5 @@ def run_doctor() -> list[DoctorCheck]:
         )
     )
 
-    checks.append(_check_symlink_support())
+    checks.append(check_symlink_support())
     return checks

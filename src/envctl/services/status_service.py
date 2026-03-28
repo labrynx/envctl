@@ -5,9 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from envctl.config.loader import load_config
-from envctl.models import StatusReport
-from envctl.utils.filesystem import read_project_metadata_record
-from envctl.utils.paths import build_context_from_metadata_record, resolve_repo_root
+from envctl.domain.status import StatusReport
+from envctl.repository.metadata_repository import read_project_metadata
+from envctl.repository.project_context import build_context_from_metadata
+from envctl.utils.git import resolve_repo_root
 
 
 def _resolve_symlink_match(repo_env_path: Path, vault_env_path: Path | None) -> bool:
@@ -26,9 +27,9 @@ def run_status() -> StatusReport:
     config = load_config()
     repo_root = resolve_repo_root()
     repo_metadata_path = repo_root / config.metadata_filename
-    metadata = read_project_metadata_record(repo_metadata_path)
+    metadata = read_project_metadata(repo_metadata_path)
 
-    context = build_context_from_metadata_record(
+    context = build_context_from_metadata(
         config=config,
         repo_root=repo_root,
         metadata=metadata,

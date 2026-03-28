@@ -15,3 +15,5 @@ METADATA_VERSION = 1
 
 GIT_DIRNAME = ".git"
 PROJECT_ID_LENGTH = 12
+
+MANAGED_ENV_HEADER = "# Managed by envctl\n"

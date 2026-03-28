@@ -2,38 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from envctl.config.loader import load_config
+from envctl.domain.project import ConfirmFn, ProjectContext
+from envctl.domain.remove import RemoveResult
 from envctl.errors import LinkError
-from envctl.models import ConfirmFn, ProjectContext
-from envctl.utils.filesystem import write_text_atomic
-from envctl.utils.paths import require_project_context
-
-
-@dataclass(frozen=True)
-class RemoveResult:
-    """Result of a remove operation."""
-
-    context: ProjectContext
-    removed_repo_symlink: bool
-    restored_repo_env_file: bool
-    removed_repo_metadata: bool
-    removed_vault_env: bool
-    removed_vault_project_dir: bool
-    left_regular_repo_env_untouched: bool
-    removed_broken_repo_symlink: bool
+from envctl.repository.project_context import require_project_context
+from envctl.utils.atomic import write_text_atomic
 
 
 def _handle_repo_env(context: ProjectContext) -> tuple[bool, bool, bool]:
-    """Handle repository .env.local removal or restoration.
-
-    Returns:
-        tuple[bool, bool, bool]:
-            removed_repo_symlink,
-            restored_repo_env_file,
-            removed_broken_repo_symlink
-    """
+    """Handle repository .env.local removal or restoration."""
     removed_repo_symlink = False
     restored_repo_env_file = False
     removed_broken_repo_symlink = False
@@ -67,15 +45,7 @@ def run_remove(
     force: bool = False,
     confirm: ConfirmFn | None = None,
 ) -> RemoveResult:
-    """Remove envctl management for the current repository.
-
-    Args:
-        force: Skip confirmation prompts.
-        confirm: Function used to request confirmation from the caller.
-
-    Raises:
-        LinkError: If removal is aborted by the user.
-    """
+    """Remove envctl management for the current repository."""
     config = load_config()
     context = require_project_context(config=config)
 

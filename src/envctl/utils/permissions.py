@@ -7,14 +7,7 @@ from pathlib import Path
 
 
 def ensure_private_file_permissions(path: Path) -> None:
-    """Restrict a file to user-only permissions when the platform allows it.
-
-    The target mode is `0o600`.
-
-    Raises:
-        OSError: Never raised intentionally. Permission errors are ignored to keep
-            the CLI usable on filesystems without POSIX chmod semantics.
-    """
+    """Restrict a file to user-only permissions when the platform allows it."""
     try:
         os.chmod(path, 0o600)
     except OSError:
@@ -22,14 +15,7 @@ def ensure_private_file_permissions(path: Path) -> None:
 
 
 def ensure_private_dir_permissions(path: Path) -> None:
-    """Restrict a directory to user-only permissions when the platform allows it.
-
-    The target mode is `0o700`.
-
-    Raises:
-        OSError: Never raised intentionally. Permission errors are ignored to keep
-            the CLI usable on filesystems without POSIX chmod semantics.
-    """
+    """Restrict a directory to user-only permissions when the platform allows it."""
     try:
         os.chmod(path, 0o700)
     except OSError:
@@ -37,15 +23,7 @@ def ensure_private_dir_permissions(path: Path) -> None:
 
 
 def is_path_world_writable(path: Path) -> bool:
-    """Return whether a path exists and is world-writable.
-
-    Args:
-        path: Filesystem path to inspect.
-
-    Returns:
-        True when the path exists and has the world-writable bit set.
-        False otherwise.
-    """
+    """Return whether a path exists and is world-writable."""
     if not path.exists():
         return False
 

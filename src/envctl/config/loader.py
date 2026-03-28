@@ -12,8 +12,8 @@ from envctl.config.defaults import (
     get_default_metadata_filename,
     get_default_vault_dir,
 )
+from envctl.domain.app_config import AppConfig
 from envctl.errors import ConfigError
-from envctl.models import AppConfig
 
 SUPPORTED_KEYS = {"vault_dir", "env_filename"}
 
@@ -29,15 +29,7 @@ def _load_json(path: Path) -> dict[str, Any]:
 
 
 def load_config() -> AppConfig:
-    """Resolve the application configuration.
-
-    v1 supports JSON only.
-
-    TODO(v1.1):
-    - accept YAML config files in addition to JSON
-    - support config format auto-detection by extension
-    - consider an explicit `envctl config init` bootstrap command
-    """
+    """Resolve the application configuration."""
     config_path = get_default_config_path()
     raw: dict[str, Any] = {}
 

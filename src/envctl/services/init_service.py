@@ -3,33 +3,21 @@
 from __future__ import annotations
 
 from envctl.config.loader import load_config
+from envctl.constants import MANAGED_ENV_HEADER
+from envctl.domain.project import ProjectContext
 from envctl.errors import LinkError
-from envctl.models import ProjectContext
-from envctl.utils.filesystem import ensure_dir, ensure_file, write_project_metadata
-from envctl.utils.paths import build_project_context, build_repo_fingerprint
+from envctl.repository.metadata_repository import write_project_metadata
+from envctl.repository.project_context import build_project_context
+from envctl.utils.filesystem import ensure_dir, ensure_file
 from envctl.utils.permissions import (
     ensure_private_dir_permissions,
     ensure_private_file_permissions,
 )
-
-MANAGED_ENV_HEADER = "# Managed by envctl\n"
+from envctl.utils.project_ids import build_repo_fingerprint
 
 
 def run_init(project_name: str | None = None) -> ProjectContext:
-    """Initialize a project in the vault and persist repository metadata.
-
-    Behavior:
-    - must run inside a Git repository
-    - creates a unique vault project directory based on slug + stable id
-    - creates the managed env file if missing
-    - writes explicit repository metadata
-    - creates the repository symlink when safe
-    - refuses to overwrite a regular repository file
-    - is idempotent when already initialized correctly
-
-    If the repository metadata already exists but the symlink is broken, this command
-    does not repair automatically. The user should run `envctl repair`.
-    """
+    """Initialize a project in the vault and persist repository metadata."""
     config = load_config()
     context = build_project_context(config=config, project_name=project_name)
 
