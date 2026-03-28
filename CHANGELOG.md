@@ -7,23 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- Documentation for the future environment contract workflow based on `.envctl.schema.yaml`.
-- Architectural guidance separating structural initialization (`init`) from interactive onboarding (`fill`).
-- Command model documentation clarifying the roles of `doctor`, `status`, `check`, `fill`, and `set`.
+## [1.0.2] – 2026-03-28
 
 ### Changed
 
-- Refined the documentation to describe `envctl` as an explicit environment lifecycle model rather than only a symlink utility.
-- Clarified that `init` must remain deterministic and must not prompt for secret values.
-- Clarified that future schema files must declare requirements only and must not contain defaults or secrets.
-- Refactored internal architecture to introduce explicit layers: `domain`, `repository`, and modular CLI structure.
-- Replaced flat module structure with a layered design for better separation of concerns and testability.
+- Refactored the internal codebase into a clearer layered structure with dedicated `cli`, `domain`, `repository`, `services`, `config`, and `utils` packages.
+- Replaced the previous flat `cli.py` and `models.py` layout with more focused modules and explicit boundaries.
+- Improved separation of concerns between command-line handling, business orchestration, metadata persistence, configuration, and reusable helpers.
+- Introduced explicit typed domain models for command results and repository metadata.
+- Updated tests and imports to match the new package structure.
 
-### Fixed
+### Documentation
 
-- Improved consistency across architecture, roadmap, security, and README documentation.
+- Updated contributor and architecture documentation to reflect the new internal layered structure.
+- Added an in-depth architecture guide for contributors in `docs/dev/architecture-in-depth.md`.
+- Aligned roadmap and internal architecture references with the refactored package layout.
+- Removed outdated references to the previous flat module organization.
 
 ## [1.0.1] – 2026-03-28
 
