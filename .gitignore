@@ -9,7 +9,7 @@ __pycache__/
 .envctl.json
 !.env.example
 
-.pytest_cache/
+.pytest_cache
 .coverage
 .ruff_cache
 

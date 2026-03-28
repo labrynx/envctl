@@ -8,5 +8,4 @@ fi
 source .venv/bin/activate
 python -m pip install -U pip
 python -m pip install -e .[dev]
-
 pytest
