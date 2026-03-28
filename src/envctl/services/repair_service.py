@@ -19,7 +19,7 @@ def _build_backup_path(repo_env_path: Path) -> Path:
     return repo_env_path.with_name(f"{repo_env_path.name}.backup-{timestamp}")
 
 
-def run_repair() -> ProjectContext:
+def run_repair(force: bool = False) -> ProjectContext:
     """Repair the repository symlink using existing envctl metadata.
 
     Behavior:
@@ -40,7 +40,8 @@ def run_repair() -> ProjectContext:
 
     if not context.vault_env_path.exists():
         raise ProjectDetectionError(
-            "Managed vault env file does not exist. Run 'envctl init' to initialize this repository."
+            "Managed vault env file does not exist. "
+            "Run 'envctl init' to initialize this repository."
         )
 
     if context.repo_env_path.is_symlink():
@@ -55,13 +56,15 @@ def run_repair() -> ProjectContext:
         return context
 
     if context.repo_env_path.exists():
-        should_backup = typer.confirm(
-            (
-                f"A regular file already exists at '{context.repo_env_path}'. "
-                "Do you want to back it up and replace it with the managed symlink?"
-            ),
-            default=True,
-        )
+        should_backup = True
+        if not force:
+            should_backup = typer.confirm(
+                (
+                    f"A regular file already exists at '{context.repo_env_path}'. "
+                    "Do you want to back it up and replace it with the managed symlink?"
+                ),
+                default=True,
+            )
         if not should_backup:
             raise LinkError("Repair aborted by user")
 

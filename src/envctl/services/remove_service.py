@@ -27,55 +27,27 @@ class RemoveResult:
     removed_broken_repo_symlink: bool
 
 
-def run_remove() -> RemoveResult:
-    """Remove envctl management for the current repository.
+def _handle_repo_env(context: ProjectContext) -> tuple[bool, bool, bool, bool]:
+    """Handle the repository `.env.local` during remove.
 
-    Behavior:
-    - requires valid repository metadata
-    - prompts before destructive changes
-    - restores a real repository `.env.local` file from the managed vault file
-      when the current repository symlink points to the expected managed vault file
-    - removes repository metadata
-    - removes the managed vault env file if present
-    - removes the managed vault project directory if it becomes empty
-    - never deletes or overwrites a regular repository `.env.local` file
-
-    TODO(v1.1):
-    - add `--yes` for non-interactive confirmation
-    - add `--no-restore` for expert workflows
-    - add machine-readable output for automation
+    Returns a tuple with:
+    - removed_repo_symlink
+    - restored_repo_env_file
+    - removed_broken_repo_symlink
+    - left_regular_repo_env_untouched
     """
-    config = load_config()
-    context = require_project_context(config=config)
-
-    confirmed = typer.confirm(
-        (
-            f"Remove envctl management for project '{context.project_slug}'?\n"
-            "This will remove repository metadata and delete the managed vault env file."
-        ),
-        default=False,
-    )
-    if not confirmed:
-        raise LinkError("Remove aborted by user")
-
     removed_repo_symlink = False
     restored_repo_env_file = False
-    removed_repo_metadata = False
-    removed_vault_env = False
-    removed_vault_project_dir = False
-    left_regular_repo_env_untouched = False
     removed_broken_repo_symlink = False
+    left_regular_repo_env_untouched = False
 
     if context.repo_env_path.is_symlink():
-        repo_target_matches = False
         try:
-            repo_target_matches = (
-                context.repo_env_path.resolve() == context.vault_env_path.resolve()
-            )
+            matches = context.repo_env_path.resolve() == context.vault_env_path.resolve()
         except OSError:
-            repo_target_matches = False
+            matches = False
 
-        if repo_target_matches and context.vault_env_path.exists():
+        if matches and context.vault_env_path.exists():
             content = context.vault_env_path.read_text(encoding="utf-8")
             context.repo_env_path.unlink()
             write_text_atomic(context.repo_env_path, content)
@@ -87,6 +59,52 @@ def run_remove() -> RemoveResult:
             removed_broken_repo_symlink = True
     elif context.repo_env_path.exists():
         left_regular_repo_env_untouched = True
+
+    return (
+        removed_repo_symlink,
+        restored_repo_env_file,
+        removed_broken_repo_symlink,
+        left_regular_repo_env_untouched,
+    )
+
+
+def run_remove(force: bool = False) -> RemoveResult:
+    """Remove envctl management for the current repository.
+
+    Behavior:
+    - requires valid repository metadata
+    - prompts before destructive changes unless `force=True`
+    - restores a real repository `.env.local` file from the managed vault file
+      when the current repository symlink points to the expected managed vault file
+    - removes repository metadata
+    - removes the managed vault env file if present
+    - removes the managed vault project directory if it becomes empty
+    - never deletes or overwrites a regular repository `.env.local` file
+    """
+    config = load_config()
+    context = require_project_context(config=config)
+
+    if not force:
+        confirmed = typer.confirm(
+            (
+                f"Remove envctl management for project '{context.project_slug}'?\n"
+                "This will remove repository metadata and delete the managed vault env file."
+            ),
+            default=False,
+        )
+        if not confirmed:
+            raise LinkError("Remove aborted by user")
+
+    (
+        removed_repo_symlink,
+        restored_repo_env_file,
+        removed_broken_repo_symlink,
+        left_regular_repo_env_untouched,
+    ) = _handle_repo_env(context)
+
+    removed_repo_metadata = False
+    removed_vault_env = False
+    removed_vault_project_dir = False
 
     if context.repo_metadata_path.exists():
         context.repo_metadata_path.unlink()

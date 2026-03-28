@@ -11,6 +11,7 @@ from envctl.config.defaults import (
 )
 from envctl.errors import ConfigError
 from envctl.utils.filesystem import ensure_dir, write_json_atomic
+from envctl.utils.permissions import ensure_private_file_permissions
 
 
 def _to_tilde_path(path: Path) -> str:
@@ -36,12 +37,7 @@ def run_config_init() -> Path:
     - creates the parent config directory when needed
     - refuses to overwrite an existing config file
     - writes user-friendly default values
-    - keeps config creation explicit rather than implicit
-
-    TODO(v1.1):
-    - add `--force` for explicit overwrite
-    - add flags for customizing vault_dir and env_filename
-    - add YAML output support when YAML config becomes supported
+    - restricts config permissions to the current user
     """
     config_path = get_default_config_path()
 
@@ -56,5 +52,6 @@ def run_config_init() -> Path:
             "env_filename": get_default_env_filename(),
         },
     )
+    ensure_private_file_permissions(config_path)
 
     return config_path

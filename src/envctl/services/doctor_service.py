@@ -26,7 +26,7 @@ def _check_symlink_support() -> DoctorCheck:
             return DoctorCheck(
                 name="symlink_support",
                 status="ok" if ok else "fail",
-                detail="Symlink creation works" if ok else "Symlink creation failed",
+                detail="Symlink creation works",
             )
         except OSError as exc:
             return DoctorCheck(
@@ -45,11 +45,6 @@ def run_doctor() -> list[DoctorCheck]:
     - vault path permissions
     - repository detection
     - symlink support
-
-    TODO(v1.1):
-    - add heuristic orphan env key analysis
-    - add optional metadata parse checks when inside a managed repository
-    - add machine-readable output formats
     """
     try:
         config = load_config()
@@ -98,23 +93,26 @@ def run_doctor() -> list[DoctorCheck]:
     )
 
     if vault_exists:
-        vault_permissions_status = "fail" if is_path_world_writable(config.vault_dir) else "ok"
-        vault_permissions_detail = (
-            "Vault directory appears world-writable"
-            if vault_permissions_status == "fail"
-            else "Vault directory is not world-writable"
+        is_insecure = is_path_world_writable(config.vault_dir)
+        checks.append(
+            DoctorCheck(
+                name="vault_permissions",
+                status="fail" if is_insecure else "ok",
+                detail=(
+                    "Vault directory appears world-writable"
+                    if is_insecure
+                    else "Vault directory is not world-writable"
+                ),
+            )
         )
     else:
-        vault_permissions_status = "warn"
-        vault_permissions_detail = "Vault permissions cannot be checked until the vault directory exists"
-
-    checks.append(
-        DoctorCheck(
-            name="vault_permissions",
-            status=vault_permissions_status,
-            detail=vault_permissions_detail,
+        checks.append(
+            DoctorCheck(
+                name="vault_permissions",
+                status="warn",
+                detail="Vault permissions cannot be checked until the vault directory exists",
+            )
         )
-    )
 
     checks.append(
         DoctorCheck(

@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
 import typer
 
@@ -95,9 +96,11 @@ def init(project: str | None = typer.Argument(default=None)) -> None:
 
 @app.command()
 @handle_errors
-def repair() -> None:
+def repair(
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompts"),
+) -> None:
     """Repair the repository env symlink using existing envctl metadata."""
-    context = run_repair()
+    context = run_repair(force=yes)
     print_success(f"Repaired project '{context.project_slug}'")
     print_kv("project_slug", context.project_slug)
     print_kv("project_id", context.project_id)
@@ -122,9 +125,11 @@ def unlink() -> None:
 
 @app.command()
 @handle_errors
-def remove() -> None:
+def remove(
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompts"),
+) -> None:
     """Remove envctl management for the current repository."""
-    result = run_remove()
+    result = run_remove(force=yes)
 
     print_success(f"Removed envctl management for '{result.context.project_slug}'")
     typer.echo()

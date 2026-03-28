@@ -1,14 +1,16 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "envctl"
 version = "0.1.0"
-description = "Local environment vault manager"
+description = "Local CLI tool to manage repository env files through a centralized vault"
 readme = "README.md"
 requires-python = ">=3.10"
-authors = [{ name = "OpenAI" }]
+authors = [
+  { name = "Alessandro" }
+]
 dependencies = [
   "typer>=0.12,<1.0",
 ]
@@ -16,17 +18,36 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "pytest>=8.0,<9.0",
+  "ruff>=0.11,<0.12",
 ]
 
 [project.scripts]
 envctl = "envctl.cli:app"
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
-addopts = "-q"
 testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+  "E",
+  "F",
+  "I",
+  "B",
+  "UP",
+]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

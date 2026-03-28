@@ -7,8 +7,10 @@ from envctl.errors import LinkError
 from envctl.models import ProjectContext
 from envctl.utils.filesystem import ensure_dir, ensure_file, write_project_metadata
 from envctl.utils.paths import build_project_context, build_repo_fingerprint
-from envctl.utils.permissions import ensure_private_file_permissions
-
+from envctl.utils.permissions import (
+    ensure_private_dir_permissions,
+    ensure_private_file_permissions,
+)
 
 MANAGED_ENV_HEADER = "# Managed by envctl\n"
 
@@ -27,17 +29,22 @@ def run_init(project_name: str | None = None) -> ProjectContext:
 
     If the repository metadata already exists but the symlink is broken, this command
     does not repair automatically. The user should run `envctl repair`.
-
-    TODO(v1.1):
-    - add `--adopt-existing` for migrating an existing real repo env file
-    - add `--force` for explicit expert-only recovery workflows
-    - optionally support custom managed file templates
     """
     config = load_config()
     context = build_project_context(config=config, project_name=project_name)
 
+    ensure_dir(config.vault_dir.parent)
+    ensure_private_dir_permissions(config.vault_dir.parent)
+
+    ensure_dir(config.vault_dir)
+    ensure_private_dir_permissions(config.vault_dir)
+
     ensure_dir(config.projects_dir)
+    ensure_private_dir_permissions(config.projects_dir)
+
     ensure_dir(context.vault_project_dir)
+    ensure_private_dir_permissions(context.vault_project_dir)
+
     ensure_file(context.vault_env_path, content=MANAGED_ENV_HEADER)
     ensure_private_file_permissions(context.vault_env_path)
 

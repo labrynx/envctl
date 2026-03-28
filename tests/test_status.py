@@ -64,7 +64,9 @@ def test_status_when_repo_env_is_regular_file(isolated_env, repo_dir, monkeypatc
     assert report.suggested_action == "envctl repair"
 
 
-def test_status_when_repo_symlink_points_elsewhere(isolated_env, repo_dir, monkeypatch, tmp_path) -> None:
+def test_status_when_repo_symlink_points_elsewhere(
+    isolated_env, repo_dir, monkeypatch, tmp_path
+) -> None:
     monkeypatch.chdir(repo_dir)
     context = run_init()
 

@@ -24,6 +24,7 @@ Validates and repairs the repository `.env.local` symlink using existing local e
 - does not create a new vault project
 - does not modify repository metadata
 - will prompt before replacing a regular file
+- supports `--yes` / `-y` to skip confirmation prompts
 
 ## envctl unlink
 
@@ -75,6 +76,7 @@ Shows help for envctl or for a specific command.
 Removes envctl management for the current repository.
 
 - prompts before destructive changes
+- supports `--yes` / `-y` to skip confirmation prompts
 - restores a real repository `.env.local` file from the managed vault file when the current symlink is valid
 - removes repository metadata
 - removes the managed vault env file

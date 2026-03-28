@@ -13,9 +13,7 @@ def test_remove_deletes_managed_state_and_restores_repo_env(
     context = run_init()
     context.vault_env_path.write_text("KEY=VALUE\n", encoding="utf-8")
 
-    monkeypatch.setattr("typer.confirm", lambda *args, **kwargs: True)
-
-    result = run_remove()
+    result = run_remove(force=True)
 
     assert result.removed_repo_symlink is True
     assert result.restored_repo_env_file is True

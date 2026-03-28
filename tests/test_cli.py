@@ -13,6 +13,18 @@ def test_help_command() -> None:
     assert "local environment vault manager" in result.stdout.lower()
 
 
+def test_help_command_alias_runs() -> None:
+    result = runner.invoke(app, ["help"])
+    assert result.exit_code == 0
+    assert "local environment vault manager" in result.stdout.lower()
+
+
+def test_help_command_alias_for_subcommand_runs() -> None:
+    result = runner.invoke(app, ["help", "init"])
+    assert result.exit_code == 0
+    assert "initialize the current git repository" in result.stdout.lower()
+
+
 def test_doctor_command_runs(isolated_env) -> None:
     result = runner.invoke(app, ["doctor"])
     assert result.exit_code == 0
@@ -37,14 +49,3 @@ def test_repair_command_runs_after_init(isolated_env, repo_dir, monkeypatch) -> 
     result = runner.invoke(app, ["repair"])
     assert result.exit_code == 0
     assert "Repaired project" in result.stdout
-
-def test_help_command_alias_runs() -> None:
-    result = runner.invoke(app, ["help"])
-    assert result.exit_code == 0
-    assert "local environment vault manager" in result.stdout.lower()
-
-
-def test_help_command_alias_for_subcommand_runs() -> None:
-    result = runner.invoke(app, ["help", "init"])
-    assert result.exit_code == 0
-    assert "initialize the current git repository" in result.stdout.lower()

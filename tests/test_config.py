@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import stat
 
 import pytest
 
@@ -26,6 +27,7 @@ def test_config_init_creates_default_config_file(isolated_env) -> None:
     raw = json.loads(config_path.read_text(encoding="utf-8"))
     assert raw["env_filename"] == ".env.local"
     assert raw["vault_dir"] == "~/.envctl/vault"
+    assert stat.S_IMODE(config_path.stat().st_mode) == 0o600
 
     resolved_vault_dir = load_config().vault_dir
     assert resolved_vault_dir == get_default_vault_dir()

@@ -1,6 +1,6 @@
 # Configuration
 
-`envctl` uses XDG-style defaults.
+`envctl` uses an XDG config path and a home-based vault path.
 
 ## Default config path
 
@@ -8,7 +8,7 @@
 ~/.config/envctl/config.json
 ````
 
-## Default data path
+## Default vault path
 
 ```text
 ~/.envctl/vault
@@ -27,12 +27,12 @@ Example:
 
 ```json
 {
-  "vault_dir": "/home/user/.local/share/envctl/vault",
+  "vault_dir": "~/.envctl/vault",
   "env_filename": ".env.local"
 }
 ```
 
 ## Supported keys
 
-* `vault_dir`: absolute path to the vault root
+* `vault_dir`: absolute path or `~`-based path to the vault root
 * `env_filename`: repository env filename, default `.env.local`

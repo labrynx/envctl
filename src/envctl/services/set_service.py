@@ -11,7 +11,6 @@ from envctl.utils.filesystem import update_env_file_key
 from envctl.utils.paths import require_project_context
 from envctl.utils.permissions import ensure_private_file_permissions
 
-
 ENV_KEY_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
@@ -38,7 +37,8 @@ def run_set(key: str, value: str) -> ProjectContext:
 
     if not ENV_KEY_PATTERN.match(normalized_key):
         raise ValidationError(
-            "Key must start with a letter or underscore and contain only letters, digits, or underscores"
+            "Key must start with a letter or underscore "
+            "and contain only letters, digits, or underscores"
         )
 
     if "\n" in value or "\r" in value:

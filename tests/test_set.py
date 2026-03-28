@@ -16,8 +16,7 @@ def test_set_adds_new_key_to_managed_vault_env(isolated_env, repo_dir, monkeypat
     assert result.project_slug == context.project_slug
     assert result.vault_env_path.exists()
     assert result.vault_env_path.read_text(encoding="utf-8") == (
-        "# Managed by envctl\n"
-        "APP_ENV=development\n"
+        "# Managed by envctl\nAPP_ENV=development\n"
     )
 
 
@@ -32,8 +31,7 @@ def test_set_updates_existing_key_in_managed_vault_env(isolated_env, repo_dir, m
     run_set("APP_ENV", "production")
 
     assert context.vault_env_path.read_text(encoding="utf-8") == (
-        "# Managed by envctl\n"
-        "APP_ENV=production\n"
+        "# Managed by envctl\nAPP_ENV=production\n"
     )
 
 
@@ -41,20 +39,14 @@ def test_set_preserves_comments_and_unrelated_keys(isolated_env, repo_dir, monke
     monkeypatch.chdir(repo_dir)
     context = run_init()
     context.vault_env_path.write_text(
-        "# Managed by envctl\n"
-        "# Existing comment\n"
-        "APP_ENV=development\n"
-        "DEBUG=true\n",
+        "# Managed by envctl\n# Existing comment\nAPP_ENV=development\nDEBUG=true\n",
         encoding="utf-8",
     )
 
     run_set("APP_ENV", "staging")
 
     assert context.vault_env_path.read_text(encoding="utf-8") == (
-        "# Managed by envctl\n"
-        "# Existing comment\n"
-        "APP_ENV=staging\n"
-        "DEBUG=true\n"
+        "# Managed by envctl\n# Existing comment\nAPP_ENV=staging\nDEBUG=true\n"
     )
 
 

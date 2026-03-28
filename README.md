@@ -111,8 +111,8 @@ envctl doctor
 Example doctor output:
 
 ```text
-[WARN] config: Config file not found; using defaults at /home/user/.config/envctl/config.json
-[WARN] vault_path: Vault directory has not been created yet: /home/user/.local/share/envctl/vault
+[OK] config: Using defaults (no config file at /home/user/.config/envctl/config.json)
+[WARN] vault_path: Vault directory has not been created yet: /home/user/.envctl/vault
 [WARN] vault_permissions: Vault permissions cannot be checked until the vault directory exists
 [WARN] repo_detection: No Git repository detected from the current working directory
 [OK] symlink_support: Symlink creation works
