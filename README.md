@@ -216,4 +216,4 @@ Vault env: present
 ./scripts/test.sh
 ```
 
-For more detail, see the `docs/` directory.
+For more detail, see the [docs](docs) directory.
