@@ -1,1 +1,1 @@
-"""Configuration helpers for envctl."""
+"""Configuration helpers."""

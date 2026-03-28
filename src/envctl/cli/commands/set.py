@@ -14,7 +14,7 @@ def set_command(
     key: str = typer.Argument(...),
     value: str = typer.Argument(...),
 ) -> None:
-    """Create or update a key in the managed vault env file."""
+    """Create or update one key in the vault."""
     context = run_set(key=key, value=value)
-    print_success(f"Updated key '{key}' for project '{context.project_name}'")
-    print_kv("vault_env", str(context.vault_env_path))
+    print_success(f"Updated '{key}' for {context.display_name}")
+    print_kv("vault_values", str(context.vault_values_path))

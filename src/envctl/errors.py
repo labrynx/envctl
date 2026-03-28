@@ -1,7 +1,5 @@
 """Application-specific errors."""
 
-from __future__ import annotations
-
 
 class EnvctlError(Exception):
     """Base application error."""
@@ -12,16 +10,20 @@ class ConfigError(EnvctlError):
 
 
 class ProjectDetectionError(EnvctlError):
-    """Raised when a project cannot be resolved safely."""
+    """Raised when a project cannot be detected safely."""
 
 
-class LinkError(EnvctlError):
-    """Raised when a link operation cannot proceed safely."""
-
-
-class VaultError(EnvctlError):
-    """Raised when vault operations fail."""
+class ContractError(EnvctlError):
+    """Raised when the project contract is invalid."""
 
 
 class ValidationError(EnvctlError):
-    """Raised when user input is invalid."""
+    """Raised when resolved values do not satisfy the contract."""
+
+
+class ResolutionError(EnvctlError):
+    """Raised when environment resolution fails."""
+
+
+class ExecutionError(EnvctlError):
+    """Raised when command execution fails."""

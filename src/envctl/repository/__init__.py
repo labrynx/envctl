@@ -1,1 +1,1 @@
-"""Repository helpers for envctl persistence and context resolution."""
+"""Repository helpers for envctl state and contracts."""

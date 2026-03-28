@@ -1,116 +1,81 @@
-"""Repository status service."""
+"""Status service."""
 
 from __future__ import annotations
 
-from pathlib import Path
-
-from envctl.config.loader import load_config
 from envctl.domain.status import StatusReport
-from envctl.repository.metadata_repository import read_project_metadata
-from envctl.repository.project_context import build_context_from_metadata
-from envctl.utils.git import resolve_repo_root
-
-
-def _resolve_symlink_match(repo_env_path: Path, vault_env_path: Path | None) -> bool:
-    """Return whether the repository symlink points to the expected vault path."""
-    if not repo_env_path.is_symlink() or vault_env_path is None:
-        return False
-
-    try:
-        return repo_env_path.resolve() == vault_env_path.resolve()
-    except OSError:
-        return False
+from envctl.errors import ContractError
+from envctl.services.context_service import load_project_context
+from envctl.services.resolution_service import load_contract_for_context, resolve_environment
 
 
 def run_status() -> StatusReport:
-    """Build a human-oriented repository status report."""
-    config = load_config()
-    repo_root = resolve_repo_root()
-    repo_metadata_path = repo_root / config.metadata_filename
-    metadata = read_project_metadata(repo_metadata_path)
-
-    context = build_context_from_metadata(
-        config=config,
-        repo_root=repo_root,
-        metadata=metadata,
-    )
-
-    if context is None:
-        return StatusReport(
-            state="not initialized",
-            project_slug=None,
-            project_id=None,
-            repo_root=repo_root,
-            repo_metadata_path=repo_metadata_path,
-            repo_env_path=repo_root / config.env_filename,
-            vault_env_path=None,
-            summary="Repository not initialized with envctl",
-            repo_env_status="unmanaged",
-            vault_env_status="unknown",
-            issues=[],
-            suggested_action="envctl init",
-        )
-
-    repo_env_path = context.repo_env_path
-    vault_env_path = context.vault_env_path
-    symlink_matches = _resolve_symlink_match(repo_env_path, vault_env_path)
-
-    if symlink_matches and vault_env_path.exists():
-        return StatusReport(
-            state="healthy",
-            project_slug=context.project_slug,
-            project_id=context.project_id,
-            repo_root=repo_root,
-            repo_metadata_path=repo_metadata_path,
-            repo_env_path=repo_env_path,
-            vault_env_path=vault_env_path,
-            summary="Repository is correctly linked to the managed vault env file",
-            repo_env_status="linked",
-            vault_env_status="present",
-            issues=[],
-            suggested_action=None,
-        )
+    """Compute a human-oriented status report."""
+    _config, context = load_project_context()
+    contract_exists = context.repo_contract_path.exists()
+    vault_exists = context.vault_values_path.exists()
 
     issues: list[str] = []
+    resolved_valid = False
+    suggested_action: str | None = None
 
-    if not vault_env_path.exists():
-        issues.append("managed vault env file does not exist")
+    if not contract_exists:
+        issues.append("Contract file is missing")
+        suggested_action = "Create .envctl.schema.yaml"
+        summary = "The project is not ready because no contract file was found."
         return StatusReport(
-            state="missing vault",
             project_slug=context.project_slug,
             project_id=context.project_id,
-            repo_root=repo_root,
-            repo_metadata_path=repo_metadata_path,
-            repo_env_path=repo_env_path,
-            vault_env_path=vault_env_path,
-            summary="Managed vault env file is missing",
-            repo_env_status="linked" if symlink_matches else "not linked",
-            vault_env_status="missing",
+            repo_root=context.repo_root,
+            contract_exists=contract_exists,
+            vault_exists=vault_exists,
+            resolved_valid=False,
+            summary=summary,
             issues=issues,
-            suggested_action="envctl init",
+            suggested_action=suggested_action,
         )
 
-    if repo_env_path.is_symlink():
-        issues.append(".env.local is not linked to the managed vault file")
-        repo_env_status = "symlink mismatch"
-    elif repo_env_path.exists():
-        issues.append(".env.local is a regular file, not a managed symlink")
-        repo_env_status = "regular file"
+    try:
+        contract = load_contract_for_context(context)
+        report = resolve_environment(context, contract)
+    except ContractError as exc:
+        issues.append(str(exc))
+        summary = "The project contract is invalid."
+        return StatusReport(
+            project_slug=context.project_slug,
+            project_id=context.project_id,
+            repo_root=context.repo_root,
+            contract_exists=contract_exists,
+            vault_exists=vault_exists,
+            resolved_valid=False,
+            summary=summary,
+            issues=issues,
+            suggested_action="Fix the contract file",
+        )
+
+    if report.missing_required:
+        issues.append(f"Missing required keys: {', '.join(report.missing_required)}")
+        suggested_action = "Run 'envctl fill' or 'envctl set KEY VALUE'"
+    if report.invalid_keys:
+        issues.append(f"Invalid values: {', '.join(report.invalid_keys)}")
+        suggested_action = "Fix the invalid values in the local vault"
+    if report.unknown_keys:
+        issues.append(f"Unknown keys in vault: {', '.join(report.unknown_keys)}")
+
+    resolved_valid = report.is_valid
+
+    if resolved_valid:
+        summary = "The project contract is satisfied and the environment can be projected safely."
     else:
-        issues.append(".env.local is missing")
-        repo_env_status = "missing"
+        summary = "The project contract is not satisfied yet."
 
     return StatusReport(
-        state="broken",
         project_slug=context.project_slug,
         project_id=context.project_id,
-        repo_root=repo_root,
-        repo_metadata_path=repo_metadata_path,
-        repo_env_path=repo_env_path,
-        vault_env_path=vault_env_path,
-        summary="Repository link is broken or missing",
-        repo_env_status=repo_env_status,
-        vault_env_status="present",
+        repo_root=context.repo_root,
+        contract_exists=contract_exists,
+        vault_exists=vault_exists,
+        resolved_valid=resolved_valid,
+        summary=summary,
         issues=issues,
-        suggested_action="envctl repair",
+        suggested_action=suggested_action,
     )

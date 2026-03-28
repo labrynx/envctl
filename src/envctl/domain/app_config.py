@@ -1,4 +1,4 @@
-"""Application configuration domain model."""
+"""Application configuration models."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ class AppConfig:
     config_path: Path
     vault_dir: Path
     env_filename: str
-    metadata_filename: str
+    schema_filename: str
 
     @property
     def projects_dir(self) -> Path:

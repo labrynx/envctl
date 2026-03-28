@@ -13,7 +13,7 @@ from envctl.utils.output import print_error
 
 
 def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
-    """Wrap CLI commands and convert domain errors into exit code 1."""
+    """Convert application errors into exit code 1."""
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:

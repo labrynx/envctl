@@ -1,63 +1,49 @@
-"""Helpers for simple dotenv-style files."""
+"""Helpers for reading and writing dotenv-style files."""
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
-from envctl.errors import ValidationError
-from envctl.utils.atomic import write_text_atomic
 
-ENV_KEY_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-
-
-def normalize_env_key(key: str) -> str:
-    """Normalize and validate an environment variable key."""
-    normalized_key = key.strip()
-
-    if not normalized_key:
-        raise ValidationError("Key cannot be empty")
-
-    if not ENV_KEY_PATTERN.match(normalized_key):
-        raise ValidationError(
-            "Key must start with a letter or underscore "
-            "and contain only letters, digits, or underscores"
-        )
-
-    return normalized_key
-
-
-def validate_env_value(value: str) -> None:
-    """Validate a simple dotenv value."""
-    if "\n" in value or "\r" in value:
-        raise ValidationError("Value cannot contain newlines")
-
-
-def update_env_file_key(path: Path, key: str, value: str) -> None:
-    """Insert or update a key in a dotenv-style file."""
-    lines: list[str] = []
-    found = False
-
-    if path.exists():
-        content = path.read_text(encoding="utf-8")
-        lines = content.splitlines()
-
-    updated_lines: list[str] = []
-
-    for line in lines:
-        if not line or line.lstrip().startswith("#") or "=" not in line:
-            updated_lines.append(line)
+def parse_env_text(content: str) -> dict[str, str]:
+    """Parse a dotenv-like text payload into a mapping."""
+    result: dict[str, str] = {}
+    for raw_line in content.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
             continue
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            continue
+        if len(value) >= 2 and (
+            (value.startswith('"') and value.endswith('"'))
+            or (value.startswith("'") and value.endswith("'"))
+        ):
+            value = value[1:-1]
+        result[key] = value
+    return result
 
-        current_key, _current_value = line.split("=", 1)
-        if current_key == key:
-            updated_lines.append(f"{key}={value}")
-            found = True
-        else:
-            updated_lines.append(line)
 
-    if not found:
-        updated_lines.append(f"{key}={value}")
+def load_env_file(path: Path) -> dict[str, str]:
+    """Load a dotenv file when present."""
+    if not path.exists():
+        return {}
+    return parse_env_text(path.read_text(encoding="utf-8"))
 
-    final_content = "\n".join(updated_lines).rstrip("\n") + "\n"
-    write_text_atomic(path, final_content)
+
+def dump_env(data: dict[str, str], header: str | None = None) -> str:
+    """Dump a mapping to dotenv text."""
+    lines: list[str] = []
+    if header:
+        lines.append(header.rstrip("\n"))
+        lines.append("")
+    for key in sorted(data):
+        value = data[key]
+        escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+        lines.append(f'{key}="{escaped}"')
+    lines.append("")
+    return "\n".join(lines)

@@ -7,21 +7,23 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ConfirmFn = Callable[[str, bool], bool]
+PromptFn = Callable[[str, bool, str | None], str]
 
 
 @dataclass(frozen=True)
 class ProjectContext:
-    """Resolved project context for a repository and vault entry."""
+    """Resolved project context for the current repository."""
 
     project_slug: str
     project_id: str
     repo_root: Path
-    repo_metadata_path: Path
     repo_env_path: Path
+    repo_contract_path: Path
     vault_project_dir: Path
-    vault_env_path: Path
+    vault_values_path: Path
+    vault_state_path: Path
 
     @property
-    def project_name(self) -> str:
-        """Backward-compatible alias for older command output."""
-        return self.project_slug
+    def display_name(self) -> str:
+        """Return a display name for terminal output."""
+        return f"{self.project_slug} ({self.project_id})"

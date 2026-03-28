@@ -1,29 +1,26 @@
-"""Set environment variable in the managed vault env file."""
+"""Set service."""
 
 from __future__ import annotations
 
-from envctl.config.loader import load_config
 from envctl.domain.project import ProjectContext
-from envctl.errors import ProjectDetectionError
-from envctl.repository.project_context import require_project_context
-from envctl.utils.dotenv import normalize_env_key, update_env_file_key, validate_env_value
-from envctl.utils.permissions import ensure_private_file_permissions
+from envctl.services.context_service import load_project_context
+from envctl.utils.atomic import write_text_atomic
+from envctl.utils.dotenv import dump_env, load_env_file
+from envctl.utils.filesystem import ensure_dir
+from envctl.utils.permissions import ensure_private_dir_permissions, ensure_private_file_permissions
 
 
 def run_set(key: str, value: str) -> ProjectContext:
-    """Create or update a key in the managed vault env file."""
-    normalized_key = normalize_env_key(key)
-    validate_env_value(value)
+    """Create or update one explicit key in the vault values file."""
+    _config, context = load_project_context()
 
-    config = load_config()
-    context = require_project_context(config=config)
+    ensure_dir(context.vault_project_dir)
+    ensure_private_dir_permissions(context.vault_project_dir)
 
-    if not context.vault_env_path.exists():
-        raise ProjectDetectionError(
-            "Managed vault env file does not exist. Run 'envctl repair' or 'envctl init'."
-        )
+    data = load_env_file(context.vault_values_path)
+    data[key] = value
 
-    update_env_file_key(context.vault_env_path, key=normalized_key, value=value)
-    ensure_private_file_permissions(context.vault_env_path)
+    write_text_atomic(context.vault_values_path, dump_env(data))
+    ensure_private_file_permissions(context.vault_values_path)
 
     return context

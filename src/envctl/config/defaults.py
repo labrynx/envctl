@@ -1,4 +1,4 @@
-"""Default path resolution for envctl."""
+"""Default path resolution."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from envctl.constants import (
     DEFAULT_CONFIG_DIRNAME,
     DEFAULT_CONFIG_FILENAME,
     DEFAULT_ENV_FILENAME,
-    DEFAULT_METADATA_FILENAME,
+    DEFAULT_SCHEMA_FILENAME,
 )
 
 
@@ -37,10 +37,10 @@ def get_default_vault_dir() -> Path:
 
 
 def get_default_env_filename() -> str:
-    """Return the default environment filename."""
+    """Return the default env file name."""
     return DEFAULT_ENV_FILENAME
 
 
-def get_default_metadata_filename() -> str:
-    """Return the default repository metadata filename."""
-    return DEFAULT_METADATA_FILENAME
+def get_default_schema_filename() -> str:
+    """Return the default contract file name."""
+    return DEFAULT_SCHEMA_FILENAME

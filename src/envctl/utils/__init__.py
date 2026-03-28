@@ -1,1 +1,1 @@
-"""Utility helpers for envctl."""
+"""Utility helpers."""

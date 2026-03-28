@@ -11,9 +11,7 @@ from envctl.services.doctor_service import run_doctor
 
 @handle_errors
 def doctor_command() -> None:
-    """Run read-only local environment diagnostics."""
-    checks = run_doctor()
-    has_failures = render_doctor_checks(checks)
-
+    """Run local read-only diagnostics."""
+    has_failures = render_doctor_checks(run_doctor())
     if has_failures:
         raise typer.Exit(code=1)

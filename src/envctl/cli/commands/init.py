@@ -11,13 +11,10 @@ from envctl.utils.output import print_kv, print_success
 
 @handle_errors
 def init_command(project: str | None = typer.Argument(default=None)) -> None:
-    """Initialize the current Git repository in the vault and link its env file."""
+    """Initialize the current project in the local vault."""
     context = run_init(project_name=project)
-    print_success(f"Initialized project '{context.project_slug}'")
-    print_kv("project_slug", context.project_slug)
-    print_kv("project_id", context.project_id)
+    print_success(f"Initialized {context.display_name}")
     print_kv("repo_root", str(context.repo_root))
-    print_kv("metadata", str(context.repo_metadata_path))
+    print_kv("contract", str(context.repo_contract_path))
     print_kv("vault_dir", str(context.vault_project_dir))
-    print_kv("vault_env", str(context.vault_env_path))
-    print_kv("repo_env", str(context.repo_env_path))
+    print_kv("vault_values", str(context.vault_values_path))

@@ -5,16 +5,20 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.callbacks import version_callback
+from envctl.cli.commands.check import check_command
 from envctl.cli.commands.config import config_app
 from envctl.cli.commands.doctor import doctor_command
+from envctl.cli.commands.explain import explain_command
+from envctl.cli.commands.export import export_command
+from envctl.cli.commands.fill import fill_command
 from envctl.cli.commands.init import init_command
-from envctl.cli.commands.remove import remove_command
-from envctl.cli.commands.repair import repair_command
+from envctl.cli.commands.inspect import inspect_command
+from envctl.cli.commands.run import run_command_cli
 from envctl.cli.commands.set import set_command
 from envctl.cli.commands.status import status_command
-from envctl.cli.commands.unlink import unlink_command
+from envctl.cli.commands.sync import sync_command
 
-app = typer.Typer(help="envctl - local environment vault manager")
+app = typer.Typer(help="envctl - local environment control plane")
 app.add_typer(config_app, name="config")
 
 
@@ -29,14 +33,12 @@ def main(
         is_eager=True,
     ),
 ) -> None:
-    """envctl - local environment vault manager."""
+    """envctl - local environment control plane."""
     return None
 
 
 @app.command("help")
-def help_command(
-    command: str | None = typer.Argument(default=None),
-) -> None:
+def help_command(command: str | None = typer.Argument(default=None)) -> None:
     """Show help for envctl or one command."""
     argv = [command, "--help"] if command else ["--help"]
     app(argv, standalone_mode=False)
@@ -44,8 +46,14 @@ def help_command(
 
 app.command("doctor")(doctor_command)
 app.command("init")(init_command)
-app.command("repair")(repair_command)
-app.command("unlink")(unlink_command)
-app.command("remove")(remove_command)
-app.command("status")(status_command)
 app.command("set")(set_command)
+app.command("fill")(fill_command)
+app.command("check")(check_command)
+app.command("inspect")(inspect_command)
+app.command("explain")(explain_command)
+app.command("sync")(sync_command)
+app.command("export")(export_command)
+app.command("run", context_settings={"allow_extra_args": True, "ignore_unknown_options": True})(
+    run_command_cli
+)
+app.command("status")(status_command)

@@ -1,4 +1,4 @@
-"""Configuration management service."""
+"""Configuration services."""
 
 from __future__ import annotations
 
@@ -8,5 +8,5 @@ from envctl.config.writer import write_default_config_file
 
 
 def run_config_init() -> Path:
-    """Create the default envctl config file."""
+    """Create the default config file."""
     return write_default_config_file()

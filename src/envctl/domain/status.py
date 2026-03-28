@@ -1,4 +1,4 @@
-"""Repository status domain models."""
+"""Status domain models."""
 
 from __future__ import annotations
 
@@ -8,17 +8,14 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class StatusReport:
-    """Human-oriented repository status report."""
+    """Human-oriented project status report."""
 
-    state: str
-    project_slug: str | None
-    project_id: str | None
+    project_slug: str
+    project_id: str
     repo_root: Path
-    repo_metadata_path: Path
-    repo_env_path: Path
-    vault_env_path: Path | None
+    contract_exists: bool
+    vault_exists: bool
+    resolved_valid: bool
     summary: str
-    repo_env_status: str
-    vault_env_status: str
     issues: list[str]
     suggested_action: str | None

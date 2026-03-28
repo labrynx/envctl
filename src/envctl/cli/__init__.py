@@ -1,1 +1,1 @@
-"""CLI package for envctl."""
+"""CLI package."""
