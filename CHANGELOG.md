@@ -1,49 +1,97 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+---
+
 ## [2.2.0] – 2026-03-29
 
 ### Highlights
 
-- envctl evolves into a **local environment control plane**
-- Contract-driven workflows become the **core operating model**
-- Full CLI modularization and service alignment
-- Stronger validation, typing, and file safety guarantees
-- Improved developer experience with tooling and testing
+- Contract-driven workflows stabilized and completed
+- CRUD operations (`add`, `remove`, `set`, `unset`) redefined under contract semantics
+- Contract inference system introduced and integrated
+- Strong validation and typing across resolution and contract layers
+- Fully modular CLI architecture
+
+---
 
 ### Added
 
-- Contract-driven workflows centered on `.envctl.schema.yaml`.
-- `check` command to validate resolved environment state against the contract.
-- `fill` command to interactively resolve missing required variables.
-- `inspect` command for safe inspection of resolved environment values.
-- `explain KEY` command to trace how a variable is resolved.
-- `run -- <command>` to inject resolved environment variables into subprocesses.
-- `sync` command to explicitly materialize `.env.local`.
-- `export` command to output shell-compatible environment exports.
-- Contract inference system (types, sensitivity, defaults, patterns, choices).
-- Adapters layer (`dotenv`, `editor`, `git`).
-- Makefile with quality and testing workflows.
+- Contract-aware `add` command:
+  - infers type, sensitivity, and required status
+  - supports interactive metadata editing
+  - allows explicit overrides (type, required, sensitive, description, etc.)
+- Contract-aware `remove` command:
+  - removes variables from both contract and vault
+  - explicit confirmation model
+- `set` command aligned with contract:
+  - updates values without modifying contract definition
+- `unset` command:
+  - removes value from vault while preserving contract definition
+- Contract inference system:
+  - type detection (`string`, `int`, `bool`, `url`)
+  - sensitivity inference
+  - pattern and choices inference
+- Adapters layer:
+  - `dotenv`
+  - `editor`
+  - `git`
+- Makefile with developer workflows
+
+---
 
 ### Changed
 
-- CLI reorganized into modular command packages.
-- Services redesigned to align with contract-driven execution.
-- Repository layer aligned with contract/resolution model.
-- Introduced `pydantic` for stricter validation.
-- Improved atomic writes, permissions, and dotenv handling.
-- Enhanced `doctor` with contract awareness.
+- All variable operations (`add`, `remove`, `set`, `unset`) now follow **contract-first semantics**
+- CLI reorganized into modular command packages
+- Services refactored to align with contract-driven workflow
+- Resolution layer hardened:
+  - strict type validation
+  - explicit handling of unsupported types
+- Repository layer simplified and aligned with contract model
+- Improved:
+  - dotenv serialization
+  - atomic writes
+  - permission handling
+- `doctor` command updated to reflect contract + vault state
 
-### Removed
-
-- Legacy CLI structure.
-- Deprecated templates and unused components.
+---
 
 ### Fixed
 
-- Dotenv serialization and quoting.
-- Project identity stability.
-- Sensitive value masking.
-- Atomic file writes.
-- Contract validation consistency.
-- Version fallback handling.
+- Edge cases in dotenv serialization and quoting
+- Project identity inconsistencies during init
+- Sensitive value masking issues
+- Atomic write reliability
+- Contract validation inconsistencies
+- Handling of invalid or unsupported variable types
+
+---
+
+### Breaking changes
+
+- `add`, `remove`, `set`, `unset` semantics have changed:
+  - operations are now contract-aware
+  - contract and values are no longer implicitly coupled
+- Strict type validation enforced (unsupported types rejected)
+- Contract is now the authoritative source for variable definitions
+
+---
+
+### Notes
+
+- This release finalizes the operational model around:
+  - contract → definition
+  - resolution → evaluation
+  - projection → usage
+- CRUD operations are now consistent with this model
+- Prepares the system for future resolution strategies and policy layers
 
 ---
 
@@ -134,8 +182,6 @@
 ### Documentation
 
 - Updated architecture, command model, roadmap, security notes, README, and contribution guidance to reflect the refined product vision.
-
----
 
 ## [1.0.0] – 2026-03-28
 
