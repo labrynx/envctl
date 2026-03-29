@@ -21,4 +21,5 @@ build/
 .vscode/
 .idea/
 
-codereview/
+codereview
+.tmp
