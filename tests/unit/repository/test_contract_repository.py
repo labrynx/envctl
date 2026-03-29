@@ -164,7 +164,7 @@ variables:
 """.strip(),
     )
 
-    with pytest.raises(ContractError, match="Unsupported type"):
+    with pytest.raises(ContractError, match="Invalid contract"):
         load_contract(contract_path)
 
 
@@ -179,8 +179,9 @@ variables:
 """.strip(),
     )
 
-    with pytest.raises(ContractError, match="Boolean fields must be true or false"):
-        load_contract(contract_path)
+    contract = load_contract(contract_path)
+
+    assert contract.variables["APP_NAME"].required is True
 
 
 def test_load_contract_fails_when_choices_is_not_list_of_strings(tmp_path: Path) -> None:
@@ -196,7 +197,7 @@ variables:
 """.strip(),
     )
 
-    with pytest.raises(ContractError, match="'choices' must be a list of strings"):
+    with pytest.raises(ContractError, match="Invalid contract"):
         load_contract(contract_path)
 
 

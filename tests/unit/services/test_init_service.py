@@ -6,6 +6,15 @@ from types import SimpleNamespace
 import yaml
 
 import envctl.services.init_service as init_service
+from envctl.domain.contract_inference import (
+    infer_choices,
+    infer_description,
+    infer_pattern,
+    infer_sensitive,
+    infer_spec,
+    infer_type,
+    looks_like_placeholder,
+)
 from envctl.domain.project import ProjectContext
 from envctl.services.init_service import InitResult, run_init
 
@@ -394,62 +403,62 @@ def test_build_contract_from_example_falls_back_to_starter_when_no_valid_keys(
 
 
 def test_infer_type_does_not_mark_non_numeric_port_like_value_as_int() -> None:
-    assert init_service._infer_type("WORKERS", "12x") == "string"
+    assert infer_type("WORKERS", "12x") == "string"
 
 
-def test_infer_variable_spec_bool_false_default() -> None:
-    spec = init_service._infer_variable_spec("DEBUG", "false")
+def test_infer_spec_bool_false_default() -> None:
+    spec = infer_spec("DEBUG", "false")
 
-    assert spec["type"] == "bool"
-    assert spec["default"] is False
-
-
-def test_infer_variable_spec_url_sets_example() -> None:
-    spec = init_service._infer_variable_spec("PUBLIC_URL", "https://example.com")
-
-    assert spec["type"] == "url"
-    assert spec["example"] == "https://example.com"
+    assert spec.type == "bool"
+    assert spec.default is False
 
 
-def test_infer_variable_spec_known_non_sensitive_key_sets_example() -> None:
-    spec = init_service._infer_variable_spec("HOST", "localhost")
+def test_infer_spec_url_sets_example() -> None:
+    spec = infer_spec("PUBLIC_URL", "https://example.com")
 
-    assert spec["type"] == "string"
-    assert spec["sensitive"] is False
-    assert spec["example"] == "localhost"
+    assert spec.type == "url"
+    assert spec.example == "https://example.com"
 
 
-def test_infer_variable_spec_generic_non_sensitive_value_sets_example() -> None:
-    spec = init_service._infer_variable_spec("REGION", "eu-west-1")
+def test_infer_spec_known_non_sensitive_key_sets_example() -> None:
+    spec = infer_spec("HOST", "localhost")
 
-    assert spec["type"] == "string"
-    assert spec["sensitive"] is False
-    assert spec["example"] == "eu-west-1"
+    assert spec.type == "string"
+    assert spec.sensitive is False
+    assert spec.example == "localhost"
+
+
+def test_infer_spec_generic_non_sensitive_value_sets_example() -> None:
+    spec = infer_spec("REGION", "eu-west-1")
+
+    assert spec.type == "string"
+    assert spec.sensitive is False
+    assert spec.example == "eu-west-1"
 
 
 def test_infer_type_detects_bool_from_enable_prefix() -> None:
-    assert init_service._infer_type("ENABLE_CACHE", "maybe") == "bool"
+    assert infer_type("ENABLE_CACHE", "maybe") == "bool"
 
 
 def test_infer_type_detects_int_from_numeric_value() -> None:
-    assert init_service._infer_type("WORKERS", "42") == "int"
+    assert infer_type("WORKERS", "42") == "int"
 
 
 def test_infer_sensitive_recognizes_public_url_hints() -> None:
-    assert init_service._infer_sensitive("PUBLIC_URL") is False
-    assert init_service._infer_sensitive("DATABASE_URL") is True
+    assert infer_sensitive("PUBLIC_URL") is False
+    assert infer_sensitive("DATABASE_URL") is True
 
 
 def test_infer_description_falls_back_to_humanized_text() -> None:
-    assert init_service._infer_description("SERVICE_ACCOUNT_NAME") == "Service account name"
+    assert infer_description("SERVICE_ACCOUNT_NAME") == "Service account name"
 
 
 def test_infer_choices_for_environment_short_values() -> None:
-    assert init_service._infer_choices("ENVIRONMENT", "prod") == ("dev", "staging", "prod")
+    assert infer_choices("ENVIRONMENT", "prod") == ("dev", "staging", "prod")
 
 
 def test_infer_choices_for_environment_long_values() -> None:
-    assert init_service._infer_choices("ENVIRONMENT", "production") == (
+    assert infer_choices("ENVIRONMENT", "production") == (
         "development",
         "test",
         "staging",
@@ -458,7 +467,7 @@ def test_infer_choices_for_environment_long_values() -> None:
 
 
 def test_infer_choices_for_log_level() -> None:
-    assert init_service._infer_choices("LOG_LEVEL", "info") == (
+    assert infer_choices("LOG_LEVEL", "info") == (
         "debug",
         "info",
         "warning",
@@ -468,43 +477,37 @@ def test_infer_choices_for_log_level() -> None:
 
 
 def test_infer_pattern_returns_none_when_not_obvious() -> None:
-    assert init_service._infer_pattern("APP_NAME", "My App") is None
+    assert infer_pattern("APP_NAME", "My App") is None
 
 
 def test_looks_like_placeholder_detects_angle_brackets() -> None:
-    assert init_service._looks_like_placeholder("<your-token>") is True
+    assert looks_like_placeholder("<your-token>") is True
 
 
 def test_looks_like_placeholder_detects_replace_marker() -> None:
-    assert init_service._looks_like_placeholder("replace_this_value") is True
+    assert looks_like_placeholder("replace_this_value") is True
 
 
-def test_is_valid_contract_key_rejects_invalid_names() -> None:
-    assert init_service._is_valid_contract_key("APP_NAME") is True
-    assert init_service._is_valid_contract_key("app_name") is False
-    assert init_service._is_valid_contract_key("1APP_NAME") is False
+def test_infer_spec_port_without_numeric_value_has_no_default() -> None:
+    spec = infer_spec("PORT", "not-a-number")
 
-
-def test_infer_variable_spec_port_without_numeric_value_has_no_default() -> None:
-    spec = init_service._infer_variable_spec("PORT", "not-a-number")
-
-    assert spec["type"] == "int"
-    assert "default" not in spec
+    assert spec.type == "int"
+    assert spec.default is None
 
 
 def test_infer_type_detects_bool_from_boolean_like_value() -> None:
-    assert init_service._infer_type("FEATURE_FLAG", "yes") == "bool"
+    assert infer_type("FEATURE_FLAG", "yes") == "bool"
 
 
 def test_infer_type_detects_url_from_scheme_pattern() -> None:
-    assert init_service._infer_type("SERVICE_ENDPOINT", "postgres://localhost/app") == "url"
+    assert infer_type("SERVICE_ENDPOINT", "postgres://localhost/app") == "url"
 
 
 def test_looks_like_placeholder_detects_your_prefix_variants() -> None:
-    assert init_service._looks_like_placeholder("your_token_here") is True
-    assert init_service._looks_like_placeholder("your-token-here") is True
+    assert looks_like_placeholder("your_token_here") is True
+    assert looks_like_placeholder("your-token-here") is True
 
 
 def test_looks_like_placeholder_detects_your_prefix_only() -> None:
-    assert init_service._looks_like_placeholder("your-custom-value") is True
-    assert init_service._looks_like_placeholder("your_custom_value") is True
+    assert looks_like_placeholder("your-custom-value") is True
+    assert looks_like_placeholder("your_custom_value") is True

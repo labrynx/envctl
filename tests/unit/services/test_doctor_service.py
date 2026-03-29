@@ -7,6 +7,16 @@ from envctl.errors import ProjectDetectionError
 from envctl.services.doctor_service import run_doctor
 
 
+def make_config(tmp_path: Path, vault_dir: Path) -> SimpleNamespace:
+    return SimpleNamespace(
+        config_path=tmp_path / "config.json",
+        vault_dir=vault_dir,
+        projects_dir=vault_dir / "projects",
+        env_filename=".env.local",
+        schema_filename=".envctl.schema.yaml",
+    )
+
+
 def test_run_doctor_reports_ok_for_existing_private_vault_and_git_repo(
     monkeypatch, tmp_path: Path
 ) -> None:
@@ -15,10 +25,7 @@ def test_run_doctor_reports_ok_for_existing_private_vault_and_git_repo(
 
     monkeypatch.setattr(
         "envctl.services.doctor_service.load_config",
-        lambda: SimpleNamespace(
-            config_path=tmp_path / "config.json",
-            vault_dir=vault_dir,
-        ),
+        lambda: make_config(tmp_path, vault_dir),
     )
     monkeypatch.setattr(
         "envctl.services.doctor_service.is_world_writable",
@@ -35,12 +42,14 @@ def test_run_doctor_reports_ok_for_existing_private_vault_and_git_repo(
         ("config", "ok"),
         ("vault", "ok"),
         ("vault_permissions", "ok"),
+        ("contract", "ok"),
         ("git", "ok"),
     ]
     assert "Using config path:" in checks[0].detail
     assert "Using vault path:" in checks[1].detail
     assert "not world-writable" in checks[2].detail
-    assert "Inside Git repository:" in checks[3].detail
+    assert "Contract" in checks[3].detail
+    assert "Inside Git repository:" in checks[4].detail
 
 
 def test_run_doctor_warns_when_vault_is_world_writable(monkeypatch, tmp_path: Path) -> None:
@@ -49,10 +58,7 @@ def test_run_doctor_warns_when_vault_is_world_writable(monkeypatch, tmp_path: Pa
 
     monkeypatch.setattr(
         "envctl.services.doctor_service.load_config",
-        lambda: SimpleNamespace(
-            config_path=tmp_path / "config.json",
-            vault_dir=vault_dir,
-        ),
+        lambda: make_config(tmp_path, vault_dir),
     )
     monkeypatch.setattr(
         "envctl.services.doctor_service.is_world_writable",
@@ -75,10 +81,7 @@ def test_run_doctor_warns_when_vault_does_not_exist(monkeypatch, tmp_path: Path)
 
     monkeypatch.setattr(
         "envctl.services.doctor_service.load_config",
-        lambda: SimpleNamespace(
-            config_path=tmp_path / "config.json",
-            vault_dir=vault_dir,
-        ),
+        lambda: make_config(tmp_path, vault_dir),
     )
     monkeypatch.setattr(
         "envctl.services.doctor_service.resolve_repo_root",
@@ -98,10 +101,7 @@ def test_run_doctor_warns_when_not_inside_git_repo(monkeypatch, tmp_path: Path) 
 
     monkeypatch.setattr(
         "envctl.services.doctor_service.load_config",
-        lambda: SimpleNamespace(
-            config_path=tmp_path / "config.json",
-            vault_dir=vault_dir,
-        ),
+        lambda: make_config(tmp_path, vault_dir),
     )
     monkeypatch.setattr(
         "envctl.services.doctor_service.is_world_writable",

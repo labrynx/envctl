@@ -147,29 +147,3 @@ def test_resolve_environment_accepts_valid_bool_variants(monkeypatch) -> None:
 
         assert report.invalid_keys == []
         assert report.values["DEBUG"].valid is True
-
-
-def test_resolve_environment_marks_unsupported_type_as_invalid(monkeypatch) -> None:
-    contract = make_contract(
-        {
-            "WEIRD": make_variable_spec(
-                name="WEIRD",
-                type="mystery",
-                required=True,
-                sensitive=False,
-            ),
-        }
-    )
-    context = SimpleNamespace(vault_values_path="/tmp/vault.env")
-
-    monkeypatch.setattr(
-        resolution_service,
-        "load_env_file",
-        lambda _path: {"WEIRD": "value"},
-    )
-
-    report = resolve_environment(context, contract)
-
-    assert report.invalid_keys == ["WEIRD"]
-    assert report.values["WEIRD"].valid is False
-    assert report.values["WEIRD"].detail == "Unsupported type: mystery"

@@ -15,7 +15,7 @@ def make_context(tmp_path: Path) -> SimpleNamespace:
     )
 
 
-def test_run_remove_returns_without_changes_when_confirmation_rejected(
+def test_run_remove_returns_without_changes_when_key_is_missing(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -29,14 +29,10 @@ def test_run_remove_returns_without_changes_when_confirmation_rejected(
     monkeypatch.setattr(
         remove_service,
         "load_contract_optional",
-        lambda path: SimpleNamespace(variables={"API_KEY": object()}),
+        lambda path: SimpleNamespace(variables={}),
     )
 
-    _, result = remove_service.run_remove(
-        "API_KEY",
-        yes=False,
-        confirm=lambda message, default: False,
-    )
+    _, result = remove_service.run_remove("API_KEY")
 
     assert result.removed_from_vault is False
     assert result.removed_from_contract is False
@@ -62,7 +58,7 @@ def test_run_remove_removes_from_vault_and_contract(tmp_path: Path, monkeypatch)
     )
     monkeypatch.setattr(remove_service, "write_contract", lambda path, contract: None)
 
-    _, result = remove_service.run_remove("API_KEY", yes=True)
+    _, result = remove_service.run_remove("API_KEY")
 
     assert result.removed_from_vault is True
     assert result.removed_from_contract is True

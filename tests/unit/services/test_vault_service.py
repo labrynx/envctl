@@ -256,6 +256,23 @@ def test_run_vault_show_raises_when_file_cannot_be_read(monkeypatch, tmp_path: P
         vault_service.run_vault_show()
 
 
+def test_get_unknown_vault_keys_raises_when_contract_is_invalid(
+    monkeypatch, tmp_path: Path
+) -> None:
+    context = make_context(tmp_path)
+
+    monkeypatch.setattr(vault_service, "_load_vault_context", lambda: context)
+    monkeypatch.setattr(vault_service, "_ensure_vault_file", lambda ctx: True)
+
+    def fake_load_contract(path: Path):
+        raise vault_service.ContractError("invalid contract")
+
+    monkeypatch.setattr(vault_service, "load_contract", fake_load_contract)
+
+    with pytest.raises(ExecutionError, match="Cannot inspect vault without a valid contract"):
+        vault_service.get_unknown_vault_keys()
+
+
 def test_run_vault_prune_raises_when_contract_is_invalid(monkeypatch, tmp_path: Path) -> None:
     context = make_context(tmp_path)
 
@@ -267,7 +284,7 @@ def test_run_vault_prune_raises_when_contract_is_invalid(monkeypatch, tmp_path: 
 
     monkeypatch.setattr(vault_service, "load_contract", fake_load_contract)
 
-    with pytest.raises(ExecutionError, match="Cannot prune vault without a valid contract"):
+    with pytest.raises(ExecutionError, match="Cannot inspect vault without a valid contract"):
         vault_service.run_vault_prune()
 
 
@@ -300,45 +317,7 @@ def test_run_vault_prune_returns_without_changes_when_no_unknown_keys(
     )
 
 
-def test_run_vault_prune_returns_without_changes_when_confirmation_is_rejected(
-    monkeypatch,
-    tmp_path: Path,
-) -> None:
-    context = make_context(tmp_path)
-
-    monkeypatch.setattr(vault_service, "_load_vault_context", lambda: context)
-    monkeypatch.setattr(vault_service, "_ensure_vault_file", lambda ctx: False)
-    monkeypatch.setattr(
-        vault_service,
-        "load_contract",
-        lambda path: SimpleNamespace(variables={"APP_NAME": object()}),
-    )
-    monkeypatch.setattr(
-        vault_service,
-        "load_env_file",
-        lambda path: {"APP_NAME": "demo", "OLD_KEY": "legacy"},
-    )
-
-    captured: dict[str, object] = {}
-
-    def fake_confirm(message: str, default: bool) -> bool:
-        captured["message"] = message
-        captured["default"] = default
-        return False
-
-    result_context, result = vault_service.run_vault_prune(confirm=fake_confirm)
-
-    assert result_context is context
-    assert result == VaultPruneResult(
-        path=context.vault_values_path,
-        removed_keys=(),
-        kept_keys=2,
-    )
-    assert captured["message"] == "Remove 1 unknown key(s) from the local vault?"
-    assert captured["default"] is False
-
-
-def test_run_vault_prune_removes_unknown_keys_when_confirmed(
+def test_run_vault_prune_removes_unknown_keys(
     monkeypatch,
     tmp_path: Path,
 ) -> None:
@@ -370,9 +349,7 @@ def test_run_vault_prune_removes_unknown_keys_when_confirmed(
         lambda data: f"serialized:{data}",
     )
 
-    result_context, result = vault_service.run_vault_prune(
-        confirm=lambda message, default: True,
-    )
+    result_context, result = vault_service.run_vault_prune()
 
     assert result_context is context
     assert result == VaultPruneResult(
@@ -382,42 +359,6 @@ def test_run_vault_prune_removes_unknown_keys_when_confirmed(
     )
     assert written["path"] == context.vault_values_path
     assert written["content"] == "serialized:{'APP_NAME': 'demo'}"
-
-
-def test_run_vault_prune_removes_unknown_keys_without_confirmation_when_yes(
-    monkeypatch,
-    tmp_path: Path,
-) -> None:
-    context = make_context(tmp_path)
-
-    monkeypatch.setattr(vault_service, "_load_vault_context", lambda: context)
-    monkeypatch.setattr(vault_service, "_ensure_vault_file", lambda ctx: False)
-    monkeypatch.setattr(
-        vault_service,
-        "load_contract",
-        lambda path: SimpleNamespace(variables={"APP_NAME": object()}),
-    )
-    monkeypatch.setattr(
-        vault_service,
-        "load_env_file",
-        lambda path: {"APP_NAME": "demo", "OLD_KEY": "legacy"},
-    )
-    monkeypatch.setattr(vault_service, "write_text_atomic", lambda path, content: None)
-    monkeypatch.setattr(vault_service, "dump_env", lambda data: "APP_NAME=demo\n")
-
-    result_context, result = vault_service.run_vault_prune(
-        yes=True,
-        confirm=lambda message, default: (_ for _ in ()).throw(
-            AssertionError("confirm should not be called")
-        ),
-    )
-
-    assert result_context is context
-    assert result == VaultPruneResult(
-        path=context.vault_values_path,
-        removed_keys=("OLD_KEY",),
-        kept_keys=1,
-    )
 
 
 def test_run_edit_delegates_to_run_vault_edit(monkeypatch, tmp_path: Path) -> None:

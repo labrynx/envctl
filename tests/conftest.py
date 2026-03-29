@@ -52,13 +52,13 @@ def patch_git_for_repo(monkeypatch: pytest.MonkeyPatch, repo: Path) -> None:
     monkeypatch.setattr("envctl.adapters.git._run_git", fake_run_git)
 
 
-@pytest.fixture()
+@pytest.fixture
 def runner() -> CliRunner:
     """Return a CLI runner."""
     return CliRunner()
 
 
-@pytest.fixture()
+@pytest.fixture
 def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Create an isolated workspace with envctl defaults redirected."""
     home = tmp_path / "home"

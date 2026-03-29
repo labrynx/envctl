@@ -1,7 +1,14 @@
 from __future__ import annotations
 
+import importlib
 import sys
+from importlib.metadata import PackageNotFoundError
 from types import ModuleType
+
+
+def import_envctl():
+    sys.modules.pop("envctl", None)
+    return importlib.import_module("envctl")
 
 
 def reload_envctl_init(monkeypatch, fake_version):
@@ -10,8 +17,7 @@ def reload_envctl_init(monkeypatch, fake_version):
     monkeypatch.setattr(importlib.metadata, "version", fake_version)
 
     sys.modules.pop("envctl", None)
-    module = importlib.import_module("envctl")
-    return module
+    return importlib.import_module("envctl")
 
 
 def test_package_init_uses_installed_version(monkeypatch) -> None:
@@ -24,7 +30,7 @@ def test_package_init_uses_installed_version(monkeypatch) -> None:
 
 def test_package_init_falls_back_to_dev_version(monkeypatch) -> None:
     def raise_error(name: str) -> str:
-        raise RuntimeError("version lookup failed")
+        raise PackageNotFoundError("version lookup failed")
 
     module = reload_envctl_init(monkeypatch, raise_error)
 

@@ -6,6 +6,7 @@ import pytest
 import typer
 
 import envctl.cli.commands.add.command as add_command_module
+from envctl.domain.operations import AddVariableRequest
 
 
 def test_resolve_required_returns_true_when_required() -> None:
@@ -59,10 +60,33 @@ def test_add_command_calls_service_and_prints_full_inference(monkeypatch, capsys
         },
     )
 
+    prompts = iter(
+        [
+            "url",
+            "Primary database connection URL",
+            "",
+            "postgres://user:pass@localhost:5432/app",
+            "^postgres://",
+            "a, b",
+        ]
+    )
+    confirms = iter([True, True])
+
+    monkeypatch.setattr(
+        add_command_module,
+        "typer_prompt",
+        lambda _message, _secret, _default: next(prompts),
+    )
+    monkeypatch.setattr(
+        add_command_module,
+        "typer_confirm",
+        lambda _message, default=False: next(confirms),
+    )
+
     captured: dict[str, object] = {}
 
-    def fake_run_add(**kwargs):
-        captured.update(kwargs)
+    def fake_run_add(request: AddVariableRequest):
+        captured["request"] = request
         return context, result
 
     monkeypatch.setattr(add_command_module, "run_add", fake_run_add)
@@ -84,20 +108,19 @@ def test_add_command_calls_service_and_prints_full_inference(monkeypatch, capsys
     )
 
     output = capsys.readouterr().out
+    request = captured["request"]
 
-    assert captured["key"] == "DATABASE_URL"
-    assert captured["value"] == "postgres://user:pass@localhost:5432/app"
-    assert captured["interactive"] is True
-    assert captured["prompt"] is add_command_module.typer_prompt
-    assert captured["confirm"] is add_command_module.typer_confirm
-    assert captured["override_type"] == "url"
-    assert captured["override_required"] is True
-    assert captured["override_sensitive"] is True
-    assert captured["override_description"] == "Primary database connection URL"
-    assert captured["override_default"] is None
-    assert captured["override_example"] == "postgres://user:pass@localhost:5432/app"
-    assert captured["override_pattern"] == "^postgres://"
-    assert captured["override_choices"] == ("a", "b")
+    assert isinstance(request, AddVariableRequest)
+    assert request.key == "DATABASE_URL"
+    assert request.value == "postgres://user:pass@localhost:5432/app"
+    assert request.override_type == "url"
+    assert request.override_required is True
+    assert request.override_sensitive is True
+    assert request.override_description == "Primary database connection URL"
+    assert request.override_default is None
+    assert request.override_example == "postgres://user:pass@localhost:5432/app"
+    assert request.override_pattern == "^postgres://"
+    assert request.override_choices == ("a", "b")
 
     assert "[OK] Added 'DATABASE_URL' to contract and local vault" in output
     assert "vault_values: /tmp/vault/values.env" in output
@@ -124,11 +147,13 @@ def test_add_command_prints_minimal_output_when_inference_is_missing(monkeypatch
         inferred_spec=None,
     )
 
-    monkeypatch.setattr(
-        add_command_module,
-        "run_add",
-        lambda **kwargs: (context, result),
-    )
+    captured: dict[str, object] = {}
+
+    def fake_run_add(request: AddVariableRequest):
+        captured["request"] = request
+        return context, result
+
+    monkeypatch.setattr(add_command_module, "run_add", fake_run_add)
 
     add_command_module.add_command(
         key="APP_NAME",
@@ -147,6 +172,11 @@ def test_add_command_prints_minimal_output_when_inference_is_missing(monkeypatch
     )
 
     output = capsys.readouterr().out
+    request = captured["request"]
+
+    assert isinstance(request, AddVariableRequest)
+    assert request.key == "APP_NAME"
+    assert request.value == "demo"
 
     assert "[OK] Added 'APP_NAME' to contract and local vault" in output
     assert "vault_values: /tmp/vault/values.env" in output
@@ -176,7 +206,7 @@ def test_add_command_omits_optional_inferred_fields_when_not_present(monkeypatch
     monkeypatch.setattr(
         add_command_module,
         "run_add",
-        lambda **kwargs: (context, result),
+        lambda request: (context, result),
     )
 
     add_command_module.add_command(
