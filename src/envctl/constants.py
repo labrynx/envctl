@@ -3,6 +3,7 @@
 APP_NAME = "envctl"
 
 DEFAULT_ENV_FILENAME = ".env.local"
+DEFAULT_ENV_EXAMPLE_FILENAME = ".env.example"
 DEFAULT_SCHEMA_FILENAME = ".envctl.schema.yaml"
 DEFAULT_STATE_FILENAME = "state.json"
 DEFAULT_VALUES_FILENAME = "values.env"

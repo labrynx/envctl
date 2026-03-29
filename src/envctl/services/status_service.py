@@ -15,18 +15,17 @@ def run_status() -> StatusReport:
     vault_exists = context.vault_values_path.exists()
 
     issues: list[str] = []
-    resolved_valid = False
     suggested_action: str | None = None
 
     if not contract_exists:
         issues.append("Contract file is missing")
-        suggested_action = "Create .envctl.schema.yaml"
+        suggested_action = "Create .envctl.schema.yaml or run 'envctl add KEY VALUE'"
         summary = "The project is not ready because no contract file was found."
         return StatusReport(
             project_slug=context.project_slug,
             project_id=context.project_id,
             repo_root=context.repo_root,
-            contract_exists=contract_exists,
+            contract_exists=False,
             vault_exists=vault_exists,
             resolved_valid=False,
             summary=summary,
@@ -44,7 +43,7 @@ def run_status() -> StatusReport:
             project_slug=context.project_slug,
             project_id=context.project_id,
             repo_root=context.repo_root,
-            contract_exists=contract_exists,
+            contract_exists=True,
             vault_exists=vault_exists,
             resolved_valid=False,
             summary=summary,
@@ -55,11 +54,15 @@ def run_status() -> StatusReport:
     if report.missing_required:
         issues.append(f"Missing required keys: {', '.join(report.missing_required)}")
         suggested_action = "Run 'envctl fill' or 'envctl set KEY VALUE'"
+
     if report.invalid_keys:
         issues.append(f"Invalid values: {', '.join(report.invalid_keys)}")
         suggested_action = "Fix the invalid values in the local vault"
+
     if report.unknown_keys:
         issues.append(f"Unknown keys in vault: {', '.join(report.unknown_keys)}")
+        if suggested_action is None:
+            suggested_action = "Use 'envctl add KEY VALUE' or remove unknown keys"
 
     resolved_valid = report.is_valid
 
@@ -72,7 +75,7 @@ def run_status() -> StatusReport:
         project_slug=context.project_slug,
         project_id=context.project_id,
         repo_root=context.repo_root,
-        contract_exists=contract_exists,
+        contract_exists=True,
         vault_exists=vault_exists,
         resolved_valid=resolved_valid,
         summary=summary,
