@@ -24,3 +24,8 @@ def typer_prompt(message: str, secret: bool, default: str | None) -> str:
         value = getpass.getpass(f"{full_message}: ")
         return value if value else (default or "")
     return typer.prompt(full_message, default=default or "", show_default=False)
+
+
+def typer_confirm(message: str, default: bool = False) -> bool:
+    """Bridge confirmations from services to Typer."""
+    return typer.confirm(message, default=default, show_default=True)

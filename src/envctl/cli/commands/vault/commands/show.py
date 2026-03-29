@@ -1,0 +1,51 @@
+"""Vault show command."""
+
+from __future__ import annotations
+
+import typer
+
+from envctl.cli.decorators import handle_errors
+from envctl.repository.contract_repository import load_contract_optional
+from envctl.services.edit_service import run_vault_show
+from envctl.utils.masking import mask_value
+from envctl.utils.output import print_kv, print_warning
+
+
+@handle_errors
+def vault_show_command(
+    raw: bool = typer.Option(
+        False,
+        "--raw",
+        help="Show unmasked values.",
+    ),
+) -> None:
+    """Show the current vault file contents, masked by default."""
+    context, result = run_vault_show()
+
+    if not result.exists:
+        print_warning("Vault file does not exist")
+        print_kv("vault_values", str(result.path))
+        raise typer.Exit(code=1)
+
+    print_kv("vault_values", str(result.path))
+
+    if not result.values:
+        print_warning("Vault file is empty")
+        return
+
+    contract = load_contract_optional(context.repo_contract_path)
+    contract_variables = contract.variables if contract is not None else {}
+
+    typer.echo("Values:")
+    for key in sorted(result.values):
+        value = result.values[key]
+
+        if raw:
+            shown = value
+        else:
+            if key in contract_variables:
+                shown = mask_value(value) if contract_variables[key].sensitive else value
+            else:
+                shown = mask_value(value)
+
+        typer.echo(f"  {key}={shown}")

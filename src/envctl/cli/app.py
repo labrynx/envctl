@@ -5,6 +5,7 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.callbacks import version_callback
+from envctl.cli.commands.add import add_command
 from envctl.cli.commands.check import check_command
 from envctl.cli.commands.config import config_app
 from envctl.cli.commands.doctor import doctor_command
@@ -13,13 +14,17 @@ from envctl.cli.commands.export import export_command
 from envctl.cli.commands.fill import fill_command
 from envctl.cli.commands.init import init_command
 from envctl.cli.commands.inspect import inspect_command
+from envctl.cli.commands.remove import remove_command
 from envctl.cli.commands.run import run_command_cli
 from envctl.cli.commands.set import set_command
 from envctl.cli.commands.status import status_command
 from envctl.cli.commands.sync import sync_command
+from envctl.cli.commands.unset import unset_command
+from envctl.cli.commands.vault import vault_app
 
 app = typer.Typer(help="envctl - local environment control plane")
 app.add_typer(config_app, name="config")
+app.add_typer(vault_app, name="vault")
 
 
 @app.callback()
@@ -37,16 +42,12 @@ def main(
     return None
 
 
-@app.command("help")
-def help_command(command: str | None = typer.Argument(default=None)) -> None:
-    """Show help for envctl or one command."""
-    argv = [command, "--help"] if command else ["--help"]
-    app(argv, standalone_mode=False)
-
-
 app.command("doctor")(doctor_command)
 app.command("init")(init_command)
+app.command("add")(add_command)
 app.command("set")(set_command)
+app.command("unset")(unset_command)
+app.command("remove")(remove_command)
 app.command("fill")(fill_command)
 app.command("check")(check_command)
 app.command("inspect")(inspect_command)
