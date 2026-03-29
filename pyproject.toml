@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "envctl"
-version = "2.0.0-dev"
+version = "2.1.0"
 description = "Local environment control plane for contract-driven development workflows"
 readme = "README.md"
 requires-python = ">=3.10"
