@@ -1,50 +1,109 @@
-# Changelog
+## [2.2.0] – 2026-03-29
 
-All notable changes to this project will be documented in this file.
+### Highlights
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
-
-### Changed
-
-- Repositioned `envctl` from a symlink-oriented local env file manager to a local environment control plane.
-- Reframed the product model around three explicit concerns: contract, resolution, and projection.
-- Moved the project away from repository-to-vault linkage as the primary architectural concept.
-- Deprecated symlink-first workflows as the core operating model.
-- Shifted the repository contract to `.envctl.schema.yaml` as the shared source of truth for environment requirements.
-- Treated generated `.env.local` files as derived artifacts rather than canonical state.
+- envctl evolves into a **local environment control plane**
+- Contract-driven workflows become the **core operating model**
+- Full CLI modularization and service alignment
+- Stronger validation, typing, and file safety guarantees
+- Improved developer experience with tooling and testing
 
 ### Added
 
-- Introduced contract-driven workflows centered on `.envctl.schema.yaml`.
-- Added `check` to validate resolved environment state against the project contract.
-- Added `fill` to interactively satisfy missing required values.
-- Added `inspect` to display resolved environment state safely.
-- Added `explain KEY` to show how one variable is resolved.
-- Added `run -- <command>` to inject resolved environment values directly into subprocesses.
-- Added `sync` to materialize `.env.local` as an explicit generated artifact.
-- Added `export` to print shell-safe export lines from the resolved environment.
-- Added domain concepts for contract models and environment resolution results.
-- Added repository support for contract loading and local state handling aligned with the v2 model.
+- Contract-driven workflows centered on `.envctl.schema.yaml`.
+- `check` command to validate resolved environment state against the contract.
+- `fill` command to interactively resolve missing required variables.
+- `inspect` command for safe inspection of resolved environment values.
+- `explain KEY` command to trace how a variable is resolved.
+- `run -- <command>` to inject resolved environment variables into subprocesses.
+- `sync` command to explicitly materialize `.env.local`.
+- `export` command to output shell-compatible environment exports.
+- Contract inference system (types, sensitivity, defaults, patterns, choices).
+- Adapters layer (`dotenv`, `editor`, `git`).
+- Makefile with quality and testing workflows.
+
+### Changed
+
+- CLI reorganized into modular command packages.
+- Services redesigned to align with contract-driven execution.
+- Repository layer aligned with contract/resolution model.
+- Introduced `pydantic` for stricter validation.
+- Improved atomic writes, permissions, and dotenv handling.
+- Enhanced `doctor` with contract awareness.
 
 ### Removed
 
-- Removed symlinks as the central workflow model for the current branch direction.
-- Removed legacy command concepts from the active v2 direction, including repository-link repair and unlink flows.
-- Removed the assumption that a repository-local metadata linkage file is the primary source of truth.
+- Legacy CLI structure.
+- Deprecated templates and unused components.
 
-### Documentation
+### Fixed
 
-- Rewrote the main architecture documentation around contract, resolution, and projection.
-- Rewrote the command reference to describe the v2 command model.
-- Rewrote configuration documentation to clarify the boundary between user config and project contract.
-- Rewrote contributor architecture guidance to reflect the new internal workflow model.
-- Rewrote metadata documentation to describe local state and derived project identity instead of mandatory repository linkage.
-- Rewrote platform documentation to reflect the removal of symlinks as a core dependency.
-- Rewrote security documentation around explicit local storage, read-only validation, and projection safety.
-- Updated the roadmap to reflect the v2 branch target and follow-on phases.
+- Dotenv serialization and quoting.
+- Project identity stability.
+- Sensitive value masking.
+- Atomic file writes.
+- Contract validation consistency.
+- Version fallback handling.
+
+---
+
+## [2.0.0] – 2026-03-29
+
+### Highlights
+
+- Major architectural shift from **file manager → environment control system**
+- Introduction of **contract / resolution / projection model**
+- Removal of symlink-based workflows
+- Foundation for future policy-driven environment management
+
+### Added
+
+- New contract format: `.envctl.schema.yaml`
+- Explicit separation of:
+  - contract (what is needed)
+  - resolution (how values are obtained)
+  - projection (how values are used)
+- Core contract-aware commands:
+  - `check`
+  - `fill`
+- Initial resolution model
+- Safer environment handling model (no implicit writes)
+
+### Changed
+
+- `.env.local` redefined as a **generated artifact**, not source of truth
+- Repository no longer owns environment values
+- Vault usage becomes an implementation detail, not the model
+- CLI begins transition toward modular structure
+- Internal architecture moves toward domain-driven layering
+
+### Validation model
+
+- Environment variables validated against contract
+- Required vs optional variables enforced
+- Early detection of missing or invalid values
+
+### Breaking changes
+
+- Removal of symlink-based workflow
+- Removal of implicit repo ↔ vault linkage model
+- `.env.local` no longer manually managed
+- Introduction of mandatory contract for full workflow
+
+### Notes
+
+- This version introduces the **conceptual foundation of v2**
+- Some areas are intentionally incomplete and refined in 2.1/2.2
+- Represents a transition release rather than final UX
+
+### Design principles
+
+- Explicit configuration over implicit behavior
+- Deterministic execution
+- Separation of concerns (contract vs runtime)
+- Safety-first environment handling
+
+---
 
 ## [1.0.2] – 2026-03-28
 
@@ -75,6 +134,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 
 - Updated architecture, command model, roadmap, security notes, README, and contribution guidance to reflect the refined product vision.
+
+---
 
 ## [1.0.0] – 2026-03-28
 
