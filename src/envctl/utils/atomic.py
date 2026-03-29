@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 
 def write_text_atomic(path: Path, content: str) -> None:
-    """Write text to a file atomically."""
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = path.with_name(f".{path.name}.tmp")
-    tmp_path.write_text(content, encoding="utf-8")
+
+    with tmp_path.open("w", encoding="utf-8") as f:
+        f.write(content)
+        f.flush()
+        os.fsync(f.fileno())
+
     tmp_path.replace(path)
 
 

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 
 def mask_value(value: str) -> str:
-    """Mask a value while preserving a tiny amount of shape."""
+    """Mask a value while preserving only a tiny prefix."""
     if not value:
         return ""
     if len(value) <= 4:
         return "*" * len(value)
-    return f"{value[:2]}{'*' * (len(value) - 4)}{value[-2:]}"
+    return f"{value[:2]}{'*' * (len(value) - 2)}"

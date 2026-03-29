@@ -14,17 +14,22 @@ def parse_env_text(content: str) -> dict[str, str]:
             continue
         if "=" not in line:
             continue
+
         key, value = line.split("=", 1)
         key = key.strip()
         value = value.strip()
+
         if not key:
             continue
+
         if len(value) >= 2 and (
             (value.startswith('"') and value.endswith('"'))
             or (value.startswith("'") and value.endswith("'"))
         ):
             value = value[1:-1]
+
         result[key] = value
+
     return result
 
 
@@ -45,17 +50,20 @@ def _needs_quotes(value: str) -> bool:
 
 
 def _dump_env_value(value: str) -> str:
-    """Serialize one dotenv value."""
+    """Serialize one dotenv value safely for shell consumption."""
     if not _needs_quotes(value):
         return value
 
-    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+    escaped = (
+        value.replace("\\", "\\\\").replace('"', '\\"').replace("$", "\\$").replace("`", "\\`")
+    )
     return f'"{escaped}"'
 
 
 def dump_env(data: dict[str, str], header: str | None = None) -> str:
     """Dump a mapping to dotenv text."""
     lines: list[str] = []
+
     if header:
         lines.append(header.rstrip("\n"))
         lines.append("")

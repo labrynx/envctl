@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typer
 
+from envctl.adapters.git import get_repo_remote
 from envctl.cli.decorators import handle_errors
 from envctl.services.init_service import InitContractMode, run_init
 from envctl.utils.output import print_kv, print_success, print_warning
@@ -43,3 +44,9 @@ def init_command(
         print_kv("contract_template", init_result.contract_template or "custom")
     elif init_result.contract_skipped:
         print_warning("No contract file was created")
+
+    if get_repo_remote(context.repo_root) is None:
+        print_warning(
+            "No remote detected — project identity is based on local path. "
+            "Consider adding a remote for stability."
+        )

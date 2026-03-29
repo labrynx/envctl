@@ -14,4 +14,8 @@ def test_mask_value_masks_short_values_fully() -> None:
 
 
 def test_mask_value_preserves_edges_for_longer_values() -> None:
-    assert mask_value("super-secret") == "su********et"
+    assert mask_value("super-secret") == "su**********"
+
+
+def test_mask_value_does_not_preserve_suffix_for_short_secret() -> None:
+    assert mask_value("abcd1234") == "ab******"
