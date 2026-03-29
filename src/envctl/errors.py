@@ -27,3 +27,7 @@ class ResolutionError(EnvctlError):
 
 class ExecutionError(EnvctlError):
     """Raised when command execution fails."""
+
+
+class StateError(EnvctlError):
+    """Raised when persisted state is invalid or cannot be read safely."""

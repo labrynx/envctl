@@ -13,7 +13,6 @@ from envctl.config.defaults import (
 from envctl.errors import ConfigError
 from envctl.utils.atomic import write_json_atomic
 from envctl.utils.filesystem import ensure_dir
-from envctl.utils.permissions import ensure_private_file_permissions
 from envctl.utils.tilde import to_tilde_path
 
 
@@ -33,5 +32,4 @@ def write_default_config_file() -> Path:
             "schema_filename": get_default_schema_filename(),
         },
     )
-    ensure_private_file_permissions(config_path)
     return config_path

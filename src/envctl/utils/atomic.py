@@ -4,22 +4,54 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
+from contextlib import suppress
 from pathlib import Path
+from typing import Any
 
 
-def write_text_atomic(path: Path, content: str) -> None:
+def write_text_atomic(
+    path: Path,
+    content: str,
+    *,
+    mode: int = 0o600,
+) -> None:
+    """Write text atomically using a restrictive file mode from creation time."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path = path.with_name(f".{path.name}.tmp")
 
-    with tmp_path.open("w", encoding="utf-8") as f:
-        f.write(content)
-        f.flush()
-        os.fsync(f.fileno())
+    fd, tmp_name = tempfile.mkstemp(
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        dir=str(path.parent),
+        text=True,
+    )
+    tmp_path = Path(tmp_name)
 
-    tmp_path.replace(path)
+    try:
+        with suppress(AttributeError):
+            os.fchmod(fd, mode)
+
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+
+        os.replace(tmp_path, path)
+
+        with suppress(OSError):
+            path.chmod(mode)
+    except Exception:
+        with suppress(OSError):
+            tmp_path.unlink(missing_ok=True)
+        raise
 
 
-def write_json_atomic(path: Path, payload: dict) -> None:
+def write_json_atomic(
+    path: Path,
+    payload: dict[str, Any],
+    *,
+    mode: int = 0o600,
+) -> None:
     """Write JSON to a file atomically."""
     content = json.dumps(payload, indent=2, sort_keys=True) + "\n"
-    write_text_atomic(path, content)
+    write_text_atomic(path, content, mode=mode)

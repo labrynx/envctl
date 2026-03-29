@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from envctl.domain.contract import VariableSpec
+from envctl.domain.contract import VariableSpec, VariableType
 
 _SECRET_KEY_PARTS = {
     "SECRET",
@@ -58,7 +58,7 @@ _PLACEHOLDER_VALUES = {
 }
 
 
-def infer_type(key: str, value: str) -> str:
+def infer_type(key: str, value: str) -> VariableType:
     """Infer the variable type from key and value."""
     upper = key.upper()
     stripped = value.strip()
@@ -153,13 +153,10 @@ def looks_like_placeholder(value: str) -> bool:
     if normalized.startswith("your_") or normalized.startswith("your-"):
         return True
 
-    if "changeme" in normalized or "replace" in normalized:
-        return True
-
-    return False
+    return "changeme" in normalized or "replace" in normalized
 
 
-def infer_default(key: str, value: str, inferred_type: str) -> str | int | bool | None:
+def infer_default(key: str, value: str, inferred_type: VariableType) -> str | int | bool | None:
     """Infer a conservative default value when appropriate."""
     if looks_like_placeholder(value):
         return None
@@ -186,7 +183,7 @@ def infer_example(
     key: str,
     value: str,
     *,
-    inferred_type: str,
+    inferred_type: VariableType,
     sensitive: bool,
 ) -> str | None:
     """Infer an example value when it is safe and useful."""

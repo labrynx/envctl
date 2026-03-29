@@ -10,7 +10,7 @@ def ensure_private_dir_permissions(path: Path) -> None:
     try:
         path.chmod(0o700)
     except OSError:
-        return None
+        return
 
 
 def ensure_private_file_permissions(path: Path) -> None:
@@ -18,4 +18,4 @@ def ensure_private_file_permissions(path: Path) -> None:
     try:
         path.chmod(0o600)
     except OSError:
-        return None
+        return

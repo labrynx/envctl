@@ -13,38 +13,62 @@ from envctl.domain.resolution import ResolutionReport, ResolvedValue
 from envctl.repository.contract_repository import load_contract
 
 
-def _is_valid_type(spec: VariableSpec, value: str) -> tuple[bool, str | None]:
-    """Validate one value against its declared type."""
+def _validate_choices(spec: VariableSpec, value: str) -> tuple[bool, str | None]:
+    """Validate choice constraints."""
     if spec.choices and value not in spec.choices:
         return False, f"Expected one of: {', '.join(spec.choices)}"
+    return True, None
 
-    if spec.pattern:
-        if re.fullmatch(spec.pattern, value) is None:
-            return False, f"Value does not match pattern: {spec.pattern}"
+
+def _validate_pattern(spec: VariableSpec, value: str) -> tuple[bool, str | None]:
+    """Validate regex pattern constraints."""
+    if spec.pattern and re.fullmatch(spec.pattern, value) is None:
+        return False, f"Value does not match pattern: {spec.pattern}"
+    return True, None
+
+
+def _validate_int(value: str) -> tuple[bool, str | None]:
+    """Validate integer values."""
+    try:
+        int(value)
+    except ValueError:
+        return False, "Expected an integer"
+    return True, None
+
+
+def _validate_bool(value: str) -> tuple[bool, str | None]:
+    """Validate boolean values."""
+    normalized = value.lower()
+    if normalized not in {"true", "false", "1", "0", "yes", "no"}:
+        return False, "Expected a boolean"
+    return True, None
+
+
+def _validate_url(value: str) -> tuple[bool, str | None]:
+    """Validate URL values."""
+    parsed = urlparse(value)
+    if not parsed.scheme or not parsed.netloc:
+        return False, "Expected a valid URL"
+    return True, None
+
+
+def _is_valid_type(spec: VariableSpec, value: str) -> tuple[bool, str | None]:
+    """Validate one value against its declared type."""
+    valid, detail = _validate_choices(spec, value)
+    if not valid:
+        return valid, detail
+
+    valid, detail = _validate_pattern(spec, value)
+    if not valid:
+        return valid, detail
 
     if spec.type == "string":
         return True, None
-
     if spec.type == "int":
-        try:
-            int(value)
-        except ValueError:
-            return False, "Expected an integer"
-        return True, None
-
+        return _validate_int(value)
     if spec.type == "bool":
-        normalized = value.lower()
-        if normalized not in {"true", "false", "1", "0", "yes", "no"}:
-            return False, "Expected a boolean"
-        return True, None
-
-    if spec.type == "url":
-        parsed = urlparse(value)
-        if not parsed.scheme or not parsed.netloc:
-            return False, "Expected a valid URL"
-        return True, None
-
-    return False, f"Unsupported type: {spec.type}"
+        return _validate_bool(value)
+    return _validate_url(value)
 
 
 def load_contract_for_context(context: ProjectContext) -> Contract:
