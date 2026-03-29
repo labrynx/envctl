@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+from envctl.adapters.git import resolve_repo_root
 from envctl.config.loader import load_config
 from envctl.domain.doctor import DoctorCheck
 from envctl.errors import ProjectDetectionError
 from envctl.utils.filesystem import is_world_writable
-from envctl.utils.git import resolve_repo_root
 
 
 def run_doctor() -> list[DoctorCheck]:

@@ -5,7 +5,7 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors
-from envctl.services.edit_service import run_vault_check
+from envctl.services.vault_service import run_vault_check
 from envctl.utils.output import print_kv, print_success, print_warning
 
 

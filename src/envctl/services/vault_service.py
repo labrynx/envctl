@@ -3,38 +3,18 @@
 from __future__ import annotations
 
 import os
-import shlex
-import shutil
 import stat
-import subprocess
 
+from envctl.adapters.dotenv import dump_env, load_env_file
+from envctl.adapters.editor import open_file
 from envctl.domain.operations import EditResult, VaultCheckResult, VaultPruneResult, VaultShowResult
 from envctl.domain.project import ConfirmFn, ProjectContext
 from envctl.errors import ContractError, ExecutionError
 from envctl.repository.contract_repository import load_contract
 from envctl.services.context_service import load_project_context
 from envctl.utils.atomic import write_text_atomic
-from envctl.utils.dotenv import dump_env, load_env_file
 from envctl.utils.filesystem import ensure_dir, ensure_file
 from envctl.utils.permissions import ensure_private_dir_permissions, ensure_private_file_permissions
-
-
-def _resolve_editor() -> list[str]:
-    """Resolve the editor command from environment or sensible fallbacks."""
-    visual = os.environ.get("VISUAL", "").strip()
-    if visual:
-        return shlex.split(visual)
-
-    editor = os.environ.get("EDITOR", "").strip()
-    if editor:
-        return shlex.split(editor)
-
-    for candidate in ("nano", "vi"):
-        path = shutil.which(candidate)
-        if path:
-            return [path]
-
-    raise ExecutionError("No editor found. Set VISUAL or EDITOR, or install nano/vi.")
 
 
 def _load_vault_context() -> ProjectContext:
@@ -68,15 +48,7 @@ def run_vault_edit() -> tuple[ProjectContext, EditResult]:
     context = _load_vault_context()
     created = _ensure_vault_file(context)
 
-    command = [*_resolve_editor(), str(context.vault_values_path)]
-
-    try:
-        completed = subprocess.run(command, check=False)
-    except OSError as exc:
-        raise ExecutionError(f"Failed to launch editor: {command[0]}") from exc
-
-    if completed.returncode != 0:
-        raise ExecutionError(f"Editor exited with code {completed.returncode}")
+    open_file(str(context.vault_values_path))
 
     try:
         load_env_file(context.vault_values_path)

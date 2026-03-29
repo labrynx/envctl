@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from envctl.adapters.dotenv import dump_env, load_env_file
 from envctl.domain.operations import RemoveResult
 from envctl.domain.project import ConfirmFn, ProjectContext
 from envctl.repository.contract_repository import (
@@ -11,7 +12,6 @@ from envctl.repository.contract_repository import (
 )
 from envctl.services.context_service import load_project_context
 from envctl.utils.atomic import write_text_atomic
-from envctl.utils.dotenv import dump_env, load_env_file
 from envctl.utils.filesystem import ensure_dir
 from envctl.utils.permissions import ensure_private_dir_permissions, ensure_private_file_permissions
 

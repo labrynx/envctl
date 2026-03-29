@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+from envctl.adapters.dotenv import dump_env, load_env_file
 from envctl.domain.project import ProjectContext, PromptFn
 from envctl.services.context_service import load_project_context
 from envctl.services.resolution_service import load_contract_for_context, resolve_environment
 from envctl.utils.atomic import write_text_atomic
-from envctl.utils.dotenv import dump_env, load_env_file
 from envctl.utils.permissions import ensure_private_file_permissions
 
 

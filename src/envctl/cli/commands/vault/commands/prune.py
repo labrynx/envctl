@@ -6,7 +6,7 @@ import typer
 
 from envctl.cli.callbacks import typer_confirm
 from envctl.cli.decorators import handle_errors
-from envctl.services.edit_service import run_vault_prune
+from envctl.services.vault_service import run_vault_prune
 from envctl.utils.output import print_kv, print_success, print_warning
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, replace
 
+from envctl.adapters.dotenv import dump_env, load_env_file
 from envctl.domain.contract import VariableSpec
 from envctl.domain.contract_inference import infer_spec
 from envctl.domain.operations import AddResult
@@ -16,7 +17,6 @@ from envctl.repository.contract_repository import (
 )
 from envctl.services.context_service import load_project_context
 from envctl.utils.atomic import write_text_atomic
-from envctl.utils.dotenv import dump_env, load_env_file
 from envctl.utils.filesystem import ensure_dir
 from envctl.utils.permissions import ensure_private_dir_permissions, ensure_private_file_permissions
 

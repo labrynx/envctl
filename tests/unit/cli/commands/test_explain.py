@@ -16,7 +16,7 @@ def test_explain_command_outputs_detail_when_present(monkeypatch, capsys) -> Non
     )
 
     monkeypatch.setattr(
-        "envctl.cli.commands.explain.run_explain",
+        "envctl.cli.commands.explain.command.run_explain",
         lambda key: ("context", item),
     )
 
@@ -43,7 +43,7 @@ def test_explain_command_masks_sensitive_values(monkeypatch, capsys) -> None:
     )
 
     monkeypatch.setattr(
-        "envctl.cli.commands.explain.run_explain",
+        "envctl.cli.commands.explain.command.run_explain",
         lambda key: ("context", item),
     )
 

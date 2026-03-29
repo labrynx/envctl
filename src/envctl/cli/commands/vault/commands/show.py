@@ -6,7 +6,7 @@ import typer
 
 from envctl.cli.decorators import handle_errors
 from envctl.repository.contract_repository import load_contract_optional
-from envctl.services.edit_service import run_vault_show
+from envctl.services.vault_service import run_vault_show
 from envctl.utils.masking import mask_value
 from envctl.utils.output import print_kv, print_warning
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import envctl.cli.commands.init as init_command_module
+import envctl.cli.commands.init.command as init_command_module
 from envctl.cli.commands.init import init_command
 from envctl.services.init_service import InitResult
 

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from envctl.adapters.git import resolve_repo_root
 from envctl.constants import DEFAULT_STATE_FILENAME, DEFAULT_VALUES_FILENAME
 from envctl.domain.app_config import AppConfig
 from envctl.domain.project import ProjectContext
-from envctl.utils.git import resolve_repo_root
 from envctl.utils.project_ids import build_project_id
 from envctl.utils.project_names import resolve_project_name
 from envctl.utils.project_paths import build_vault_project_dir

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from envctl.utils.dotenv import dump_env, load_env_file, parse_env_text
+from envctl.adapters.dotenv import dump_env, load_env_file, parse_env_text
 
 
 def test_parse_env_text_ignores_comments_blank_lines_and_invalid_lines() -> None:

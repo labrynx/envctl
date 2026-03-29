@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from envctl.cli.decorators import handle_errors
-from envctl.services.edit_service import run_vault_path
+from envctl.services.vault_service import run_vault_path
 from envctl.utils.output import print_kv
 
 

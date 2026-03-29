@@ -5,8 +5,8 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
+from envctl.adapters.git import get_repo_remote
 from envctl.constants import PROJECT_ID_LENGTH
-from envctl.utils.git import get_repo_remote
 
 
 def build_repo_identity(repo_root: Path) -> str:

@@ -8,11 +8,11 @@ from typing import Literal
 
 import yaml
 
+from envctl.adapters.dotenv import load_env_file
 from envctl.constants import CONTRACT_VERSION, DEFAULT_ENV_EXAMPLE_FILENAME
 from envctl.domain.project import ConfirmFn, ProjectContext
 from envctl.repository.state_repository import write_state
 from envctl.services.context_service import load_project_context
-from envctl.utils.dotenv import load_env_file
 from envctl.utils.filesystem import ensure_dir, ensure_file
 from envctl.utils.permissions import ensure_private_dir_permissions, ensure_private_file_permissions
 

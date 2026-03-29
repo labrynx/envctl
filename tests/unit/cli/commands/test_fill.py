@@ -7,7 +7,7 @@ def test_fill_command_outputs_success_when_keys_are_changed(monkeypatch, capsys)
     context = type("Context", (), {"display_name": "demo-project"})()
 
     monkeypatch.setattr(
-        "envctl.cli.commands.fill.run_fill",
+        "envctl.cli.commands.fill.command.run_fill",
         lambda prompt: (context, ["API_KEY", "PORT"]),
     )
 
@@ -24,7 +24,7 @@ def test_fill_command_outputs_warning_when_nothing_changed(monkeypatch, capsys) 
     context = type("Context", (), {"display_name": "demo-project"})()
 
     monkeypatch.setattr(
-        "envctl.cli.commands.fill.run_fill",
+        "envctl.cli.commands.fill.command.run_fill",
         lambda prompt: (context, []),
     )
 

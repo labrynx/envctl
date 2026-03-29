@@ -28,7 +28,7 @@ def test_run_status_reports_missing_contract(tmp_path: Path, monkeypatch) -> Non
     assert report.resolved_valid is False
     assert report.summary == "The project is not ready because no contract file was found."
     assert report.issues == ["Contract file is missing"]
-    assert report.suggested_action == "Create .envctl.schema.yaml"
+    assert report.suggested_action == "Create .envctl.schema.yaml or run 'envctl add KEY VALUE'"
 
 
 def test_run_status_reports_invalid_contract(tmp_path: Path, monkeypatch) -> None:

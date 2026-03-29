@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+from envctl.adapters.dotenv import dump_env, load_env_file
 from envctl.domain.operations import SetResult
 from envctl.domain.project import ProjectContext
 from envctl.errors import ContractError
 from envctl.repository.contract_repository import load_contract_optional
 from envctl.services.context_service import load_project_context
 from envctl.utils.atomic import write_text_atomic
-from envctl.utils.dotenv import dump_env, load_env_file
 from envctl.utils.filesystem import ensure_dir
 from envctl.utils.permissions import ensure_private_dir_permissions, ensure_private_file_permissions
 

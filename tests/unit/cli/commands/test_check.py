@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 import typer
 
-import envctl.cli.commands.check as check_command_module
+import envctl.cli.commands.check.command as check_command_module
 from envctl.cli.commands.check import check_command
 from envctl.domain.resolution import ResolutionReport
 

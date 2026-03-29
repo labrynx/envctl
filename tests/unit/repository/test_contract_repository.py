@@ -115,26 +115,14 @@ variables:
         load_contract(contract_path)
 
 
-def test_load_contract_fails_when_variables_mapping_is_missing(tmp_path: Path) -> None:
+def test_load_contract_allows_missing_variables_mapping(tmp_path: Path) -> None:
     contract_path = tmp_path / ".envctl.schema.yaml"
     write_contract(contract_path, "version: 1\n")
 
-    with pytest.raises(ContractError, match="non-empty 'variables' mapping"):
-        load_contract(contract_path)
+    contract = load_contract(contract_path)
 
-
-def test_load_contract_fails_when_variables_mapping_is_empty(tmp_path: Path) -> None:
-    contract_path = tmp_path / ".envctl.schema.yaml"
-    write_contract(
-        contract_path,
-        """
-version: 1
-variables: {}
-""".strip(),
-    )
-
-    with pytest.raises(ContractError, match="non-empty 'variables' mapping"):
-        load_contract(contract_path)
+    assert contract.version == 1
+    assert contract.variables == {}
 
 
 def test_load_contract_fails_on_invalid_variable_name(tmp_path: Path) -> None:

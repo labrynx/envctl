@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from envctl.adapters.dotenv import dump_env
 from envctl.constants import MATERIALIZED_ENV_HEADER
 from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport
@@ -9,7 +10,6 @@ from envctl.errors import ValidationError
 from envctl.services.context_service import load_project_context
 from envctl.services.resolution_service import load_contract_for_context, resolve_environment
 from envctl.utils.atomic import write_text_atomic
-from envctl.utils.dotenv import dump_env
 
 
 def run_sync() -> tuple[ProjectContext, ResolutionReport]:

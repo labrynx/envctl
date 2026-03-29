@@ -49,7 +49,7 @@ def patch_git_for_repo(monkeypatch: pytest.MonkeyPatch, repo: Path) -> None:
             return "git@github.com:alessbarb/envctl.git"
         raise RuntimeError(f"Unexpected git args: {args}")
 
-    monkeypatch.setattr("envctl.utils.git._run_git", fake_run_git)
+    monkeypatch.setattr("envctl.adapters.git._run_git", fake_run_git)
 
 
 @pytest.fixture()

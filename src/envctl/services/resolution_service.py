@@ -6,11 +6,11 @@ import os
 import re
 from urllib.parse import urlparse
 
+from envctl.adapters.dotenv import load_env_file
 from envctl.domain.contract import Contract, VariableSpec
 from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport, ResolvedValue
 from envctl.repository.contract_repository import load_contract
-from envctl.utils.dotenv import load_env_file
 
 
 def _is_valid_type(spec: VariableSpec, value: str) -> tuple[bool, str | None]:

@@ -14,11 +14,11 @@ def test_inspect_command_renders_resolution(monkeypatch) -> None:
     called: dict[str, object] = {}
 
     monkeypatch.setattr(
-        "envctl.cli.commands.inspect.run_inspect",
+        "envctl.cli.commands.inspect.command.run_inspect",
         lambda: ("context", report),
     )
     monkeypatch.setattr(
-        "envctl.cli.commands.inspect.render_resolution",
+        "envctl.cli.commands.inspect.command.render_resolution",
         lambda value: called.update({"report": value}),
     )
 
