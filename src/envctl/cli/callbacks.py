@@ -1,4 +1,4 @@
-"""CLI callbacks and bridges."""
+"""CLI callbacks and helpers."""
 
 from __future__ import annotations
 
@@ -17,15 +17,17 @@ def version_callback(value: bool) -> None:
 
 
 def typer_prompt(message: str, secret: bool, default: str | None) -> str:
-    """Bridge prompts from services to Typer."""
+    """Prompt for a string value from the terminal."""
     suffix = f" [{default}]" if default is not None else ""
     full_message = f"{message}{suffix}"
+
     if secret:
         value = getpass.getpass(f"{full_message}: ")
         return value if value else (default or "")
-    return typer.prompt(full_message, default=default or "", show_default=False)
+
+    return str(typer.prompt(full_message, default=default or "", show_default=False))
 
 
 def typer_confirm(message: str, default: bool = False) -> bool:
-    """Bridge confirmations from services to Typer."""
+    """Prompt for a boolean confirmation from the terminal."""
     return typer.confirm(message, default=default, show_default=True)

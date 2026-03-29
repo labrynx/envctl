@@ -8,6 +8,32 @@ from typing import Any
 
 
 @dataclass(frozen=True)
+class AddVariableRequest:
+    """Request payload for adding or updating one variable."""
+
+    key: str
+    value: str
+    override_type: str | None = None
+    override_required: bool | None = None
+    override_sensitive: bool | None = None
+    override_description: str | None = None
+    override_default: str | int | bool | None = None
+    override_example: str | None = None
+    override_pattern: str | None = None
+    override_choices: tuple[str, ...] | None = None
+
+
+@dataclass(frozen=True)
+class FillPlanItem:
+    """Description of one missing required value to be collected by the CLI."""
+
+    key: str
+    description: str
+    sensitive: bool
+    default_value: str | None
+
+
+@dataclass(frozen=True)
 class AddResult:
     """Result of adding a key to vault and contract."""
 

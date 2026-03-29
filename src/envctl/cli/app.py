@@ -39,7 +39,7 @@ def main(
     ),
 ) -> None:
     """envctl - local environment control plane."""
-    return None
+    return
 
 
 app.command("doctor")(doctor_command)
