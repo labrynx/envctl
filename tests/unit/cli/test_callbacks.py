@@ -3,7 +3,8 @@ from __future__ import annotations
 import pytest
 import typer
 
-from envctl.cli.callbacks import typer_prompt, version_callback
+import envctl.cli.callbacks as callbacks_module
+from envctl.cli.callbacks import typer_confirm, typer_prompt, version_callback
 
 
 def test_version_callback_does_nothing_when_flag_is_false() -> None:
@@ -71,4 +72,25 @@ def test_typer_prompt_uses_typer_prompt_for_non_secret(monkeypatch) -> None:
         "message": "PORT [3000]",
         "default": "3000",
         "show_default": False,
+    }
+
+
+def test_typer_confirm_passes_correct_arguments(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_confirm(message: str, default: bool, show_default: bool) -> bool:
+        captured["message"] = message
+        captured["default"] = default
+        captured["show_default"] = show_default
+        return True
+
+    monkeypatch.setattr(callbacks_module.typer, "confirm", fake_confirm)
+
+    result = typer_confirm("Are you sure?", default=True)
+
+    assert result is True
+    assert captured == {
+        "message": "Are you sure?",
+        "default": True,
+        "show_default": True,
     }

@@ -59,8 +59,8 @@ def test_run_fill_prompts_for_missing_required_keys_and_writes_file(monkeypatch,
     ]
 
     output = written[str(vault_values_path)]
-    assert 'API_KEY="secret-value"' in output
-    assert 'PORT="3000"' in output
+    assert "API_KEY=secret-value" in output
+    assert "PORT=3000" in output
     assert permissions_called == [str(vault_values_path)]
 
 
@@ -150,5 +150,5 @@ def test_run_fill_preserves_existing_values_and_only_writes_changed_keys(
 
     assert changed == ["API_KEY"]
     output = written[str(vault_values_path)]
-    assert 'ALREADY_SET="yes"' in output
-    assert 'API_KEY="new-secret"' in output
+    assert "ALREADY_SET=yes" in output
+    assert "API_KEY=new-secret" in output
