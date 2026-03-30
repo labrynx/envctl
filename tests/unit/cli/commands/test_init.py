@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
+import typer
+
 import envctl.cli.commands.init.command as init_command_module
 from envctl.cli.commands.init import init_command
+from envctl.domain.runtime import RuntimeMode
 from envctl.services.init_service import InitResult
 
 
@@ -94,3 +98,26 @@ def test_init_command_warns_when_contract_is_skipped(monkeypatch, capsys) -> Non
     assert "project_key: demo" in output
     assert "binding_source: local" in output
     assert "No contract file was created" in output
+
+
+def test_init_command_rejects_ci_mode(monkeypatch) -> None:
+    captured: dict[str, str] = {}
+
+    monkeypatch.setattr(
+        "envctl.cli.decorators.load_config",
+        lambda: SimpleNamespace(runtime_mode=RuntimeMode.CI),
+    )
+    monkeypatch.setattr(
+        "envctl.cli.decorators.is_json_output",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        "envctl.cli.decorators.print_error",
+        lambda message: captured.update({"message": message}),
+    )
+
+    with pytest.raises(typer.Exit) as exc_info:
+        init_command()
+
+    assert exc_info.value.exit_code == 1
+    assert "CI read-only mode" in captured["message"]

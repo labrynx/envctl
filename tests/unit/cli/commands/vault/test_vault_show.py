@@ -181,3 +181,33 @@ def test_vault_show_command_masks_all_values_when_contract_is_missing(monkeypatc
     output = capsys.readouterr().out
     assert "  APP_NAME=<masked:demo>" in output
     assert "  PORT=<masked:3000>" in output
+
+
+def test_vault_show_command_rejects_json_mode(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    monkeypatch.setattr(
+        "envctl.cli.decorators.is_json_output",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "envctl.cli.decorators.get_command_path",
+        lambda: "envctl vault show",
+    )
+    monkeypatch.setattr(
+        "envctl.cli.decorators.emit_json",
+        lambda payload: captured.update({"payload": payload}),
+    )
+
+    with pytest.raises(typer.Exit) as exc_info:
+        vault_show_module.vault_show_command(raw=False)
+
+    assert exc_info.value.exit_code == 1
+    assert captured["payload"] == {
+        "ok": False,
+        "command": "envctl vault show",
+        "error": {
+            "type": "ExecutionError",
+            "message": "JSON output is not supported for 'vault show' yet.",
+        },
+    }

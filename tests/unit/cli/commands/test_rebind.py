@@ -8,6 +8,7 @@ import typer
 import envctl.cli.commands.project.commands.rebind as rebind_command_module
 from envctl.cli.commands.project.commands.rebind import project_rebind_command
 from envctl.domain.operations import RebindResult
+from envctl.domain.runtime import RuntimeMode
 
 
 def test_rebind_command_aborts_when_confirmation_is_rejected(
@@ -141,3 +142,26 @@ def test_rebind_command_prints_no_copy_when_values_are_not_copied(
     assert "new_project_id: prj_bbbbbbbbbbbbbbbb" in output
     assert "copied_values: no" in output
     assert "previous_project_id:" not in output
+
+
+def test_rebind_command_rejects_ci_mode(monkeypatch) -> None:
+    captured: dict[str, str] = {}
+
+    monkeypatch.setattr(
+        "envctl.cli.decorators.load_config",
+        lambda: SimpleNamespace(runtime_mode=RuntimeMode.CI),
+    )
+    monkeypatch.setattr(
+        "envctl.cli.decorators.is_json_output",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        "envctl.cli.decorators.print_error",
+        lambda message: captured.update({"message": message}),
+    )
+
+    with pytest.raises(typer.Exit) as exc_info:
+        project_rebind_command(yes=True)
+
+    assert exc_info.value.exit_code == 1
+    assert "CI read-only mode" in captured["message"]

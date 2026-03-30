@@ -1,7 +1,13 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+import pytest
+import typer
+
 from envctl.cli.commands.fill import fill_command
 from envctl.domain.operations import FillPlanItem
+from envctl.domain.runtime import RuntimeMode
 
 
 def test_fill_command_outputs_success_when_keys_are_changed(monkeypatch, capsys) -> None:
@@ -85,3 +91,26 @@ def test_fill_command_outputs_warning_when_apply_fill_changes_nothing(monkeypatc
 
     output = capsys.readouterr().out
     assert "No keys were changed" in output
+
+
+def test_fill_command_rejects_ci_mode(monkeypatch) -> None:
+    captured: dict[str, str] = {}
+
+    monkeypatch.setattr(
+        "envctl.cli.decorators.load_config",
+        lambda: SimpleNamespace(runtime_mode=RuntimeMode.CI),
+    )
+    monkeypatch.setattr(
+        "envctl.cli.decorators.is_json_output",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        "envctl.cli.decorators.print_error",
+        lambda message: captured.update({"message": message}),
+    )
+
+    with pytest.raises(typer.Exit) as exc_info:
+        fill_command()
+
+    assert exc_info.value.exit_code == 1
+    assert "CI read-only mode" in captured["message"]

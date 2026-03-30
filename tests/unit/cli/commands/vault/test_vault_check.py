@@ -119,3 +119,33 @@ def test_vault_check_command_exits_when_permissions_are_not_private(monkeypatch,
     assert "parseable: yes" in output
     assert "private_permissions: no" in output
     assert "keys: 2" in output
+
+
+def test_vault_check_command_rejects_json_mode(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    monkeypatch.setattr(
+        "envctl.cli.decorators.is_json_output",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "envctl.cli.decorators.get_command_path",
+        lambda: "envctl vault check",
+    )
+    monkeypatch.setattr(
+        "envctl.cli.decorators.emit_json",
+        lambda payload: captured.update({"payload": payload}),
+    )
+
+    with pytest.raises(typer.Exit) as exc_info:
+        vault_check_module.vault_check_command()
+
+    assert exc_info.value.exit_code == 1
+    assert captured["payload"] == {
+        "ok": False,
+        "command": "envctl vault check",
+        "error": {
+            "type": "ExecutionError",
+            "message": "JSON output is not supported for 'vault check' yet.",
+        },
+    }

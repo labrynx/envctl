@@ -7,6 +7,7 @@ import typer
 
 import envctl.cli.commands.add.command as add_command_module
 from envctl.domain.operations import AddVariableRequest
+from envctl.domain.runtime import RuntimeMode
 
 
 def test_resolve_required_returns_true_when_required() -> None:
@@ -234,3 +235,66 @@ def test_add_command_omits_optional_inferred_fields_when_not_present(monkeypatch
     assert "required:" not in output
     assert "sensitive:" not in output
     assert "description:" not in output
+
+
+def test_add_command_rejects_ci_mode(monkeypatch) -> None:
+    captured: dict[str, str] = {}
+
+    monkeypatch.setattr(
+        "envctl.cli.decorators.load_config",
+        lambda: SimpleNamespace(runtime_mode=RuntimeMode.CI),
+    )
+    monkeypatch.setattr(
+        "envctl.cli.decorators.is_json_output",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        "envctl.cli.decorators.print_error",
+        lambda message: captured.update({"message": message}),
+    )
+
+    with pytest.raises(typer.Exit) as exc_info:
+        add_command_module.add_command(
+            key="APP_NAME",
+            value="demo",
+        )
+
+    assert exc_info.value.exit_code == 1
+    assert "CI read-only mode" in captured["message"]
+
+
+def test_add_command_rejects_json_output(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    monkeypatch.setattr(
+        "envctl.cli.decorators.load_config",
+        lambda: SimpleNamespace(runtime_mode=RuntimeMode.LOCAL),
+    )
+    monkeypatch.setattr(
+        "envctl.cli.decorators.is_json_output",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "envctl.cli.decorators.get_command_path",
+        lambda: "envctl add",
+    )
+    monkeypatch.setattr(
+        "envctl.cli.decorators.emit_json",
+        lambda payload: captured.update({"payload": payload}),
+    )
+
+    with pytest.raises(typer.Exit) as exc_info:
+        add_command_module.add_command(
+            key="APP_NAME",
+            value="demo",
+        )
+
+    assert exc_info.value.exit_code == 1
+    assert captured["payload"] == {
+        "ok": False,
+        "command": "envctl add",
+        "error": {
+            "type": "ExecutionError",
+            "message": "JSON output is not supported for 'add' yet.",
+        },
+    }

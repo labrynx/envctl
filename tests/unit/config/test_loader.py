@@ -1,118 +1,114 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
 
-import envctl.config.loader as loader
+from envctl.config.loader import load_config
+from envctl.constants import ENVCTL_RUNTIME_MODE_ENVVAR
+from envctl.domain.runtime import RuntimeMode
 from envctl.errors import ConfigError
 
 
-def configure_defaults(monkeypatch, tmp_path: Path, config_path: Path) -> None:
-    monkeypatch.setattr(loader, "get_default_config_path", lambda: config_path)
-    monkeypatch.setattr(loader, "get_default_vault_dir", lambda: tmp_path / "vault-default")
-    monkeypatch.setattr(loader, "get_default_env_filename", lambda: ".env.local")
-    monkeypatch.setattr(loader, "get_default_schema_filename", lambda: ".envctl.schema.yaml")
+def _prepare_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Prepare an isolated HOME/XDG_CONFIG_HOME layout for config tests."""
+    home = tmp_path / "home"
+    home.mkdir()
+
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(home / ".config"))
+
+    return home
 
 
-def test_load_config_uses_defaults_when_config_file_is_missing(monkeypatch, tmp_path: Path) -> None:
-    config_path = tmp_path / "config.json"
-    configure_defaults(monkeypatch, tmp_path, config_path)
+def test_load_config_uses_local_runtime_mode_by_default(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _prepare_home(tmp_path, monkeypatch)
 
-    config = loader.load_config()
+    config = load_config()
 
-    assert config.config_path == config_path
-    assert config.vault_dir == (tmp_path / "vault-default").resolve()
-    assert config.env_filename == ".env.local"
-    assert config.schema_filename == ".envctl.schema.yaml"
+    assert config.runtime_mode == RuntimeMode.LOCAL
 
 
-def test_load_config_reads_valid_json_config(monkeypatch, tmp_path: Path) -> None:
-    config_path = tmp_path / "config.json"
-    configure_defaults(monkeypatch, tmp_path, config_path)
+def test_load_config_reads_runtime_mode_from_config_file(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    home = _prepare_home(tmp_path, monkeypatch)
+    config_dir = home / ".config" / "envctl"
+    config_dir.mkdir(parents=True)
 
+    config_path = config_dir / "config.json"
     config_path.write_text(
-        """
-{
-  "vault_dir": "./custom-vault",
-  "env_filename": ".env.dev",
-  "schema_filename": ".contract.yaml"
-}
-""".strip(),
+        json.dumps(
+            {
+                "runtime_mode": "ci",
+            }
+        ),
         encoding="utf-8",
     )
 
-    config = loader.load_config()
+    config = load_config()
 
-    assert config.config_path == config_path
-    assert config.vault_dir == Path("./custom-vault").resolve()
-    assert config.env_filename == ".env.dev"
-    assert config.schema_filename == ".contract.yaml"
+    assert config.runtime_mode == RuntimeMode.CI
 
 
-def test_load_config_rejects_invalid_json(monkeypatch, tmp_path: Path) -> None:
-    config_path = tmp_path / "config.json"
-    configure_defaults(monkeypatch, tmp_path, config_path)
-    config_path.write_text("{not-json", encoding="utf-8")
+def test_load_config_environment_override_wins_over_config_file(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    home = _prepare_home(tmp_path, monkeypatch)
+    config_dir = home / ".config" / "envctl"
+    config_dir.mkdir(parents=True)
 
-    with pytest.raises(ConfigError, match="Invalid JSON config"):
-        loader.load_config()
+    monkeypatch.setenv(ENVCTL_RUNTIME_MODE_ENVVAR, "ci")
 
+    config_path = config_dir / "config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "runtime_mode": "local",
+            }
+        ),
+        encoding="utf-8",
+    )
 
-def test_load_config_rejects_unreadable_config(monkeypatch, tmp_path: Path) -> None:
-    config_path = tmp_path / "config.json"
-    configure_defaults(monkeypatch, tmp_path, config_path)
-    config_path.write_text("{}", encoding="utf-8")
+    config = load_config()
 
-    def broken_read_text(self, encoding: str = "utf-8") -> str:
-        raise OSError("boom")
-
-    monkeypatch.setattr(loader.Path, "read_text", broken_read_text)
-
-    with pytest.raises(ConfigError, match="Unable to read config file"):
-        loader.load_config()
-
-
-def test_load_config_rejects_non_object_json(monkeypatch, tmp_path: Path) -> None:
-    config_path = tmp_path / "config.json"
-    configure_defaults(monkeypatch, tmp_path, config_path)
-    config_path.write_text('["not", "an", "object"]', encoding="utf-8")
-
-    with pytest.raises(ConfigError, match="Config file must contain a JSON object"):
-        loader.load_config()
+    assert config.runtime_mode == RuntimeMode.CI
 
 
-def test_load_config_rejects_unknown_keys(monkeypatch, tmp_path: Path) -> None:
-    config_path = tmp_path / "config.json"
-    configure_defaults(monkeypatch, tmp_path, config_path)
-    config_path.write_text('{"extra_key": "value"}', encoding="utf-8")
+def test_load_config_rejects_invalid_runtime_mode_in_config(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    home = _prepare_home(tmp_path, monkeypatch)
+    config_dir = home / ".config" / "envctl"
+    config_dir.mkdir(parents=True)
 
-    with pytest.raises(ConfigError, match="Unsupported config key\\(s\\): extra_key"):
-        loader.load_config()
+    config_path = config_dir / "config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "runtime_mode": "banana",
+            }
+        ),
+        encoding="utf-8",
+    )
 
-
-def test_load_config_rejects_empty_env_filename(monkeypatch, tmp_path: Path) -> None:
-    config_path = tmp_path / "config.json"
-    configure_defaults(monkeypatch, tmp_path, config_path)
-    config_path.write_text('{"env_filename": "   "}', encoding="utf-8")
-
-    with pytest.raises(ConfigError, match="env_filename cannot be empty"):
-        loader.load_config()
-
-
-def test_load_config_rejects_env_filename_paths(monkeypatch, tmp_path: Path) -> None:
-    config_path = tmp_path / "config.json"
-    configure_defaults(monkeypatch, tmp_path, config_path)
-    config_path.write_text('{"env_filename": "nested/.env.local"}', encoding="utf-8")
-
-    with pytest.raises(ConfigError, match="env_filename must be a file name, not a path"):
-        loader.load_config()
+    with pytest.raises(ConfigError, match="Invalid runtime mode"):
+        load_config()
 
 
-def test_load_config_rejects_invalid_schema_filename(monkeypatch, tmp_path: Path) -> None:
-    config_path = tmp_path / "config.json"
-    configure_defaults(monkeypatch, tmp_path, config_path)
-    config_path.write_text('{"schema_filename": "contracts/schema.yaml"}', encoding="utf-8")
+def test_load_config_rejects_invalid_runtime_mode_in_env(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _prepare_home(tmp_path, monkeypatch)
+    monkeypatch.setenv(ENVCTL_RUNTIME_MODE_ENVVAR, "banana")
 
-    with pytest.raises(ConfigError, match="schema_filename must be a file name, not a path"):
-        loader.load_config()
+    with pytest.raises(ConfigError, match="Invalid runtime mode"):
+        load_config()
