@@ -13,6 +13,10 @@ Creates the default envctl config file in the user's XDG config directory.
 - writes readable default values
 - sets file permissions to `0600` when supported
 - keeps configuration creation explicit
+- persists a canonical local binding for the current checkout when needed
+- creates the vault project directory and vault state file
+- may create a starter contract or infer one from `.env.example`
+- ensures contract metadata such as `meta.project_key` and `meta.project_name` exists
 
 The config file controls local tool behavior only. It does not store project contracts or secrets.
 
@@ -34,6 +38,8 @@ Important:
 - `init` may create a starter contract or infer one from `.env.example` depending on the selected mode
 - `init` does **not** materialize `.env.local` unless a future explicit flag says so
 - `init` remains explicit and safe for repeated execution
+- `init` is allowed to create or update contract metadata
+- `init` is the main bootstrap command for establishing both local binding and initial contract state
 
 ## envctl add KEY VALUE
 
@@ -219,18 +225,18 @@ The command uses checklist-style output such as `[OK]`, `[WARN]`, and `[FAIL]`.
 
 `doctor` is about host and local tool readiness, not about mutating project state.
 
-## envctl bind
+## envctl project bind PROJECT_ID
 
-Explicitly associates the current repository with a local vault location.
+Explicitly associates the current repository checkout with an existing canonical project id.
 
 Expected behavior:
 
-- creates or updates the binding between repository identity and vault path
-- does not modify contract or values
-- ensures the vault location is usable
-- makes the association explicit and inspectable
+- writes the binding into local Git config
+- reuses the target vault project when it exists
+- updates local persisted state as needed
+- does not modify contract semantics or secret values directly
 
-## envctl unbind
+## envctl project unbind
 
 Removes the binding between the current repository and its vault.
 
@@ -240,30 +246,36 @@ Expected behavior:
 - does not delete stored values
 - does not modify the contract
 - leaves the repository without an active vault binding
+- removes the local Git binding for the current checkout
+- does not delete the underlying vault project
+- does not modify local stored values
+- does not modify the contract
 
-## envctl rebind
+## envctl project rebind --new-project [--copy-values|--empty] [--yes]
 
-Recreates the binding between the repository and its vault.
-
-Expected behavior:
-
-- re-establishes the association using the current configuration
-- useful after manual changes or partial state loss
-- does not modify contract or values
-
-## envctl repair
-
-Detects and fixes inconsistencies in the repository binding and local state.
+Creates a fresh canonical project identity for the current checkout.
 
 Expected behavior:
 
-- checks binding integrity
-- verifies vault location and accessibility
-- detects broken or missing associations
-- attempts safe recovery when possible
-- reports actions taken
+- generates a new canonical `prj_...` project id
+- persists the new binding in local Git config
+- creates a fresh vault project directory
+- optionally copies the current vault values into the new vault
+- leaves contract semantics unchanged
 
-`repair` is intended for recovery workflows, not normal operation.
+This command is intended for identity separation, not ordinary daily workflow.
+
+## envctl project repair [--create-if-missing] [--recreate-bound-vault]
+
+Diagnoses and repairs local binding state.
+
+Expected behavior:
+
+- validates the current local Git binding when present
+- detects missing or broken vault associations
+- can recreate a missing vault for an existing bound project
+- can create and persist a fresh canonical binding when no persisted identity exists yet
+- reports whether the state was healthy, repaired, recreated, created, or still requires action
 
 ## envctl vault edit
 
@@ -292,14 +304,14 @@ Expected behavior:
 
 Prints the current vault file path for the active project context.
 
-## envctl vault show
+## envctl vault show [--raw]
 
-Shows the raw stored values in the local vault.
+Shows the current vault file contents, masked by default.
 
 Expected behavior:
 
 - masks values by default
-- allows raw output only through an explicit flag
+- `--raw` requires explicit confirmation before printing unmasked values
 - reflects stored local values, not the fully resolved environment
 
 This differs from `inspect`, which shows resolved state.
@@ -347,6 +359,12 @@ The v2.2 command model is centered on four responsibilities:
   - `run`
   - `sync`
   - `export`
+
+- **project identity and recovery**
+  - `bind`
+  - `unbind`
+  - `rebind`
+  - `repair`
 
 Supporting commands include:
 

@@ -111,6 +111,9 @@ Typical protections include:
 
 Permissions are applied on a best-effort basis and depend on the underlying filesystem.
 
+The repository ↔ vault binding is stored in local Git config for the current checkout.
+This keeps binding local and out of version control, but it also means Git metadata should be treated as part of the local operational surface.
+
 ## Projection security rules
 
 Projection commands must stay explicit.
@@ -180,6 +183,9 @@ This distinction helps avoid confusion between:
 - what is stored
 - what is resolved
 - what is projected
+
+`vault show --raw` requires explicit confirmation before printing unmasked values.
+This reduces the risk of accidental disclosure during interactive terminal use.
 
 ## Generated files
 

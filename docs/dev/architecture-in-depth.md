@@ -123,14 +123,53 @@ That conceptual split prevents the tool from drifting back into “just manipula
 
 ## Binding model (repository ↔ vault)
 
-In v2.2+, a new concept is introduced: binding.
+In v2.2+, binding is implemented explicitly and locally.
 
-Binding connects:
+A repository checkout may be in one of three states:
 
-- repository identity (derived)
-- local vault location (resolved)
+- **local**: a canonical project id is stored in local Git config
+- **recovered**: a canonical project id is recovered from persisted vault state
+- **derived**: no persisted identity exists yet, so a provisional id is used
 
-This is handled outside the contract and outside raw filesystem assumptions.
+### Persisted binding
+
+Canonical binding is stored in local Git config:
+
+```text
+envctl.projectId = prj_<16-hex>
+```
+
+This keeps the binding:
+
+* local to one checkout
+* outside the repository contract
+* outside version control
+
+### Persisted vault state
+
+Each vault project also stores structured state used for recovery.
+
+That state includes fields such as:
+
+* `version`
+* `project_slug`
+* `project_key`
+* `project_id`
+* `repo_root`
+* `git_remote`
+* `known_paths`
+* timestamps such as `created_at` and `last_seen_at`
+
+### Recovery rules
+
+When no local Git binding is present, project context recovery may match by:
+
+* Git remote
+* contract `project_key`
+* `known_paths`
+
+This makes identity resilient across repeated checkouts and repositories without a configured remote.
+
 
 ### Why binding exists
 
@@ -384,7 +423,7 @@ Responsible for:
 
 * determining repo root
 * resolving slug
-* computing stable project identity
+* resolves binding and recovery
 * deriving contract and local vault paths
 * building a typed `ProjectContext`
 
@@ -393,8 +432,9 @@ Responsible for:
 Responsible for:
 
 * reading persisted local project state
-* writing minimal local project state
-* keeping persisted project identity structured and explicit
+* normalizing supported state versions
+* maintaining backward-compatible reads for older vault state
+* writing structured project state used for recovery and reconciliation
 
 ### Why this is separate from `utils/`
 

@@ -91,6 +91,12 @@ This phase consolidated the v2 model and made it operationally complete.
   - Better test coverage
   - Improved formatting, linting, and type checking support
 
+- **Project identity and recovery**
+  - explicit local Git binding with canonical project ids
+  - recovery by remote, project key, and known paths
+  - repair and rebind workflows for broken or missing local state
+  - backward-compatible reading of older persisted vault state
+  
 ## v2.3+
 
 The next iteration should strengthen expressiveness and machine integration without weakening the explicit local-first model.

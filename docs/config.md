@@ -62,8 +62,21 @@ It does **not**:
 * act as a project schema
 * define business rules for one repository
 * replace the project contract
+* store repository bindings
+* define canonical project ids
+* replace local Git binding metadata
 
 Project-level environment requirements belong in the repository contract file, not in the user config.
+
+## Configuration vs binding
+
+`envctl` distinguishes between:
+
+* **user config**: global local defaults such as vault root and filenames
+* **binding**: checkout-local association between a repository and a canonical project id
+
+The binding is not stored in `config.json`.
+It is stored in local Git config for the current checkout.
 
 ## Project contract file
 

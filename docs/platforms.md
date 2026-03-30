@@ -26,6 +26,9 @@ The tool works best in environments that also provide:
 - POSIX-like permissions
 - predictable shell behavior
 
+Binding persistence relies on local Git config for checkout-local identity.
+This works best in environments where Git metadata remains stable and accessible from the same execution context.
+
 ## Permissions
 
 The tool attempts to use restrictive permissions for local storage, typically:
@@ -61,6 +64,9 @@ Typical benefits include:
 - simpler subprocess behavior for `run`
 - more natural handling of generated `.env.local` artifacts
 
+Binding persistence relies on local Git config for checkout-local identity.
+This works best in environments where Git metadata remains stable and accessible from the same execution context.
+
 ## Native Windows
 
 Native Windows support is possible, but behavior depends more heavily on the execution environment.
@@ -73,6 +79,9 @@ Important considerations include:
 - path conventions differ from Unix-like environments
 
 The v2 architecture is still more portable than a symlink-based model, but shell-specific and permission-specific differences remain relevant.
+
+Binding persistence relies on local Git config for checkout-local identity.
+This works best in environments where Git metadata remains stable and accessible from the same execution context.
 
 ## Shell compatibility
 

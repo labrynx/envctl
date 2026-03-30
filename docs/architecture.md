@@ -112,16 +112,22 @@ Projected files are artifacts, not sources of truth.
 
 A project context resolves the current repository as an execution unit.
 
-A project context typically includes:
+A project context includes:
 
 * repository root
-* repository slug
-* repository fingerprint
+* project slug
+* logical project key
+* canonical or provisional project id
+* repository remote when available
+* binding source (`local`, `recovered`, or `derived`)
 * contract path
-* target env filename
-* resolved local vault location
+* projected env filename
+* vault project directory
+* vault values path
+* vault state path
 
-The repository does not need a mandatory link file to its local environment state.
+The repository does not use a repository-owned metadata file as the source of truth.
+Instead, envctl reconstructs context from the current checkout, the local Git binding, the contract metadata, and persisted vault state.
 
 ### Binding model
 
@@ -146,20 +152,26 @@ It is an explicit part of the local state model.
 
 ### Binding operations
 
-The following operations manage the repository ↔ vault association:
+The following operations manage repository identity and local binding:
 
-- **bind**: explicitly associate the current repository with a vault location
-- **unbind**: remove the association
-- **rebind**: recreate the association safely
-- **repair**: detect and fix broken or inconsistent bindings
+- **bind**: associate the current checkout with an existing canonical project id
+- **unbind**: remove the local Git binding for the current checkout
+- **rebind**: create a fresh canonical project id for the current checkout, optionally copying current local values
+- **repair**: diagnose and recover missing, broken, or incomplete local bindings
 
-These operations affect **identity and location**, not contract or values.
+These operations affect **identity and location**, not contract semantics.
 
-That distinction is important:
+### Recovery strategy
 
-- contract → what exists
-- values → what is set
-- binding → where values live
+When no local Git binding is present, `envctl` can recover a project context from persisted vault state.
+
+Recovery may use:
+
+- repository remote URL when available
+- contract metadata such as `meta.project_key`
+- previously seen checkout paths stored in vault state (`known_paths`)
+
+This makes repository identity more robust across renamed folders, repeated checkouts, and repositories without a configured remote.
 
 ## Variable operations
 

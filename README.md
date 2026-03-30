@@ -21,6 +21,8 @@ Think of `envctl` as four explicit parts:
 - a **resolver** → combines values deterministically
 - a **projection layer** → injects or materializes the environment when needed
 
+Projection modes are interchangeable representations of the same resolved state, whether in-memory (`run`), file-based (`sync`), or shell-based (`export`).
+
 That separation matters:
 
 - the **contract** defines what exists
@@ -32,22 +34,22 @@ That separation matters:
 
 ## Repository binding
 
-Each repository is explicitly associated with a local vault.
+Each checkout is associated with a canonical local project identity.
 
-This association is called a **binding**.
+This binding is stored in local Git config and points the checkout to the correct vault project.
 
-You can manage it with:
+Typical commands:
 
 ```bash
-envctl bind
-envctl unbind
-envctl rebind
-envctl repair
+envctl project bind <project-id>
+envctl project unbind
+envctl project rebind --new-project
+envctl project repair
 ```
 
-Binding controls where values live, not what they are.
+`envctl` can also recover project identity from persisted local state using repository remote, contract metadata, and known checkout paths.
 
-This keeps identity, storage, and contract clearly separated.
+Binding controls where values live, not what they are.
 
 ---
 
@@ -177,10 +179,14 @@ This mode is mainly intended for POSIX-like shells.
 
 ```bash
 envctl add DATABASE_URL postgres://user:pass@localhost:5432/app
+# or
+envctl add DATABASE_URL
+# prompt for value
 ```
 
 * Adds the variable to the contract when missing
 * Stores the value locally
+* Prompts for the value when not provided inline
 * Infers metadata automatically:
 
   * type
@@ -190,8 +196,6 @@ envctl add DATABASE_URL postgres://user:pass@localhost:5432/app
 * Supports interactive review for fine-tuning metadata
 
 This is the main command for introducing a new variable into the shared model.
-
----
 
 ### Set a value (value only)
 
@@ -235,12 +239,12 @@ envctl remove PORT
 
 `envctl` enforces a strict separation between shared requirements and local state.
 
-| Operation | Contract | Local value |
-| --------- | -------- | ----------- |
-| `add`     | ✅        | ✅           |
-| `set`     | ❌        | ✅           |
-| `unset`   | ❌        | ❌           |
-| `remove`  | ❌        | ❌           |
+| Operation | Contract action | Local value action |
+|-----------|-----------------|--------------------|
+| add       | create/update   | set                |
+| set       | no change       | set                |
+| unset     | no change       | delete             |
+| remove    | delete          | delete             |
 
 More precisely:
 
@@ -301,6 +305,8 @@ envctl vault show
 * Reflects raw storage state, not the fully resolved environment
 
 This differs from `inspect`, which shows resolved runtime state.
+
+If you use `--raw`, envctl asks for explicit confirmation before showing unmasked values.
 
 ---
 
@@ -390,6 +396,8 @@ envctl check
 ```
 
 If the contract does not exist yet, `init` can create a starter contract or infer one from `.env.example`.
+
+`init` also establishes the local project binding and prepares persisted vault state.
 
 ---
 

@@ -17,19 +17,39 @@ A repository should not need a mandatory link file just to connect itself to its
 
 ## Repository identity
 
-Project identity is derived dynamically from the current repository and resolved through an explicit binding.
+Project identity is resolved through an explicit local binding model.
 
-The binding defines how that identity maps to a concrete local vault location.
+`envctl` distinguishes between:
 
-This avoids relying on implicit filesystem conventions while still keeping identity deterministic.
+- a **canonical project id** such as `prj_<16-hex>`
+- a **provisional project id** such as `tmp_<hash>`
+- a **logical project key** used to identify the project across checkouts when needed
 
-Typical identity inputs may include:
+Canonical identity is persisted in local Git config for the current checkout.
 
-- Git remote URL when available
-- repository root path as a fallback
-- repository directory name as a human-readable slug
+When no persisted local binding exists, `envctl` may recover identity from persisted vault state using:
 
-That identity is used to derive stable local storage locations without requiring the repository to own secret linkage state.
+- Git remote URL
+- contract metadata such as `meta.project_key`
+- previously seen checkout paths (`known_paths`)
+
+If no persisted identity can be found, a provisional identity is used until a command persists a canonical binding.
+
+## Persisted local state
+
+Each vault project stores structured local state used for recovery and continuity.
+
+Typical fields include:
+
+- project slug
+- project key
+- canonical project id
+- repository root
+- Git remote when known
+- known checkout paths
+- timestamps
+
+This state is local operational metadata. It is not the contract and it is not the source of truth for secret values.
 
 ## Local state
 
