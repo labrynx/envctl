@@ -6,9 +6,7 @@ import typer
 
 from envctl.cli.callbacks import typer_confirm
 from envctl.cli.decorators import handle_errors
-from envctl.repository.contract_repository import load_contract_optional
-from envctl.services.context_service import load_project_context
-from envctl.services.remove_service import run_remove
+from envctl.services.remove_service import plan_remove, run_remove
 from envctl.utils.output import print_kv, print_success, print_warning
 
 
@@ -18,23 +16,30 @@ def remove_command(
     yes: bool = typer.Option(False, "--yes", help="Skip confirmation."),
 ) -> None:
     """Remove one key from the local vault and contract."""
-    _config, context = load_project_context()
-    contract = load_contract_optional(context.repo_contract_path)
-    declared_in_contract = contract is not None and key in contract.variables
+    _context, plan = plan_remove(key)
 
-    if declared_in_contract and not yes:
+    remove_from_contract = plan.declared_in_contract
+
+    if plan.requires_confirmation and not yes:
         approved = typer_confirm(f"Remove '{key}' from both local vault and contract?", False)
         if not approved:
             print_warning("Nothing was removed.")
             return
 
-    context, result = run_remove(key=key)
+    context, result = run_remove(
+        key=key,
+        remove_from_contract=remove_from_contract,
+    )
 
     if not result.removed_from_vault and not result.removed_from_contract:
         print_warning("Nothing was removed.")
         return
 
-    print_success(f"Removed '{key}' from contract and local vault")
+    if result.removed_from_contract:
+        print_success(f"Removed '{key}' from contract and local vault")
+    elif result.removed_from_vault:
+        print_success(f"Removed '{key}' from local vault")
+
     print_kv("vault_values", str(context.vault_values_path))
     print_kv("contract", str(context.repo_contract_path))
     print_kv("removed_from_vault", "yes" if result.removed_from_vault else "no")

@@ -143,3 +143,16 @@ class RepairResult:
     status: str
     detail: str
     project_id: str | None = None
+
+@dataclass(frozen=True)
+class RemovePlan:
+    """Preflight information for a remove operation."""
+
+    key: str
+    present_in_vault: bool
+    declared_in_contract: bool
+
+    @property
+    def requires_confirmation(self) -> bool:
+        """Return whether the CLI should ask for confirmation."""
+        return self.declared_in_contract
