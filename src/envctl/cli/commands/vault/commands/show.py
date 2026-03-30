@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typer
 
+from envctl.cli.callbacks import typer_confirm
 from envctl.cli.decorators import handle_errors
 from envctl.repository.contract_repository import load_contract_optional
 from envctl.services.vault_service import run_vault_show
@@ -32,6 +33,15 @@ def vault_show_command(
     if not result.values:
         print_warning("Vault file is empty")
         return
+
+    if raw:
+        approved = typer_confirm(
+            "This will display unmasked secret values. Continue?",
+            default=False,
+        )
+        if not approved:
+            print_warning("Nothing was shown.")
+            return
 
     contract = load_contract_optional(context.repo_contract_path)
     contract_variables = contract.variables if contract is not None else {}
