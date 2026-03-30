@@ -85,7 +85,7 @@ def test_render_resolution_outputs_empty_state(capsys) -> None:
 def test_render_status_outputs_summary_issues_and_action(capsys) -> None:
     report = StatusReport(
         project_slug="demo",
-        project_id="abc123",
+        project_id="prj_aaaaaaaaaaaaaaaa",
         repo_root="/tmp/demo",
         contract_exists=True,
         vault_exists=False,
@@ -100,7 +100,7 @@ def test_render_status_outputs_summary_issues_and_action(capsys) -> None:
     captured = capsys.readouterr()
     output = captured.out
 
-    assert "Project: demo (abc123)" in output
+    assert "Project: demo (prj_aaaaaaaaaaaaaaaa)" in output
     assert "Repository: /tmp/demo" in output
     assert "The project contract is not satisfied yet." in output
     assert "Contract present: yes" in output

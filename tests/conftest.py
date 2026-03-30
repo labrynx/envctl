@@ -8,6 +8,8 @@ import pytest
 import yaml
 from typer.testing import CliRunner
 
+import envctl.adapters.git as git_adapters
+
 
 def write_sample_contract(repo: Path) -> None:
     """Write a standard CLI integration contract into the repository."""
@@ -42,14 +44,27 @@ def write_sample_contract(repo: Path) -> None:
 def patch_git_for_repo(monkeypatch: pytest.MonkeyPatch, repo: Path) -> None:
     """Patch git helpers so tests operate inside an isolated repository."""
 
-    def fake_run_git(args: list[str], cwd: Path | None = None) -> str:
+    git_config_store: dict[str, str] = {}
+
+    def fake_run_git(args: list[str], cwd: Path | None = None, check: bool = True) -> str:
         if args == ["rev-parse", "--show-toplevel"]:
             return str(repo)
+
         if args == ["remote", "get-url", "origin"]:
             return "git@github.com:alessbarb/envctl.git"
+
+        if args == ["config", "--local", "--get", "envctl.projectId"]:
+            return git_config_store.get("envctl.projectId", "")
+
+        if len(args) == 4 and args[:2] == ["config", "--local"]:
+            key = args[2]
+            value = args[3]
+            git_config_store[key] = value
+            return ""
+
         raise RuntimeError(f"Unexpected git args: {args}")
 
-    monkeypatch.setattr("envctl.adapters.git._run_git", fake_run_git)
+    monkeypatch.setattr(git_adapters, "_run_git", fake_run_git)
 
 
 @pytest.fixture
@@ -73,5 +88,7 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
     patch_git_for_repo(monkeypatch, repo)
     write_sample_contract(repo)
+
+    monkeypatch.chdir(repo)
 
     return repo

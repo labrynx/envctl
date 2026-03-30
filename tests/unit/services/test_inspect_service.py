@@ -23,7 +23,7 @@ def test_run_inspect_returns_context_and_resolution_report(monkeypatch) -> None:
 
     monkeypatch.setattr(
         "envctl.services.inspect_service.load_project_context",
-        lambda: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
     monkeypatch.setattr(
         "envctl.services.inspect_service.load_contract_for_context",

@@ -34,7 +34,7 @@ def test_run_export_returns_shell_lines_for_valid_environment(monkeypatch) -> No
     monkeypatch.setattr(
         export_service,
         "load_project_context",
-        lambda: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
     monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(export_service, "resolve_environment", lambda _context, _contract: report)
@@ -55,7 +55,7 @@ def test_run_export_raises_when_environment_is_invalid(monkeypatch) -> None:
     monkeypatch.setattr(
         export_service,
         "load_project_context",
-        lambda: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
     monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(export_service, "resolve_environment", lambda _context, _contract: report)

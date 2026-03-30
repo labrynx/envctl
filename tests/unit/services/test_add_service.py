@@ -9,11 +9,20 @@ from envctl.domain.operations import AddVariableRequest
 
 
 def make_context(tmp_path: Path) -> SimpleNamespace:
-    vault_dir = tmp_path / "vault" / "demo--abc123"
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir(parents=True, exist_ok=True)
+
+    vault_dir = tmp_path / "vault" / "demo--prj_aaaaaaaaaaaaaaaa"
+
     return SimpleNamespace(
-        repo_contract_path=tmp_path / ".envctl.schema.yaml",
+        project_slug="demo",
+        project_key="demo",
+        project_id="prj_aaaaaaaaaaaaaaaa",
+        repo_root=repo_root,
+        repo_contract_path=repo_root / ".envctl.schema.yaml",
         vault_project_dir=vault_dir,
         vault_values_path=vault_dir / "values.env",
+        vault_state_path=vault_dir / "state.json",
     )
 
 
@@ -62,7 +71,7 @@ def test_apply_request_to_spec_returns_same_spec_when_no_overrides() -> None:
 def test_run_add_creates_contract_and_entry(tmp_path: Path, monkeypatch) -> None:
     context = make_context(tmp_path)
 
-    monkeypatch.setattr(add_service, "load_project_context", lambda: (SimpleNamespace(), context))
+    monkeypatch.setattr(add_service, "load_project_context", lambda project_name=None, persist_binding=False: (SimpleNamespace(), context))
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: None)
 
     returned_context, result = add_service.run_add(
@@ -86,7 +95,7 @@ def test_run_add_uses_existing_spec_when_present(tmp_path: Path, monkeypatch) ->
     existing = VariableSpec(name="APP_NAME", description="Existing description")
     contract = Contract(version=1, variables={"APP_NAME": existing})
 
-    monkeypatch.setattr(add_service, "load_project_context", lambda: (SimpleNamespace(), context))
+    monkeypatch.setattr(add_service, "load_project_context", lambda project_name=None, persist_binding=False: (SimpleNamespace(), context))
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: contract)
 
     _, result = add_service.run_add(
@@ -104,7 +113,7 @@ def test_run_add_uses_existing_spec_when_present(tmp_path: Path, monkeypatch) ->
 def test_run_add_applies_overrides(tmp_path: Path, monkeypatch) -> None:
     context = make_context(tmp_path)
 
-    monkeypatch.setattr(add_service, "load_project_context", lambda: (SimpleNamespace(), context))
+    monkeypatch.setattr(add_service, "load_project_context", lambda project_name=None, persist_binding=False: (SimpleNamespace(), context))
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: None)
 
     _, result = add_service.run_add(
@@ -125,7 +134,7 @@ def test_run_add_applies_overrides(tmp_path: Path, monkeypatch) -> None:
 def test_run_add_writes_value_to_vault(tmp_path: Path, monkeypatch) -> None:
     context = make_context(tmp_path)
 
-    monkeypatch.setattr(add_service, "load_project_context", lambda: (SimpleNamespace(), context))
+    monkeypatch.setattr(add_service, "load_project_context", lambda project_name=None, persist_binding=False: (SimpleNamespace(), context))
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: None)
 
     add_service.run_add(
@@ -144,7 +153,7 @@ def test_run_add_updates_existing_vault_value(tmp_path: Path, monkeypatch) -> No
     context.vault_project_dir.mkdir(parents=True, exist_ok=True)
     context.vault_values_path.write_text("APP_NAME=old\n", encoding="utf-8")
 
-    monkeypatch.setattr(add_service, "load_project_context", lambda: (SimpleNamespace(), context))
+    monkeypatch.setattr(add_service, "load_project_context", lambda project_name=None, persist_binding=False: (SimpleNamespace(), context))
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: None)
 
     add_service.run_add(
@@ -164,7 +173,7 @@ def test_run_add_updates_existing_contract_when_spec_changes(tmp_path: Path, mon
     existing = VariableSpec(name="APP_NAME", description="Old description")
     contract = Contract(version=1, variables={"APP_NAME": existing})
 
-    monkeypatch.setattr(add_service, "load_project_context", lambda: (SimpleNamespace(), context))
+    monkeypatch.setattr(add_service, "load_project_context", lambda project_name=None, persist_binding=False: (SimpleNamespace(), context))
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: contract)
 
     _, result = add_service.run_add(
@@ -187,7 +196,7 @@ def test_run_add_does_not_rewrite_contract_when_existing_spec_is_unchanged(
     existing = VariableSpec(name="APP_NAME", description="Existing description")
     contract = Contract(version=1, variables={"APP_NAME": existing})
 
-    monkeypatch.setattr(add_service, "load_project_context", lambda: (SimpleNamespace(), context))
+    monkeypatch.setattr(add_service, "load_project_context", lambda project_name=None, persist_binding=False: (SimpleNamespace(), context))
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: contract)
 
     written_contracts: list[tuple[Path, Contract]] = []

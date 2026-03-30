@@ -16,13 +16,13 @@ def test_run_status_reports_missing_contract(tmp_path: Path, monkeypatch) -> Non
     monkeypatch.setattr(
         status_service,
         "load_project_context",
-        lambda: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
     report = run_status()
 
     assert report.project_slug == "demo"
-    assert report.project_id == "abc123"
+    assert report.project_id == context.project_id
     assert report.contract_exists is False
     assert report.vault_exists is False
     assert report.resolved_valid is False
@@ -37,7 +37,7 @@ def test_run_status_reports_invalid_contract(tmp_path: Path, monkeypatch) -> Non
     monkeypatch.setattr(
         status_service,
         "load_project_context",
-        lambda: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
     def raise_contract_error(_context):
@@ -72,7 +72,7 @@ def test_run_status_reports_valid_environment(tmp_path: Path, monkeypatch) -> No
     monkeypatch.setattr(
         status_service,
         "load_project_context",
-        lambda: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
     monkeypatch.setattr(status_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(
@@ -115,7 +115,7 @@ def test_run_status_reports_missing_invalid_and_unknown_values(tmp_path: Path, m
     monkeypatch.setattr(
         status_service,
         "load_project_context",
-        lambda: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
     monkeypatch.setattr(status_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(

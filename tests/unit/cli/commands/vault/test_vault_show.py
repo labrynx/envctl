@@ -135,6 +135,11 @@ def test_vault_show_command_prints_raw_values_when_requested(monkeypatch, capsys
         "mask_value",
         lambda value: "<masked>",
     )
+    monkeypatch.setattr(
+        vault_show_module,
+        "typer_confirm",
+        lambda message, default=False: True,
+    )
 
     vault_show_module.vault_show_command(raw=True)
 

@@ -20,7 +20,7 @@ def test_run_command_fails_when_resolved_environment_is_invalid(monkeypatch) -> 
     contract = object()
     report = make_resolution_report(missing_required=["API_KEY"])
 
-    monkeypatch.setattr(run_service, "load_project_context", lambda: (SimpleNamespace(), context))
+    monkeypatch.setattr(run_service, "load_project_context", lambda project_name=None, persist_binding=False: (SimpleNamespace(), context))
     monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(run_service, "resolve_environment", lambda _context, _contract: report)
 
@@ -57,7 +57,7 @@ def test_run_command_executes_subprocess_with_injected_environment(monkeypatch) 
         captured["check"] = check
         return SimpleNamespace(returncode=7)
 
-    monkeypatch.setattr(run_service, "load_project_context", lambda: (SimpleNamespace(), context))
+    monkeypatch.setattr(run_service, "load_project_context", lambda project_name=None, persist_binding=False: (SimpleNamespace(), context))
     monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(run_service, "resolve_environment", lambda _context, _contract: report)
     monkeypatch.setattr(run_service.subprocess, "run", fake_run)

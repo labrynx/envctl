@@ -36,7 +36,7 @@ def test_run_sync_writes_materialized_env_when_resolution_is_valid(
 
     written: dict[str, str] = {}
 
-    monkeypatch.setattr(sync_service, "load_project_context", lambda: (SimpleNamespace(), context))
+    monkeypatch.setattr(sync_service, "load_project_context", lambda project_name=None, persist_binding=False: (SimpleNamespace(), context))
     monkeypatch.setattr(sync_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(sync_service, "resolve_environment", lambda _context, _contract: report)
     monkeypatch.setattr(
@@ -60,7 +60,7 @@ def test_run_sync_raises_when_environment_is_invalid(monkeypatch, tmp_path: Path
     contract = object()
     report = make_resolution_report(missing_required=["APP_NAME"])
 
-    monkeypatch.setattr(sync_service, "load_project_context", lambda: (SimpleNamespace(), context))
+    monkeypatch.setattr(sync_service, "load_project_context", lambda project_name=None, persist_binding=False: (SimpleNamespace(), context))
     monkeypatch.setattr(sync_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(sync_service, "resolve_environment", lambda _context, _contract: report)
 

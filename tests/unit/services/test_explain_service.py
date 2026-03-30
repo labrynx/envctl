@@ -22,7 +22,7 @@ def test_run_explain_returns_resolved_value(monkeypatch) -> None:
 
     monkeypatch.setattr(
         "envctl.services.explain_service.load_project_context",
-        lambda: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
     monkeypatch.setattr(
         "envctl.services.explain_service.load_contract_for_context",
@@ -49,7 +49,7 @@ def test_run_explain_raises_when_key_is_not_resolved(monkeypatch) -> None:
 
     monkeypatch.setattr(
         "envctl.services.explain_service.load_project_context",
-        lambda: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
     monkeypatch.setattr(
         "envctl.services.explain_service.load_contract_for_context",

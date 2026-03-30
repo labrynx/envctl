@@ -42,9 +42,9 @@ def test_resolve_environment_prefers_system_over_vault_and_default(monkeypatch) 
 
     report = resolve_environment(context, contract)
 
-    assert report.missing_required == []
-    assert report.invalid_keys == []
-    assert report.unknown_keys == ["UNKNOWN_KEY"]
+    assert report.missing_required == ()
+    assert report.invalid_keys == ()
+    assert report.unknown_keys == ("UNKNOWN_KEY",)
 
     assert report.values["APP_NAME"].value == "from-system"
     assert report.values["APP_NAME"].source == "system"
@@ -71,8 +71,8 @@ def test_resolve_environment_marks_missing_required_keys(monkeypatch) -> None:
 
     report = resolve_environment(context, contract)
 
-    assert report.missing_required == ["APP_NAME", "DATABASE_URL"]
-    assert report.invalid_keys == []
+    assert report.missing_required == ("APP_NAME", "DATABASE_URL")
+    assert report.invalid_keys == ()
     assert "PORT" in report.values
     assert report.values["PORT"].value == "3000"
     assert report.values["PORT"].source == "default"
@@ -103,8 +103,8 @@ def test_resolve_environment_marks_invalid_int_bool_url_choice_and_pattern(monke
 
     report = resolve_environment(context, contract)
 
-    assert report.missing_required == []
-    assert report.invalid_keys == ["DATABASE_URL", "DEBUG", "ENVIRONMENT", "PORT", "SLUG"]
+    assert report.missing_required == ()
+    assert report.invalid_keys == ("DATABASE_URL", "DEBUG", "ENVIRONMENT", "PORT", "SLUG")
 
     assert report.values["PORT"].valid is False
     assert report.values["PORT"].detail == "Expected an integer"
@@ -145,5 +145,5 @@ def test_resolve_environment_accepts_valid_bool_variants(monkeypatch) -> None:
 
         report = resolve_environment(context, contract)
 
-        assert report.invalid_keys == []
+        assert report.invalid_keys == ()
         assert report.values["DEBUG"].valid is True

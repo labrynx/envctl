@@ -28,11 +28,14 @@ def test_typer_confirm_bridges_to_typer(monkeypatch) -> None:
 
 def test_init_command_prints_contract_creation_details(monkeypatch, capsys) -> None:
     context = SimpleNamespace(
-        display_name="demo (abc123)",
+        display_name="demo (prj_aaaaaaaaaaaaaaaa)",
+        project_key="demo",
+        binding_source="local",
         repo_root="/tmp/demo",
         repo_contract_path="/tmp/demo/.envctl.schema.yaml",
-        vault_project_dir="/tmp/vault/demo--abc123",
-        vault_values_path="/tmp/vault/demo--abc123/values.env",
+        vault_project_dir="/tmp/vault/demo--prj_aaaaaaaaaaaaaaaa",
+        vault_values_path="/tmp/vault/demo--prj_aaaaaaaaaaaaaaaa/values.env",
+        vault_state_path="/tmp/vault/demo--prj_aaaaaaaaaaaaaaaa/state.json",
     )
     init_result = InitResult(
         contract_created=True,
@@ -49,22 +52,28 @@ def test_init_command_prints_contract_creation_details(monkeypatch, capsys) -> N
     init_command()
 
     output = capsys.readouterr().out
-    assert "Initialized demo (abc123)" in output
+    assert "Initialized demo (prj_aaaaaaaaaaaaaaaa)" in output
+    assert "project_key: demo" in output
+    assert "binding_source: local" in output
     assert "repo_root: /tmp/demo" in output
     assert "contract: /tmp/demo/.envctl.schema.yaml" in output
-    assert "vault_dir: /tmp/vault/demo--abc123" in output
-    assert "vault_values: /tmp/vault/demo--abc123/values.env" in output
+    assert "vault_dir: /tmp/vault/demo--prj_aaaaaaaaaaaaaaaa" in output
+    assert "vault_values: /tmp/vault/demo--prj_aaaaaaaaaaaaaaaa/values.env" in output
+    assert "vault_state: /tmp/vault/demo--prj_aaaaaaaaaaaaaaaa/state.json" in output
     assert "contract_created: yes" in output
     assert "contract_template: starter" in output
 
 
 def test_init_command_warns_when_contract_is_skipped(monkeypatch, capsys) -> None:
     context = SimpleNamespace(
-        display_name="demo (abc123)",
+        display_name="demo (prj_aaaaaaaaaaaaaaaa)",
+        project_key="demo",
+        binding_source="local",
         repo_root="/tmp/demo",
         repo_contract_path="/tmp/demo/.envctl.schema.yaml",
-        vault_project_dir="/tmp/vault/demo--abc123",
-        vault_values_path="/tmp/vault/demo--abc123/values.env",
+        vault_project_dir="/tmp/vault/demo--prj_aaaaaaaaaaaaaaaa",
+        vault_values_path="/tmp/vault/demo--prj_aaaaaaaaaaaaaaaa/values.env",
+        vault_state_path="/tmp/vault/demo--prj_aaaaaaaaaaaaaaaa/state.json",
     )
     init_result = InitResult(
         contract_created=False,
@@ -81,5 +90,7 @@ def test_init_command_warns_when_contract_is_skipped(monkeypatch, capsys) -> Non
     init_command()
 
     output = capsys.readouterr().out
-    assert "Initialized demo (abc123)" in output
+    assert "Initialized demo (prj_aaaaaaaaaaaaaaaa)" in output
+    assert "project_key: demo" in output
+    assert "binding_source: local" in output
     assert "No contract file was created" in output

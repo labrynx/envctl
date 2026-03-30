@@ -53,7 +53,7 @@ def test_run_init_creates_vault_files_and_preserves_existing_contract(
     monkeypatch.setattr(
         init_service,
         "load_project_context",
-        lambda project_name=None: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
     result_context, result = run_init()
@@ -64,18 +64,6 @@ def test_run_init_creates_vault_files_and_preserves_existing_contract(
     assert context.vault_project_dir.exists()
     assert context.vault_values_path.exists()
     assert context.vault_values_path.read_text(encoding="utf-8") == ""
-    assert context.vault_state_path.exists()
-
-    state = yaml.safe_load(context.vault_state_path.read_text(encoding="utf-8"))
-    assert state["version"] == 2
-    assert state["project_slug"] == "demo"
-    assert state["project_key"] == "demo"
-    assert state["project_id"] == "prj_aaaaaaaaaaaaaaaa"
-    assert state["repo_root"] == str(context.repo_root)
-    assert state["git_remote"] is None
-    assert state["known_paths"] == [str(context.repo_root)]
-    assert "created_at" in state
-    assert "last_seen_at" in state
 
 
 def test_run_init_creates_starter_contract_when_requested(monkeypatch, tmp_path: Path) -> None:
@@ -84,7 +72,7 @@ def test_run_init_creates_starter_contract_when_requested(monkeypatch, tmp_path:
     monkeypatch.setattr(
         init_service,
         "load_project_context",
-        lambda project_name=None: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
     result_context, result = run_init(contract_mode="starter")
@@ -125,7 +113,7 @@ def test_run_init_skips_contract_when_requested(monkeypatch, tmp_path: Path) -> 
     monkeypatch.setattr(
         init_service,
         "load_project_context",
-        lambda project_name=None: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
     result_context, result = run_init(contract_mode="skip")
@@ -161,7 +149,7 @@ def test_run_init_creates_contract_from_env_example(monkeypatch, tmp_path: Path)
     monkeypatch.setattr(
         init_service,
         "load_project_context",
-        lambda project_name=None: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
     _, result = run_init(contract_mode="example")
@@ -214,7 +202,7 @@ def test_run_init_example_mode_falls_back_to_starter_when_example_is_missing(
     monkeypatch.setattr(
         init_service,
         "load_project_context",
-        lambda project_name=None: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
     _, result = run_init(contract_mode="example")
@@ -245,7 +233,7 @@ def test_run_init_ask_mode_uses_example_when_confirm_accepts(monkeypatch, tmp_pa
     monkeypatch.setattr(
         init_service,
         "load_project_context",
-        lambda project_name=None: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
     _, result = run_init(contract_mode="ask", confirm=fake_confirm)
@@ -279,7 +267,7 @@ def test_run_init_ask_mode_uses_starter_after_declining_example(
     monkeypatch.setattr(
         init_service,
         "load_project_context",
-        lambda project_name=None: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
     _, result = run_init(contract_mode="ask", confirm=fake_confirm)
@@ -306,7 +294,7 @@ def test_run_init_ask_mode_skips_after_declining_all_prompts(monkeypatch, tmp_pa
     monkeypatch.setattr(
         init_service,
         "load_project_context",
-        lambda project_name=None: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
     _, result = run_init(contract_mode="ask", confirm=fake_confirm)
@@ -333,7 +321,7 @@ def test_run_init_ask_mode_without_confirm_uses_example_when_available(
     monkeypatch.setattr(
         init_service,
         "load_project_context",
-        lambda project_name=None: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
     _, result = run_init(contract_mode="ask", confirm=None)
@@ -353,7 +341,7 @@ def test_run_init_ask_mode_without_confirm_uses_starter_when_example_is_missing(
     monkeypatch.setattr(
         init_service,
         "load_project_context",
-        lambda project_name=None: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
     _, result = run_init(contract_mode="ask", confirm=None)

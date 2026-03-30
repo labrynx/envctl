@@ -16,16 +16,22 @@ from envctl.errors import ExecutionError
 
 
 def make_context(tmp_path: Path) -> SimpleNamespace:
-    vault_project_dir = tmp_path / "vault" / "demo--abc123"
-    vault_values_path = vault_project_dir / "values.env"
-    repo_contract_path = tmp_path / "repo" / ".envctl.schema.yaml"
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir(parents=True, exist_ok=True)
 
-    repo_contract_path.parent.mkdir(parents=True, exist_ok=True)
+    vault_project_dir = tmp_path / "vault" / "demo--prj_aaaaaaaaaaaaaaaa"
+    vault_values_path = vault_project_dir / "values.env"
+    repo_contract_path = repo_root / ".envctl.schema.yaml"
 
     return SimpleNamespace(
+        project_slug="demo",
+        project_key="demo",
+        project_id="prj_aaaaaaaaaaaaaaaa",
+        repo_root=repo_root,
+        repo_contract_path=repo_contract_path,
         vault_project_dir=vault_project_dir,
         vault_values_path=vault_values_path,
-        repo_contract_path=repo_contract_path,
+        vault_state_path=vault_project_dir / "state.json",
     )
 
 
@@ -35,7 +41,7 @@ def test_load_vault_context_returns_context(monkeypatch, tmp_path: Path) -> None
     monkeypatch.setattr(
         vault_service,
         "load_project_context",
-        lambda: ("config", context),
+        lambda project_name=None, persist_binding=False: ("config", context),
     )
 
     assert vault_service._load_vault_context() is context
@@ -96,7 +102,11 @@ def test_run_vault_edit_opens_file_and_returns_result(monkeypatch, tmp_path: Pat
     context.vault_project_dir.mkdir(parents=True, exist_ok=True)
     context.vault_values_path.write_text("APP_NAME=demo\n", encoding="utf-8")
 
-    monkeypatch.setattr(vault_service, "_load_vault_context", lambda: context)
+    monkeypatch.setattr(
+        vault_service,
+        "_load_vault_context",
+        lambda persist_binding=False: context,
+    )
     monkeypatch.setattr(vault_service, "_ensure_vault_file", lambda ctx: False)
 
     captured: dict[str, object] = {}
@@ -125,7 +135,11 @@ def test_run_vault_edit_raises_when_reloaded_file_cannot_be_read(
 ) -> None:
     context = make_context(tmp_path)
 
-    monkeypatch.setattr(vault_service, "_load_vault_context", lambda: context)
+    monkeypatch.setattr(
+        vault_service,
+        "_load_vault_context",
+        lambda persist_binding=False: context,
+    )
     monkeypatch.setattr(vault_service, "_ensure_vault_file", lambda ctx: True)
     monkeypatch.setattr(vault_service, "open_file", lambda path: None)
 
@@ -141,7 +155,11 @@ def test_run_vault_edit_raises_when_reloaded_file_cannot_be_read(
 def test_run_vault_check_returns_non_existing_result(monkeypatch, tmp_path: Path) -> None:
     context = make_context(tmp_path)
 
-    monkeypatch.setattr(vault_service, "_load_vault_context", lambda: context)
+    monkeypatch.setattr(
+        vault_service,
+        "_load_vault_context",
+        lambda persist_binding=False: context,
+    )
 
     result_context, result = vault_service.run_vault_check()
 
@@ -160,7 +178,11 @@ def test_run_vault_check_returns_existing_result(monkeypatch, tmp_path: Path) ->
     context.vault_project_dir.mkdir(parents=True, exist_ok=True)
     context.vault_values_path.write_text("APP_NAME=demo\nPORT=3000\n", encoding="utf-8")
 
-    monkeypatch.setattr(vault_service, "_load_vault_context", lambda: context)
+    monkeypatch.setattr(
+        vault_service,
+        "_load_vault_context",
+        lambda persist_binding=False: context,
+    )
     monkeypatch.setattr(
         vault_service,
         "load_env_file",
@@ -185,7 +207,11 @@ def test_run_vault_check_raises_when_file_cannot_be_read(monkeypatch, tmp_path: 
     context.vault_project_dir.mkdir(parents=True, exist_ok=True)
     context.vault_values_path.write_text("APP_NAME=demo\n", encoding="utf-8")
 
-    monkeypatch.setattr(vault_service, "_load_vault_context", lambda: context)
+    monkeypatch.setattr(
+        vault_service,
+        "_load_vault_context",
+        lambda persist_binding=False: context,
+    )
 
     def fake_load_env_file(path: Path) -> dict[str, str]:
         raise OSError("boom")
@@ -199,7 +225,11 @@ def test_run_vault_check_raises_when_file_cannot_be_read(monkeypatch, tmp_path: 
 def test_run_vault_path_returns_string_path(monkeypatch, tmp_path: Path) -> None:
     context = make_context(tmp_path)
 
-    monkeypatch.setattr(vault_service, "_load_vault_context", lambda: context)
+    monkeypatch.setattr(
+        vault_service,
+        "_load_vault_context",
+        lambda persist_binding=False: context,
+    )
 
     result_context, path = vault_service.run_vault_path()
 
@@ -210,7 +240,11 @@ def test_run_vault_path_returns_string_path(monkeypatch, tmp_path: Path) -> None
 def test_run_vault_show_returns_non_existing_result(monkeypatch, tmp_path: Path) -> None:
     context = make_context(tmp_path)
 
-    monkeypatch.setattr(vault_service, "_load_vault_context", lambda: context)
+    monkeypatch.setattr(
+        vault_service,
+        "_load_vault_context",
+        lambda persist_binding=False: context,
+    )
 
     result_context, result = vault_service.run_vault_show()
 
@@ -227,7 +261,11 @@ def test_run_vault_show_returns_values(monkeypatch, tmp_path: Path) -> None:
     context.vault_project_dir.mkdir(parents=True, exist_ok=True)
     context.vault_values_path.write_text("APP_NAME=demo\n", encoding="utf-8")
 
-    monkeypatch.setattr(vault_service, "_load_vault_context", lambda: context)
+    monkeypatch.setattr(
+        vault_service,
+        "_load_vault_context",
+        lambda persist_binding=False: context,
+    )
     monkeypatch.setattr(vault_service, "load_env_file", lambda path: {"APP_NAME": "demo"})
 
     result_context, result = vault_service.run_vault_show()
@@ -245,7 +283,11 @@ def test_run_vault_show_raises_when_file_cannot_be_read(monkeypatch, tmp_path: P
     context.vault_project_dir.mkdir(parents=True, exist_ok=True)
     context.vault_values_path.write_text("APP_NAME=demo\n", encoding="utf-8")
 
-    monkeypatch.setattr(vault_service, "_load_vault_context", lambda: context)
+    monkeypatch.setattr(
+        vault_service,
+        "_load_vault_context",
+        lambda persist_binding=False: context,
+    )
 
     def fake_load_env_file(path: Path) -> dict[str, str]:
         raise OSError("boom")
@@ -261,7 +303,11 @@ def test_get_unknown_vault_keys_raises_when_contract_is_invalid(
 ) -> None:
     context = make_context(tmp_path)
 
-    monkeypatch.setattr(vault_service, "_load_vault_context", lambda: context)
+    monkeypatch.setattr(
+        vault_service,
+        "_load_vault_context",
+        lambda persist_binding=False: context,
+    )
     monkeypatch.setattr(vault_service, "_ensure_vault_file", lambda ctx: True)
 
     def fake_load_contract(path: Path):
@@ -276,7 +322,11 @@ def test_get_unknown_vault_keys_raises_when_contract_is_invalid(
 def test_run_vault_prune_raises_when_contract_is_invalid(monkeypatch, tmp_path: Path) -> None:
     context = make_context(tmp_path)
 
-    monkeypatch.setattr(vault_service, "_load_vault_context", lambda: context)
+    monkeypatch.setattr(
+        vault_service,
+        "_load_vault_context",
+        lambda persist_binding=False: context,
+    )
     monkeypatch.setattr(vault_service, "_ensure_vault_file", lambda ctx: True)
 
     def fake_load_contract(path: Path):
@@ -294,7 +344,11 @@ def test_run_vault_prune_returns_without_changes_when_no_unknown_keys(
 ) -> None:
     context = make_context(tmp_path)
 
-    monkeypatch.setattr(vault_service, "_load_vault_context", lambda: context)
+    monkeypatch.setattr(
+        vault_service,
+        "_load_vault_context",
+        lambda persist_binding=False: context,
+    )
     monkeypatch.setattr(vault_service, "_ensure_vault_file", lambda ctx: False)
     monkeypatch.setattr(
         vault_service,
@@ -323,7 +377,11 @@ def test_run_vault_prune_removes_unknown_keys(
 ) -> None:
     context = make_context(tmp_path)
 
-    monkeypatch.setattr(vault_service, "_load_vault_context", lambda: context)
+    monkeypatch.setattr(
+        vault_service,
+        "_load_vault_context",
+        lambda persist_binding=False: context,
+    )
     monkeypatch.setattr(vault_service, "_ensure_vault_file", lambda ctx: False)
     monkeypatch.setattr(
         vault_service,
@@ -359,19 +417,3 @@ def test_run_vault_prune_removes_unknown_keys(
     )
     assert written["path"] == context.vault_values_path
     assert written["content"] == "serialized:{'APP_NAME': 'demo'}"
-
-
-def test_run_edit_delegates_to_run_vault_edit(monkeypatch, tmp_path: Path) -> None:
-    context = make_context(tmp_path)
-    expected = EditResult(path=context.vault_values_path, created=True)
-
-    monkeypatch.setattr(
-        vault_service,
-        "run_vault_edit",
-        lambda: (context, expected),
-    )
-
-    result_context, result = vault_service.run_edit()
-
-    assert result_context is context
-    assert result == expected

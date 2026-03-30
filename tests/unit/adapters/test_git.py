@@ -64,7 +64,7 @@ def test_resolve_repo_root_returns_resolved_path(monkeypatch, tmp_path: Path) ->
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
 
-    monkeypatch.setattr(git_adapters, "_run_git", lambda args, cwd=None: str(repo_root))
+    monkeypatch.setattr(git_adapters, "_run_git", lambda args, cwd=None, check=True: str(repo_root))
 
     result = resolve_repo_root()
 
@@ -76,7 +76,7 @@ def test_get_repo_remote_returns_value_when_available(monkeypatch, tmp_path: Pat
     repo_root.mkdir()
 
     monkeypatch.setattr(
-        git_adapters, "_run_git", lambda args, cwd=None: "git@github.com:alessbarb/envctl.git"
+        git_adapters, "_run_git", lambda args, cwd=None, check=True: "git@github.com:alessbarb/envctl.git"
     )
 
     result = get_repo_remote(repo_root)
@@ -88,7 +88,7 @@ def test_get_repo_remote_returns_none_when_git_lookup_fails(monkeypatch, tmp_pat
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
 
-    def raise_detection_error(args, cwd=None):
+    def raise_detection_error(args, cwd=None, check=True):
         raise ProjectDetectionError("remote not found")
 
     monkeypatch.setattr(git_adapters, "_run_git", raise_detection_error)
@@ -102,7 +102,7 @@ def test_get_repo_remote_returns_none_when_git_output_is_empty(monkeypatch, tmp_
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
 
-    monkeypatch.setattr(git_adapters, "_run_git", lambda args, cwd=None: "")
+    monkeypatch.setattr(git_adapters, "_run_git", lambda args, cwd=None, check=True: "")
 
     result = get_repo_remote(repo_root)
 

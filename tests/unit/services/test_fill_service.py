@@ -19,7 +19,7 @@ def test_build_fill_plan_returns_missing_required_keys_with_metadata(monkeypatch
 
     monkeypatch.setattr(
         "envctl.services.fill_service.load_project_context",
-        lambda: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
     monkeypatch.setattr(
         "envctl.services.fill_service.load_contract_for_context",
@@ -57,7 +57,7 @@ def test_build_fill_plan_returns_empty_tuple_when_nothing_is_missing(monkeypatch
 
     monkeypatch.setattr(
         "envctl.services.fill_service.load_project_context",
-        lambda: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
     monkeypatch.setattr(
         "envctl.services.fill_service.load_contract_for_context",
@@ -82,7 +82,7 @@ def test_apply_fill_writes_trimmed_values(monkeypatch, tmp_path) -> None:
 
     monkeypatch.setattr(
         "envctl.services.fill_service.load_project_context",
-        lambda: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
     monkeypatch.setattr("envctl.services.fill_service.load_env_file", lambda _path: {})
     monkeypatch.setattr(
@@ -113,7 +113,7 @@ def test_apply_fill_skips_blank_values(monkeypatch, tmp_path) -> None:
 
     monkeypatch.setattr(
         "envctl.services.fill_service.load_project_context",
-        lambda: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
     monkeypatch.setattr("envctl.services.fill_service.load_env_file", lambda _path: {})
     monkeypatch.setattr(
@@ -143,7 +143,7 @@ def test_apply_fill_preserves_existing_values_and_only_writes_changed_keys(
 
     monkeypatch.setattr(
         "envctl.services.fill_service.load_project_context",
-        lambda: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
     monkeypatch.setattr(
         "envctl.services.fill_service.load_env_file",

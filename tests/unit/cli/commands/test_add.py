@@ -58,6 +58,7 @@ def test_add_command_calls_service_and_prints_full_inference(monkeypatch, capsys
             "sensitive": True,
             "description": "Primary database connection URL",
         },
+        inferred_fields_used=["type", "required", "sensitive", "description"],
     )
 
     prompts = iter(
@@ -145,6 +146,7 @@ def test_add_command_prints_minimal_output_when_inference_is_missing(monkeypatch
         contract_updated=False,
         contract_entry_created=False,
         inferred_spec=None,
+        inferred_fields_used=[],
     )
 
     captured: dict[str, object] = {}
@@ -188,7 +190,7 @@ def test_add_command_prints_minimal_output_when_inference_is_missing(monkeypatch
     assert "required:" not in output
     assert "sensitive:" not in output
     assert "description:" not in output
-    assert "[WARN] Review .envctl.schema.yaml to confirm the inferred metadata." in output
+    assert "[WARN] Review .envctl.schema.yaml to confirm the inferred metadata." not in output
 
 
 def test_add_command_omits_optional_inferred_fields_when_not_present(monkeypatch, capsys) -> None:
@@ -201,6 +203,7 @@ def test_add_command_omits_optional_inferred_fields_when_not_present(monkeypatch
         contract_updated=True,
         contract_entry_created=True,
         inferred_spec={"type": "string"},
+        inferred_fields_used=["type"],
     )
 
     monkeypatch.setattr(

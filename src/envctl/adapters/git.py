@@ -13,71 +13,64 @@ def _run_git(
     *,
     cwd: Path | None = None,
     check: bool = True,
-) -> subprocess.CompletedProcess[str]:
-    """Run a git command and return the completed process."""
+) -> str:
+    """Run a git command and return stripped stdout."""
     try:
         completed = subprocess.run(
             ["git", *args],
             cwd=str(cwd) if cwd else None,
-            check=False,
+            check=check,
             capture_output=True,
             text=True,
         )
     except FileNotFoundError as exc:
         raise ProjectDetectionError("git executable not found") from exc
+    except subprocess.CalledProcessError as exc:
+        message = (exc.stderr or "").strip() or (exc.stdout or "").strip() or "git command failed"
 
-    if check and completed.returncode != 0:
-        message = completed.stderr.strip() or completed.stdout.strip() or "git command failed"
-        raise ProjectDetectionError(message)
+        if not check:
+            return ""
 
-    return completed
+        raise ProjectDetectionError(message) from exc
+
+    return completed.stdout.strip()
 
 
 def resolve_repo_root() -> Path:
     """Resolve the current Git repository root."""
-    completed = _run_git(["rev-parse", "--show-toplevel"])
-    return Path(completed.stdout.strip()).resolve()
+    return Path(_run_git(["rev-parse", "--show-toplevel"])).resolve()
 
 
 def get_repo_remote(repo_root: Path) -> str | None:
     """Return the origin remote URL when available."""
-    completed = _run_git(["remote", "get-url", "origin"], cwd=repo_root, check=False)
-    if completed.returncode != 0:
+    try:
+        value = _run_git(["remote", "get-url", "origin"], cwd=repo_root, check=False)
+    except ProjectDetectionError:
         return None
 
-    value = completed.stdout.strip()
     return value or None
 
 
 def get_local_git_config(repo_root: Path, key: str) -> str | None:
     """Return one local Git config value when present."""
-    completed = _run_git(["config", "--local", "--get", key], cwd=repo_root, check=False)
-    if completed.returncode != 0:
-        return None
-
-    value = completed.stdout.strip()
+    value = _run_git(["config", "--local", "--get", key], cwd=repo_root, check=False)
     return value or None
 
 
 def set_local_git_config(repo_root: Path, key: str, value: str) -> None:
     """Persist one local Git config value."""
-    completed = _run_git(
-        ["config", "--local", key, value],
-        cwd=repo_root,
-        check=False,
-    )
-    if completed.returncode != 0:
-        message = completed.stderr.strip() or completed.stdout.strip() or "git config failed"
-        raise ExecutionError(message)
+    try:
+        _run_git(["config", "--local", key, value], cwd=repo_root, check=True)
+    except ProjectDetectionError as exc:
+        raise ExecutionError(str(exc)) from exc
 
 
 def unset_local_git_config(repo_root: Path, key: str) -> None:
     """Remove one local Git config value when present."""
-    completed = _run_git(
-        ["config", "--local", "--unset", key],
-        cwd=repo_root,
-        check=False,
-    )
-    if completed.returncode not in {0, 5}:
-        message = completed.stderr.strip() or completed.stdout.strip() or "git config failed"
-        raise ExecutionError(message)
+    try:
+        _run_git(["config", "--local", "--unset", key], cwd=repo_root, check=True)
+    except ProjectDetectionError as exc:
+        message = str(exc).strip().lower()
+        if "no such section or key" in message or "key does not contain a section" in message:
+            return
+        raise ExecutionError(str(exc)) from exc

@@ -16,7 +16,7 @@ def test_write_state_persists_current_state_shape(tmp_path: Path) -> None:
     write_state(
         state_path,
         project_slug="demo-app",
-        project_id="abc123",
+        project_id="prj_aaaaaaaaaaaaaaaa",
         repo_root="/tmp/demo-app",
     )
 
@@ -26,7 +26,7 @@ def test_write_state_persists_current_state_shape(tmp_path: Path) -> None:
     assert data["version"] == STATE_VERSION
     assert data["project_slug"] == "demo-app"
     assert data["project_key"] == "demo-app"
-    assert data["project_id"] == "abc123"
+    assert data["project_id"] == "prj_aaaaaaaaaaaaaaaa"
     assert data["repo_root"] == "/tmp/demo-app"
     assert data["git_remote"] is None
     assert data["known_paths"] == ["/tmp/demo-app"]
@@ -41,7 +41,7 @@ def test_read_state_migrates_v1_payload_in_memory(tmp_path: Path) -> None:
             {
                 "version": 1,
                 "project_slug": "demo-app",
-                "project_id": "abc123",
+                "project_id": "prj_aaaaaaaaaaaaaaaa",
                 "repo_root": "/tmp/demo-app",
             }
         ),
@@ -54,7 +54,7 @@ def test_read_state_migrates_v1_payload_in_memory(tmp_path: Path) -> None:
     assert data["version"] == STATE_VERSION
     assert data["project_slug"] == "demo-app"
     assert data["project_key"] == "demo-app"
-    assert data["project_id"] == "abc123"
+    assert data["project_id"] == "prj_aaaaaaaaaaaaaaaa"
     assert data["repo_root"] == "/tmp/demo-app"
     assert data["git_remote"] is None
     assert data["known_paths"] == ["/tmp/demo-app"]
@@ -96,7 +96,7 @@ def test_read_state_raises_for_unsupported_version(tmp_path: Path) -> None:
             {
                 "version": 999,
                 "project_slug": "demo-app",
-                "project_id": "abc123",
+                "project_id": "prj_aaaaaaaaaaaaaaaa",
                 "repo_root": "/tmp/demo-app",
             }
         ),

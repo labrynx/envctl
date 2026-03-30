@@ -7,11 +7,20 @@ import envctl.services.unset_service as unset_service
 
 
 def make_context(tmp_path: Path) -> SimpleNamespace:
-    vault_dir = tmp_path / "vault" / "demo--abc123"
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir(parents=True, exist_ok=True)
+
+    vault_dir = tmp_path / "vault" / "demo--prj_aaaaaaaaaaaaaaaa"
+
     return SimpleNamespace(
-        repo_contract_path=tmp_path / ".envctl.schema.yaml",
+        project_slug="demo",
+        project_key="demo",
+        project_id="prj_aaaaaaaaaaaaaaaa",
+        repo_root=repo_root,
+        repo_contract_path=repo_root / ".envctl.schema.yaml",
         vault_project_dir=vault_dir,
         vault_values_path=vault_dir / "values.env",
+        vault_state_path=vault_dir / "state.json",
     )
 
 
@@ -23,7 +32,7 @@ def test_run_unset_removes_key_and_marks_declared(tmp_path: Path, monkeypatch) -
     monkeypatch.setattr(
         unset_service,
         "load_project_context",
-        lambda: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
     monkeypatch.setattr(
         unset_service,
@@ -45,7 +54,7 @@ def test_run_unset_handles_invalid_contract(tmp_path: Path, monkeypatch) -> None
     monkeypatch.setattr(
         unset_service,
         "load_project_context",
-        lambda: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
     monkeypatch.setattr(
         unset_service,
