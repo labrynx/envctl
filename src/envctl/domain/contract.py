@@ -8,11 +8,41 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from envctl.constants import CONTRACT_VERSION
-from envctl.errors import ContractError
 
 VariableType = Literal["string", "int", "bool", "url"]
 
 _KEY_RE = re.compile(r"^[A-Z][A-Z0-9_]*$")
+
+
+class ContractMeta(BaseModel):
+    """Shared logical metadata for the repository contract."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        str_strip_whitespace=True,
+    )
+
+    project_key: str
+    project_name: str | None = None
+
+    @field_validator("project_key")
+    @classmethod
+    def validate_project_key(cls, value: str) -> str:
+        """Validate the logical project key."""
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("project_key cannot be empty")
+        return normalized
+
+    @field_validator("project_name")
+    @classmethod
+    def normalize_project_name(cls, value: str | None) -> str | None:
+        """Normalize the human project name."""
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
 
 
 class VariableSpec(BaseModel):
@@ -143,6 +173,7 @@ class Contract(BaseModel):
     )
 
     version: int = CONTRACT_VERSION
+    meta: ContractMeta | None = None
     variables: dict[str, VariableSpec] = Field(default_factory=dict)
 
     @field_validator("version")
@@ -173,19 +204,32 @@ class Contract(BaseModel):
         variables.pop(key, None)
         return self.model_copy(update={"variables": variables})
 
+    def with_meta(
+        self,
+        *,
+        project_key: str,
+        project_name: str | None = None,
+    ) -> Contract:
+        """Return a new contract with logical metadata ensured."""
+        return self.model_copy(
+            update={
+                "meta": ContractMeta(
+                    project_key=project_key,
+                    project_name=project_name,
+                )
+            }
+        )
+
     def to_contract_payload(self) -> dict[str, object]:
         """Convert the contract into a YAML-friendly payload."""
-        return {
+        payload: dict[str, object] = {
             "version": self.version,
             "variables": {
                 key: self.variables[key].to_contract_payload() for key in sorted(self.variables)
             },
         }
 
+        if self.meta is not None:
+            payload["meta"] = self.meta.model_dump(mode="python", exclude_none=True)
 
-def validate_contract_or_raise(payload: dict[str, object]) -> Contract:
-    """Validate a contract payload and convert validation failures to ContractError."""
-    try:
-        return Contract.model_validate(payload)
-    except Exception as exc:
-        raise ContractError(str(exc)) from exc
+        return payload

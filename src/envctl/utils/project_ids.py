@@ -2,25 +2,21 @@
 
 from __future__ import annotations
 
-import hashlib
-from pathlib import Path
+import re
+import secrets
 
-from envctl.adapters.git import get_repo_remote
-from envctl.constants import PROJECT_ID_LENGTH
+from envctl.constants import PROJECT_ID_HEX_LENGTH, PROJECT_ID_PREFIX
 
-
-def build_repo_identity(repo_root: Path) -> str:
-    """Build a stable repository identity string."""
-    remote = get_repo_remote(repo_root)
-    return remote or str(repo_root.resolve())
+_PROJECT_ID_RE = re.compile(
+    rf"^{re.escape(PROJECT_ID_PREFIX)}[0-9a-f]{{{PROJECT_ID_HEX_LENGTH}}}$"
+)
 
 
-def build_repo_fingerprint(repo_root: Path) -> str:
-    """Build a stable SHA-256 fingerprint for the repository."""
-    identity = build_repo_identity(repo_root)
-    return hashlib.sha256(identity.encode("utf-8")).hexdigest()
+def new_project_id() -> str:
+    """Return a new canonical project id."""
+    return f"{PROJECT_ID_PREFIX}{secrets.token_hex(PROJECT_ID_HEX_LENGTH // 2)}"
 
 
-def build_project_id(repo_root: Path) -> str:
-    """Build the short project identifier."""
-    return build_repo_fingerprint(repo_root)[:PROJECT_ID_LENGTH]
+def is_valid_project_id(value: str) -> bool:
+    """Return whether a value is a canonical project id."""
+    return bool(_PROJECT_ID_RE.fullmatch(value))

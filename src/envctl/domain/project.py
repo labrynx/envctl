@@ -12,6 +12,7 @@ PromptFn = Callable[[str, bool, str | None], str]
 
 InitContractMode = Literal["empty", "example", "skip"]
 InitContractStatus = Literal["existing", "created_empty", "created_from_example", "skipped"]
+BindingSource = Literal["local", "recovered", "derived"]
 
 
 @dataclass(frozen=True)
@@ -19,8 +20,11 @@ class ProjectContext:
     """Resolved project context for the current repository."""
 
     project_slug: str
+    project_key: str
     project_id: str
     repo_root: Path
+    repo_remote: str | None
+    binding_source: BindingSource
     repo_env_path: Path
     repo_contract_path: Path
     vault_project_dir: Path
