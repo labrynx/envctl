@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking changes
+
+* Project identity commands have been moved under `envctl project`:
+  * `bind`, `unbind`, `rebind`, `repair` are no longer available at root level
+  * use `envctl project <command>` instead
+  
 ### Added
 
 * Confirmation prompt in `vault show --raw`:
