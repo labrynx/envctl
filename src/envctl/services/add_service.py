@@ -55,6 +55,32 @@ def _apply_request_to_spec(
     return base_spec.model_copy(update=updates)
 
 
+def _field_uses_inference(
+    *,
+    override_used: bool,
+    final_value: object,
+    base_value: object,
+    require_non_empty: bool = False,
+) -> bool:
+    """Return whether a final field value still comes from inference."""
+    if override_used or final_value != base_value:
+        return False
+
+    if not require_non_empty:
+        return True
+
+    if final_value is None:
+        return False
+
+    if isinstance(final_value, tuple):
+        return len(final_value) > 0
+
+    if isinstance(final_value, str):
+        return final_value != ""
+
+    return True
+
+
 def _collect_inferred_fields_used(
     *,
     base_spec: VariableSpec,
@@ -62,36 +88,68 @@ def _collect_inferred_fields_used(
     request: AddVariableRequest,
 ) -> tuple[str, ...]:
     """Return the inferred fields that survived explicit overrides."""
+    checks = (
+        ("type", request.override_type is not None, final_spec.type, base_spec.type, False),
+        (
+            "required",
+            request.override_required is not None,
+            final_spec.required,
+            base_spec.required,
+            False,
+        ),
+        (
+            "sensitive",
+            request.override_sensitive is not None,
+            final_spec.sensitive,
+            base_spec.sensitive,
+            False,
+        ),
+        (
+            "description",
+            request.override_description is not None,
+            final_spec.description,
+            base_spec.description,
+            True,
+        ),
+        (
+            "default",
+            request.override_default is not None,
+            final_spec.default,
+            base_spec.default,
+            True,
+        ),
+        (
+            "example",
+            request.override_example is not None,
+            final_spec.example,
+            base_spec.example,
+            True,
+        ),
+        (
+            "pattern",
+            request.override_pattern is not None,
+            final_spec.pattern,
+            base_spec.pattern,
+            True,
+        ),
+        (
+            "choices",
+            request.override_choices is not None,
+            final_spec.choices,
+            base_spec.choices,
+            True,
+        ),
+    )
+
     fields: list[str] = []
-
-    if request.override_type is None and final_spec.type == base_spec.type:
-        fields.append("type")
-
-    if request.override_required is None and final_spec.required == base_spec.required:
-        fields.append("required")
-
-    if request.override_sensitive is None and final_spec.sensitive == base_spec.sensitive:
-        fields.append("sensitive")
-
-    if request.override_description is None and final_spec.description == base_spec.description:
-        if final_spec.description:
-            fields.append("description")
-
-    if request.override_default is None and final_spec.default == base_spec.default:
-        if final_spec.default is not None:
-            fields.append("default")
-
-    if request.override_example is None and final_spec.example == base_spec.example:
-        if final_spec.example is not None:
-            fields.append("example")
-
-    if request.override_pattern is None and final_spec.pattern == base_spec.pattern:
-        if final_spec.pattern is not None:
-            fields.append("pattern")
-
-    if request.override_choices is None and final_spec.choices == base_spec.choices:
-        if final_spec.choices:
-            fields.append("choices")
+    for name, override_used, final_value, base_value, require_non_empty in checks:
+        if _field_uses_inference(
+            override_used=override_used,
+            final_value=final_value,
+            base_value=base_value,
+            require_non_empty=require_non_empty,
+        ):
+            fields.append(name)
 
     return tuple(fields)
 
