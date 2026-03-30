@@ -44,7 +44,7 @@ Repository -> Domain / Utils
 Config -> Domain / Utils
 Adapters -> Errors / focused helpers
 Utils -> minimal low-level helpers
-````
+```
 
 The CLI should not implement business logic.
 
@@ -118,6 +118,57 @@ Typical responsibilities:
 * preserve safe overwrite behavior
 
 That conceptual split prevents the tool from drifting back into “just manipulate one file” thinking.
+
+---
+
+## Binding model (repository ↔ vault)
+
+In v2.2+, a new concept is introduced: binding.
+
+Binding connects:
+
+- repository identity (derived)
+- local vault location (resolved)
+
+This is handled outside the contract and outside raw filesystem assumptions.
+
+### Why binding exists
+
+Without binding, the system relies on implicit rules such as:
+
+- directory naming conventions
+- derived paths
+- hidden assumptions
+
+Binding makes that explicit and inspectable.
+
+### Where binding lives
+
+Binding is handled through:
+
+- repository layer (project context reconstruction)
+- state repository (persisted association if needed)
+- service layer (bind, unbind, rebind, repair workflows)
+
+### What binding is not
+
+Binding is not:
+
+- part of the contract
+- part of the value store
+- a projection artifact
+
+It is an association layer.
+
+### Architectural impact
+
+Binding introduces a third axis:
+
+- contract → definition
+- values → data
+- binding → location
+
+This makes the system more explicit and recoverable.
 
 ---
 

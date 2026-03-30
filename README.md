@@ -30,6 +30,27 @@ That separation matters:
 
 ---
 
+## Repository binding
+
+Each repository is explicitly associated with a local vault.
+
+This association is called a **binding**.
+
+You can manage it with:
+
+```bash
+envctl bind
+envctl unbind
+envctl rebind
+envctl repair
+```
+
+Binding controls where values live, not what they are.
+
+This keeps identity, storage, and contract clearly separated.
+
+---
+
 ## Core commands
 
 ### Validate the contract

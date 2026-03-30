@@ -64,7 +64,7 @@ The contract lives in the repository as:
 
 ```text
 <repo-root>/.envctl.schema.yaml
-````
+```
 
 The contract may define:
 
@@ -122,6 +122,44 @@ A project context typically includes:
 * resolved local vault location
 
 The repository does not need a mandatory link file to its local environment state.
+
+### Binding model
+
+In v2.2+, `envctl` introduces an explicit binding layer between a repository and its local vault state.
+
+A binding represents the association between:
+
+- a repository identity
+- a local vault location
+
+This replaces implicit assumptions about where values live.
+
+The binding model enables:
+
+- explicit linking and unlinking of repositories and vaults
+- safe recovery and repair of broken states
+- inspection of current associations
+- deterministic lookup of local values
+
+Binding is not stored as a hidden contract or implicit filesystem assumption.  
+It is an explicit part of the local state model.
+
+### Binding operations
+
+The following operations manage the repository ↔ vault association:
+
+- **bind**: explicitly associate the current repository with a vault location
+- **unbind**: remove the association
+- **rebind**: recreate the association safely
+- **repair**: detect and fix broken or inconsistent bindings
+
+These operations affect **identity and location**, not contract or values.
+
+That distinction is important:
+
+- contract → what exists
+- values → what is set
+- binding → where values live
 
 ## Variable operations
 

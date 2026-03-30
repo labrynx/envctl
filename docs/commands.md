@@ -219,6 +219,52 @@ The command uses checklist-style output such as `[OK]`, `[WARN]`, and `[FAIL]`.
 
 `doctor` is about host and local tool readiness, not about mutating project state.
 
+## envctl bind
+
+Explicitly associates the current repository with a local vault location.
+
+Expected behavior:
+
+- creates or updates the binding between repository identity and vault path
+- does not modify contract or values
+- ensures the vault location is usable
+- makes the association explicit and inspectable
+
+## envctl unbind
+
+Removes the binding between the current repository and its vault.
+
+Expected behavior:
+
+- removes the association
+- does not delete stored values
+- does not modify the contract
+- leaves the repository without an active vault binding
+
+## envctl rebind
+
+Recreates the binding between the repository and its vault.
+
+Expected behavior:
+
+- re-establishes the association using the current configuration
+- useful after manual changes or partial state loss
+- does not modify contract or values
+
+## envctl repair
+
+Detects and fixes inconsistencies in the repository binding and local state.
+
+Expected behavior:
+
+- checks binding integrity
+- verifies vault location and accessibility
+- detects broken or missing associations
+- attempts safe recovery when possible
+- reports actions taken
+
+`repair` is intended for recovery workflows, not normal operation.
+
 ## envctl vault edit
 
 Opens the current local vault file in the configured editor.

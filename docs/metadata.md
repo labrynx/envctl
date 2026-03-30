@@ -17,7 +17,11 @@ A repository should not need a mandatory link file just to connect itself to its
 
 ## Repository identity
 
-Project identity is derived dynamically from the current repository.
+Project identity is derived dynamically from the current repository and resolved through an explicit binding.
+
+The binding defines how that identity maps to a concrete local vault location.
+
+This avoids relying on implicit filesystem conventions while still keeping identity deterministic.
 
 Typical identity inputs may include:
 
@@ -79,7 +83,7 @@ The repository owns the shared contract:
 
 ```text
 <repo-root>/.envctl.schema.yaml
-````
+```
 
 That file may define:
 
