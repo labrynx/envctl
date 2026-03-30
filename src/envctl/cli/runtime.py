@@ -45,8 +45,23 @@ def is_json_output() -> bool:
 
 
 def get_command_path() -> str | None:
-    """Return the current command path when available."""
+    """Return the current command path when available.
+
+    Click/Typer test runners often expose the root command as ``root``.
+    Normalize that prefix to the public CLI name so structured errors stay stable.
+    """
     ctx = click.get_current_context(silent=True)
     if ctx is None:
         return None
-    return ctx.command_path
+
+    command_path = ctx.command_path.strip()
+    if not command_path:
+        return "envctl"
+
+    if command_path == "root":
+        return "envctl"
+
+    if command_path.startswith("root "):
+        return f"envctl{command_path[4:]}"
+
+    return command_path

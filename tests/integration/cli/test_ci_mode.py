@@ -190,7 +190,21 @@ def test_run_remains_allowed_in_ci_mode_text_output(
     monkeypatch.setenv("APP_NAME", "demo-app")
     monkeypatch.setenv("DATABASE_URL", "postgres://user:pass@localhost:5432/app")
 
-    result = runner.invoke(app, ["run", "python3", "-c", "import os; print(os.getenv('APP_NAME'))"])
+    output_path = workspace / "child-output.txt"
+
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "python3",
+            "-c",
+            (
+                "from pathlib import Path; "
+                "import os; "
+                f"Path({str(output_path)!r}).write_text(os.getenv('APP_NAME', ''), encoding='utf-8')"
+            ),
+        ],
+    )
 
     assert result.exit_code == 0
-    assert "demo-app" in result.output
+    assert output_path.read_text(encoding="utf-8") == "demo-app"
