@@ -41,7 +41,11 @@ def find_vault_dir_by_project_id(projects_dir: Path, project_id: str) -> Path | 
     if not projects_dir.exists():
         return None
 
-    matches = [path for path in projects_dir.iterdir() if path.is_dir() and path.name.endswith(f"--{project_id}")]
+    matches = [
+        path
+        for path in projects_dir.iterdir()
+        if path.is_dir() and path.name.endswith(f"--{project_id}")
+    ]
     if not matches:
         return None
     if len(matches) > 1:
@@ -287,9 +291,7 @@ def build_project_context(config: AppConfig, project_name: str | None = None) ->
 def persist_project_binding(config: AppConfig, context: ProjectContext) -> ProjectContext:
     """Persist the current repo ↔ vault binding and refresh vault state metadata."""
     if not is_valid_project_id(context.project_id):
-        raise StateError(
-            f"Cannot persist a non-canonical project id: {context.project_id!r}"
-        )
+        raise StateError(f"Cannot persist a non-canonical project id: {context.project_id!r}")
 
     ensure_dir(config.projects_dir)
 

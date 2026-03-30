@@ -13,7 +13,7 @@ What happened?
 
 ```bash
 # exact commands used
-````
+```
 
 ## Expected behavior
 
@@ -30,7 +30,7 @@ What should have happened?
 
 Logs, screenshots, or notes if relevant.
 
-````
+```
 
 ---
 

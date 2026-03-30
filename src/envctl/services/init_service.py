@@ -12,8 +12,7 @@ from envctl.adapters.dotenv import load_env_file
 from envctl.constants import CONTRACT_VERSION, DEFAULT_ENV_EXAMPLE_FILENAME
 from envctl.domain.contract_inference import infer_spec
 from envctl.domain.project import ConfirmFn, ProjectContext
-from envctl.repository.contract_repository import ensure_contract_metadata
-from envctl.repository.contract_repository import load_contract_optional
+from envctl.repository.contract_repository import ensure_contract_metadata, load_contract_optional
 from envctl.services.context_service import load_project_context
 from envctl.utils.atomic import write_text_atomic
 from envctl.utils.filesystem import ensure_dir, ensure_file

@@ -7,9 +7,7 @@ import secrets
 
 from envctl.constants import PROJECT_ID_HEX_LENGTH, PROJECT_ID_PREFIX
 
-_PROJECT_ID_RE = re.compile(
-    rf"^{re.escape(PROJECT_ID_PREFIX)}[0-9a-f]{{{PROJECT_ID_HEX_LENGTH}}}$"
-)
+_PROJECT_ID_RE = re.compile(rf"^{re.escape(PROJECT_ID_PREFIX)}[0-9a-f]{{{PROJECT_ID_HEX_LENGTH}}}$")
 
 
 def new_project_id() -> str:

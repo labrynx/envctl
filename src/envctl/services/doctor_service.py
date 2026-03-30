@@ -36,7 +36,11 @@ def run_doctor() -> list[DoctorCheck]:
         context = build_project_context(config)
 
         checks.append(
-            DoctorCheck("project", "ok", f"Resolved project: {context.project_slug} ({context.project_id})"),
+            DoctorCheck(
+                "project",
+                "ok",
+                f"Resolved project: {context.project_slug} ({context.project_id})",
+            )
         )
         checks.append(
             DoctorCheck("binding_source", "ok", f"Binding source: {context.binding_source}"),
@@ -55,7 +59,10 @@ def run_doctor() -> list[DoctorCheck]:
                 DoctorCheck(
                     "binding",
                     "warn",
-                    "No local git binding found. A matching vault was recovered from persisted state.",
+                    (
+                        "No local git binding found. "
+                        "A matching vault was recovered from persisted state."
+                    ),
                 )
             )
         else:
@@ -63,7 +70,10 @@ def run_doctor() -> list[DoctorCheck]:
                 DoctorCheck(
                     "binding",
                     "warn",
-                    "No persisted binding found yet. Run 'envctl init' or any mutating command to persist it.",
+                    (
+                        "No persisted binding found yet. "
+                        "Run 'envctl init' or any mutating command to persist it."
+                    ),
                 )
             )
 
@@ -81,9 +91,7 @@ def run_doctor() -> list[DoctorCheck]:
                 DoctorCheck("state", "ok", f"Vault state found: {context.vault_state_path}")
             )
         else:
-            checks.append(
-                DoctorCheck("state", "warn", "Vault state file does not exist yet")
-            )
+            checks.append(DoctorCheck("state", "warn", "Vault state file does not exist yet"))
 
     except (EnvctlError, ProjectDetectionError) as exc:
         checks.append(DoctorCheck("project", "warn", str(exc)))

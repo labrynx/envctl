@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +14,7 @@ from envctl.utils.atomic import write_json_atomic
 
 def _utc_now_iso() -> str:
     """Return a UTC timestamp in ISO-8601 format."""
-    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def read_state(path: Path) -> dict[str, Any] | None:
@@ -54,6 +54,31 @@ def read_state(path: Path) -> dict[str, Any] | None:
         raise StateError(f"State file has invalid known_paths: {path}")
 
     return raw
+
+
+def write_state(
+    path: Path,
+    *,
+    project_slug: str,
+    project_id: str,
+    repo_root: str,
+) -> None:
+    """Write minimal per-project state inside the vault.
+
+    Backward-compatible helper kept for existing tests and callers.
+    """
+    write_json_atomic(
+        path,
+        {
+            "version": STATE_VERSION,
+            "project_slug": project_slug,
+            "project_id": project_id,
+            "repo_root": repo_root,
+            "known_paths": [repo_root],
+            "created_at": _utc_now_iso(),
+            "last_seen_at": _utc_now_iso(),
+        },
+    )
 
 
 def upsert_state(
