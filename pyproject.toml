@@ -9,13 +9,44 @@ description = "Local environment control plane for contract-driven development w
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
-  { name = "Alessandro" }
+  { name = "Alessandro Barbagallo", email = "alessbarb@gmail.com" }
+]
+license = "MIT"
+license-files = ["LICENSE"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Environment :: Console",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Build Tools",
+  "Topic :: Utilities",
+  "Typing :: Typed",
+]
+keywords = [
+  "env",
+  "environment",
+  "dotenv",
+  "cli",
+  "developer-tools",
+  "configuration",
+  "secrets",
+  "contract-first",
 ]
 dependencies = [
   "typer>=0.12,<1.0",
   "PyYAML>=6.0,<7.0",
   "pydantic>=2.7,<3.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/alessbarb/envctl"
+Repository = "https://github.com/alessbarb/envctl"
+Issues = "https://github.com/alessbarb/envctl/issues"
+Changelog = "https://github.com/alessbarb/envctl/releases"
 
 [project.optional-dependencies]
 dev = [
@@ -24,6 +55,8 @@ dev = [
   "ruff>=0.11,<0.12",
   "mypy>=1.10,<2.0",
   "types-PyYAML>=6.0.12,<7.0.0",
+  "build>=1.2,<2.0",
+  "twine>=5.0,<6.0",
 ]
 
 [project.scripts]

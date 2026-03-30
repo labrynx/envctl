@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/alessbarb/envctl/actions/workflows/ci.yml/badge.svg)](https://github.com/alessbarb/envctl/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/alessbarb/envctl/blob/main/LICENSE)
 
 ---
 
@@ -254,11 +254,11 @@ Important: `envctl` is a local tool. It assumes a trusted machine. If your accou
 
 ## Documentation
 
-- [Quickstart](docs/getting-started/quickstart.md)
-- [Mental model](docs/getting-started/mental-model.md)
-- [Commands reference](docs/reference/commands.md)
-- [Profiles reference](docs/reference/profiles.md)
-- [CI workflow](docs/workflows/ci.md)
-- [Team workflow](docs/workflows/team.md)
-- [Security](docs/reference/security.md)
-- [Internal architecture](docs/internals/architecture.md)
+- [Quickstart](https://github.com/alessbarb/envctl/blob/main/docs/getting-started/quickstart.md)
+- [Mental model](https://github.com/alessbarb/envctl/blob/main/docs/getting-started/mental-model.md)
+- [Commands reference](https://github.com/alessbarb/envctl/blob/main/docs/reference/commands.md)
+- [Profiles reference](https://github.com/alessbarb/envctl/blob/main/docs/reference/profiles.md)
+- [CI workflow](https://github.com/alessbarb/envctl/blob/main/docs/workflows/ci.md)
+- [Team workflow](https://github.com/alessbarb/envctl/blob/main/docs/workflows/team.md)
+- [Security](https://github.com/alessbarb/envctl/blob/main/docs/reference/security.md)
+- [Internal architecture](https://github.com/alessbarb/envctl/blob/main/docs/internals/architecture.md)
