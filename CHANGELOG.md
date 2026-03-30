@@ -35,6 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * added unit tests for `repair` service flows
   * covers healthy, repaired, recreated, created, and needs-action outcomes
 
+* Shared project-context test builders:
+
+  * added reusable helpers in `tests/support/contexts.py`
+  * centralizes creation of complete `ProjectContext` instances for tests
+  * reduces duplication and drift across service and repository test suites
+
 ### Changed
 
 * `remove` command flow:
@@ -82,6 +88,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * `load_project_context()` now uses `dataclasses.replace()` when promoting derived identities
   * avoids fragile field-by-field reconstruction of `ProjectContext`
 
+* Test support architecture:
+
+  * test context helpers now build full `ProjectContext` objects instead of lightweight stand-ins
+  * aligns test fixtures with the current identity model and binding fields
+  * makes future `ProjectContext` changes easier to absorb in one place
+
 ### Fixed
 
 * `remove` command inefficiency:
@@ -107,6 +119,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   * restored and expanded test coverage for project context resolution and repair scenarios
   * aligned tests with the current binding and recovery model
+
+* Init service test alignment:
+
+  * updated init-service tests to use the current `ProjectContext` shape
+  * aligned `state.json` expectations with the version 2 state model
+  * removed outdated assumptions from older identity and state structures
 
 ### Security
 
@@ -134,6 +152,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Notes
 
 * This iteration focuses on **UX hardening and semantic clarity**, not new surface area
+* Ensures the new identity model works safely with existing vaults
 * Key improvements:
 
   * less noise
@@ -145,9 +164,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * richer CLI interactions
   * future policy layers
   * machine-readable outputs
-
-* This iteration focuses on **UX hardening, semantic clarity, and backward compatibility**
-* Ensures the new identity model works safely with existing vaults
 
 ---
 
