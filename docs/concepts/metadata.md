@@ -1,6 +1,6 @@
-# Local state and project identity
+# Metadata and Local State
 
-`envctl` v2 does not treat a repository-local metadata file as the primary source of truth.
+`envctl` does not treat a repository-local metadata file as the primary source of truth.
 
 The project contract lives in the repository. Local values live in user-owned local storage. Project identity is derived from the current repository and configuration.
 
@@ -10,6 +10,7 @@ The project contract lives in the repository. Local values live in user-owned lo
 
 - **contract**: what the project needs
 - **local state**: which values are available on this machine
+- **profiles**: which local value namespace is active
 - **projection**: how the resolved environment is exposed to tools
 - **identity**: how the current repository is recognized consistently
 
@@ -64,26 +65,56 @@ Examples include:
 
 This state is local by design and should not be committed to source control.
 
+## Profiles
+
+Profile state is a refinement of local state.
+
+A profile identifies one explicit local value set for the same project contract.
+
+Examples:
+
+- `local`
+- `dev`
+- `staging`
+- `ci`
+
+The implicit `local` profile is stored at:
+
+```text
+<vault-project-dir>/values.env
+```
+
+Explicit profiles are stored at:
+
+```text
+<vault-project-dir>/profiles/<profile>.env
+```
+
+Profiles are local and machine-specific, just like the underlying values.
+
+There is no hidden inheritance between profiles.
+
 ## Contract definitions vs local values
 
-In v2.2, `envctl` distinguishes clearly between:
+In v2.3, `envctl` distinguishes clearly between:
 
-- variables declared in the contract
-- values stored locally for those variables
+* variables declared in the contract
+* values stored locally for those variables
+* profiles that namespace those local values
 
 This distinction is visible in command semantics:
 
-- `add` → creates contract definition + local value
-- `set` → updates value only
-- `unset` → removes value only
-- `remove` → deletes contract definition + local value
+* `add` → creates contract definition + active-profile value
+* `set` → updates active-profile value only
+* `unset` → removes active-profile value only
+* `remove` → deletes contract definition + removes values from all persisted profiles
 
 That separation keeps the system explicit:
 
-- the contract defines what exists
-- local state defines what is currently set
+* the contract defines what exists
+* local profile state defines what is currently set
 
-This is one of the key semantic rules of the v2.2 model.
+This is one of the key semantic rules of the v2.3 model.
 
 ## Optional cache or helper files
 
@@ -91,11 +122,11 @@ This is one of the key semantic rules of the v2.2 model.
 
 If such files exist, they should follow these rules:
 
-- they are not the source of truth
-- they do not contain the project contract
-- they are safe to delete and regenerate
-- they are ignored by Git where appropriate
-- they do not redefine project identity
+* they are not the source of truth
+* they do not contain the project contract
+* they are safe to delete and regenerate
+* they are ignored by Git where appropriate
+* they do not redefine project identity
 
 ## What the repository owns
 
@@ -123,7 +154,11 @@ Local storage owns the machine-specific values used to satisfy the contract.
 
 Those values may differ from one developer machine to another. That is expected.
 
-Local storage should remain private, explicit, and outside the repository.
+Profiles make that separation more expressive, but they do not change ownership:
+
+* the contract is still shared
+* profile values are still local
+* projected files are still derived artifacts
 
 ## What projected files are
 
@@ -156,16 +191,23 @@ Future versions may introduce:
 * optional provider-specific caches
 * migration helpers for legacy repository metadata
 * clearer machine-readable state inspection
+* richer profile inspection and management
 
 Even then, the core rule should remain the same:
 
-the repository contract is shared, local values are local, and generated artifacts are not the source of truth.
+the repository contract is shared, profile values are local, and generated artifacts are not the source of truth.
 
 ## Summary
 
 Project identity is derived.
 Contract is shared.
-Values are local.
+Profiles namespace local values.
 Generated env files are disposable artifacts.
 
 That is the metadata model `envctl` is built around.
+
+## See also
+
+* [Binding](binding.md)
+* [Profiles](profiles.md)
+* [Resolution](resolution.md)

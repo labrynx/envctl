@@ -1,4 +1,4 @@
-# Security
+# Security Reference
 
 **Important:** `envctl` assumes a single-user trusted environment. If your system is compromised, your secrets are compromised.
 
@@ -15,6 +15,7 @@ Core principles:
 - generated files are artifacts, not sources of truth
 - dangerous overwrites must remain visible and controlled
 - contract mutations are explicit and visible
+- profile selection must remain explicit and inspectable
 
 `envctl` is not trying to be a full secret manager. It is trying to be a safe local control plane for environment workflows.
 
@@ -24,6 +25,7 @@ Core principles:
 
 - **contract**: what variables the project needs
 - **storage**: where concrete values live
+- **profiles**: which value namespace is active
 - **resolution**: how values are selected and validated
 - **projection**: how the resolved environment is exposed to tools
 
@@ -31,6 +33,7 @@ In practice, that means:
 
 - `.envctl.schema.yaml` describes requirements only
 - local provider state stores real values
+- profiles namespace stored values explicitly
 - `check` validates but does not invent values
 - `run`, `sync`, and `export` project already resolved state
 
@@ -40,15 +43,15 @@ This separation reduces confusion and avoids competing sources of truth.
 
 `envctl` also distinguishes between **contract mutation** and **value mutation**.
 
-- `add` writes contract + local value
-- `set` writes local value only
-- `unset` removes local value only
-- `remove` removes contract + local value
+- `add` writes contract + active-profile value
+- `set` writes active-profile value only
+- `unset` removes active-profile value only
+- `remove` removes contract + all persisted profile values
 
 This matters for security because it keeps shared project requirements explicit and prevents accidental drift between repository state and machine-local secrets.
 
 The contract describes what exists.  
-The local vault stores what is currently set.
+Profiles store what is currently set.
 
 ### Important note about `add`
 
@@ -70,7 +73,7 @@ Because of this:
 
 By contrast:
 
-- `set` and `unset` only affect local state
+- `set` and `unset` only affect one active profile
 - `remove` also mutates the contract and should be treated similarly to `add`
 
 This distinction is critical for both correctness and security.
@@ -95,6 +98,7 @@ The repository contract is versioned with the project, so it must remain safe to
 - embedding machine-specific local paths in the contract
 - automatically generating secrets during validation
 - mutating local state during read-only commands
+- defining profile-specific secret values in the contract
 
 The contract describes needs. It does not act as a hidden provider of values.
 
@@ -113,6 +117,23 @@ Permissions are applied on a best-effort basis and depend on the underlying file
 
 The repository ↔ vault binding is stored in local Git config for the current checkout.
 This keeps binding local and out of version control, but it also means Git metadata should be treated as part of the local operational surface.
+
+Current diagnostics are intentionally conservative.
+For example, some vault checks verify that a file is not world-writable rather than enforcing one exact permission mode everywhere.
+
+## Profile security rules
+
+Profiles are local value namespaces, not access-control boundaries.
+
+This means:
+
+- `dev`, `staging`, and `ci` are labels for local value sets
+- switching profile changes which local values are resolved
+- profiles do not provide encryption
+- profiles do not provide privilege separation
+- profiles do not enforce environment-specific policy by themselves
+
+The main safety value of profiles is **explicitness**, not isolation.
 
 ## Projection security rules
 
@@ -148,6 +169,8 @@ Commands such as these should remain read-only:
 - `explain`
 - `doctor`
 - `status`
+- `profile list`
+- `profile path`
 - `vault check`
 - `vault path`
 - `vault show`
@@ -174,12 +197,13 @@ That distinction is important for user trust.
 
 ### `vault show`
 
-- shows the **stored local values**
+- shows the **stored local values** for one physical profile file
 - reflects the physical vault artifact
 - is useful for low-level debugging
 - should be treated more carefully because it is closer to raw local state
 
 This distinction helps avoid confusion between:
+
 - what is stored
 - what is resolved
 - what is projected
@@ -211,6 +235,7 @@ Current limitations include:
 - no remote access control model
 - no protection against a compromised local account
 - no guarantee against exposure on insecure filesystems
+- no security isolation between profiles beyond explicit value separation
 
 These are not hidden limitations. They are part of the deliberate scope of the tool.
 
@@ -221,12 +246,13 @@ Users remain responsible for local system security.
 That includes:
 
 - keeping the local account secure
-- storing the vault on a private location
+- storing the vault in a private location
 - avoiding shared or insecure filesystems
 - keeping generated env artifacts out of version control
 - keeping project contracts free of secrets
 - understanding when `sync` writes values to disk
 - understanding the difference between local values and shared contract definitions
+- understanding that profiles are explicit namespaces, not security barriers
 
 `envctl doctor` can help identify obvious readiness or storage problems, but it cannot replace host security.
 
@@ -239,6 +265,7 @@ Future improvements may include:
 - richer diagnostics for insecure local setups
 - better shell-specific safety around exports
 - more explicit machine-readable validation output
+- better profile-aware diagnostics
 
 Even as the tool evolves, the core security rule should remain the same:
 
@@ -250,6 +277,7 @@ The security posture of `envctl` depends on explicit separation:
 
 - contract
 - local values
+- profiles
 - resolution
 - projection
 

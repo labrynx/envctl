@@ -8,7 +8,7 @@ The first stable version focused on a solid, secure, and deterministic foundatio
   - Layered design (CLI, services, domain, repository, config, utils)
   - Framework-aware CLI with service-oriented command orchestration
   - XDG-based configuration with optional JSON config file
-  - Unique project identification using repository fingerprint (remote URL or local path)
+  - Unique project identification using repository fingerprint, remote URL, or local path
   - Per-project vault directories (`<slug>--<id>`)
   - Conservative local-first operating model
 
@@ -96,53 +96,101 @@ This phase consolidated the v2 model and made it operationally complete.
   - recovery by remote, project key, and known paths
   - repair and rebind workflows for broken or missing local state
   - backward-compatible reading of older persisted vault state
-  
-## v2.3+
 
-The next iteration should strengthen expressiveness and machine integration without weakening the explicit local-first model.
+## v2.3 (current target)
 
-- **Validation improvements**
-  - Richer type constraints
-  - More expressive validation patterns
-  - Better contract authoring guidance
-  - Optional contract linting
+This phase introduces **profile-aware workflows** without weakening the explicit local-first model.
 
-- **Machine-readable output**
-  - Stable JSON output for selected commands
-  - Better scripting and automation support
-  - Output models aligned with domain result types
+### Profiles
 
-- **Developer onboarding**
-  - Better first-run workflows
-  - Improved guided completion for missing values
-  - More helpful readiness and recovery messaging
+- explicit profile selection with `--profile`
+- `ENVCTL_PROFILE` environment override
+- configurable `default_profile`
+- implicit `local` profile using `values.env`
+- explicit profiles stored under `profiles/<name>.env`
+- no hidden inheritance between profiles
+
+### Profile-aware resolution
+
+- `check`, `inspect`, `explain`, and `status` resolve against the active profile
+- `sync`, `export`, and `run` project the active profile
+- `doctor` reports active profile and physical profile vault path
+- `vault` commands operate on physical profile files
+
+### Profile-aware value mutation
+
+- `set`, `unset`, and `fill` operate on the active profile
+- `add` writes the initial value into the active profile while updating the global contract
+- `remove` removes the contract definition and cleans the value from all persisted profiles
+
+### Profile tooling
+
+- `profile list`
+- `profile create`
+- `profile copy`
+- `profile remove`
+- `profile path`
+
+### Machine-readable output
+
+- stable JSON output for selected commands
+- explicit inclusion of active profile where relevant
+- CLI serializers aligned with domain result types
+
+### Runtime model cleanup
+
+- `runtime_mode` and `profile` are separate concepts
+- config validation tightened
+- profile selection rules made explicit across CLI and services
+
+### Developer onboarding
+
+- better first-run workflows
+- improved guided completion for missing values
+- more helpful readiness and recovery messaging
+- richer examples and onboarding documentation
+
+### Breaking changes
+
+v2.3 is intended as a cleanup release, not a compatibility-preserving one.
+
+Notable breaking changes include:
+
+- profile-aware workflows are now first-class
+- `add` stores the initial value in the active profile
+- `remove` removes values from all persisted profiles, not only the current local vault
+- vault commands now operate on profile-specific physical files
+- internal service result shapes are aligned to the new v2.3 model
+- `default_profile` is part of the application configuration model
+- runtime mode and profile are explicitly distinct concepts
 
 ## v2.4+
 
 Further improvements should reduce friction while preserving explicitness.
 
-- **Multiple environments**
-  - Profile-aware workflows such as `dev`, `test`, `staging`, and `prod`
-  - Explicit profile selection in commands
-  - Profile-aware resolution and projection
+- **Validation improvements**
+  - richer type constraints
+  - more expressive validation patterns
+  - better contract authoring guidance
+  - optional contract linting
 
 - **Provider extensibility**
-  - Pluggable resolution providers
-  - Local provider remains the default
-  - Optional external providers introduced carefully
-  - Deterministic fallback and explicit error handling
+  - pluggable resolution providers
+  - local provider remains the default
+  - optional external providers introduced carefully
+  - deterministic fallback and explicit error handling
 
 - **Import/export workflows**
-  - Explicit import helpers
-  - Safer export workflows
-  - No hidden synchronization between developers
+  - explicit import helpers
+  - safer export workflows
+  - no hidden synchronization between developers
 
 ## Later
 
 These ideas are valuable but should only be explored once the control plane model is mature.
 
 - Extended provider ecosystem
-- Read-only CI validation mode
+- Read-only CI validation mode as a more complete operational mode
 - IDE integrations
 - Advanced contract features introduced carefully
 - Optional encryption helpers outside the core model
@@ -158,6 +206,8 @@ These are intentionally excluded from the short-term roadmap.
 - Hidden background daemons or automatic watchers
 - Full encryption-at-rest inside the vault by default
 - A terminal UI as a priority over contract, resolution, and projection workflows
+- Hidden profile inheritance chains
+- Profile-specific contract schemas as a default model
 
 ## Summary
 
@@ -165,6 +215,7 @@ The roadmap direction is now clearer than in early v2:
 
 - the conceptual model is established
 - the operational model is in place
+- v2.3 adds explicit profile-aware workflows and model cleanup
 - the next steps are about expressiveness, polish, and extensibility
 
-That is a much healthier stage than “still deciding what the tool is".
+That is a much healthier stage than “still deciding what the tool is”.

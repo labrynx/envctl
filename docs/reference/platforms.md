@@ -1,4 +1,4 @@
-# Platform support
+# Platform Support
 
 `envctl` is designed to work on Unix-like systems first, including Linux, macOS, and WSL.
 
@@ -6,6 +6,7 @@ The v2 model reduces platform coupling by avoiding symlinks as a core requiremen
 
 - contract loading
 - local value storage
+- profile-aware value selection
 - resolution and validation
 - subprocess environment injection
 - optional file materialization
@@ -40,6 +41,9 @@ On filesystems that do not support POSIX permissions, these operations may fail 
 
 In such cases, users are responsible for choosing a secure storage location and avoiding shared or insecure filesystems.
 
+Current diagnostics are intentionally conservative.
+For example, some checks verify that storage is **not world-writable**, rather than enforcing one exact permission mode on every platform.
+
 ## Linux and macOS
 
 Linux and macOS are the primary target environments.
@@ -47,6 +51,7 @@ Linux and macOS are the primary target environments.
 Typical behavior is straightforward:
 
 - local storage works as expected
+- explicit profile files work as expected
 - Git detection is predictable
 - subprocess execution for `run` is reliable
 - `sync` and `export` workflows behave naturally
@@ -63,6 +68,7 @@ Typical benefits include:
 - better compatibility with POSIX-oriented shell output
 - simpler subprocess behavior for `run`
 - more natural handling of generated `.env.local` artifacts
+- straightforward handling of explicit profile files
 
 Binding persistence relies on local Git config for checkout-local identity.
 This works best in environments where Git metadata remains stable and accessible from the same execution context.
@@ -129,6 +135,8 @@ This is generally platform-neutral, but the consuming tools may still behave dif
 - generated files should be easy to inspect
 - users should not rely on hidden platform-specific behavior
 
+The same rule applies to explicit profile vault files: they are plain text local artifacts, not cross-platform workflow magic.
+
 ## Diagnostics
 
 `envctl doctor` is intended to help users identify local readiness issues such as:
@@ -138,6 +146,7 @@ This is generally platform-neutral, but the consuming tools may still behave dif
 - insecure local storage location
 - repository detection problems
 - environment compatibility issues
+- active profile file missing or unexpected
 
 Diagnostics should remain read-only and descriptive.
 
@@ -149,6 +158,7 @@ Potential future platform work may include:
 - shell-specific export formats
 - more detailed readiness diagnostics
 - better reporting for unsupported permission models
+- more explicit profile-related portability guidance
 
 ## Summary
 
