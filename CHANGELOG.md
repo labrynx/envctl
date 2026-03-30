@@ -75,6 +75,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * added runtime mode support to application configuration
   * supports runtime mode overrides through `ENVCTL_RUNTIME_MODE`
 
+* Profile-aware value management:
+
+  * introduced explicit profile model (`local` + named profiles)
+  * added profile-specific vault storage:
+    * `values.env` for implicit local profile
+    * `profiles/<name>.env` for explicit profiles
+  * added `DEFAULT_PROFILE` and `ENVCTL_PROFILE` support
+  * introduced profile-aware path resolution utilities
+
+* Profile command group:
+
+  * added `envctl profile` commands:
+    * `list`, `create`, `copy`, `remove`, `path`
+  * enables explicit profile lifecycle management
+
 ### Changed
 
 * `remove` command flow:
@@ -158,6 +173,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   * extended `AppConfig` with runtime mode support
   * configuration loading now validates and resolves runtime mode consistently across config and environment overrides
+
+* Value mutation commands are now profile-aware:
+
+  * `set`, `unset`, `remove`, `sync`, and `export` now operate on the active profile
+  * active profile resolved via CLI (`--profile`) or environment (`ENVCTL_PROFILE`)
+  * output now consistently includes `profile` and resolved paths
+  * removes implicit coupling to a single vault file
+
+* `remove` command semantics:
+
+  * now removes variables from:
+    * contract
+    * all persisted profiles
+  * introduces global removal behavior instead of local-only mutation
+  * improved confirmation messaging with multi-profile awareness
+
+* Domain operation models:
+
+  * replaced legacy result models with profile-aware structures:
+    * `AddVariableResult`
+    * `RemoveVariableResult`
+    * `VaultEditResult`
+  * added explicit profile context to mutation results
+  * aligned domain layer with profile-based runtime model
+
+* Configuration model:
+
+  * added `default_profile` to `AppConfig`
+  * config writer now persists default profile
+  * profile resolution is now part of runtime configuration
 
 ### Fixed
 
@@ -264,6 +309,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * profile-aware resolution
   * broader automation and CI integration
 
+* This iteration introduces the foundation for **multi-environment workflows**:
+
+  * local vs named profiles
+  * consistent profile-aware mutation and resolution
+  * explicit separation between contract and environment instances
+
+* Key improvements:
+
+  * deterministic profile selection
+  * safer multi-environment handling
+  * clearer operational semantics for mutation commands
+
+* Prepares the codebase for:
+
+  * environment promotion flows (dev → staging → prod)
+  * profile-based automation and CI integration
+  * future policy enforcement per profile
+  
 ---
 
 ## [2.2.0] – 2026-03-29
