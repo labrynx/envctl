@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [2.3.0] – 2026-03-30
+
 ### Breaking changes
 
 * Project identity commands have been moved under `envctl project`:
@@ -326,7 +330,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * environment promotion flows (dev → staging → prod)
   * profile-based automation and CI integration
   * future policy enforcement per profile
-  
+
 ---
 
 ## [2.2.0] – 2026-03-29
