@@ -12,11 +12,6 @@ from envctl.utils.output import print_kv, print_success, print_warning
 
 @handle_errors
 def project_rebind_command(
-    new_project: bool = typer.Option(
-        False,
-        "--new-project",
-        help="Generate a fresh canonical project id and bind this checkout to it.",
-    ),
     copy_values: bool = typer.Option(
         True,
         "--copy-values/--empty",
@@ -29,9 +24,6 @@ def project_rebind_command(
     ),
 ) -> None:
     """Rebind the current checkout to a fresh project identity."""
-    if not new_project:
-        raise typer.BadParameter("Use --new-project to create a fresh project binding.")
-
     if not yes:
         approved = typer_confirm(
             "This will generate a new project identity for the current checkout. Continue?",

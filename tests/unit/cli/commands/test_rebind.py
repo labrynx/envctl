@@ -10,11 +10,6 @@ from envctl.cli.commands.project.commands.rebind import project_rebind_command
 from envctl.domain.operations import RebindResult
 
 
-def test_rebind_command_requires_new_project_flag() -> None:
-    with pytest.raises(typer.BadParameter, match="Use --new-project"):
-        project_rebind_command(new_project=False)
-
-
 def test_rebind_command_aborts_when_confirmation_is_rejected(
     monkeypatch: pytest.MonkeyPatch,
     capsys,
@@ -33,7 +28,7 @@ def test_rebind_command_aborts_when_confirmation_is_rejected(
     monkeypatch.setattr(rebind_command_module, "typer_confirm", fake_confirm)
     monkeypatch.setattr(rebind_command_module, "run_rebind", fake_run_rebind)
 
-    project_rebind_command(new_project=True, yes=False)
+    project_rebind_command(yes=False)
 
     output = capsys.readouterr().out
     assert "Nothing was changed." in output
@@ -72,7 +67,7 @@ def test_rebind_command_skips_confirmation_when_yes_is_true(
         lambda *, copy_values=True: (context, result),
     )
 
-    project_rebind_command(new_project=True, yes=True)
+    project_rebind_command(yes=True)
 
     output = capsys.readouterr().out
     assert "Rebound repository to demo (prj_bbbbbbbbbbbbbbbb)" in output
@@ -106,7 +101,7 @@ def test_rebind_command_prints_rebind_details_with_previous_project_id(
         lambda *, copy_values=True: (context, result),
     )
 
-    project_rebind_command(new_project=True, copy_values=True, yes=False)
+    project_rebind_command(copy_values=True, yes=False)
 
     output = capsys.readouterr().out
     assert "Rebound repository to demo (prj_bbbbbbbbbbbbbbbb)" in output
@@ -140,7 +135,7 @@ def test_rebind_command_prints_no_copy_when_values_are_not_copied(
         lambda *, copy_values=True: (context, result),
     )
 
-    project_rebind_command(new_project=True, copy_values=False, yes=True)
+    project_rebind_command(copy_values=False, yes=True)
 
     output = capsys.readouterr().out
     assert "new_project_id: prj_bbbbbbbbbbbbbbbb" in output
