@@ -14,6 +14,7 @@ from envctl.cli.commands.export import export_command
 from envctl.cli.commands.fill import fill_command
 from envctl.cli.commands.init import init_command
 from envctl.cli.commands.inspect import inspect_command
+from envctl.cli.commands.profile import profile_app
 from envctl.cli.commands.project import project_app
 from envctl.cli.commands.remove import remove_command
 from envctl.cli.commands.run import run_command_cli
@@ -23,36 +24,52 @@ from envctl.cli.commands.sync import sync_command
 from envctl.cli.commands.unset import unset_command
 from envctl.cli.commands.vault import vault_app
 from envctl.cli.runtime import set_cli_state
+from envctl.config.loader import resolve_default_profile
 from envctl.domain.runtime import OutputFormat
+
+VERSION_OPTION = typer.Option(
+    None,
+    "--version",
+    "-V",
+    help="Show the version and exit.",
+    callback=version_callback,
+    is_eager=True,
+)
+JSON_OPTION = typer.Option(
+    False,
+    "--json",
+    help="Emit structured JSON output for supported commands.",
+)
+PROFILE_OPTION = typer.Option(
+    None,
+    "--profile",
+    "-p",
+    help="Select the active environment profile.",
+)
 
 app = typer.Typer(help="envctl - local environment control plane")
 app.add_typer(config_app, name="config")
 app.add_typer(vault_app, name="vault")
 app.add_typer(project_app, name="project")
+app.add_typer(profile_app, name="profile")
 
 
 @app.callback()
 def main(
     ctx: typer.Context,
-    version: bool = typer.Option(
-        None,
-        "--version",
-        "-V",
-        help="Show the version and exit.",
-        callback=version_callback,
-        is_eager=True,
-    ),
-    json_output: bool = typer.Option(
-        False,
-        "--json",
-        help="Emit structured JSON output for supported commands.",
-    ),
+    version: bool = VERSION_OPTION,
+    json_output: bool = JSON_OPTION,
+    profile: str | None = PROFILE_OPTION,
 ) -> None:
     """envctl - local environment control plane."""
     del version
+
+    active_profile = profile.strip().lower() if profile is not None else resolve_default_profile()
+
     set_cli_state(
         ctx,
         output_format=OutputFormat.JSON if json_output else OutputFormat.TEXT,
+        profile=active_profile,
     )
 
 
@@ -68,7 +85,8 @@ app.command("inspect")(inspect_command)
 app.command("explain")(explain_command)
 app.command("sync")(sync_command)
 app.command("export")(export_command)
-app.command("run", context_settings={"allow_extra_args": True, "ignore_unknown_options": True})(
-    run_command_cli
-)
+app.command(
+    "run",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)(run_command_cli)
 app.command("status")(status_command)

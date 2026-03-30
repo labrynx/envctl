@@ -6,33 +6,36 @@ import typer
 
 from envctl.cli.decorators import handle_errors
 from envctl.cli.formatters import render_resolution
-from envctl.cli.runtime import is_json_output
+from envctl.cli.runtime import get_active_profile, is_json_output
 from envctl.cli.serializers import emit_json, serialize_project_context, serialize_resolution_report
 from envctl.services.check_service import run_check
-from envctl.utils.output import print_success, print_warning
+from envctl.utils.output import print_kv, print_success, print_warning
 
 
 @handle_errors
 def check_command() -> None:
-    """Validate the resolved environment against the contract."""
-    context, report = run_check()
+    """Validate the current project environment against the contract."""
+    context, active_profile, report = run_check(get_active_profile())
 
     if is_json_output():
-        success = report.is_valid and not report.unknown_keys
+        ok = report.is_valid and not report.unknown_keys
         emit_json(
             {
-                "ok": success,
+                "ok": ok,
                 "command": "check",
                 "data": {
+                    "active_profile": active_profile,
                     "context": serialize_project_context(context),
                     "report": serialize_resolution_report(report),
                 },
             }
         )
-        if success:
-            return
-        raise typer.Exit(code=1)
+        if not ok:
+            raise typer.Exit(code=1)
+        return
 
+    print_kv("profile", active_profile)
+    typer.echo()
     render_resolution(report)
 
     if report.is_valid and not report.unknown_keys:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors, text_output_only
+from envctl.cli.runtime import get_active_profile
 from envctl.services.vault_service import run_vault_check
 from envctl.utils.output import print_kv, print_success, print_warning
 
@@ -13,15 +14,17 @@ from envctl.utils.output import print_kv, print_success, print_warning
 @text_output_only("vault check")
 def vault_check_command() -> None:
     """Check the local vault file as a physical artifact."""
-    _context, result = run_vault_check()
+    _context, active_profile, result = run_vault_check(get_active_profile())
 
     if not result.exists:
         print_warning("Vault file does not exist")
+        print_kv("profile", active_profile)
         print_kv("vault_values", str(result.path))
         raise typer.Exit(code=1)
 
     if not result.parseable:
         print_warning("Vault file is not parseable")
+        print_kv("profile", active_profile)
         print_kv("vault_values", str(result.path))
         raise typer.Exit(code=1)
 
@@ -30,6 +33,7 @@ def vault_check_command() -> None:
     else:
         print_warning("Vault file is parseable but permissions are not private enough")
 
+    print_kv("profile", active_profile)
     print_kv("vault_values", str(result.path))
     print_kv("parseable", "yes" if result.parseable else "no")
     print_kv("private_permissions", "yes" if result.private_permissions else "no")

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import click
 import typer
 
+from envctl.constants import DEFAULT_PROFILE
 from envctl.domain.runtime import OutputFormat
 
 
@@ -15,15 +16,17 @@ class CliState:
     """Current CLI execution state."""
 
     output_format: OutputFormat = OutputFormat.TEXT
+    profile: str = DEFAULT_PROFILE
 
 
 def set_cli_state(
     ctx: typer.Context,
     *,
     output_format: OutputFormat,
+    profile: str = DEFAULT_PROFILE,
 ) -> None:
     """Persist the CLI state on the Typer/Click context."""
-    ctx.obj = CliState(output_format=output_format)
+    ctx.obj = CliState(output_format=output_format, profile=profile)
 
 
 def get_cli_state() -> CliState:
@@ -42,6 +45,11 @@ def get_output_format() -> OutputFormat:
 def is_json_output() -> bool:
     """Return whether the current command should emit JSON."""
     return get_output_format() == OutputFormat.JSON
+
+
+def get_active_profile() -> str:
+    """Return the active CLI profile."""
+    return get_cli_state().profile
 
 
 def get_command_path() -> str | None:

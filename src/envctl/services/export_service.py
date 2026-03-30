@@ -2,20 +2,34 @@
 
 from __future__ import annotations
 
+from envctl.domain.project import ProjectContext
 from envctl.errors import ValidationError
 from envctl.services.context_service import load_project_context
-from envctl.services.resolution_service import load_contract_for_context, resolve_environment
+from envctl.services.resolution_service import (
+    load_contract_for_context,
+    resolve_environment,
+)
+from envctl.utils.project_paths import normalize_profile_name
 from envctl.utils.shells import to_shell_export_lines
 
 
-def run_export() -> list[str]:
-    """Return shell export lines for the resolved environment."""
+def run_export(
+    active_profile: str | None = None,
+) -> tuple[ProjectContext, str, str]:
+    """Render the resolved environment as shell export lines."""
     _config, context = load_project_context()
+    resolved_profile = normalize_profile_name(active_profile)
+
     contract = load_contract_for_context(context)
-    report = resolve_environment(context, contract)
+    report = resolve_environment(context, contract, active_profile=resolved_profile)
 
     if not report.is_valid:
-        raise ValidationError("Cannot export because the resolved environment is invalid")
+        raise ValidationError("Environment contract is not satisfied")
 
-    plain = {key: value.value for key, value in report.values.items()}
-    return to_shell_export_lines(plain)
+    if report.unknown_keys:
+        raise ValidationError("Vault contains unknown keys")
+
+    values = {key: item.value for key, item in sorted(report.values.items())}
+
+    rendered = "".join(to_shell_export_lines(values))
+    return context, resolved_profile, rendered

@@ -4,24 +4,28 @@ from __future__ import annotations
 
 from envctl.cli.decorators import handle_errors
 from envctl.cli.formatters import render_status
-from envctl.cli.runtime import is_json_output
+from envctl.cli.runtime import get_active_profile, is_json_output
 from envctl.cli.serializers import emit_json, serialize_status_report
 from envctl.services.status_service import run_status
+from envctl.utils.output import print_kv
 
 
 @handle_errors
 def status_command() -> None:
-    """Show the current project status."""
-    report = run_status()
+    """Show a human-oriented project status summary."""
+    active_profile, report = run_status(get_active_profile())
 
     if is_json_output():
+        payload = serialize_status_report(report)
+        payload["active_profile"] = active_profile
         emit_json(
             {
                 "ok": True,
                 "command": "status",
-                "data": serialize_status_report(report),
+                "data": payload,
             }
         )
         return
 
+    print_kv("profile", active_profile)
     render_status(report)

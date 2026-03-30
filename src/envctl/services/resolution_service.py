@@ -1,4 +1,4 @@
-"""Environment resolution helpers."""
+"""Resolution service."""
 
 from __future__ import annotations
 
@@ -11,6 +11,11 @@ from envctl.domain.contract import Contract, VariableSpec
 from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport, ResolvedValue
 from envctl.repository.contract_repository import load_contract
+from envctl.utils.project_paths import (
+    build_profile_env_path,
+    is_local_profile,
+    normalize_profile_name,
+)
 
 
 def _validate_choices(spec: VariableSpec, value: str) -> tuple[bool, str | None]:
@@ -76,9 +81,24 @@ def load_contract_for_context(context: ProjectContext) -> Contract:
     return load_contract(context.repo_contract_path)
 
 
-def resolve_environment(context: ProjectContext, contract: Contract) -> ResolutionReport:
-    """Resolve environment values from the current sources."""
-    vault_values = load_env_file(context.vault_values_path)
+def resolve_environment(
+    context: ProjectContext,
+    contract: Contract,
+    *,
+    active_profile: str | None = None,
+) -> ResolutionReport:
+    """Resolve environment values from the selected profile and system env."""
+    resolved_profile = normalize_profile_name(active_profile)
+
+    if is_local_profile(resolved_profile):
+        profile_env_path = context.vault_values_path
+        profile_source = "vault"
+    else:
+        profile_env_path = build_profile_env_path(context.vault_project_dir, resolved_profile)
+        profile_source = "profile"
+
+    profile_values = load_env_file(profile_env_path)
+
     values: dict[str, ResolvedValue] = {}
     missing_required: list[str] = []
     invalid_keys: list[str] = []
@@ -91,9 +111,9 @@ def resolve_environment(context: ProjectContext, contract: Contract) -> Resoluti
         if system_value is not None and system_value != "":
             raw_value = system_value
             source = "system"
-        elif key in vault_values:
-            raw_value = vault_values[key]
-            source = "vault"
+        elif key in profile_values:
+            raw_value = profile_values[key]
+            source = profile_source
         elif spec.default is not None:
             raw_value = str(spec.default)
             source = "default"
@@ -116,7 +136,7 @@ def resolve_environment(context: ProjectContext, contract: Contract) -> Resoluti
             detail=detail,
         )
 
-    unknown_keys = sorted(set(vault_values) - set(contract.variables))
+    unknown_keys = sorted(set(profile_values) - set(contract.variables))
 
     return ResolutionReport.from_parts(
         values=values,
