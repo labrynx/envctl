@@ -14,13 +14,17 @@ PYTEST ?= pytest
 PACKAGE ?= envctl
 COV_TARGET ?= src/envctl
 
+PYTEST_BASE_ARGS ?= -ra -vv --tb=short --color=yes
+PYTEST_DEBUG_ARGS ?= --showlocals --durations=10
+PYTEST_COV_ARGS ?= --cov=$(COV_TARGET) --cov-report=term-missing:skip-covered --cov-report=html --cov-report=xml
+
 .DEFAULT_GOAL := help
 
 .PHONY: \
 	help \
 	install install-dev \
 	lint lint-fix format format-check typecheck \
-	test test-cov test-fast \
+	test test-cov test-fast test-debug \
 	check fix \
 	clean clean-hard \
 	status commit push \
@@ -71,14 +75,17 @@ typecheck: ## Run static type checking with mypy
 # Tests
 # -----------------------------------------
 
-test: ## Run test suite
-	$(PYTEST)
+test: ## Run test suite with readable output
+	$(PYTEST) $(PYTEST_BASE_ARGS)
 
-test-cov: ## Run tests with coverage report
-	$(PYTEST) --cov=$(COV_TARGET) --cov-report=term-missing
+test-cov: ## Run tests with detailed coverage and readable failures
+	$(PYTEST) $(PYTEST_BASE_ARGS) $(PYTEST_DEBUG_ARGS) $(PYTEST_COV_ARGS)
 
 test-fast: ## Run tests quietly without coverage
 	$(PYTEST) -q
+
+test-debug: ## Run tests with maximum failure context
+	$(PYTEST) -vv -ra --tb=long --showlocals --maxfail=1 --color=yes
 
 # -----------------------------------------
 # Combined workflows
@@ -100,15 +107,14 @@ clean: ## Remove Python, pytest, Ruff, mypy and build artifacts
 		.mypy_cache \
 		.coverage \
 		htmlcov \
+		coverage.xml \
 		dist \
 		build \
 		*.egg-info \
 		.eggs
 	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
 	find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete
-
-clean-hard: clean ## Full clean including local virtual environment
-	rm -rf .venv
+	rm -rf codereview
 
 # -----------------------------------------
 # Git helpers

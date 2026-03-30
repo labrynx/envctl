@@ -24,3 +24,5 @@ build/
 
 codereview
 .tmp
+
+*.log
