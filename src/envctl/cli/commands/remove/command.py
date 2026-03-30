@@ -16,7 +16,7 @@ def remove_command(
     yes: bool = typer.Option(False, "--yes", help="Skip confirmation."),
 ) -> None:
     """Remove one key from the local vault and contract."""
-    _context, plan = plan_remove(key)
+    context, plan = plan_remove(key)
 
     remove_from_contract = plan.declared_in_contract
 
@@ -26,8 +26,9 @@ def remove_command(
             print_warning("Nothing was removed.")
             return
 
-    context, result = run_remove(
-        key=key,
+    result = run_remove(
+        context=context,
+        plan=plan,
         remove_from_contract=remove_from_contract,
     )
 

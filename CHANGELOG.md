@@ -62,9 +62,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * `remove` command flow:
 
-  * refactored to avoid double loading of project context
-  * preflight inspection separated from execution logic
-  * improved UX consistency and internal clarity
+  * refactored to reuse project context resolved during preflight
+  * `run_remove` no longer loads project context independently
+  * eliminates redundant Git and filesystem calls
+  * improves separation between inspection and execution logic
 
 * `add` command UX:
 
@@ -82,9 +83,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Resolution model:
 
-  * `ResolutionReport` made structurally immutable
-  * improved safety and predictability of resolution results
+  * improved immutability guarantees in `ResolutionReport`
   * reduces risk of accidental mutation across services
+  * aligns behavior more closely with contract domain expectations
 
 * Internal architecture improvements:
 
@@ -92,7 +93,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
     * preflight vs execution (remove)
     * inference vs override (add)
-  * reduced duplication in context loading
+  * reduced duplication in context loading within remove flow
   * improved service-level consistency
 
 * Legacy state compatibility:
@@ -123,11 +124,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * reduces noise at the root command level
   * makes maintenance and recovery flows easier to discover conceptually
 
+* `rebind` command UX:
+
+  * removed the artificial `--new-project` guard from `envctl project rebind`
+  * relies on explicit confirmation instead of a redundant flag
+  * improves discoverability and makes the command behave as users expect
+
 ### Fixed
 
 * `remove` command inefficiency:
 
-  * removed redundant context loading
+  * removed redundant context loading between preflight and execution
 
 * `add` command noise:
 
@@ -160,6 +167,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * removed unused and outdated `InitResult` from `domain/project.py`
   * prevents divergence between declared domain models and actual runtime behavior
 
+* `rebind` command ergonomics:
+
+  * `envctl project rebind` no longer fails with a `BadParameter` when called without `--new-project`
+  
 ### Security
 
 * Hardened secret exposure safeguards:
@@ -194,13 +205,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Notes
 
-* This iteration focuses on **UX hardening and semantic clarity**, not new surface area
-* Ensures the new identity model works safely with existing vaults
+* This iteration focuses on **execution consistency and UX clarity**, without expanding command surface
+* Ensures the identity and contract model behaves predictably across legacy and current state
+
 * Key improvements:
 
-  * less noise
+  * less CLI noise
   * safer defaults
-  * clearer separation of responsibilities
+  * clearer separation between planning and execution
 
 * Prepares the codebase for:
 

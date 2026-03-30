@@ -30,30 +30,29 @@ def plan_remove(key: str) -> tuple[ProjectContext, RemovePlan]:
 
 def run_remove(
     *,
-    key: str,
+    context: ProjectContext,
+    plan: RemovePlan,
     remove_from_contract: bool,
-) -> tuple[ProjectContext, RemoveResult]:
+) -> RemoveResult:
     """Remove one key from vault and optionally from contract."""
-    _config, context = load_project_context(persist_binding=True)
-
     ensure_dir(context.vault_project_dir)
 
     contract = load_contract_optional(context.repo_contract_path)
-    has_contract_entry = contract is not None and key in contract.variables
+    has_contract_entry = contract is not None and plan.key in contract.variables
 
     data = load_env_file(context.vault_values_path)
-    removed_from_vault = key in data
-    data.pop(key, None)
+    removed_from_vault = plan.key in data
+    data.pop(plan.key, None)
     write_text_atomic(context.vault_values_path, dump_env(data))
 
     removed_from_contract = False
     if remove_from_contract and has_contract_entry and contract is not None:
-        updated_contract = contract.without_variable(key)
+        updated_contract = contract.without_variable(plan.key)
         write_contract(context.repo_contract_path, updated_contract)
         removed_from_contract = True
 
-    return context, RemoveResult(
-        key=key,
+    return RemoveResult(
+        key=plan.key,
         removed_from_vault=removed_from_vault,
         removed_from_contract=removed_from_contract,
     )

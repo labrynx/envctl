@@ -35,7 +35,7 @@ def make_resolution_report(
     """Build a resolution report with sensible defaults."""
     return ResolutionReport.from_parts(
         values=dict(values or {}),
-        missing_required=list(missing_required or ()),
-        unknown_keys=list(unknown_keys or ()),
-        invalid_keys=list(invalid_keys or ()),
+        missing_required=tuple(missing_required or ()),
+        unknown_keys=tuple(unknown_keys or ()),
+        invalid_keys=tuple(invalid_keys or ()),
     )
