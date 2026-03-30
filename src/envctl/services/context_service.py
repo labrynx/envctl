@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from envctl.config.loader import load_config
 from envctl.domain.app_config import AppConfig
 from envctl.domain.project import ProjectContext
@@ -20,19 +22,7 @@ def load_project_context(
 
     if persist_binding:
         if context.binding_source == "derived":
-            context = ProjectContext(
-                project_slug=context.project_slug,
-                project_key=context.project_key,
-                project_id=new_project_id(),
-                repo_root=context.repo_root,
-                repo_remote=context.repo_remote,
-                binding_source=context.binding_source,
-                repo_env_path=context.repo_env_path,
-                repo_contract_path=context.repo_contract_path,
-                vault_project_dir=context.vault_project_dir,
-                vault_values_path=context.vault_values_path,
-                vault_state_path=context.vault_state_path,
-            )
+            context = replace(context, project_id=new_project_id())
 
         context = persist_project_binding(config, context)
 

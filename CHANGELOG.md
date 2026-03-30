@@ -28,6 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * allows CLI to show only relevant inferred metadata
   * improves transparency of contract inference
 
+* Identity and repair test coverage:
+
+  * added unit tests for project context resolution
+  * covers local bindings, remote recovery, `project_key`, `known_paths`, ambiguity, and derived fallback
+  * added unit tests for `repair` service flows
+  * covers healthy, repaired, recreated, created, and needs-action outcomes
+
 ### Changed
 
 * `remove` command flow:
@@ -65,6 +72,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * reduced duplication in context loading
   * improved service-level consistency
 
+* Legacy state compatibility:
+
+  * `state.json` version 1 is now accepted and normalized in memory to the current structure
+  * recovery and repair flows remain compatible with older vault metadata
+
+* Context binding internals:
+
+  * `load_project_context()` now uses `dataclasses.replace()` when promoting derived identities
+  * avoids fragile field-by-field reconstruction of `ProjectContext`
+
 ### Fixed
 
 * `remove` command inefficiency:
@@ -80,6 +97,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * resolved `ruff` complexity and style warnings
   * fixed `mypy` compatibility issues (e.g. `datetime.UTC`)
   * restored compatibility in `state_repository` (`write_state`)
+
+* Backward compatibility in project state:
+
+  * fixed failure when reading vault state created with older `STATE_VERSION = 1`
+  * prevents legacy `state.json` files from breaking detection, recovery, and repair flows
+
+* Identity test coverage:
+
+  * restored and expanded test coverage for project context resolution and repair scenarios
+  * aligned tests with the current binding and recovery model
 
 ### Security
 
@@ -112,11 +139,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * less noise
   * safer defaults
   * clearer separation of responsibilities
+
 * Prepares the codebase for:
 
   * richer CLI interactions
   * future policy layers
   * machine-readable outputs
+
+* This iteration focuses on **UX hardening, semantic clarity, and backward compatibility**
+* Ensures the new identity model works safely with existing vaults
 
 ---
 
