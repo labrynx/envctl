@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Project identity commands have been moved under `envctl project`:
   * `bind`, `unbind`, `rebind`, `repair` are no longer available at root level
   * use `envctl project <command>` instead
-  
+
 ### Added
 
 * Confirmation prompt in `vault show --raw`:
@@ -58,6 +58,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * includes `bind`, `unbind`, `rebind`, and `repair`
   * improves CLI discoverability by separating daily workflows from maintenance commands
 
+* Structured JSON output support:
+
+  * added global `--json` output mode
+  * introduced structured machine-readable output for:
+    * `check`
+    * `inspect`
+    * `explain`
+    * `status`
+    * `doctor`
+  * establishes a stable scripting-oriented output shape with explicit success and error payloads
+
+* Runtime mode foundations:
+
+  * introduced `RuntimeMode` with `local` and `ci`
+  * added runtime mode support to application configuration
+  * supports runtime mode overrides through `ENVCTL_RUNTIME_MODE`
+
 ### Changed
 
 * `remove` command flow:
@@ -66,6 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * `run_remove` no longer loads project context independently
   * eliminates redundant Git and filesystem calls
   * improves separation between inspection and execution logic
+  * aligns service behavior with plan → execute architecture
 
 * `add` command UX:
 
@@ -81,11 +99,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * improved consistency between CLI input and contract types
   * better handling of `int` and `bool` defaults
 
-* Resolution model:
+* `ResolutionReport` made structurally immutable:
 
-  * improved immutability guarantees in `ResolutionReport`
-  * reduces risk of accidental mutation across services
-  * aligns behavior more closely with contract domain expectations
+  * internal state now uses `MappingProxyType` and tuples
+  * prevents accidental mutation of resolved values
+  * aligns runtime guarantees with domain expectations
 
 * Internal architecture improvements:
 
@@ -122,7 +140,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   * project identity operations are now grouped under `envctl project`
   * reduces noise at the root command level
-  * makes maintenance and recovery flows easier to discover conceptually
+  * separates daily workflows from identity and maintenance operations
 
 * `rebind` command UX:
 
@@ -130,9 +148,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * relies on explicit confirmation instead of a redundant flag
   * improves discoverability and makes the command behave as users expect
 
+* CLI output architecture:
+
+  * introduced centralized CLI runtime state for output mode selection
+  * added serializer-based JSON rendering for supported read-only commands
+  * kept human-readable text rendering as the default interface
+
+* Configuration model:
+
+  * extended `AppConfig` with runtime mode support
+  * configuration loading now validates and resolves runtime mode consistently across config and environment overrides
+
 ### Fixed
 
-* `remove` command inefficiency:
+* `remove` execution inefficiency:
 
   * removed redundant context loading between preflight and execution
 
@@ -170,13 +199,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `rebind` command ergonomics:
 
   * `envctl project rebind` no longer fails with a `BadParameter` when called without `--new-project`
-  
+
+* Unsupported CLI output handling:
+
+  * commands that do not yet support structured JSON now fail explicitly under `--json`
+  * avoids mixed human and machine-oriented output on stdout
+
 ### Security
 
 * Hardened secret exposure safeguards:
 
   * `vault show --raw` now requires explicit confirmation
   * reduces risk of accidental leakage in terminal sessions
+
+* CI read-only runtime restrictions:
+
+  * mutating commands are now blocked when running in `ci` runtime mode
+  * prevents local vault mutation, rebinding, and other stateful operations during CI execution
 
 * Documentation updates:
 
@@ -205,20 +244,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Notes
 
-* This iteration focuses on **execution consistency and UX clarity**, without expanding command surface
+* This iteration focuses on **execution consistency, UX clarity, internal correctness, and scripting readiness**
 * Ensures the identity and contract model behaves predictably across legacy and current state
+* Introduces the first explicit runtime distinction between local interactive usage and CI-style read-only execution
 
 * Key improvements:
 
   * less CLI noise
   * safer defaults
   * clearer separation between planning and execution
+  * machine-readable output for core read-only workflows
+  * explicit runtime restrictions for CI environments
 
 * Prepares the codebase for:
 
   * richer CLI interactions
   * future policy layers
-  * machine-readable outputs
+  * pluggable providers
+  * profile-aware resolution
+  * broader automation and CI integration
 
 ---
 
