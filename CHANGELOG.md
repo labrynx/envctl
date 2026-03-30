@@ -46,6 +46,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * added unit tests for `rebind` CLI behavior
   * added unit tests for `rebind` service flows, including value-copy scenarios
 
+* Project command group:
+
+  * added `envctl project` to group project identity and binding operations
+  * includes `bind`, `unbind`, `rebind`, and `repair`
+  * improves CLI discoverability by separating daily workflows from maintenance commands
+
 ### Changed
 
 * `remove` command flow:
@@ -105,6 +111,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * unified initialization outcome model under `init_service`
   * eliminates ambiguity between domain and service representations
 
+* CLI surface organization:
+
+  * project identity operations are now grouped under `envctl project`
+  * reduces noise at the root command level
+  * makes maintenance and recovery flows easier to discover conceptually
+
 ### Fixed
 
 * `remove` command inefficiency:
@@ -142,11 +154,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * removed unused and outdated `InitResult` from `domain/project.py`
   * prevents divergence between declared domain models and actual runtime behavior
 
-* Rebind command and service test coverage:
-
-  * added unit tests for `rebind` CLI behavior
-  * added unit tests for `rebind` service flows, including value-copy scenarios
-  
 ### Security
 
 * Hardened secret exposure safeguards:
@@ -169,6 +176,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * clarified contract mutation semantics
   * documented `add` as a shared, versioned operation
   * improved consistency across docs
+
+* Updated architecture, commands, metadata, security, and README documentation:
+
+  * documented the three-state identity model (`local`, `recovered`, `derived`)
+  * documented canonical binding in local Git config
+  * clarified recovery by remote, `project_key`, and `known_paths`
+  * documented `state.json` v2 semantics and legacy compatibility
+  * clarified `vault show --raw` confirmation behavior
+  * documented grouped project identity operations under the CLI surface
 
 ### Notes
 
