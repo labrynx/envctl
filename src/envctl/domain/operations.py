@@ -145,6 +145,7 @@ class RepairResult:
     detail: str
     project_id: str | None = None
 
+
 @dataclass(frozen=True)
 class RemovePlan:
     """Preflight information for a remove operation."""
