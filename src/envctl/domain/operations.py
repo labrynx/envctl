@@ -44,6 +44,7 @@ class AddResult:
     contract_entry_created: bool
     declared_in_contract: bool
     inferred_spec: dict[str, Any] | None
+    inferred_fields_used: tuple[str, ...]
 
 
 @dataclass(frozen=True)

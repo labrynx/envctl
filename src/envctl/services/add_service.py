@@ -55,6 +55,47 @@ def _apply_request_to_spec(
     return base_spec.model_copy(update=updates)
 
 
+def _collect_inferred_fields_used(
+    *,
+    base_spec: VariableSpec,
+    final_spec: VariableSpec,
+    request: AddVariableRequest,
+) -> tuple[str, ...]:
+    """Return the inferred fields that survived explicit overrides."""
+    fields: list[str] = []
+
+    if request.override_type is None and final_spec.type == base_spec.type:
+        fields.append("type")
+
+    if request.override_required is None and final_spec.required == base_spec.required:
+        fields.append("required")
+
+    if request.override_sensitive is None and final_spec.sensitive == base_spec.sensitive:
+        fields.append("sensitive")
+
+    if request.override_description is None and final_spec.description == base_spec.description:
+        if final_spec.description:
+            fields.append("description")
+
+    if request.override_default is None and final_spec.default == base_spec.default:
+        if final_spec.default is not None:
+            fields.append("default")
+
+    if request.override_example is None and final_spec.example == base_spec.example:
+        if final_spec.example is not None:
+            fields.append("example")
+
+    if request.override_pattern is None and final_spec.pattern == base_spec.pattern:
+        if final_spec.pattern is not None:
+            fields.append("pattern")
+
+    if request.override_choices is None and final_spec.choices == base_spec.choices:
+        if final_spec.choices:
+            fields.append("choices")
+
+    return tuple(fields)
+
+
 def run_add(request: AddVariableRequest) -> tuple[ProjectContext, AddResult]:
     """Add or update a key in vault and contract."""
     _config, context = load_project_context(persist_binding=True)
@@ -70,6 +111,7 @@ def run_add(request: AddVariableRequest) -> tuple[ProjectContext, AddResult]:
     contract_updated = False
     contract_entry_created = False
     inferred_spec: dict[str, object] | None = None
+    inferred_fields_used: tuple[str, ...] = ()
 
     if contract is None:
         contract = create_empty_contract(
@@ -95,6 +137,13 @@ def run_add(request: AddVariableRequest) -> tuple[ProjectContext, AddResult]:
 
     final_spec = _apply_request_to_spec(base_spec, request)
 
+    if existing is None:
+        inferred_fields_used = _collect_inferred_fields_used(
+            base_spec=base_spec,
+            final_spec=final_spec,
+            request=request,
+        )
+
     if existing is None or final_spec != existing or contract_created:
         contract = contract.with_variable(final_spec)
         write_contract(context.repo_contract_path, contract)
@@ -108,4 +157,5 @@ def run_add(request: AddVariableRequest) -> tuple[ProjectContext, AddResult]:
         contract_entry_created=contract_entry_created,
         declared_in_contract=True,
         inferred_spec=inferred_spec,
+        inferred_fields_used=inferred_fields_used,
     )

@@ -226,4 +226,6 @@ def add_command(
         if result.inferred_spec.get("description"):
             print_kv("description", str(result.inferred_spec["description"]))
 
-    print_warning("Review .envctl.schema.yaml to confirm the inferred metadata.")
+    if result.inferred_fields_used:
+        print_kv("inferred_fields", ", ".join(result.inferred_fields_used))
+        print_warning("Review .envctl.schema.yaml to confirm the inferred metadata.")
