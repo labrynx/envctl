@@ -4,23 +4,25 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
+from envctl.cli.decorators import handle_errors, requires_writable_runtime
+from envctl.cli.runtime import get_active_profile
 from envctl.services.set_service import run_set
-from envctl.utils.output import print_kv, print_success, print_warning
+from envctl.utils.output import print_kv, print_success
 
 
 @handle_errors
 @requires_writable_runtime("set")
-@text_output_only("set")
 def set_command(
     key: str = typer.Argument(...),
     value: str = typer.Argument(...),
 ) -> None:
-    """Create or update one key in the local vault only."""
-    context, result = run_set(key=key, value=value)
+    """Set one local value in the active profile."""
+    _context, active_profile, profile_path = run_set(
+        key=key,
+        value=value,
+        active_profile=get_active_profile(),
+    )
 
-    print_success(f"Updated '{key}' in local vault")
-    print_kv("vault_values", str(context.vault_values_path))
-
-    if not result.declared_in_contract:
-        print_warning("Key is not declared in the contract.")
+    print_success(f"Set '{key}' in profile '{active_profile}'")
+    print_kv("profile", active_profile)
+    print_kv("vault_values", str(profile_path))

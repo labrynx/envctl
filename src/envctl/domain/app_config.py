@@ -18,6 +18,7 @@ class AppConfig:
     env_filename: str
     schema_filename: str
     runtime_mode: RuntimeMode
+    default_profile: str
 
     @property
     def projects_dir(self) -> Path:

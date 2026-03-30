@@ -10,6 +10,7 @@ from envctl.config.defaults import (
     get_default_schema_filename,
     get_default_vault_dir,
 )
+from envctl.constants import DEFAULT_PROFILE
 from envctl.domain.runtime import RuntimeMode
 from envctl.errors import ConfigError
 from envctl.utils.atomic import write_json_atomic
@@ -32,6 +33,7 @@ def write_default_config_file() -> Path:
             "env_filename": get_default_env_filename(),
             "schema_filename": get_default_schema_filename(),
             "runtime_mode": RuntimeMode.LOCAL.value,
+            "default_profile": DEFAULT_PROFILE,
         },
     )
     return config_path
