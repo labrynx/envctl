@@ -1,35 +1,71 @@
 from __future__ import annotations
 
 from pathlib import Path
-from types import SimpleNamespace
 
+import pytest
+
+from envctl.domain.project import ProjectContext
 from envctl.errors import ProjectDetectionError
 from envctl.services.doctor_service import run_doctor
+from tests.support.contexts import make_project_context
 
 
-def make_config(tmp_path: Path, vault_dir: Path) -> SimpleNamespace:
-    return SimpleNamespace(
-        config_path=tmp_path / "config.json",
-        vault_dir=vault_dir,
-        projects_dir=vault_dir / "projects",
-        env_filename=".env.local",
-        schema_filename=".envctl.schema.yaml",
+def make_context(
+    tmp_path: Path,
+    *,
+    binding_source: str = "local",
+    contract_exists: bool = True,
+    state_exists: bool = True,
+) -> ProjectContext:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir(parents=True, exist_ok=True)
+
+    vault_project_dir = tmp_path / "vault" / "projects" / "demo--prj_aaaaaaaaaaaaaaaa"
+    vault_project_dir.mkdir(parents=True, exist_ok=True)
+
+    repo_contract_path = repo_root / ".envctl.schema.yaml"
+    if contract_exists:
+        repo_contract_path.write_text("version: 1\nvariables: {}\n", encoding="utf-8")
+
+    vault_state_path = vault_project_dir / "state.json"
+    if state_exists:
+        vault_state_path.write_text("{}", encoding="utf-8")
+
+    return make_project_context(
+        project_slug="demo",
+        project_key="demo",
+        project_id="prj_aaaaaaaaaaaaaaaa",
+        repo_root=repo_root,
+        repo_remote=None,
+        binding_source=binding_source,  # type: ignore[arg-type]
+        repo_contract_path=repo_contract_path,
+        vault_project_dir=vault_project_dir,
+        vault_values_path=vault_project_dir / "values.env",
+        vault_state_path=vault_state_path,
     )
 
 
+def make_config(tmp_path: Path, vault_dir: Path) -> object:
+    class ConfigStub:
+        def __init__(self) -> None:
+            self.config_path = tmp_path / "config.json"
+            self.vault_dir = vault_dir
+            self.projects_dir = vault_dir / "projects"
+            self.env_filename = ".env.local"
+            self.schema_filename = ".envctl.schema.yaml"
+
+    return ConfigStub()
+
+
 def test_run_doctor_reports_ok_for_existing_private_vault_and_git_repo(
-    monkeypatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     vault_dir = tmp_path / "vault"
     vault_dir.mkdir()
-
-    repo_contract_path = tmp_path / "repo" / ".envctl.schema.yaml"
-    repo_contract_path.parent.mkdir(parents=True, exist_ok=True)
-    repo_contract_path.write_text("version: 1\nvariables: {}\n", encoding="utf-8")
-
-    vault_state_path = tmp_path / "vault" / "projects" / "demo--prj_aaaaaaaaaaaaaaaa" / "state.json"
-    vault_state_path.parent.mkdir(parents=True, exist_ok=True)
-    vault_state_path.write_text("{}", encoding="utf-8")
+    context = make_context(
+        tmp_path, binding_source="local", contract_exists=True, state_exists=True
+    )
 
     monkeypatch.setattr(
         "envctl.services.doctor_service.load_config",
@@ -41,14 +77,7 @@ def test_run_doctor_reports_ok_for_existing_private_vault_and_git_repo(
     )
     monkeypatch.setattr(
         "envctl.services.doctor_service.build_project_context",
-        lambda config: SimpleNamespace(
-            project_slug="demo",
-            project_key="demo",
-            project_id="prj_aaaaaaaaaaaaaaaa",
-            binding_source="local",
-            repo_contract_path=repo_contract_path,
-            vault_state_path=vault_state_path,
-        ),
+        lambda config: context,
     )
 
     checks = run_doctor()
@@ -73,9 +102,15 @@ def test_run_doctor_reports_ok_for_existing_private_vault_and_git_repo(
     assert "Vault state found:" in checks[7].detail
 
 
-def test_run_doctor_warns_when_vault_is_world_writable(monkeypatch, tmp_path: Path) -> None:
+def test_run_doctor_warns_when_vault_is_world_writable(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     vault_dir = tmp_path / "vault"
     vault_dir.mkdir()
+    context = make_context(
+        tmp_path, binding_source="local", contract_exists=False, state_exists=False
+    )
 
     monkeypatch.setattr(
         "envctl.services.doctor_service.load_config",
@@ -87,18 +122,7 @@ def test_run_doctor_warns_when_vault_is_world_writable(monkeypatch, tmp_path: Pa
     )
     monkeypatch.setattr(
         "envctl.services.doctor_service.build_project_context",
-        lambda config: SimpleNamespace(
-            project_slug="demo",
-            project_key="demo",
-            project_id="prj_aaaaaaaaaaaaaaaa",
-            binding_source="local",
-            repo_contract_path=tmp_path / "repo" / ".envctl.schema.yaml",
-            vault_state_path=tmp_path
-            / "vault"
-            / "projects"
-            / "demo--prj_aaaaaaaaaaaaaaaa"
-            / "state.json",
-        ),
+        lambda config: context,
     )
 
     checks = run_doctor()
@@ -108,8 +132,14 @@ def test_run_doctor_warns_when_vault_is_world_writable(monkeypatch, tmp_path: Pa
     assert "world-writable" in checks[2].detail
 
 
-def test_run_doctor_warns_when_vault_does_not_exist(monkeypatch, tmp_path: Path) -> None:
+def test_run_doctor_warns_when_vault_does_not_exist(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     vault_dir = tmp_path / "vault"
+    context = make_context(
+        tmp_path, binding_source="local", contract_exists=False, state_exists=False
+    )
 
     monkeypatch.setattr(
         "envctl.services.doctor_service.load_config",
@@ -117,18 +147,7 @@ def test_run_doctor_warns_when_vault_does_not_exist(monkeypatch, tmp_path: Path)
     )
     monkeypatch.setattr(
         "envctl.services.doctor_service.build_project_context",
-        lambda config: SimpleNamespace(
-            project_slug="demo",
-            project_key="demo",
-            project_id="prj_aaaaaaaaaaaaaaaa",
-            binding_source="local",
-            repo_contract_path=tmp_path / "repo" / ".envctl.schema.yaml",
-            vault_state_path=tmp_path
-            / "vault"
-            / "projects"
-            / "demo--prj_aaaaaaaaaaaaaaaa"
-            / "state.json",
-        ),
+        lambda config: context,
     )
 
     checks = run_doctor()
@@ -138,7 +157,10 @@ def test_run_doctor_warns_when_vault_does_not_exist(monkeypatch, tmp_path: Path)
     assert "does not exist yet" in checks[2].detail
 
 
-def test_run_doctor_warns_when_not_inside_git_repo(monkeypatch, tmp_path: Path) -> None:
+def test_run_doctor_warns_when_not_inside_git_repo(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     vault_dir = tmp_path / "vault"
     vault_dir.mkdir()
 
@@ -151,7 +173,7 @@ def test_run_doctor_warns_when_not_inside_git_repo(monkeypatch, tmp_path: Path) 
         lambda _path: False,
     )
 
-    def raise_not_repo(config):
+    def raise_not_repo(config: object) -> ProjectContext:
         raise ProjectDetectionError("Not inside a Git repository")
 
     monkeypatch.setattr(

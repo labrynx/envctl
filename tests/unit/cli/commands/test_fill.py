@@ -10,7 +10,10 @@ from envctl.domain.operations import FillPlanItem
 from envctl.domain.runtime import RuntimeMode
 
 
-def test_fill_command_outputs_success_when_keys_are_changed(monkeypatch, capsys) -> None:
+def test_fill_command_outputs_success_when_keys_are_changed(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     context = type("Context", (), {"display_name": "demo-project"})()
     plan = (
         FillPlanItem(
@@ -49,7 +52,10 @@ def test_fill_command_outputs_success_when_keys_are_changed(monkeypatch, capsys)
     assert "keys: API_KEY, PORT" in output
 
 
-def test_fill_command_outputs_warning_when_nothing_to_fill(monkeypatch, capsys) -> None:
+def test_fill_command_outputs_warning_when_nothing_to_fill(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     context = type("Context", (), {"display_name": "demo-project"})()
 
     monkeypatch.setattr(
@@ -63,7 +69,10 @@ def test_fill_command_outputs_warning_when_nothing_to_fill(monkeypatch, capsys) 
     assert "No keys were changed" in output
 
 
-def test_fill_command_outputs_warning_when_apply_fill_changes_nothing(monkeypatch, capsys) -> None:
+def test_fill_command_outputs_warning_when_apply_fill_changes_nothing(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     context = type("Context", (), {"display_name": "demo-project"})()
     plan = (
         FillPlanItem(
@@ -93,7 +102,9 @@ def test_fill_command_outputs_warning_when_apply_fill_changes_nothing(monkeypatc
     assert "No keys were changed" in output
 
 
-def test_fill_command_rejects_ci_mode(monkeypatch) -> None:
+def test_fill_command_rejects_ci_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     captured: dict[str, str] = {}
 
     monkeypatch.setattr(

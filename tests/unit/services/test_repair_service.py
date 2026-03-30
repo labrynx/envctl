@@ -6,7 +6,8 @@ import pytest
 
 import envctl.services.repair_service as repair_service
 from envctl.domain.app_config import AppConfig
-from envctl.domain.project import ProjectContext
+from envctl.domain.project import BindingSource, ProjectContext
+from envctl.domain.runtime import RuntimeMode
 from envctl.errors import ExecutionError, ProjectDetectionError
 
 
@@ -18,6 +19,7 @@ def make_config(tmp_path: Path) -> AppConfig:
         vault_dir=vault_dir,
         env_filename=".env.local",
         schema_filename=".envctl.schema.yaml",
+        runtime_mode=RuntimeMode.LOCAL,
     )
 
 
@@ -25,7 +27,7 @@ def make_context(
     tmp_path: Path,
     *,
     project_id: str,
-    binding_source: str,
+    binding_source: BindingSource,
     project_slug: str = "demo-app",
     project_key: str = "demo-app",
     repo_remote: str | None = "git@github.com:alessbarb/demo-app.git",

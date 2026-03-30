@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 import typer
 
@@ -9,7 +11,9 @@ from tests.support.builders import make_resolution_report
 from tests.support.contexts import make_project_context
 
 
-def test_check_command_exits_when_report_is_valid_but_unknown_keys_exist(monkeypatch) -> None:
+def test_check_command_exits_when_report_is_valid_but_unknown_keys_exist(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     report = make_resolution_report(
         values={},
         missing_required=(),
@@ -46,7 +50,9 @@ def test_check_command_exits_when_report_is_valid_but_unknown_keys_exist(monkeyp
     assert captured["warning"] == "Environment is valid, but the vault contains unknown keys"
 
 
-def test_check_command_exits_when_report_is_invalid(monkeypatch) -> None:
+def test_check_command_exits_when_report_is_invalid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     report = make_resolution_report(
         values={},
         missing_required=("APP_NAME",),
@@ -76,7 +82,9 @@ def test_check_command_exits_when_report_is_invalid(monkeypatch) -> None:
     assert exc_info.value.exit_code == 1
 
 
-def test_check_command_emits_json_when_requested(monkeypatch) -> None:
+def test_check_command_emits_json_when_requested(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     context = make_project_context(repo_root="/tmp/demo")
     report = make_resolution_report(
         values={},
@@ -84,7 +92,7 @@ def test_check_command_emits_json_when_requested(monkeypatch) -> None:
         unknown_keys=(),
         invalid_keys=(),
     )
-    captured: dict[str, object] = {}
+    captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
         check_command_module,
@@ -104,14 +112,16 @@ def test_check_command_emits_json_when_requested(monkeypatch) -> None:
 
     check_command()
 
-    payload = captured["payload"]
+    payload = cast(dict[str, Any], captured["payload"])
     assert payload["ok"] is True
     assert payload["command"] == "check"
     assert payload["data"]["context"]["project_slug"] == "demo"
     assert payload["data"]["report"]["is_valid"] is True
 
 
-def test_check_command_emits_json_and_exits_when_invalid(monkeypatch) -> None:
+def test_check_command_emits_json_and_exits_when_invalid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     context = make_project_context(repo_root="/tmp/demo")
     report = make_resolution_report(
         values={},
@@ -119,7 +129,7 @@ def test_check_command_emits_json_and_exits_when_invalid(monkeypatch) -> None:
         unknown_keys=(),
         invalid_keys=(),
     )
-    captured: dict[str, object] = {}
+    captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
         check_command_module,
@@ -141,6 +151,6 @@ def test_check_command_emits_json_and_exits_when_invalid(monkeypatch) -> None:
         check_command()
 
     assert exc_info.value.exit_code == 1
-    payload = captured["payload"]
+    payload = cast(dict[str, Any], captured["payload"])
     assert payload["ok"] is False
     assert payload["data"]["report"]["missing_required"] == ["DATABASE_URL"]

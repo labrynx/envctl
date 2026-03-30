@@ -13,7 +13,7 @@ from envctl.domain.runtime import RuntimeMode
 
 def test_rebind_command_aborts_when_confirmation_is_rejected(
     monkeypatch: pytest.MonkeyPatch,
-    capsys,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     confirm_calls: list[tuple[str, bool]] = []
     run_calls: list[bool] = []
@@ -22,7 +22,7 @@ def test_rebind_command_aborts_when_confirmation_is_rejected(
         confirm_calls.append((message, default))
         return False
 
-    def fake_run_rebind(*, copy_values: bool = True):
+    def fake_run_rebind(*, copy_values: bool = True) -> tuple[object, object]:
         run_calls.append(copy_values)
         raise AssertionError("run_rebind should not be called when confirmation is rejected")
 
@@ -41,7 +41,7 @@ def test_rebind_command_aborts_when_confirmation_is_rejected(
 
 def test_rebind_command_skips_confirmation_when_yes_is_true(
     monkeypatch: pytest.MonkeyPatch,
-    capsys,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     confirm_calls: list[tuple[str, bool]] = []
 
@@ -77,7 +77,7 @@ def test_rebind_command_skips_confirmation_when_yes_is_true(
 
 def test_rebind_command_prints_rebind_details_with_previous_project_id(
     monkeypatch: pytest.MonkeyPatch,
-    capsys,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     context = SimpleNamespace(
         display_name="demo (prj_bbbbbbbbbbbbbbbb)",
@@ -116,7 +116,7 @@ def test_rebind_command_prints_rebind_details_with_previous_project_id(
 
 def test_rebind_command_prints_no_copy_when_values_are_not_copied(
     monkeypatch: pytest.MonkeyPatch,
-    capsys,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     context = SimpleNamespace(
         display_name="demo (prj_bbbbbbbbbbbbbbbb)",
@@ -144,7 +144,9 @@ def test_rebind_command_prints_no_copy_when_values_are_not_copied(
     assert "previous_project_id:" not in output
 
 
-def test_rebind_command_rejects_ci_mode(monkeypatch) -> None:
+def test_rebind_command_rejects_ci_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     captured: dict[str, str] = {}
 
     monkeypatch.setattr(

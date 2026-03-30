@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 import typer
@@ -8,7 +9,10 @@ import typer
 import envctl.cli.commands.vault.commands.show as vault_show_module
 
 
-def test_vault_show_command_exits_when_file_does_not_exist(monkeypatch, capsys) -> None:
+def test_vault_show_command_exits_when_file_does_not_exist(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     context = SimpleNamespace(repo_contract_path="/tmp/repo/.envctl.schema.yaml")
     result = SimpleNamespace(
         exists=False,
@@ -31,7 +35,10 @@ def test_vault_show_command_exits_when_file_does_not_exist(monkeypatch, capsys) 
     assert "vault_values: /tmp/vault/values.env" in output
 
 
-def test_vault_show_command_warns_when_file_is_empty(monkeypatch, capsys) -> None:
+def test_vault_show_command_warns_when_file_is_empty(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     context = SimpleNamespace(repo_contract_path="/tmp/repo/.envctl.schema.yaml")
     result = SimpleNamespace(
         exists=True,
@@ -58,7 +65,8 @@ def test_vault_show_command_warns_when_file_is_empty(monkeypatch, capsys) -> Non
 
 
 def test_vault_show_command_masks_sensitive_contract_values_and_unknown_values(
-    monkeypatch, capsys
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     context = SimpleNamespace(repo_contract_path="/tmp/repo/.envctl.schema.yaml")
     result = SimpleNamespace(
@@ -103,7 +111,10 @@ def test_vault_show_command_masks_sensitive_contract_values_and_unknown_values(
     assert "  UNKNOWN=<masked:mystery-value>" in output
 
 
-def test_vault_show_command_prints_raw_values_when_requested(monkeypatch, capsys) -> None:
+def test_vault_show_command_prints_raw_values_when_requested(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     context = SimpleNamespace(repo_contract_path="/tmp/repo/.envctl.schema.yaml")
     result = SimpleNamespace(
         exists=True,
@@ -149,7 +160,10 @@ def test_vault_show_command_prints_raw_values_when_requested(monkeypatch, capsys
     assert "<masked>" not in output
 
 
-def test_vault_show_command_masks_all_values_when_contract_is_missing(monkeypatch, capsys) -> None:
+def test_vault_show_command_masks_all_values_when_contract_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     context = SimpleNamespace(repo_contract_path="/tmp/repo/.envctl.schema.yaml")
     result = SimpleNamespace(
         exists=True,
@@ -183,8 +197,10 @@ def test_vault_show_command_masks_all_values_when_contract_is_missing(monkeypatc
     assert "  PORT=<masked:3000>" in output
 
 
-def test_vault_show_command_rejects_json_mode(monkeypatch) -> None:
-    captured: dict[str, object] = {}
+def test_vault_show_command_rejects_json_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
         "envctl.cli.decorators.is_json_output",
@@ -203,7 +219,8 @@ def test_vault_show_command_rejects_json_mode(monkeypatch) -> None:
         vault_show_module.vault_show_command(raw=False)
 
     assert exc_info.value.exit_code == 1
-    assert captured["payload"] == {
+    payload = cast(dict[str, Any], captured["payload"])
+    assert payload == {
         "ok": False,
         "command": "envctl vault show",
         "error": {

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 import typer
 
@@ -8,7 +10,9 @@ from envctl.cli.commands.doctor import doctor_command
 from envctl.domain.doctor import DoctorCheck
 
 
-def test_doctor_command_exits_with_code_1_when_failures_exist(monkeypatch) -> None:
+def test_doctor_command_exits_with_code_1_when_failures_exist(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(
         doctor_command_module,
         "run_doctor",
@@ -31,7 +35,9 @@ def test_doctor_command_exits_with_code_1_when_failures_exist(monkeypatch) -> No
     assert exc_info.value.exit_code == 1
 
 
-def test_doctor_command_returns_normally_when_no_failures_exist(monkeypatch) -> None:
+def test_doctor_command_returns_normally_when_no_failures_exist(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(
         doctor_command_module,
         "run_doctor",
@@ -51,8 +57,10 @@ def test_doctor_command_returns_normally_when_no_failures_exist(monkeypatch) -> 
     assert doctor_command() is None
 
 
-def test_doctor_command_emits_json_when_requested(monkeypatch) -> None:
-    captured: dict[str, object] = {}
+def test_doctor_command_emits_json_when_requested(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
         doctor_command_module,
@@ -75,15 +83,17 @@ def test_doctor_command_emits_json_when_requested(monkeypatch) -> None:
 
     doctor_command()
 
-    payload = captured["payload"]
+    payload = cast(dict[str, Any], captured["payload"])
     assert payload["ok"] is True
     assert payload["command"] == "doctor"
     assert payload["data"]["has_failures"] is False
     assert len(payload["data"]["checks"]) == 2
 
 
-def test_doctor_command_emits_json_and_exits_when_failures_exist(monkeypatch) -> None:
-    captured: dict[str, object] = {}
+def test_doctor_command_emits_json_and_exits_when_failures_exist(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
         doctor_command_module,
@@ -107,6 +117,6 @@ def test_doctor_command_emits_json_and_exits_when_failures_exist(monkeypatch) ->
         doctor_command()
 
     assert exc_info.value.exit_code == 1
-    payload = captured["payload"]
+    payload = cast(dict[str, Any], captured["payload"])
     assert payload["ok"] is False
     assert payload["data"]["has_failures"] is True

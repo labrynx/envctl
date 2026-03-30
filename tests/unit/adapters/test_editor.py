@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+from typing import Any
 
 import pytest
 
@@ -8,29 +9,38 @@ from envctl.adapters.editor import open_file, resolve_editor
 from envctl.errors import ExecutionError
 
 
-def test_resolve_editor_prefers_visual(monkeypatch) -> None:
+def test_resolve_editor_prefers_visual(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("VISUAL", "code --wait")
     monkeypatch.setenv("EDITOR", "nano")
 
     assert resolve_editor() == ["code", "--wait"]
 
 
-def test_resolve_editor_uses_editor_when_visual_is_missing(monkeypatch) -> None:
+def test_resolve_editor_uses_editor_when_visual_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.delenv("VISUAL", raising=False)
     monkeypatch.setenv("EDITOR", "vim")
 
     assert resolve_editor() == ["vim"]
 
 
-def test_resolve_editor_falls_back_to_available_binary(monkeypatch) -> None:
+def test_resolve_editor_falls_back_to_available_binary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.delenv("VISUAL", raising=False)
     monkeypatch.delenv("EDITOR", raising=False)
-    monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/nano" if name == "nano" else None)
+    monkeypatch.setattr(
+        "shutil.which",
+        lambda name: "/usr/bin/nano" if name == "nano" else None,
+    )
 
     assert resolve_editor() == ["/usr/bin/nano"]
 
 
-def test_resolve_editor_raises_when_no_editor_found(monkeypatch) -> None:
+def test_resolve_editor_raises_when_no_editor_found(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.delenv("VISUAL", raising=False)
     monkeypatch.delenv("EDITOR", raising=False)
     monkeypatch.setattr("shutil.which", lambda name: None)
@@ -39,12 +49,12 @@ def test_resolve_editor_raises_when_no_editor_found(monkeypatch) -> None:
         resolve_editor()
 
 
-def test_open_file_runs_editor(monkeypatch) -> None:
-    calls: dict[str, object] = {}
+def test_open_file_runs_editor(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: dict[str, Any] = {}
 
     monkeypatch.setattr("envctl.adapters.editor.resolve_editor", lambda: ["nano"])
 
-    def fake_run(command: list[str], check: bool = False):
+    def fake_run(command: list[str], check: bool = False) -> Any:
         calls["command"] = command
         calls["check"] = check
         return type("Completed", (), {"returncode": 0})()
@@ -57,10 +67,10 @@ def test_open_file_runs_editor(monkeypatch) -> None:
     assert calls["check"] is False
 
 
-def test_open_file_wraps_oserror(monkeypatch) -> None:
+def test_open_file_wraps_oserror(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("envctl.adapters.editor.resolve_editor", lambda: ["nano"])
 
-    def fake_run(command: list[str], check: bool = False):
+    def fake_run(command: list[str], check: bool = False) -> Any:
         raise OSError("boom")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -69,10 +79,10 @@ def test_open_file_wraps_oserror(monkeypatch) -> None:
         open_file("/tmp/demo.env")
 
 
-def test_open_file_raises_on_non_zero_exit(monkeypatch) -> None:
+def test_open_file_raises_on_non_zero_exit(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("envctl.adapters.editor.resolve_editor", lambda: ["nano"])
 
-    def fake_run(command: list[str], check: bool = False):
+    def fake_run(command: list[str], check: bool = False) -> Any:
         return type("Completed", (), {"returncode": 2})()
 
     monkeypatch.setattr(subprocess, "run", fake_run)

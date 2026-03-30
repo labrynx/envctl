@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 import typer
 
@@ -8,10 +10,13 @@ from envctl.cli.callbacks import typer_confirm, typer_prompt, version_callback
 
 
 def test_version_callback_does_nothing_when_flag_is_false() -> None:
-    assert version_callback(False) is None
+    version_callback(False)
 
 
-def test_version_callback_prints_version_and_exits(monkeypatch, capsys) -> None:
+def test_version_callback_prints_version_and_exits(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     monkeypatch.setattr("envctl.cli.callbacks.__version__", "9.9.9")
 
     with pytest.raises(typer.Exit):
@@ -21,7 +26,9 @@ def test_version_callback_prints_version_and_exits(monkeypatch, capsys) -> None:
     assert captured.out.strip() == "envctl 9.9.9"
 
 
-def test_typer_prompt_uses_getpass_for_secret_with_user_value(monkeypatch) -> None:
+def test_typer_prompt_uses_getpass_for_secret_with_user_value(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(
         "envctl.cli.callbacks.getpass.getpass",
         lambda message: "super-secret",
@@ -32,7 +39,9 @@ def test_typer_prompt_uses_getpass_for_secret_with_user_value(monkeypatch) -> No
     assert result == "super-secret"
 
 
-def test_typer_prompt_uses_default_for_secret_when_input_is_empty(monkeypatch) -> None:
+def test_typer_prompt_uses_default_for_secret_when_input_is_empty(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(
         "envctl.cli.callbacks.getpass.getpass",
         lambda message: "",
@@ -43,7 +52,9 @@ def test_typer_prompt_uses_default_for_secret_when_input_is_empty(monkeypatch) -
     assert result == "fallback"
 
 
-def test_typer_prompt_uses_empty_string_for_secret_when_no_default(monkeypatch) -> None:
+def test_typer_prompt_uses_empty_string_for_secret_when_no_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(
         "envctl.cli.callbacks.getpass.getpass",
         lambda message: "",
@@ -54,10 +65,12 @@ def test_typer_prompt_uses_empty_string_for_secret_when_no_default(monkeypatch) 
     assert result == ""
 
 
-def test_typer_prompt_uses_typer_prompt_for_non_secret(monkeypatch) -> None:
-    captured: dict[str, object] = {}
+def test_typer_prompt_uses_typer_prompt_for_non_secret(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
 
-    def fake_prompt(message, default, show_default):
+    def fake_prompt(message: str, default: str, show_default: bool) -> str:
         captured["message"] = message
         captured["default"] = default
         captured["show_default"] = show_default
@@ -75,8 +88,10 @@ def test_typer_prompt_uses_typer_prompt_for_non_secret(monkeypatch) -> None:
     }
 
 
-def test_typer_confirm_passes_correct_arguments(monkeypatch) -> None:
-    captured: dict[str, object] = {}
+def test_typer_confirm_passes_correct_arguments(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
 
     def fake_confirm(message: str, default: bool, show_default: bool) -> bool:
         captured["message"] = message

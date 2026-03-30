@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 import envctl.config.defaults as defaults
 from envctl.constants import (
     DEFAULT_CONFIG_DIRNAME,
@@ -11,7 +13,10 @@ from envctl.constants import (
 )
 
 
-def test_get_home_dir_returns_path_home(monkeypatch, tmp_path: Path) -> None:
+def test_get_home_dir_returns_path_home(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     home = tmp_path / "home"
     home.mkdir()
 
@@ -20,7 +25,10 @@ def test_get_home_dir_returns_path_home(monkeypatch, tmp_path: Path) -> None:
     assert defaults.get_home_dir() == home
 
 
-def test_get_xdg_config_home_uses_environment_variable(monkeypatch, tmp_path: Path) -> None:
+def test_get_xdg_config_home_uses_environment_variable(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     xdg_home = tmp_path / "xdg-config"
     monkeypatch.setenv("XDG_CONFIG_HOME", str(xdg_home))
 
@@ -29,7 +37,10 @@ def test_get_xdg_config_home_uses_environment_variable(monkeypatch, tmp_path: Pa
     assert result == xdg_home.resolve()
 
 
-def test_get_xdg_config_home_falls_back_to_home_config(monkeypatch, tmp_path: Path) -> None:
+def test_get_xdg_config_home_falls_back_to_home_config(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     home = tmp_path / "home"
     home.mkdir()
 
@@ -41,7 +52,10 @@ def test_get_xdg_config_home_falls_back_to_home_config(monkeypatch, tmp_path: Pa
     assert result == (home / ".config").resolve()
 
 
-def test_default_path_and_filenames_are_resolved_correctly(monkeypatch, tmp_path: Path) -> None:
+def test_default_path_and_filenames_are_resolved_correctly(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     home = tmp_path / "home"
     home.mkdir()
 

@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 import envctl.services.rebind_service as rebind_service
 from envctl.domain.app_config import AppConfig
+from envctl.domain.runtime import RuntimeMode
 from tests.support.contexts import make_project_context
 
 
@@ -15,6 +18,7 @@ def make_config(tmp_path: Path) -> AppConfig:
         vault_dir=vault_dir,
         env_filename=".env.local",
         schema_filename=".envctl.schema.yaml",
+        runtime_mode=RuntimeMode.LOCAL,
     )
 
 
@@ -41,7 +45,7 @@ def test_load_previous_values_returns_empty_when_previous_vault_does_not_exist(
 
 
 def test_load_previous_values_returns_empty_when_values_file_is_missing(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     projects_dir = tmp_path / "vault" / "projects"
@@ -60,7 +64,7 @@ def test_load_previous_values_returns_empty_when_values_file_is_missing(
 
 
 def test_load_previous_values_reads_existing_values(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     projects_dir = tmp_path / "vault" / "projects"
@@ -84,7 +88,7 @@ def test_load_previous_values_reads_existing_values(
 
 
 def test_run_rebind_creates_new_binding_without_copying_when_no_previous_values(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     config = make_config(tmp_path)
@@ -128,7 +132,7 @@ def test_run_rebind_creates_new_binding_without_copying_when_no_previous_values(
 
 
 def test_run_rebind_copies_previous_values_when_requested(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     config = make_config(tmp_path)
@@ -186,7 +190,7 @@ def test_run_rebind_copies_previous_values_when_requested(
 
 
 def test_run_rebind_does_not_copy_values_when_empty_is_requested(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     config = make_config(tmp_path)

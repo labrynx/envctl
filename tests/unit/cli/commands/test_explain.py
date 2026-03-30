@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 import envctl.cli.commands.explain.command as explain_command_module
 from envctl.cli.commands.explain import explain_command
 from envctl.utils.masking import mask_value
@@ -7,7 +11,10 @@ from tests.support.builders import make_resolved_value
 from tests.support.contexts import make_project_context
 
 
-def test_explain_command_outputs_detail_when_present(monkeypatch, capsys) -> None:
+def test_explain_command_outputs_detail_when_present(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     item = make_resolved_value(
         key="PORT",
         value="abc",
@@ -40,7 +47,10 @@ def test_explain_command_outputs_detail_when_present(monkeypatch, capsys) -> Non
     assert "detail: Expected an integer" in output
 
 
-def test_explain_command_masks_sensitive_values(monkeypatch, capsys) -> None:
+def test_explain_command_masks_sensitive_values(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     item = make_resolved_value(
         key="API_KEY",
         value="super-secret",
@@ -72,7 +82,9 @@ def test_explain_command_masks_sensitive_values(monkeypatch, capsys) -> None:
     assert "detail:" not in output
 
 
-def test_explain_command_emits_json_when_requested(monkeypatch) -> None:
+def test_explain_command_emits_json_when_requested(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     context = make_project_context(repo_root="/tmp/demo")
     item = make_resolved_value(
         key="API_KEY",
@@ -81,7 +93,7 @@ def test_explain_command_emits_json_when_requested(monkeypatch) -> None:
         masked=True,
         valid=True,
     )
-    captured: dict[str, object] = {}
+    captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
         explain_command_module,
@@ -101,7 +113,7 @@ def test_explain_command_emits_json_when_requested(monkeypatch) -> None:
 
     explain_command("API_KEY")
 
-    payload = captured["payload"]
+    payload = cast(dict[str, Any], captured["payload"])
     assert payload["ok"] is True
     assert payload["command"] == "explain"
     assert payload["data"]["context"]["project_slug"] == "demo"

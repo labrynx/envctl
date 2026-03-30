@@ -1,19 +1,25 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 import envctl.cli.commands.inspect.command as inspect_command_module
 from envctl.cli.commands.inspect import inspect_command
 from tests.support.builders import make_resolution_report
 from tests.support.contexts import make_project_context
 
 
-def test_inspect_command_renders_resolution(monkeypatch) -> None:
+def test_inspect_command_renders_resolution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     report = make_resolution_report(
         values={},
         missing_required=(),
         unknown_keys=(),
         invalid_keys=(),
     )
-    called: dict[str, object] = {}
+    called: dict[str, Any] = {}
 
     monkeypatch.setattr(
         inspect_command_module,
@@ -36,7 +42,9 @@ def test_inspect_command_renders_resolution(monkeypatch) -> None:
     assert called["report"] is report
 
 
-def test_inspect_command_emits_json_when_requested(monkeypatch) -> None:
+def test_inspect_command_emits_json_when_requested(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     context = make_project_context(repo_root="/tmp/demo")
     report = make_resolution_report(
         values={},
@@ -44,7 +52,7 @@ def test_inspect_command_emits_json_when_requested(monkeypatch) -> None:
         unknown_keys=("OLD_KEY",),
         invalid_keys=("PORT",),
     )
-    captured: dict[str, object] = {}
+    captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
         inspect_command_module,
@@ -64,7 +72,7 @@ def test_inspect_command_emits_json_when_requested(monkeypatch) -> None:
 
     inspect_command()
 
-    payload = captured["payload"]
+    payload = cast(dict[str, Any], captured["payload"])
     assert payload["ok"] is True
     assert payload["command"] == "inspect"
     assert payload["data"]["context"]["project_slug"] == "demo"

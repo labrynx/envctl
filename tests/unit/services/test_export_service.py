@@ -10,8 +10,10 @@ from envctl.services.export_service import run_export
 from tests.support.builders import make_resolution_report, make_resolved_value
 
 
-def test_run_export_returns_shell_lines_for_valid_environment(monkeypatch) -> None:
-    context = SimpleNamespace()
+def test_run_export_returns_shell_lines_for_valid_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = SimpleNamespace(project_slug="demo")
     contract = object()
     report = make_resolution_report(
         values={
@@ -25,8 +27,8 @@ def test_run_export_returns_shell_lines_for_valid_environment(monkeypatch) -> No
                 key="DATABASE_URL",
                 value="https://db.example.com",
                 source="vault",
-                masked=True,
                 valid=True,
+                masked=True,
             ),
         }
     )
@@ -39,18 +41,21 @@ def test_run_export_returns_shell_lines_for_valid_environment(monkeypatch) -> No
     monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(export_service, "resolve_environment", lambda _context, _contract: report)
 
-    lines = run_export()
+    result_context, lines = run_export()
 
+    assert result_context is context
     assert lines == [
         "export APP_NAME='demo'",
         "export DATABASE_URL='https://db.example.com'",
     ]
 
 
-def test_run_export_raises_when_environment_is_invalid(monkeypatch) -> None:
-    context = SimpleNamespace()
+def test_run_export_raises_when_environment_is_invalid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = SimpleNamespace(project_slug="demo")
     contract = object()
-    report = make_resolution_report(missing_required=["APP_NAME"])
+    report = make_resolution_report(missing_required=("DATABASE_URL",))
 
     monkeypatch.setattr(
         export_service,

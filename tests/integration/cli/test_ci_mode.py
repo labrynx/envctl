@@ -1,19 +1,24 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
+from typing import Any, cast
+
+import pytest
+from typer.testing import CliRunner
 
 from envctl.cli.app import app
 
 
-def parse_json_output(output: str) -> dict[str, object]:
+def parse_json_output(output: str) -> dict[str, Any]:
     """Parse one CLI JSON payload."""
-    return json.loads(output)
+    return cast(dict[str, Any], json.loads(output))
 
 
 def test_add_is_blocked_in_ci_mode_text_output(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
 
@@ -24,9 +29,9 @@ def test_add_is_blocked_in_ci_mode_text_output(
 
 
 def test_set_is_blocked_in_ci_mode_text_output(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
 
@@ -37,9 +42,9 @@ def test_set_is_blocked_in_ci_mode_text_output(
 
 
 def test_remove_is_blocked_in_ci_mode_text_output(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
 
@@ -50,9 +55,9 @@ def test_remove_is_blocked_in_ci_mode_text_output(
 
 
 def test_init_is_blocked_in_ci_mode_text_output(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
 
@@ -63,9 +68,9 @@ def test_init_is_blocked_in_ci_mode_text_output(
 
 
 def test_project_rebind_is_blocked_in_ci_mode_text_output(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
 
@@ -76,9 +81,9 @@ def test_project_rebind_is_blocked_in_ci_mode_text_output(
 
 
 def test_vault_edit_is_blocked_in_ci_mode_text_output(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
 
@@ -89,9 +94,9 @@ def test_vault_edit_is_blocked_in_ci_mode_text_output(
 
 
 def test_add_is_blocked_in_ci_mode_json_output(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
 
@@ -111,9 +116,9 @@ def test_add_is_blocked_in_ci_mode_json_output(
 
 
 def test_sync_is_blocked_in_ci_mode_json_output(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
 
@@ -133,9 +138,9 @@ def test_sync_is_blocked_in_ci_mode_json_output(
 
 
 def test_check_is_allowed_in_ci_mode_json_output(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
     monkeypatch.setenv("APP_NAME", "demo-app")
@@ -150,9 +155,9 @@ def test_check_is_allowed_in_ci_mode_json_output(
 
 
 def test_status_is_allowed_in_ci_mode_json_output(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
 
@@ -166,9 +171,9 @@ def test_status_is_allowed_in_ci_mode_json_output(
 
 
 def test_doctor_is_allowed_in_ci_mode_json_output(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
 
@@ -182,9 +187,9 @@ def test_doctor_is_allowed_in_ci_mode_json_output(
 
 
 def test_run_remains_allowed_in_ci_mode_text_output(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
     monkeypatch.setenv("APP_NAME", "demo-app")
@@ -196,7 +201,8 @@ def test_run_remains_allowed_in_ci_mode_text_output(
         "from pathlib import Path; "
         "import os; "
         "output = os.getenv('APP_NAME', ''); "
-        f"Path({str(output_path)!r}).write_text(output, encoding='utf-8')"
+        f"Path({str(output_path)!r}).write_text("
+        "output, encoding='utf-8')"
     )
 
     result = runner.invoke(

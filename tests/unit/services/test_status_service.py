@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from pathlib import Path
-from types import SimpleNamespace
+
+import pytest
 
 import envctl.services.status_service as status_service
 from envctl.errors import ContractError
@@ -10,13 +11,16 @@ from tests.support.builders import make_resolution_report, make_resolved_value
 from tests.support.contexts import make_status_context
 
 
-def test_run_status_reports_missing_contract(tmp_path: Path, monkeypatch) -> None:
+def test_run_status_reports_missing_contract(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     context = make_status_context(tmp_path, contract_exists=False, vault_exists=False)
 
     monkeypatch.setattr(
         status_service,
         "load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
 
     report = run_status()
@@ -31,16 +35,19 @@ def test_run_status_reports_missing_contract(tmp_path: Path, monkeypatch) -> Non
     assert report.suggested_action == "Create .envctl.schema.yaml or run 'envctl add KEY VALUE'"
 
 
-def test_run_status_reports_invalid_contract(tmp_path: Path, monkeypatch) -> None:
+def test_run_status_reports_invalid_contract(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     context = make_status_context(tmp_path, contract_exists=True, vault_exists=True)
 
     monkeypatch.setattr(
         status_service,
         "load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
 
-    def raise_contract_error(_context):
+    def raise_contract_error(_context: object) -> object:
         raise ContractError("Contract is broken")
 
     monkeypatch.setattr(status_service, "load_contract_for_context", raise_contract_error)
@@ -55,7 +62,10 @@ def test_run_status_reports_invalid_contract(tmp_path: Path, monkeypatch) -> Non
     assert report.suggested_action == "Fix the contract file"
 
 
-def test_run_status_reports_valid_environment(tmp_path: Path, monkeypatch) -> None:
+def test_run_status_reports_valid_environment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     context = make_status_context(tmp_path, contract_exists=True, vault_exists=True)
     contract = object()
     resolution = make_resolution_report(
@@ -72,7 +82,7 @@ def test_run_status_reports_valid_environment(tmp_path: Path, monkeypatch) -> No
     monkeypatch.setattr(
         status_service,
         "load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
     monkeypatch.setattr(status_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(
@@ -94,7 +104,10 @@ def test_run_status_reports_valid_environment(tmp_path: Path, monkeypatch) -> No
     )
 
 
-def test_run_status_reports_missing_invalid_and_unknown_values(tmp_path: Path, monkeypatch) -> None:
+def test_run_status_reports_missing_invalid_and_unknown_values(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     context = make_status_context(tmp_path, contract_exists=True, vault_exists=True)
     contract = object()
     resolution = make_resolution_report(
@@ -107,15 +120,15 @@ def test_run_status_reports_missing_invalid_and_unknown_values(tmp_path: Path, m
                 detail="Expected an integer",
             )
         },
-        missing_required=["APP_NAME", "DATABASE_URL"],
-        unknown_keys=["OLD_KEY"],
-        invalid_keys=["PORT"],
+        missing_required=("APP_NAME", "DATABASE_URL"),
+        unknown_keys=("OLD_KEY",),
+        invalid_keys=("PORT",),
     )
 
     monkeypatch.setattr(
         status_service,
         "load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
     monkeypatch.setattr(status_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(

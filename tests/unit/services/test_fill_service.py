@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
+from pathlib import Path
+
+import pytest
 
 from envctl.domain.operations import FillPlanItem
 from envctl.services.fill_service import apply_fill, build_fill_plan
@@ -9,17 +11,20 @@ from tests.support.contexts import make_project_context
 from tests.support.contracts import make_fill_contract
 
 
-def test_build_fill_plan_returns_missing_required_keys_with_metadata(monkeypatch, tmp_path) -> None:
+def test_build_fill_plan_returns_missing_required_keys_with_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     vault_values_path = tmp_path / "vault.env"
     context = make_project_context(vault_values_path=vault_values_path)
     contract = make_fill_contract()
     report = make_resolution_report(
-        missing_required=["API_KEY", "PORT"],
+        missing_required=("API_KEY", "PORT"),
     )
 
     monkeypatch.setattr(
         "envctl.services.fill_service.load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
     monkeypatch.setattr(
         "envctl.services.fill_service.load_contract_for_context",
@@ -32,7 +37,7 @@ def test_build_fill_plan_returns_missing_required_keys_with_metadata(monkeypatch
 
     result_context, plan = build_fill_plan()
 
-    assert result_context is context
+    assert result_context == context
     assert plan == (
         FillPlanItem(
             key="API_KEY",
@@ -49,15 +54,18 @@ def test_build_fill_plan_returns_missing_required_keys_with_metadata(monkeypatch
     )
 
 
-def test_build_fill_plan_returns_empty_tuple_when_nothing_is_missing(monkeypatch, tmp_path) -> None:
+def test_build_fill_plan_returns_empty_tuple_when_nothing_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     vault_values_path = tmp_path / "vault.env"
     context = make_project_context(vault_values_path=vault_values_path)
     contract = make_fill_contract()
-    report = make_resolution_report(missing_required=[])
+    report = make_resolution_report(missing_required=())
 
     monkeypatch.setattr(
         "envctl.services.fill_service.load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
     monkeypatch.setattr(
         "envctl.services.fill_service.load_contract_for_context",
@@ -70,11 +78,14 @@ def test_build_fill_plan_returns_empty_tuple_when_nothing_is_missing(monkeypatch
 
     result_context, plan = build_fill_plan()
 
-    assert result_context is context
+    assert result_context == context
     assert plan == ()
 
 
-def test_apply_fill_writes_trimmed_values(monkeypatch, tmp_path) -> None:
+def test_apply_fill_writes_trimmed_values(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     vault_values_path = tmp_path / "vault.env"
     context = make_project_context(vault_values_path=vault_values_path)
 
@@ -82,7 +93,7 @@ def test_apply_fill_writes_trimmed_values(monkeypatch, tmp_path) -> None:
 
     monkeypatch.setattr(
         "envctl.services.fill_service.load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
     monkeypatch.setattr("envctl.services.fill_service.load_env_file", lambda _path: {})
     monkeypatch.setattr(
@@ -97,7 +108,7 @@ def test_apply_fill_writes_trimmed_values(monkeypatch, tmp_path) -> None:
         }
     )
 
-    assert result_context is context
+    assert result_context == context
     assert changed == ["API_KEY", "PORT"]
 
     output = written[str(vault_values_path)]
@@ -105,7 +116,10 @@ def test_apply_fill_writes_trimmed_values(monkeypatch, tmp_path) -> None:
     assert "PORT=3000" in output
 
 
-def test_apply_fill_skips_blank_values(monkeypatch, tmp_path) -> None:
+def test_apply_fill_skips_blank_values(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     vault_values_path = tmp_path / "vault.env"
     context = make_project_context(vault_values_path=vault_values_path)
 
@@ -113,7 +127,7 @@ def test_apply_fill_skips_blank_values(monkeypatch, tmp_path) -> None:
 
     monkeypatch.setattr(
         "envctl.services.fill_service.load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
     monkeypatch.setattr("envctl.services.fill_service.load_env_file", lambda _path: {})
     monkeypatch.setattr(
@@ -128,13 +142,14 @@ def test_apply_fill_skips_blank_values(monkeypatch, tmp_path) -> None:
         }
     )
 
-    assert result_context is context
+    assert result_context == context
     assert changed == []
     assert write_calls == []
 
 
 def test_apply_fill_preserves_existing_values_and_only_writes_changed_keys(
-    monkeypatch, tmp_path
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     vault_values_path = tmp_path / "vault.env"
     context = make_project_context(vault_values_path=vault_values_path)
@@ -143,7 +158,7 @@ def test_apply_fill_preserves_existing_values_and_only_writes_changed_keys(
 
     monkeypatch.setattr(
         "envctl.services.fill_service.load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
     monkeypatch.setattr(
         "envctl.services.fill_service.load_env_file",
@@ -156,7 +171,7 @@ def test_apply_fill_preserves_existing_values_and_only_writes_changed_keys(
 
     result_context, changed = apply_fill({"API_KEY": "new-secret"})
 
-    assert result_context is context
+    assert result_context == context
     assert changed == ["API_KEY"]
 
     output = written[str(vault_values_path)]

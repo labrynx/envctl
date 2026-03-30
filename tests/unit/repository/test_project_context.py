@@ -8,6 +8,7 @@ import pytest
 import envctl.repository.project_context as project_context_module
 from envctl.domain.app_config import AppConfig
 from envctl.domain.project import ProjectContext
+from envctl.domain.runtime import RuntimeMode
 from envctl.errors import ProjectDetectionError
 
 
@@ -19,6 +20,7 @@ def make_config(tmp_path: Path) -> AppConfig:
         vault_dir=vault_dir,
         env_filename=".env.local",
         schema_filename=".envctl.schema.yaml",
+        runtime_mode=RuntimeMode.LOCAL,
     )
 
 

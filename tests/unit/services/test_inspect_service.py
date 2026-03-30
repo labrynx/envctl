@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
+import pytest
 
 from envctl.services.inspect_service import run_inspect
 from tests.support.builders import make_resolution_report, make_resolved_value
+from tests.support.contexts import make_project_context
 
 
-def test_run_inspect_returns_context_and_resolution_report(monkeypatch) -> None:
-    context = SimpleNamespace(project_slug="demo")
+def test_run_inspect_returns_context_and_resolution_report(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = make_project_context(repo_root="/tmp/demo")
     contract = object()
     report = make_resolution_report(
         values={
@@ -18,12 +21,12 @@ def test_run_inspect_returns_context_and_resolution_report(monkeypatch) -> None:
                 valid=True,
             )
         },
-        unknown_keys=["LEGACY_KEY"],
+        unknown_keys=("LEGACY_KEY",),
     )
 
     monkeypatch.setattr(
         "envctl.services.inspect_service.load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
     monkeypatch.setattr(
         "envctl.services.inspect_service.load_contract_for_context",
@@ -36,7 +39,7 @@ def test_run_inspect_returns_context_and_resolution_report(monkeypatch) -> None:
 
     result_context, result_report = run_inspect()
 
-    assert result_context is context
+    assert result_context == context
     assert result_report is report
     assert result_report.values["APP_NAME"].value == "demo-app"
-    assert result_report.unknown_keys == ["LEGACY_KEY"]
+    assert result_report.unknown_keys == ("LEGACY_KEY",)

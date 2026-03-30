@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from envctl.cli.serializers import (
     serialize_doctor_checks,
     serialize_error,
@@ -91,7 +93,7 @@ def test_serialize_status_report_returns_expected_shape() -> None:
     report = StatusReport(
         project_slug="demo",
         project_id="prj_aaaaaaaaaaaaaaaa",
-        repo_root="/tmp/demo",
+        repo_root=Path("/tmp/demo"),
         contract_exists=True,
         vault_exists=False,
         resolved_valid=False,

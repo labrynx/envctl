@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 import typer
@@ -44,7 +45,10 @@ def test_resolve_sensitive_raises_when_both_flags_are_set() -> None:
         add_command_module._resolve_sensitive(True, True)
 
 
-def test_add_command_calls_service_and_prints_full_inference(monkeypatch, capsys) -> None:
+def test_add_command_calls_service_and_prints_full_inference(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     context = SimpleNamespace(
         vault_values_path="/tmp/vault/values.env",
         repo_contract_path="/tmp/repo/.envctl.schema.yaml",
@@ -85,9 +89,9 @@ def test_add_command_calls_service_and_prints_full_inference(monkeypatch, capsys
         lambda _message, default=False: next(confirms),
     )
 
-    captured: dict[str, object] = {}
+    captured: dict[str, Any] = {}
 
-    def fake_run_add(request: AddVariableRequest):
+    def fake_run_add(request: AddVariableRequest) -> tuple[object, object]:
         captured["request"] = request
         return context, result
 
@@ -110,9 +114,8 @@ def test_add_command_calls_service_and_prints_full_inference(monkeypatch, capsys
     )
 
     output = capsys.readouterr().out
-    request = captured["request"]
+    request = cast(AddVariableRequest, captured["request"])
 
-    assert isinstance(request, AddVariableRequest)
     assert request.key == "DATABASE_URL"
     assert request.value == "postgres://user:pass@localhost:5432/app"
     assert request.override_type == "url"
@@ -137,7 +140,10 @@ def test_add_command_calls_service_and_prints_full_inference(monkeypatch, capsys
     assert "[WARN] Review .envctl.schema.yaml to confirm the inferred metadata." in output
 
 
-def test_add_command_prints_minimal_output_when_inference_is_missing(monkeypatch, capsys) -> None:
+def test_add_command_prints_minimal_output_when_inference_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     context = SimpleNamespace(
         vault_values_path="/tmp/vault/values.env",
         repo_contract_path="/tmp/repo/.envctl.schema.yaml",
@@ -150,9 +156,9 @@ def test_add_command_prints_minimal_output_when_inference_is_missing(monkeypatch
         inferred_fields_used=[],
     )
 
-    captured: dict[str, object] = {}
+    captured: dict[str, Any] = {}
 
-    def fake_run_add(request: AddVariableRequest):
+    def fake_run_add(request: AddVariableRequest) -> tuple[object, object]:
         captured["request"] = request
         return context, result
 
@@ -175,9 +181,8 @@ def test_add_command_prints_minimal_output_when_inference_is_missing(monkeypatch
     )
 
     output = capsys.readouterr().out
-    request = captured["request"]
+    request = cast(AddVariableRequest, captured["request"])
 
-    assert isinstance(request, AddVariableRequest)
     assert request.key == "APP_NAME"
     assert request.value == "demo"
 
@@ -194,7 +199,10 @@ def test_add_command_prints_minimal_output_when_inference_is_missing(monkeypatch
     assert "[WARN] Review .envctl.schema.yaml to confirm the inferred metadata." not in output
 
 
-def test_add_command_omits_optional_inferred_fields_when_not_present(monkeypatch, capsys) -> None:
+def test_add_command_omits_optional_inferred_fields_when_not_present(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     context = SimpleNamespace(
         vault_values_path="/tmp/vault/values.env",
         repo_contract_path="/tmp/repo/.envctl.schema.yaml",
@@ -237,7 +245,9 @@ def test_add_command_omits_optional_inferred_fields_when_not_present(monkeypatch
     assert "description:" not in output
 
 
-def test_add_command_rejects_ci_mode(monkeypatch) -> None:
+def test_add_command_rejects_ci_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     captured: dict[str, str] = {}
 
     monkeypatch.setattr(
@@ -263,8 +273,10 @@ def test_add_command_rejects_ci_mode(monkeypatch) -> None:
     assert "CI read-only mode" in captured["message"]
 
 
-def test_add_command_rejects_json_output(monkeypatch) -> None:
-    captured: dict[str, object] = {}
+def test_add_command_rejects_json_output(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
         "envctl.cli.decorators.load_config",
@@ -290,7 +302,8 @@ def test_add_command_rejects_json_output(monkeypatch) -> None:
         )
 
     assert exc_info.value.exit_code == 1
-    assert captured["payload"] == {
+    payload = cast(dict[str, Any], captured["payload"])
+    assert payload == {
         "ok": False,
         "command": "envctl add",
         "error": {

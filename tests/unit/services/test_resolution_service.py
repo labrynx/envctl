@@ -1,17 +1,22 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
+from typing import Any
+
+import pytest
 
 import envctl.services.resolution_service as resolution_service
 from envctl.services.resolution_service import load_contract_for_context, resolve_environment
+from tests.support.contexts import make_project_context
 from tests.support.contracts import make_contract, make_standard_contract, make_variable_spec
 
 
-def test_load_contract_for_context_uses_repo_contract_path(monkeypatch) -> None:
-    fake_context = SimpleNamespace(repo_contract_path="/tmp/project/.envctl.schema.yaml")
-    captured: dict[str, object] = {}
+def test_load_contract_for_context_uses_repo_contract_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_context = make_project_context(repo_contract_path="/tmp/project/.envctl.schema.yaml")
+    captured: dict[str, Any] = {}
 
-    def fake_load_contract(path):
+    def fake_load_contract(path: Any) -> Any:
         captured["path"] = path
         return "contract-object"
 
@@ -23,9 +28,11 @@ def test_load_contract_for_context_uses_repo_contract_path(monkeypatch) -> None:
     assert captured["path"] == fake_context.repo_contract_path
 
 
-def test_resolve_environment_prefers_system_over_vault_and_default(monkeypatch) -> None:
+def test_resolve_environment_prefers_system_over_vault_and_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     contract = make_standard_contract()
-    context = SimpleNamespace(vault_values_path="/tmp/vault.env")
+    context = make_project_context(vault_values_path="/tmp/vault.env")
 
     monkeypatch.setattr(
         resolution_service,
@@ -60,9 +67,11 @@ def test_resolve_environment_prefers_system_over_vault_and_default(monkeypatch) 
     assert report.values["PORT"].source == "default"
 
 
-def test_resolve_environment_marks_missing_required_keys(monkeypatch) -> None:
+def test_resolve_environment_marks_missing_required_keys(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     contract = make_standard_contract()
-    context = SimpleNamespace(vault_values_path="/tmp/vault.env")
+    context = make_project_context(vault_values_path="/tmp/vault.env")
 
     monkeypatch.setattr(resolution_service, "load_env_file", lambda _path: {})
     monkeypatch.delenv("APP_NAME", raising=False)
@@ -78,9 +87,11 @@ def test_resolve_environment_marks_missing_required_keys(monkeypatch) -> None:
     assert report.values["PORT"].source == "default"
 
 
-def test_resolve_environment_marks_invalid_int_bool_url_choice_and_pattern(monkeypatch) -> None:
+def test_resolve_environment_marks_invalid_int_bool_url_choice_and_pattern(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     contract = make_standard_contract()
-    context = SimpleNamespace(vault_values_path="/tmp/vault.env")
+    context = make_project_context(vault_values_path="/tmp/vault.env")
 
     monkeypatch.setattr(
         resolution_service,
@@ -122,7 +133,9 @@ def test_resolve_environment_marks_invalid_int_bool_url_choice_and_pattern(monke
     assert report.values["SLUG"].detail == "Value does not match pattern: ^[a-z0-9-]+$"
 
 
-def test_resolve_environment_accepts_valid_bool_variants(monkeypatch) -> None:
+def test_resolve_environment_accepts_valid_bool_variants(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     contract = make_contract(
         {
             "DEBUG": make_variable_spec(
@@ -133,7 +146,7 @@ def test_resolve_environment_accepts_valid_bool_variants(monkeypatch) -> None:
             ),
         }
     )
-    context = SimpleNamespace(vault_values_path="/tmp/vault.env")
+    context = make_project_context(vault_values_path="/tmp/vault.env")
 
     for value in ["true", "false", "1", "0", "yes", "no"]:
         monkeypatch.setattr(

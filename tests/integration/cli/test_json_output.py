@@ -1,19 +1,24 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
+from typing import Any, cast
+
+import pytest
+from typer.testing import CliRunner
 
 from envctl.cli.app import app
 
 
-def parse_json_output(output: str) -> dict[str, object]:
+def parse_json_output(output: str) -> dict[str, Any]:
     """Parse one CLI JSON payload."""
-    return json.loads(output)
+    return cast(dict[str, Any], json.loads(output))
 
 
 def test_check_json_outputs_structured_payload_for_invalid_environment(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("APP_NAME", "demo-app")
 
@@ -25,7 +30,7 @@ def test_check_json_outputs_structured_payload_for_invalid_environment(
     assert payload["ok"] is False
     assert payload["command"] == "check"
 
-    data = payload["data"]
+    data = cast(dict[str, Any], payload["data"])
     assert data["context"]["project_slug"] == "repo"
     assert data["report"]["is_valid"] is False
     assert data["report"]["missing_required"] == ["DATABASE_URL"]
@@ -34,9 +39,9 @@ def test_check_json_outputs_structured_payload_for_invalid_environment(
 
 
 def test_check_json_outputs_success_payload_when_environment_is_valid(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("APP_NAME", "demo-app")
     monkeypatch.setenv("DATABASE_URL", "postgres://user:pass@localhost:5432/app")
@@ -49,16 +54,16 @@ def test_check_json_outputs_success_payload_when_environment_is_valid(
     assert payload["ok"] is True
     assert payload["command"] == "check"
 
-    data = payload["data"]
+    data = cast(dict[str, Any], payload["data"])
     assert data["report"]["is_valid"] is True
     assert data["report"]["missing_required"] == []
     assert sorted(data["report"]["values"]) == ["APP_NAME", "DATABASE_URL", "PORT"]
 
 
 def test_inspect_json_outputs_structured_resolution_report(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("APP_NAME", "demo-app")
 
@@ -70,7 +75,7 @@ def test_inspect_json_outputs_structured_resolution_report(
     assert payload["ok"] is True
     assert payload["command"] == "inspect"
 
-    data = payload["data"]
+    data = cast(dict[str, Any], payload["data"])
     assert data["context"]["project_slug"] == "repo"
     assert data["report"]["missing_required"] == ["DATABASE_URL"]
     assert "APP_NAME" in data["report"]["values"]
@@ -79,9 +84,9 @@ def test_inspect_json_outputs_structured_resolution_report(
 
 
 def test_explain_json_outputs_one_resolved_item(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("APP_NAME", "demo-app")
     monkeypatch.setenv("DATABASE_URL", "postgres://user:pass@localhost:5432/app")
@@ -94,18 +99,19 @@ def test_explain_json_outputs_one_resolved_item(
     assert payload["ok"] is True
     assert payload["command"] == "explain"
 
-    item = payload["data"]["item"]
+    data = cast(dict[str, Any], payload["data"])
+    item = cast(dict[str, Any], data["item"])
     assert item["key"] == "DATABASE_URL"
     assert item["source"] == "system"
     assert item["masked"] is True
     assert item["valid"] is True
-    assert item["value"].startswith("po")
+    assert str(item["value"]).startswith("po")
 
 
 def test_explain_json_outputs_structured_error_for_unresolved_key(
-    runner,
-    workspace,
-    monkeypatch,
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("APP_NAME", "demo-app")
 
@@ -125,8 +131,8 @@ def test_explain_json_outputs_structured_error_for_unresolved_key(
 
 
 def test_status_json_outputs_structured_status_payload(
-    runner,
-    workspace,
+    runner: CliRunner,
+    workspace: Path,
 ) -> None:
     result = runner.invoke(app, ["--json", "status"])
 
@@ -136,7 +142,7 @@ def test_status_json_outputs_structured_status_payload(
     assert payload["ok"] is True
     assert payload["command"] == "status"
 
-    data = payload["data"]
+    data = cast(dict[str, Any], payload["data"])
     assert data["project_slug"] == "repo"
     assert data["contract_exists"] is True
     assert data["vault_exists"] is False
@@ -145,8 +151,8 @@ def test_status_json_outputs_structured_status_payload(
 
 
 def test_doctor_json_outputs_structured_checks(
-    runner,
-    workspace,
+    runner: CliRunner,
+    workspace: Path,
 ) -> None:
     result = runner.invoke(app, ["--json", "doctor"])
 
@@ -155,14 +161,16 @@ def test_doctor_json_outputs_structured_checks(
     payload = parse_json_output(result.output)
     assert payload["ok"] is True
     assert payload["command"] == "doctor"
-    assert "checks" in payload["data"]
-    assert isinstance(payload["data"]["checks"], list)
-    assert payload["data"]["has_failures"] is False
+
+    data = cast(dict[str, Any], payload["data"])
+    assert "checks" in data
+    assert isinstance(data["checks"], list)
+    assert data["has_failures"] is False
 
 
 def test_json_is_rejected_for_unsupported_text_only_command(
-    runner,
-    workspace,
+    runner: CliRunner,
+    workspace: Path,
 ) -> None:
     result = runner.invoke(app, ["--json", "vault", "show"])
 

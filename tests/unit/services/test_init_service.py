@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, cast
 
+import pytest
 import yaml
 
 import envctl.services.init_service as init_service
@@ -37,12 +39,13 @@ def make_context(tmp_path: Path) -> ProjectContext:
     )
 
 
-def load_yaml(path: Path) -> dict[str, object]:
-    return yaml.safe_load(path.read_text(encoding="utf-8"))
+def load_yaml(path: Path) -> dict[str, Any]:
+    return cast(dict[str, Any], yaml.safe_load(path.read_text(encoding="utf-8")))
 
 
 def test_run_init_creates_vault_files_and_preserves_existing_contract(
-    monkeypatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     context = make_context(tmp_path)
     context.repo_contract_path.write_text(
@@ -66,7 +69,10 @@ def test_run_init_creates_vault_files_and_preserves_existing_contract(
     assert context.vault_values_path.read_text(encoding="utf-8") == ""
 
 
-def test_run_init_creates_starter_contract_when_requested(monkeypatch, tmp_path: Path) -> None:
+def test_run_init_creates_starter_contract_when_requested(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     context = make_context(tmp_path)
 
     monkeypatch.setattr(
@@ -86,28 +92,38 @@ def test_run_init_creates_starter_contract_when_requested(monkeypatch, tmp_path:
 
     contract = load_yaml(context.repo_contract_path)
     assert contract["version"] == 1
-    assert set(contract["variables"]) == {"APP_NAME", "PORT", "DATABASE_URL", "DEBUG"}
+    assert set(cast(dict[str, Any], contract["variables"])) == {
+        "APP_NAME",
+        "PORT",
+        "DATABASE_URL",
+        "DEBUG",
+    }
 
-    app_name = contract["variables"]["APP_NAME"]
+    variables = cast(dict[str, Any], contract["variables"])
+
+    app_name = cast(dict[str, Any], variables["APP_NAME"])
     assert app_name["type"] == "string"
     assert app_name["required"] is True
     assert app_name["sensitive"] is False
     assert app_name["example"] == "demo"
 
-    port = contract["variables"]["PORT"]
+    port = cast(dict[str, Any], variables["PORT"])
     assert port["type"] == "int"
     assert port["default"] == 3000
 
-    database_url = contract["variables"]["DATABASE_URL"]
+    database_url = cast(dict[str, Any], variables["DATABASE_URL"])
     assert database_url["type"] == "url"
     assert database_url["sensitive"] is True
 
-    debug = contract["variables"]["DEBUG"]
+    debug = cast(dict[str, Any], variables["DEBUG"])
     assert debug["type"] == "bool"
     assert debug["default"] is False
 
 
-def test_run_init_skips_contract_when_requested(monkeypatch, tmp_path: Path) -> None:
+def test_run_init_skips_contract_when_requested(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     context = make_context(tmp_path)
 
     monkeypatch.setattr(
@@ -127,7 +143,10 @@ def test_run_init_skips_contract_when_requested(monkeypatch, tmp_path: Path) -> 
     assert not context.repo_contract_path.exists()
 
 
-def test_run_init_creates_contract_from_env_example(monkeypatch, tmp_path: Path) -> None:
+def test_run_init_creates_contract_from_env_example(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     context = make_context(tmp_path)
     (context.repo_root / ".env.example").write_text(
         "\n".join(
@@ -161,41 +180,45 @@ def test_run_init_creates_contract_from_env_example(monkeypatch, tmp_path: Path)
     )
 
     contract = load_yaml(context.repo_contract_path)
-    variables = contract["variables"]
+    variables = cast(dict[str, Any], contract["variables"])
 
-    assert variables["APP_NAME"]["type"] == "string"
-    assert variables["APP_NAME"]["example"] == "demo-app"
+    assert cast(dict[str, Any], variables["APP_NAME"])["type"] == "string"
+    assert cast(dict[str, Any], variables["APP_NAME"])["example"] == "demo-app"
 
-    assert variables["PORT"]["type"] == "int"
-    assert variables["PORT"]["default"] == 3001
+    assert cast(dict[str, Any], variables["PORT"])["type"] == "int"
+    assert cast(dict[str, Any], variables["PORT"])["default"] == 3001
 
-    assert variables["DEBUG"]["type"] == "bool"
-    assert variables["DEBUG"]["default"] is True
+    assert cast(dict[str, Any], variables["DEBUG"])["type"] == "bool"
+    assert cast(dict[str, Any], variables["DEBUG"])["default"] is True
 
-    assert variables["DATABASE_URL"]["type"] == "url"
-    assert variables["DATABASE_URL"]["example"] == "postgres://user:pass@localhost:5432/app"
-    assert variables["DATABASE_URL"]["sensitive"] is True
+    assert cast(dict[str, Any], variables["DATABASE_URL"])["type"] == "url"
+    assert (
+        cast(dict[str, Any], variables["DATABASE_URL"])["example"]
+        == "postgres://user:pass@localhost:5432/app"
+    )
+    assert cast(dict[str, Any], variables["DATABASE_URL"])["sensitive"] is True
 
-    assert variables["NODE_ENV"]["choices"] == [
+    assert cast(dict[str, Any], variables["NODE_ENV"])["choices"] == [
         "development",
         "test",
         "staging",
         "production",
     ]
 
-    assert variables["PUBLIC_URL"]["type"] == "url"
-    assert variables["PUBLIC_URL"]["sensitive"] is False
-    assert variables["PUBLIC_URL"]["example"] == "https://example.com"
+    assert cast(dict[str, Any], variables["PUBLIC_URL"])["type"] == "url"
+    assert cast(dict[str, Any], variables["PUBLIC_URL"])["sensitive"] is False
+    assert cast(dict[str, Any], variables["PUBLIC_URL"])["example"] == "https://example.com"
 
-    assert variables["SLUG"]["pattern"] == "^[a-z0-9-]+$"
+    assert cast(dict[str, Any], variables["SLUG"])["pattern"] == "^[a-z0-9-]+$"
 
-    assert variables["API_KEY"]["sensitive"] is True
-    assert "example" not in variables["API_KEY"]
-    assert "default" not in variables["API_KEY"]
+    assert cast(dict[str, Any], variables["API_KEY"])["sensitive"] is True
+    assert "example" not in cast(dict[str, Any], variables["API_KEY"])
+    assert "default" not in cast(dict[str, Any], variables["API_KEY"])
 
 
 def test_run_init_example_mode_falls_back_to_starter_when_example_is_missing(
-    monkeypatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     context = make_context(tmp_path)
 
@@ -214,10 +237,18 @@ def test_run_init_example_mode_falls_back_to_starter_when_example_is_missing(
     )
 
     contract = load_yaml(context.repo_contract_path)
-    assert set(contract["variables"]) == {"APP_NAME", "PORT", "DATABASE_URL", "DEBUG"}
+    assert set(cast(dict[str, Any], contract["variables"])) == {
+        "APP_NAME",
+        "PORT",
+        "DATABASE_URL",
+        "DEBUG",
+    }
 
 
-def test_run_init_ask_mode_uses_example_when_confirm_accepts(monkeypatch, tmp_path: Path) -> None:
+def test_run_init_ask_mode_uses_example_when_confirm_accepts(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     context = make_context(tmp_path)
     (context.repo_root / ".env.example").write_text(
         'APP_NAME="demo"\n',
@@ -248,7 +279,7 @@ def test_run_init_ask_mode_uses_example_when_confirm_accepts(monkeypatch, tmp_pa
 
 
 def test_run_init_ask_mode_uses_starter_after_declining_example(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     context = make_context(tmp_path)
@@ -282,7 +313,10 @@ def test_run_init_ask_mode_uses_starter_after_declining_example(
     assert "starter contract scaffold" in confirmations[1]
 
 
-def test_run_init_ask_mode_skips_after_declining_all_prompts(monkeypatch, tmp_path: Path) -> None:
+def test_run_init_ask_mode_skips_after_declining_all_prompts(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     context = make_context(tmp_path)
 
     confirmations: list[str] = []
@@ -310,7 +344,8 @@ def test_run_init_ask_mode_skips_after_declining_all_prompts(monkeypatch, tmp_pa
 
 
 def test_run_init_ask_mode_without_confirm_uses_example_when_available(
-    monkeypatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     context = make_context(tmp_path)
     (context.repo_root / ".env.example").write_text(
@@ -334,7 +369,8 @@ def test_run_init_ask_mode_without_confirm_uses_example_when_available(
 
 
 def test_run_init_ask_mode_without_confirm_uses_starter_when_example_is_missing(
-    monkeypatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     context = make_context(tmp_path)
 
@@ -353,7 +389,7 @@ def test_run_init_ask_mode_without_confirm_uses_starter_when_example_is_missing(
     )
 
 
-def test_build_contract_from_example_skips_invalid_keys(monkeypatch, tmp_path: Path) -> None:
+def test_build_contract_from_example_skips_invalid_keys(tmp_path: Path) -> None:
     context = make_context(tmp_path)
     (context.repo_root / ".env.example").write_text(
         "\n".join(
@@ -370,7 +406,7 @@ def test_build_contract_from_example_skips_invalid_keys(monkeypatch, tmp_path: P
     contract = init_service._build_contract_from_example(context)
 
     assert contract["version"] == 1
-    assert set(contract["variables"]) == {"APP_NAME"}
+    assert set(cast(dict[str, Any], contract["variables"])) == {"APP_NAME"}
 
 
 def test_build_contract_from_example_falls_back_to_starter_when_no_valid_keys(
@@ -390,7 +426,12 @@ def test_build_contract_from_example_falls_back_to_starter_when_no_valid_keys(
 
     contract = init_service._build_contract_from_example(context)
 
-    assert set(contract["variables"]) == {"APP_NAME", "PORT", "DATABASE_URL", "DEBUG"}
+    assert set(cast(dict[str, Any], contract["variables"])) == {
+        "APP_NAME",
+        "PORT",
+        "DATABASE_URL",
+        "DEBUG",
+    }
 
 
 def test_infer_type_does_not_mark_non_numeric_port_like_value_as_int() -> None:

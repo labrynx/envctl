@@ -1,13 +1,19 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+import pytest
+
 from envctl.cli.formatters import render_doctor_checks, render_resolution, render_status
 from envctl.domain.doctor import DoctorCheck
-from envctl.domain.resolution import ResolutionReport, ResolvedValue
 from envctl.domain.status import StatusReport
 from envctl.utils.masking import mask_value
+from tests.support.builders import make_resolution_report, make_resolved_value
 
 
-def test_render_doctor_checks_outputs_known_prefixes_and_detects_failures(capsys) -> None:
+def test_render_doctor_checks_outputs_known_prefixes_and_detects_failures(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     checks = [
         DoctorCheck("config", "ok", "config ok"),
         DoctorCheck("vault", "warn", "vault warn"),
@@ -27,10 +33,12 @@ def test_render_doctor_checks_outputs_known_prefixes_and_detects_failures(capsys
     assert "[INFO] misc: misc info" in output
 
 
-def test_render_resolution_outputs_full_report(capsys) -> None:
-    report = ResolutionReport(
+def test_render_resolution_outputs_full_report(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    report = make_resolution_report(
         values={
-            "API_KEY": ResolvedValue(
+            "API_KEY": make_resolved_value(
                 key="API_KEY",
                 value="super-secret",
                 source="vault",
@@ -38,7 +46,7 @@ def test_render_resolution_outputs_full_report(capsys) -> None:
                 valid=True,
                 detail=None,
             ),
-            "PORT": ResolvedValue(
+            "PORT": make_resolved_value(
                 key="PORT",
                 value="abc",
                 source="default",
@@ -47,9 +55,9 @@ def test_render_resolution_outputs_full_report(capsys) -> None:
                 detail="Expected an integer",
             ),
         },
-        missing_required=["DATABASE_URL"],
-        unknown_keys=["LEGACY_KEY"],
-        invalid_keys=["PORT"],
+        missing_required=("DATABASE_URL",),
+        unknown_keys=("LEGACY_KEY",),
+        invalid_keys=("PORT",),
     )
 
     render_resolution(report)
@@ -68,12 +76,14 @@ def test_render_resolution_outputs_full_report(capsys) -> None:
     assert "  - LEGACY_KEY" in output
 
 
-def test_render_resolution_outputs_empty_state(capsys) -> None:
-    report = ResolutionReport(
+def test_render_resolution_outputs_empty_state(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    report = make_resolution_report(
         values={},
-        missing_required=[],
-        unknown_keys=[],
-        invalid_keys=[],
+        missing_required=(),
+        unknown_keys=(),
+        invalid_keys=(),
     )
 
     render_resolution(report)
@@ -82,11 +92,13 @@ def test_render_resolution_outputs_empty_state(capsys) -> None:
     assert captured.out.strip() == "No resolved values."
 
 
-def test_render_status_outputs_summary_issues_and_action(capsys) -> None:
+def test_render_status_outputs_summary_issues_and_action(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     report = StatusReport(
         project_slug="demo",
         project_id="prj_aaaaaaaaaaaaaaaa",
-        repo_root="/tmp/demo",
+        repo_root=Path("/tmp/demo"),
         contract_exists=True,
         vault_exists=False,
         resolved_valid=False,

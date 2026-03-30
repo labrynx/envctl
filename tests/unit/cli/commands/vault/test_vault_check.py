@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 import typer
 
 import envctl.cli.commands.vault.commands.check as vault_check_module
 
 
-def test_vault_check_command_exits_when_file_does_not_exist(monkeypatch, capsys) -> None:
+def test_vault_check_command_exits_when_file_does_not_exist(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     result = type(
         "Result",
         (),
@@ -34,7 +39,10 @@ def test_vault_check_command_exits_when_file_does_not_exist(monkeypatch, capsys)
     assert "vault_values: /tmp/vault/values.env" in output
 
 
-def test_vault_check_command_exits_when_file_is_not_parseable(monkeypatch, capsys) -> None:
+def test_vault_check_command_exits_when_file_is_not_parseable(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     result = type(
         "Result",
         (),
@@ -62,7 +70,10 @@ def test_vault_check_command_exits_when_file_is_not_parseable(monkeypatch, capsy
     assert "vault_values: /tmp/vault/values.env" in output
 
 
-def test_vault_check_command_succeeds_when_file_is_valid(monkeypatch, capsys) -> None:
+def test_vault_check_command_succeeds_when_file_is_valid(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     result = type(
         "Result",
         (),
@@ -91,7 +102,10 @@ def test_vault_check_command_succeeds_when_file_is_valid(monkeypatch, capsys) ->
     assert "keys: 3" in output
 
 
-def test_vault_check_command_exits_when_permissions_are_not_private(monkeypatch, capsys) -> None:
+def test_vault_check_command_exits_when_permissions_are_not_private(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     result = type(
         "Result",
         (),
@@ -121,8 +135,10 @@ def test_vault_check_command_exits_when_permissions_are_not_private(monkeypatch,
     assert "keys: 2" in output
 
 
-def test_vault_check_command_rejects_json_mode(monkeypatch) -> None:
-    captured: dict[str, object] = {}
+def test_vault_check_command_rejects_json_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
         "envctl.cli.decorators.is_json_output",
@@ -141,7 +157,8 @@ def test_vault_check_command_rejects_json_mode(monkeypatch) -> None:
         vault_check_module.vault_check_command()
 
     assert exc_info.value.exit_code == 1
-    assert captured["payload"] == {
+    payload = cast(dict[str, Any], captured["payload"])
+    assert payload == {
         "ok": False,
         "command": "envctl vault check",
         "error": {

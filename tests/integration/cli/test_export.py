@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from typer.testing import CliRunner
+
 from envctl.cli.app import app
 
 
-def test_export_outputs_shell_lines(runner, workspace: Path) -> None:
+def test_export_outputs_shell_lines(runner: CliRunner, workspace: Path) -> None:
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
     runner.invoke(app, ["init", "--contract", "starter"], catch_exceptions=False)
     runner.invoke(app, ["set", "APP_NAME", "demo"], catch_exceptions=False)

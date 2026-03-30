@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 import typer
@@ -11,8 +12,10 @@ from envctl.domain.runtime import RuntimeMode
 from envctl.services.init_service import InitResult
 
 
-def test_typer_confirm_bridges_to_typer(monkeypatch) -> None:
-    captured: dict[str, object] = {}
+def test_typer_confirm_bridges_to_typer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
 
     def fake_confirm(message: str, default: bool) -> bool:
         captured["message"] = message
@@ -30,7 +33,10 @@ def test_typer_confirm_bridges_to_typer(monkeypatch) -> None:
     }
 
 
-def test_init_command_prints_contract_creation_details(monkeypatch, capsys) -> None:
+def test_init_command_prints_contract_creation_details(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     context = SimpleNamespace(
         display_name="demo (prj_aaaaaaaaaaaaaaaa)",
         project_key="demo",
@@ -68,7 +74,10 @@ def test_init_command_prints_contract_creation_details(monkeypatch, capsys) -> N
     assert "contract_template: starter" in output
 
 
-def test_init_command_warns_when_contract_is_skipped(monkeypatch, capsys) -> None:
+def test_init_command_warns_when_contract_is_skipped(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     context = SimpleNamespace(
         display_name="demo (prj_aaaaaaaaaaaaaaaa)",
         project_key="demo",
@@ -100,7 +109,9 @@ def test_init_command_warns_when_contract_is_skipped(monkeypatch, capsys) -> Non
     assert "No contract file was created" in output
 
 
-def test_init_command_rejects_ci_mode(monkeypatch) -> None:
+def test_init_command_rejects_ci_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     captured: dict[str, str] = {}
 
     monkeypatch.setattr(

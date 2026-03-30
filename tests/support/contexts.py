@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from envctl.domain.project import ProjectContext
+from envctl.domain.project import BindingSource, ProjectContext
 
 
 def make_project_context(
@@ -12,7 +12,7 @@ def make_project_context(
     project_id: str = "prj_aaaaaaaaaaaaaaaa",
     repo_root: Path | str = "/tmp/demo",
     repo_remote: str | None = None,
-    binding_source: str = "local",
+    binding_source: BindingSource = "local",
     repo_contract_path: Path | str | None = None,
     vault_project_dir: Path | str | None = None,
     vault_values_path: Path | str | None = None,
@@ -61,7 +61,7 @@ def make_status_context(
     project_key: str | None = None,
     project_id: str = "prj_aaaaaaaaaaaaaaaa",
     repo_remote: str | None = None,
-    binding_source: str = "local",
+    binding_source: BindingSource = "local",
 ) -> ProjectContext:
     """Build a filesystem-backed ProjectContext for status-service tests."""
     repo_root = tmp_path

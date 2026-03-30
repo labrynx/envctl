@@ -1,15 +1,12 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 import typer
 
-from envctl.cli.decorators import (
-    handle_errors,
-    requires_writable_runtime,
-    text_output_only,
-)
+from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
 from envctl.domain.runtime import RuntimeMode
 from envctl.errors import EnvctlError, ExecutionError
 
@@ -22,7 +19,9 @@ def test_handle_errors_returns_wrapped_result() -> None:
     assert sample(4) == 5
 
 
-def test_handle_errors_converts_envctl_error_to_exit(monkeypatch) -> None:
+def test_handle_errors_converts_envctl_error_to_exit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     captured: dict[str, str] = {}
 
     @handle_errors
@@ -45,8 +44,10 @@ def test_handle_errors_converts_envctl_error_to_exit(monkeypatch) -> None:
     assert captured["message"] == "Error: boom"
 
 
-def test_handle_errors_emits_structured_json_when_enabled(monkeypatch) -> None:
-    captured: dict[str, object] = {}
+def test_handle_errors_emits_structured_json_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
 
     @handle_errors
     def sample() -> None:
@@ -69,7 +70,8 @@ def test_handle_errors_emits_structured_json_when_enabled(monkeypatch) -> None:
         sample()
 
     assert exc_info.value.exit_code == 1
-    assert captured["payload"] == {
+    payload = cast(dict[str, Any], captured["payload"])
+    assert payload == {
         "ok": False,
         "command": "envctl check",
         "error": {
@@ -79,7 +81,9 @@ def test_handle_errors_emits_structured_json_when_enabled(monkeypatch) -> None:
     }
 
 
-def test_text_output_only_allows_text_mode(monkeypatch) -> None:
+def test_text_output_only_allows_text_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     @text_output_only("export")
     def sample() -> str:
         return "ok"
@@ -92,7 +96,9 @@ def test_text_output_only_allows_text_mode(monkeypatch) -> None:
     assert sample() == "ok"
 
 
-def test_text_output_only_rejects_json_mode(monkeypatch) -> None:
+def test_text_output_only_rejects_json_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     @text_output_only("export")
     def sample() -> None:
         return None
@@ -106,7 +112,9 @@ def test_text_output_only_rejects_json_mode(monkeypatch) -> None:
         sample()
 
 
-def test_requires_writable_runtime_allows_local_mode(monkeypatch) -> None:
+def test_requires_writable_runtime_allows_local_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     @requires_writable_runtime("add")
     def sample() -> str:
         return "ok"
@@ -119,7 +127,9 @@ def test_requires_writable_runtime_allows_local_mode(monkeypatch) -> None:
     assert sample() == "ok"
 
 
-def test_requires_writable_runtime_rejects_ci_mode(monkeypatch) -> None:
+def test_requires_writable_runtime_rejects_ci_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     @requires_writable_runtime("add")
     def sample() -> None:
         return None

@@ -1,24 +1,29 @@
 from __future__ import annotations
 
 from pathlib import Path
-from types import SimpleNamespace
+
+import pytest
 
 import envctl.services.add_service as add_service
 from envctl.domain.contract import Contract, VariableSpec
 from envctl.domain.operations import AddVariableRequest
+from envctl.domain.project import ProjectContext
+from tests.support.contexts import make_project_context
 
 
-def make_context(tmp_path: Path) -> SimpleNamespace:
+def make_context(tmp_path: Path) -> ProjectContext:
     repo_root = tmp_path / "repo"
     repo_root.mkdir(parents=True, exist_ok=True)
 
     vault_dir = tmp_path / "vault" / "demo--prj_aaaaaaaaaaaaaaaa"
 
-    return SimpleNamespace(
+    return make_project_context(
         project_slug="demo",
         project_key="demo",
         project_id="prj_aaaaaaaaaaaaaaaa",
         repo_root=repo_root,
+        repo_remote=None,
+        binding_source="local",
         repo_contract_path=repo_root / ".envctl.schema.yaml",
         vault_project_dir=vault_dir,
         vault_values_path=vault_dir / "values.env",
@@ -68,13 +73,16 @@ def test_apply_request_to_spec_returns_same_spec_when_no_overrides() -> None:
     assert updated == spec
 
 
-def test_run_add_creates_contract_and_entry(tmp_path: Path, monkeypatch) -> None:
+def test_run_add_creates_contract_and_entry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     context = make_context(tmp_path)
 
     monkeypatch.setattr(
         add_service,
         "load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: None)
 
@@ -85,7 +93,7 @@ def test_run_add_creates_contract_and_entry(tmp_path: Path, monkeypatch) -> None
         )
     )
 
-    assert returned_context is context
+    assert returned_context == context
     assert result.contract_created is True
     assert result.contract_updated is True
     assert result.contract_entry_created is True
@@ -94,7 +102,10 @@ def test_run_add_creates_contract_and_entry(tmp_path: Path, monkeypatch) -> None
     assert context.repo_contract_path.exists()
 
 
-def test_run_add_uses_existing_spec_when_present(tmp_path: Path, monkeypatch) -> None:
+def test_run_add_uses_existing_spec_when_present(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     context = make_context(tmp_path)
     existing = VariableSpec(name="APP_NAME", description="Existing description")
     contract = Contract(version=1, variables={"APP_NAME": existing})
@@ -102,7 +113,7 @@ def test_run_add_uses_existing_spec_when_present(tmp_path: Path, monkeypatch) ->
     monkeypatch.setattr(
         add_service,
         "load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: contract)
 
@@ -118,13 +129,16 @@ def test_run_add_uses_existing_spec_when_present(tmp_path: Path, monkeypatch) ->
     assert result.inferred_spec is None
 
 
-def test_run_add_applies_overrides(tmp_path: Path, monkeypatch) -> None:
+def test_run_add_applies_overrides(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     context = make_context(tmp_path)
 
     monkeypatch.setattr(
         add_service,
         "load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: None)
 
@@ -143,13 +157,16 @@ def test_run_add_applies_overrides(tmp_path: Path, monkeypatch) -> None:
     assert "sensitive: false" in content
 
 
-def test_run_add_writes_value_to_vault(tmp_path: Path, monkeypatch) -> None:
+def test_run_add_writes_value_to_vault(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     context = make_context(tmp_path)
 
     monkeypatch.setattr(
         add_service,
         "load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: None)
 
@@ -164,7 +181,10 @@ def test_run_add_writes_value_to_vault(tmp_path: Path, monkeypatch) -> None:
     assert "APP_NAME=demo" in content
 
 
-def test_run_add_updates_existing_vault_value(tmp_path: Path, monkeypatch) -> None:
+def test_run_add_updates_existing_vault_value(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     context = make_context(tmp_path)
     context.vault_project_dir.mkdir(parents=True, exist_ok=True)
     context.vault_values_path.write_text("APP_NAME=old\n", encoding="utf-8")
@@ -172,7 +192,7 @@ def test_run_add_updates_existing_vault_value(tmp_path: Path, monkeypatch) -> No
     monkeypatch.setattr(
         add_service,
         "load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: None)
 
@@ -188,7 +208,10 @@ def test_run_add_updates_existing_vault_value(tmp_path: Path, monkeypatch) -> No
     assert "APP_NAME=old" not in content
 
 
-def test_run_add_updates_existing_contract_when_spec_changes(tmp_path: Path, monkeypatch) -> None:
+def test_run_add_updates_existing_contract_when_spec_changes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     context = make_context(tmp_path)
     existing = VariableSpec(name="APP_NAME", description="Old description")
     contract = Contract(version=1, variables={"APP_NAME": existing})
@@ -196,7 +219,7 @@ def test_run_add_updates_existing_contract_when_spec_changes(tmp_path: Path, mon
     monkeypatch.setattr(
         add_service,
         "load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: contract)
 
@@ -214,7 +237,8 @@ def test_run_add_updates_existing_contract_when_spec_changes(tmp_path: Path, mon
 
 
 def test_run_add_does_not_rewrite_contract_when_existing_spec_is_unchanged(
-    tmp_path: Path, monkeypatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     context = make_context(tmp_path)
     existing = VariableSpec(name="APP_NAME", description="Existing description")
@@ -223,7 +247,7 @@ def test_run_add_does_not_rewrite_contract_when_existing_spec_is_unchanged(
     monkeypatch.setattr(
         add_service,
         "load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: contract)
 

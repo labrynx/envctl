@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -15,10 +16,12 @@ def test_run_command_fails_when_command_is_empty() -> None:
         run_command([])
 
 
-def test_run_command_fails_when_resolved_environment_is_invalid(monkeypatch) -> None:
+def test_run_command_fails_when_resolved_environment_is_invalid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     context = SimpleNamespace()
     contract = object()
-    report = make_resolution_report(missing_required=["API_KEY"])
+    report = make_resolution_report(missing_required=("API_KEY",))
 
     monkeypatch.setattr(
         run_service,
@@ -32,7 +35,9 @@ def test_run_command_fails_when_resolved_environment_is_invalid(monkeypatch) -> 
         run_command(["python", "-V"])
 
 
-def test_run_command_executes_subprocess_with_injected_environment(monkeypatch) -> None:
+def test_run_command_executes_subprocess_with_injected_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     context = SimpleNamespace()
     contract = object()
     report = make_resolution_report(
@@ -53,9 +58,9 @@ def test_run_command_executes_subprocess_with_injected_environment(monkeypatch) 
         }
     )
 
-    captured: dict[str, object] = {}
+    captured: dict[str, Any] = {}
 
-    def fake_run(command, env, check):
+    def fake_run(command: list[str], env: dict[str, str], check: bool) -> Any:
         captured["command"] = command
         captured["env"] = env
         captured["check"] = check

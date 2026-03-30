@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -13,9 +13,11 @@ from envctl.domain.operations import (
     VaultShowResult,
 )
 from envctl.errors import ExecutionError
+from tests.support.contexts import make_project_context
 
 
-def make_context(tmp_path: Path) -> SimpleNamespace:
+def make_context(tmp_path: Path):
+    """Build a filesystem-backed project context for vault-service tests."""
     repo_root = tmp_path / "repo"
     repo_root.mkdir(parents=True, exist_ok=True)
 
@@ -23,7 +25,7 @@ def make_context(tmp_path: Path) -> SimpleNamespace:
     vault_values_path = vault_project_dir / "values.env"
     repo_contract_path = repo_root / ".envctl.schema.yaml"
 
-    return SimpleNamespace(
+    return make_project_context(
         project_slug="demo",
         project_key="demo",
         project_id="prj_aaaaaaaaaaaaaaaa",
@@ -35,7 +37,10 @@ def make_context(tmp_path: Path) -> SimpleNamespace:
     )
 
 
-def test_load_vault_context_returns_context(monkeypatch, tmp_path: Path) -> None:
+def test_load_vault_context_returns_context(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     context = make_context(tmp_path)
 
     monkeypatch.setattr(
@@ -69,7 +74,9 @@ def test_ensure_vault_file_returns_false_when_file_already_exists(tmp_path: Path
     assert context.vault_values_path.read_text(encoding="utf-8") == "APP_NAME=demo\n"
 
 
-def test_has_private_file_permissions_returns_false_when_stat_fails(monkeypatch) -> None:
+def test_has_private_file_permissions_returns_false_when_stat_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(
         vault_service.os,
         "stat",
@@ -79,7 +86,9 @@ def test_has_private_file_permissions_returns_false_when_stat_fails(monkeypatch)
     assert vault_service._has_private_file_permissions("/tmp/missing.env") is False
 
 
-def test_has_private_file_permissions_returns_true_for_600(monkeypatch) -> None:
+def test_has_private_file_permissions_returns_true_for_600(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class FakeStat:
         st_mode = 0o100600
 
@@ -88,7 +97,9 @@ def test_has_private_file_permissions_returns_true_for_600(monkeypatch) -> None:
     assert vault_service._has_private_file_permissions("/tmp/file.env") is True
 
 
-def test_has_private_file_permissions_returns_false_for_non_600(monkeypatch) -> None:
+def test_has_private_file_permissions_returns_false_for_non_600(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class FakeStat:
         st_mode = 0o100644
 
@@ -97,7 +108,10 @@ def test_has_private_file_permissions_returns_false_for_non_600(monkeypatch) -> 
     assert vault_service._has_private_file_permissions("/tmp/file.env") is False
 
 
-def test_run_vault_edit_opens_file_and_returns_result(monkeypatch, tmp_path: Path) -> None:
+def test_run_vault_edit_opens_file_and_returns_result(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     context = make_context(tmp_path)
     context.vault_project_dir.mkdir(parents=True, exist_ok=True)
     context.vault_values_path.write_text("APP_NAME=demo\n", encoding="utf-8")
@@ -109,7 +123,7 @@ def test_run_vault_edit_opens_file_and_returns_result(monkeypatch, tmp_path: Pat
     )
     monkeypatch.setattr(vault_service, "_ensure_vault_file", lambda ctx: False)
 
-    captured: dict[str, object] = {}
+    captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
         vault_service,
@@ -130,7 +144,7 @@ def test_run_vault_edit_opens_file_and_returns_result(monkeypatch, tmp_path: Pat
 
 
 def test_run_vault_edit_raises_when_reloaded_file_cannot_be_read(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     context = make_context(tmp_path)
@@ -152,7 +166,10 @@ def test_run_vault_edit_raises_when_reloaded_file_cannot_be_read(
         vault_service.run_vault_edit()
 
 
-def test_run_vault_check_returns_non_existing_result(monkeypatch, tmp_path: Path) -> None:
+def test_run_vault_check_returns_non_existing_result(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     context = make_context(tmp_path)
 
     monkeypatch.setattr(
@@ -173,7 +190,10 @@ def test_run_vault_check_returns_non_existing_result(monkeypatch, tmp_path: Path
     )
 
 
-def test_run_vault_check_returns_existing_result(monkeypatch, tmp_path: Path) -> None:
+def test_run_vault_check_returns_existing_result(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     context = make_context(tmp_path)
     context.vault_project_dir.mkdir(parents=True, exist_ok=True)
     context.vault_values_path.write_text("APP_NAME=demo\nPORT=3000\n", encoding="utf-8")
@@ -202,7 +222,10 @@ def test_run_vault_check_returns_existing_result(monkeypatch, tmp_path: Path) ->
     )
 
 
-def test_run_vault_check_raises_when_file_cannot_be_read(monkeypatch, tmp_path: Path) -> None:
+def test_run_vault_check_raises_when_file_cannot_be_read(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     context = make_context(tmp_path)
     context.vault_project_dir.mkdir(parents=True, exist_ok=True)
     context.vault_values_path.write_text("APP_NAME=demo\n", encoding="utf-8")
@@ -222,7 +245,10 @@ def test_run_vault_check_raises_when_file_cannot_be_read(monkeypatch, tmp_path: 
         vault_service.run_vault_check()
 
 
-def test_run_vault_path_returns_string_path(monkeypatch, tmp_path: Path) -> None:
+def test_run_vault_path_returns_string_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     context = make_context(tmp_path)
 
     monkeypatch.setattr(
@@ -237,7 +263,10 @@ def test_run_vault_path_returns_string_path(monkeypatch, tmp_path: Path) -> None
     assert path == str(context.vault_values_path)
 
 
-def test_run_vault_show_returns_non_existing_result(monkeypatch, tmp_path: Path) -> None:
+def test_run_vault_show_returns_non_existing_result(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     context = make_context(tmp_path)
 
     monkeypatch.setattr(
@@ -256,7 +285,10 @@ def test_run_vault_show_returns_non_existing_result(monkeypatch, tmp_path: Path)
     )
 
 
-def test_run_vault_show_returns_values(monkeypatch, tmp_path: Path) -> None:
+def test_run_vault_show_returns_values(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     context = make_context(tmp_path)
     context.vault_project_dir.mkdir(parents=True, exist_ok=True)
     context.vault_values_path.write_text("APP_NAME=demo\n", encoding="utf-8")
@@ -278,7 +310,10 @@ def test_run_vault_show_returns_values(monkeypatch, tmp_path: Path) -> None:
     )
 
 
-def test_run_vault_show_raises_when_file_cannot_be_read(monkeypatch, tmp_path: Path) -> None:
+def test_run_vault_show_raises_when_file_cannot_be_read(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     context = make_context(tmp_path)
     context.vault_project_dir.mkdir(parents=True, exist_ok=True)
     context.vault_values_path.write_text("APP_NAME=demo\n", encoding="utf-8")
@@ -299,7 +334,8 @@ def test_run_vault_show_raises_when_file_cannot_be_read(monkeypatch, tmp_path: P
 
 
 def test_get_unknown_vault_keys_raises_when_contract_is_invalid(
-    monkeypatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     context = make_context(tmp_path)
 
@@ -310,7 +346,7 @@ def test_get_unknown_vault_keys_raises_when_contract_is_invalid(
     )
     monkeypatch.setattr(vault_service, "_ensure_vault_file", lambda ctx: True)
 
-    def fake_load_contract(path: Path):
+    def fake_load_contract(path: Path) -> Any:
         raise vault_service.ContractError("invalid contract")
 
     monkeypatch.setattr(vault_service, "load_contract", fake_load_contract)
@@ -319,7 +355,10 @@ def test_get_unknown_vault_keys_raises_when_contract_is_invalid(
         vault_service.get_unknown_vault_keys()
 
 
-def test_run_vault_prune_raises_when_contract_is_invalid(monkeypatch, tmp_path: Path) -> None:
+def test_run_vault_prune_raises_when_contract_is_invalid(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     context = make_context(tmp_path)
 
     monkeypatch.setattr(
@@ -329,7 +368,7 @@ def test_run_vault_prune_raises_when_contract_is_invalid(monkeypatch, tmp_path: 
     )
     monkeypatch.setattr(vault_service, "_ensure_vault_file", lambda ctx: True)
 
-    def fake_load_contract(path: Path):
+    def fake_load_contract(path: Path) -> Any:
         raise vault_service.ContractError("invalid contract")
 
     monkeypatch.setattr(vault_service, "load_contract", fake_load_contract)
@@ -339,7 +378,7 @@ def test_run_vault_prune_raises_when_contract_is_invalid(monkeypatch, tmp_path: 
 
 
 def test_run_vault_prune_returns_without_changes_when_no_unknown_keys(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     context = make_context(tmp_path)
@@ -353,7 +392,9 @@ def test_run_vault_prune_returns_without_changes_when_no_unknown_keys(
     monkeypatch.setattr(
         vault_service,
         "load_contract",
-        lambda path: SimpleNamespace(variables={"APP_NAME": object(), "PORT": object()}),
+        lambda path: type(
+            "FakeContract", (), {"variables": {"APP_NAME": object(), "PORT": object()}}
+        )(),
     )
     monkeypatch.setattr(
         vault_service,
@@ -372,7 +413,7 @@ def test_run_vault_prune_returns_without_changes_when_no_unknown_keys(
 
 
 def test_run_vault_prune_removes_unknown_keys(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     context = make_context(tmp_path)
@@ -386,7 +427,7 @@ def test_run_vault_prune_removes_unknown_keys(
     monkeypatch.setattr(
         vault_service,
         "load_contract",
-        lambda path: SimpleNamespace(variables={"APP_NAME": object()}),
+        lambda path: type("FakeContract", (), {"variables": {"APP_NAME": object()}})(),
     )
     monkeypatch.setattr(
         vault_service,
@@ -394,7 +435,7 @@ def test_run_vault_prune_removes_unknown_keys(
         lambda path: {"APP_NAME": "demo", "OLD_KEY": "legacy"},
     )
 
-    written: dict[str, object] = {}
+    written: dict[str, Any] = {}
 
     monkeypatch.setattr(
         vault_service,

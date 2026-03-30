@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from envctl.domain.contract import Contract, VariableSpec
+from envctl.domain.contract import Contract, VariableSpec, VariableType
 
 
 def make_variable_spec(
     *,
     name: str,
-    type: str = "string",
+    type: VariableType = "string",
     required: bool = True,
     description: str = "",
     sensitive: bool = False,
-    default: object | None = None,
+    default: str | int | bool | None = None,
     provider: str | None = None,
     example: str | None = None,
     pattern: str | None = None,

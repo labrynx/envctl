@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import runpy
 
+import pytest
 
-def test_main_module_invokes_app(monkeypatch) -> None:
+
+def test_main_module_invokes_app(monkeypatch: pytest.MonkeyPatch) -> None:
     called = {"count": 0}
 
     def fake_app() -> None:
