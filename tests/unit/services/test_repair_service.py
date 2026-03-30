@@ -99,7 +99,9 @@ def test_run_repair_returns_healthy_when_bound_vault_exists(
 
     persisted_calls: list[ProjectContext] = []
 
-    def fake_persist_project_binding(config_arg: AppConfig, context_arg: ProjectContext) -> ProjectContext:
+    def fake_persist_project_binding(
+        config_arg: AppConfig, context_arg: ProjectContext
+    ) -> ProjectContext:
         persisted_calls.append(context_arg)
         return context_arg
 
@@ -172,13 +174,17 @@ def test_run_repair_recreates_bound_vault_when_requested(
         "build_context_for_project_id",
         lambda config_arg, repo_root, project_id, binding_source="local": context,
     )
-    monkeypatch.setattr(repair_service, "persist_project_binding", lambda config_arg, context_arg: context)
+    monkeypatch.setattr(
+        repair_service, "persist_project_binding", lambda config_arg, context_arg: context
+    )
 
     ensured_dirs: list[Path] = []
     ensured_files: list[tuple[Path, str]] = []
 
     monkeypatch.setattr(repair_service, "ensure_dir", lambda path: ensured_dirs.append(path))
-    monkeypatch.setattr(repair_service, "ensure_file", lambda path, content: ensured_files.append((path, content)))
+    monkeypatch.setattr(
+        repair_service, "ensure_file", lambda path, content: ensured_files.append((path, content))
+    )
 
     repaired_context, result = repair_service.run_repair(recreate_bound_vault=True)
 
@@ -339,7 +345,9 @@ def test_run_repair_creates_and_persists_new_binding_when_requested(
     ensured_files: list[tuple[Path, str]] = []
 
     monkeypatch.setattr(repair_service, "ensure_dir", lambda path: ensured_dirs.append(path))
-    monkeypatch.setattr(repair_service, "ensure_file", lambda path, content: ensured_files.append((path, content)))
+    monkeypatch.setattr(
+        repair_service, "ensure_file", lambda path, content: ensured_files.append((path, content))
+    )
 
     repaired_context, result = repair_service.run_repair(create_if_missing=True)
 

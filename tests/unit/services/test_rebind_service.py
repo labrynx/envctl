@@ -18,7 +18,9 @@ def make_config(tmp_path: Path) -> AppConfig:
     )
 
 
-def test_load_previous_values_returns_empty_when_previous_project_id_is_none(tmp_path: Path) -> None:
+def test_load_previous_values_returns_empty_when_previous_project_id_is_none(
+    tmp_path: Path,
+) -> None:
     projects_dir = tmp_path / "vault" / "projects"
     projects_dir.mkdir(parents=True, exist_ok=True)
 
@@ -27,7 +29,9 @@ def test_load_previous_values_returns_empty_when_previous_project_id_is_none(tmp
     assert result == {}
 
 
-def test_load_previous_values_returns_empty_when_previous_vault_does_not_exist(tmp_path: Path) -> None:
+def test_load_previous_values_returns_empty_when_previous_vault_does_not_exist(
+    tmp_path: Path,
+) -> None:
     projects_dir = tmp_path / "vault" / "projects"
     projects_dir.mkdir(parents=True, exist_ok=True)
 

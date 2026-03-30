@@ -10,7 +10,7 @@ from envctl.utils.output import print_kv, print_success, print_warning
 
 
 @handle_errors
-def repair_command(
+def project_repair_command(
     create_if_missing: bool = typer.Option(
         False,
         "--create-if-missing",

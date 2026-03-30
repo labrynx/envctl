@@ -11,7 +11,7 @@ from envctl.utils.output import print_kv, print_success, print_warning
 
 
 @handle_errors
-def rebind_command(
+def project_rebind_command(
     new_project: bool = typer.Option(
         False,
         "--new-project",

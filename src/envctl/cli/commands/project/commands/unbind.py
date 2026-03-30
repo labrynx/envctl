@@ -8,7 +8,7 @@ from envctl.utils.output import print_kv, print_success, print_warning
 
 
 @handle_errors
-def unbind_command() -> None:
+def project_unbind_command() -> None:
     """Remove the local repo-to-vault binding for the current checkout."""
     repo_root, result = run_unbind()
 

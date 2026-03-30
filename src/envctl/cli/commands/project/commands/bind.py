@@ -10,7 +10,7 @@ from envctl.utils.output import print_kv, print_success, print_warning
 
 
 @handle_errors
-def bind_command(
+def project_bind_command(
     project_id: str = typer.Argument(..., help="Existing canonical project id to bind."),
 ) -> None:
     """Bind the current repository checkout to an existing vault."""

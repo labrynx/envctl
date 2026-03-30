@@ -31,7 +31,9 @@ def _migrate_state_v1_to_v2(raw: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(known_paths, list):
         known_paths = []
 
-    normalized_known_paths = [item for item in known_paths if isinstance(item, str) and item.strip()]
+    normalized_known_paths = [
+        item for item in known_paths if isinstance(item, str) and item.strip()
+    ]
 
     if isinstance(repo_root, str) and repo_root.strip() and repo_root not in normalized_known_paths:
         normalized_known_paths.append(repo_root)

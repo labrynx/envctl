@@ -27,10 +27,15 @@ def make_project_context(
     resolved_repo_env_path = Path(repo_env_path or (repo_root / ".env.local"))
 
     resolved_vault_project_dir = Path(
-        vault_project_dir or (repo_root.parent / "vault" / "projects" / f"{project_slug}--{project_id}")
+        vault_project_dir
+        or (repo_root.parent / "vault" / "projects" / f"{project_slug}--{project_id}")
     )
-    resolved_vault_values_path = Path(vault_values_path or (resolved_vault_project_dir / "values.env"))
-    resolved_vault_state_path = Path(vault_state_path or (resolved_vault_project_dir / "state.json"))
+    resolved_vault_values_path = Path(
+        vault_values_path or (resolved_vault_project_dir / "values.env")
+    )
+    resolved_vault_state_path = Path(
+        vault_state_path or (resolved_vault_project_dir / "state.json")
+    )
 
     return ProjectContext(
         project_slug=project_slug,

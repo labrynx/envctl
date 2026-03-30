@@ -93,7 +93,9 @@ def test_build_project_context_returns_bound_local_context_when_git_binding_exis
     )
 
     monkeypatch.setattr(project_context_module, "resolve_repo_root", lambda: repo_root)
-    monkeypatch.setattr(project_context_module, "resolve_project_name", lambda root, name: "repo-name")
+    monkeypatch.setattr(
+        project_context_module, "resolve_project_name", lambda root, name: "repo-name"
+    )
     monkeypatch.setattr(
         project_context_module,
         "get_local_git_config",
@@ -145,7 +147,9 @@ def test_build_project_context_recovers_from_remote_match_when_no_binding_exists
     )
 
     monkeypatch.setattr(project_context_module, "resolve_repo_root", lambda: repo_root)
-    monkeypatch.setattr(project_context_module, "resolve_project_name", lambda root, name: "repo-name")
+    monkeypatch.setattr(
+        project_context_module, "resolve_project_name", lambda root, name: "repo-name"
+    )
     monkeypatch.setattr(project_context_module, "get_local_git_config", lambda root, key: None)
     monkeypatch.setattr(
         project_context_module,
@@ -194,7 +198,9 @@ def test_build_project_context_recovers_from_project_key_when_repo_has_no_remote
         meta = Meta()
 
     monkeypatch.setattr(project_context_module, "resolve_repo_root", lambda: repo_root)
-    monkeypatch.setattr(project_context_module, "resolve_project_name", lambda root, name: "repo-name")
+    monkeypatch.setattr(
+        project_context_module, "resolve_project_name", lambda root, name: "repo-name"
+    )
     monkeypatch.setattr(project_context_module, "get_local_git_config", lambda root, key: None)
     monkeypatch.setattr(project_context_module, "get_repo_remote", lambda root: None)
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: Contract())
@@ -233,7 +239,9 @@ def test_build_project_context_recovers_from_known_paths_when_repo_has_no_remote
     )
 
     monkeypatch.setattr(project_context_module, "resolve_repo_root", lambda: repo_root)
-    monkeypatch.setattr(project_context_module, "resolve_project_name", lambda root, name: "repo-name")
+    monkeypatch.setattr(
+        project_context_module, "resolve_project_name", lambda root, name: "repo-name"
+    )
     monkeypatch.setattr(project_context_module, "get_local_git_config", lambda root, key: None)
     monkeypatch.setattr(project_context_module, "get_repo_remote", lambda root: None)
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: None)
@@ -289,7 +297,9 @@ def test_build_project_context_raises_when_recovery_is_ambiguous(
         meta = Meta()
 
     monkeypatch.setattr(project_context_module, "resolve_repo_root", lambda: repo_root)
-    monkeypatch.setattr(project_context_module, "resolve_project_name", lambda root, name: "repo-name")
+    monkeypatch.setattr(
+        project_context_module, "resolve_project_name", lambda root, name: "repo-name"
+    )
     monkeypatch.setattr(project_context_module, "get_local_git_config", lambda root, key: None)
     monkeypatch.setattr(project_context_module, "get_repo_remote", lambda root: None)
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: Contract())
@@ -307,7 +317,9 @@ def test_build_project_context_returns_derived_context_when_nothing_can_be_recov
     repo_root.mkdir(parents=True, exist_ok=True)
 
     monkeypatch.setattr(project_context_module, "resolve_repo_root", lambda: repo_root)
-    monkeypatch.setattr(project_context_module, "resolve_project_name", lambda root, name: "demo-app")
+    monkeypatch.setattr(
+        project_context_module, "resolve_project_name", lambda root, name: "demo-app"
+    )
     monkeypatch.setattr(project_context_module, "get_local_git_config", lambda root, key: None)
     monkeypatch.setattr(project_context_module, "get_repo_remote", lambda root: None)
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: None)
@@ -329,8 +341,12 @@ def test_build_project_context_raises_for_invalid_local_binding(
     repo_root.mkdir(parents=True, exist_ok=True)
 
     monkeypatch.setattr(project_context_module, "resolve_repo_root", lambda: repo_root)
-    monkeypatch.setattr(project_context_module, "resolve_project_name", lambda root, name: "demo-app")
-    monkeypatch.setattr(project_context_module, "get_local_git_config", lambda root, key: "not-valid")
+    monkeypatch.setattr(
+        project_context_module, "resolve_project_name", lambda root, name: "demo-app"
+    )
+    monkeypatch.setattr(
+        project_context_module, "get_local_git_config", lambda root, key: "not-valid"
+    )
     monkeypatch.setattr(project_context_module, "get_repo_remote", lambda root: None)
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: None)
 
@@ -347,7 +363,9 @@ def test_build_project_context_raises_when_bound_project_has_no_matching_vault(
     repo_root.mkdir(parents=True, exist_ok=True)
 
     monkeypatch.setattr(project_context_module, "resolve_repo_root", lambda: repo_root)
-    monkeypatch.setattr(project_context_module, "resolve_project_name", lambda root, name: "demo-app")
+    monkeypatch.setattr(
+        project_context_module, "resolve_project_name", lambda root, name: "demo-app"
+    )
     monkeypatch.setattr(
         project_context_module,
         "get_local_git_config",
@@ -385,7 +403,9 @@ def test_build_context_for_project_id_prefers_state_slug_and_key_when_vault_exis
     )
 
     monkeypatch.setattr(project_context_module, "get_repo_remote", lambda root: None)
-    monkeypatch.setattr(project_context_module, "resolve_project_name", lambda root, name: "fallback-name")
+    monkeypatch.setattr(
+        project_context_module, "resolve_project_name", lambda root, name: "fallback-name"
+    )
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: None)
 
     context = project_context_module.build_context_for_project_id(
