@@ -8,14 +8,44 @@ import yaml
 from pydantic import ValidationError as PydanticValidationError
 
 from envctl.constants import CONTRACT_VERSION
-from envctl.domain.contract import Contract, VariableSpec
+from envctl.domain.contract import Contract
 from envctl.errors import ContractError
 from envctl.utils.atomic import write_text_atomic
 
 
-def create_empty_contract() -> Contract:
+def create_empty_contract(
+    *,
+    project_key: str | None = None,
+    project_name: str | None = None,
+) -> Contract:
     """Create an empty valid contract."""
-    return Contract(version=CONTRACT_VERSION, variables={})
+    contract = Contract(version=CONTRACT_VERSION, variables={})
+    if project_key is not None:
+        contract = contract.with_meta(
+            project_key=project_key,
+            project_name=project_name,
+        )
+    return contract
+
+
+def ensure_contract_metadata(
+    contract: Contract,
+    *,
+    project_key: str,
+    project_name: str | None = None,
+) -> Contract:
+    """Ensure the contract carries logical metadata."""
+    if (
+        contract.meta is not None
+        and contract.meta.project_key == project_key
+        and contract.meta.project_name == project_name
+    ):
+        return contract
+
+    return contract.with_meta(
+        project_key=project_key,
+        project_name=project_name,
+    )
 
 
 def _normalize_contract_payload(raw: object) -> dict[str, object]:
@@ -27,7 +57,11 @@ def _normalize_contract_payload(raw: object) -> dict[str, object]:
         raise ContractError("Contract must be a YAML mapping")
 
     version = raw.get("version", CONTRACT_VERSION)
+    meta_raw = raw.get("meta")
     variables_raw = raw.get("variables", {})
+
+    if meta_raw is not None and not isinstance(meta_raw, dict):
+        raise ContractError("'meta' must be a mapping")
 
     if not isinstance(variables_raw, dict):
         raise ContractError("'variables' must be a mapping")
@@ -44,6 +78,7 @@ def _normalize_contract_payload(raw: object) -> dict[str, object]:
 
     return {
         "version": version,
+        "meta": meta_raw,
         "variables": variables,
     }
 
@@ -83,13 +118,3 @@ def write_contract(path: Path, contract: Contract) -> None:
         allow_unicode=True,
     )
     write_text_atomic(path, content)
-
-
-def upsert_variable(contract: Contract, spec: VariableSpec) -> Contract:
-    """Insert or replace one variable spec in a contract."""
-    return contract.with_variable(spec)
-
-
-def remove_variable(contract: Contract, key: str) -> Contract:
-    """Remove one variable spec from a contract."""
-    return contract.without_variable(key)
