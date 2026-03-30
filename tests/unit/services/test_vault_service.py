@@ -12,11 +12,12 @@ from envctl.domain.operations import (
     VaultPruneResult,
     VaultShowResult,
 )
+from envctl.domain.project import ProjectContext
 from envctl.errors import ExecutionError
 from tests.support.contexts import make_project_context
 
 
-def make_context(tmp_path: Path):
+def make_context(tmp_path: Path) -> ProjectContext:
     """Build a filesystem-backed project context for vault-service tests."""
     repo_root = tmp_path / "repo"
     repo_root.mkdir(parents=True, exist_ok=True)
@@ -393,7 +394,9 @@ def test_run_vault_prune_returns_without_changes_when_no_unknown_keys(
         vault_service,
         "load_contract",
         lambda path: type(
-            "FakeContract", (), {"variables": {"APP_NAME": object(), "PORT": object()}}
+            "FakeContract",
+            (),
+            {"variables": {"APP_NAME": object(), "PORT": object()}},
         )(),
     )
     monkeypatch.setattr(

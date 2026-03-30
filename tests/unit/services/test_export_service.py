@@ -1,19 +1,18 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
-
 import pytest
 
 import envctl.services.export_service as export_service
 from envctl.errors import ValidationError
 from envctl.services.export_service import run_export
 from tests.support.builders import make_resolution_report, make_resolved_value
+from tests.support.contexts import make_project_context
 
 
 def test_run_export_returns_shell_lines_for_valid_environment(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    context = SimpleNamespace(project_slug="demo")
+    context = make_project_context(repo_root="/tmp/demo")
     contract = object()
     report = make_resolution_report(
         values={
@@ -36,14 +35,21 @@ def test_run_export_returns_shell_lines_for_valid_environment(
     monkeypatch.setattr(
         export_service,
         "load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
-    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
-    monkeypatch.setattr(export_service, "resolve_environment", lambda _context, _contract: report)
+    monkeypatch.setattr(
+        export_service,
+        "load_contract_for_context",
+        lambda _context: contract,
+    )
+    monkeypatch.setattr(
+        export_service,
+        "resolve_environment",
+        lambda _context, _contract: report,
+    )
 
-    result_context, lines = run_export()
+    lines = run_export()
 
-    assert result_context is context
     assert lines == [
         "export APP_NAME='demo'",
         "export DATABASE_URL='https://db.example.com'",
@@ -53,17 +59,25 @@ def test_run_export_returns_shell_lines_for_valid_environment(
 def test_run_export_raises_when_environment_is_invalid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    context = SimpleNamespace(project_slug="demo")
+    context = make_project_context(repo_root="/tmp/demo")
     contract = object()
     report = make_resolution_report(missing_required=("DATABASE_URL",))
 
     monkeypatch.setattr(
         export_service,
         "load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        lambda project_name=None, persist_binding=False: (object(), context),
     )
-    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
-    monkeypatch.setattr(export_service, "resolve_environment", lambda _context, _contract: report)
+    monkeypatch.setattr(
+        export_service,
+        "load_contract_for_context",
+        lambda _context: contract,
+    )
+    monkeypatch.setattr(
+        export_service,
+        "resolve_environment",
+        lambda _context, _contract: report,
+    )
 
     with pytest.raises(
         ValidationError,

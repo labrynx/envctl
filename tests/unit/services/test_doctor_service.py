@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from envctl.domain.project import ProjectContext
+from envctl.domain.project import BindingSource, ProjectContext
 from envctl.errors import ProjectDetectionError
 from envctl.services.doctor_service import run_doctor
 from tests.support.contexts import make_project_context
@@ -13,15 +13,17 @@ from tests.support.contexts import make_project_context
 def make_context(
     tmp_path: Path,
     *,
-    binding_source: str = "local",
+    binding_source: BindingSource = "local",
     contract_exists: bool = True,
     state_exists: bool = True,
+    create_vault_project_dir: bool = True,
 ) -> ProjectContext:
     repo_root = tmp_path / "repo"
     repo_root.mkdir(parents=True, exist_ok=True)
 
     vault_project_dir = tmp_path / "vault" / "projects" / "demo--prj_aaaaaaaaaaaaaaaa"
-    vault_project_dir.mkdir(parents=True, exist_ok=True)
+    if create_vault_project_dir:
+        vault_project_dir.mkdir(parents=True, exist_ok=True)
 
     repo_contract_path = repo_root / ".envctl.schema.yaml"
     if contract_exists:
@@ -29,6 +31,7 @@ def make_context(
 
     vault_state_path = vault_project_dir / "state.json"
     if state_exists:
+        vault_project_dir.mkdir(parents=True, exist_ok=True)
         vault_state_path.write_text("{}", encoding="utf-8")
 
     return make_project_context(
@@ -37,7 +40,7 @@ def make_context(
         project_id="prj_aaaaaaaaaaaaaaaa",
         repo_root=repo_root,
         repo_remote=None,
-        binding_source=binding_source,  # type: ignore[arg-type]
+        binding_source=binding_source,
         repo_contract_path=repo_contract_path,
         vault_project_dir=vault_project_dir,
         vault_values_path=vault_project_dir / "values.env",
@@ -64,7 +67,10 @@ def test_run_doctor_reports_ok_for_existing_private_vault_and_git_repo(
     vault_dir = tmp_path / "vault"
     vault_dir.mkdir()
     context = make_context(
-        tmp_path, binding_source="local", contract_exists=True, state_exists=True
+        tmp_path,
+        binding_source="local",
+        contract_exists=True,
+        state_exists=True,
     )
 
     monkeypatch.setattr(
@@ -109,7 +115,10 @@ def test_run_doctor_warns_when_vault_is_world_writable(
     vault_dir = tmp_path / "vault"
     vault_dir.mkdir()
     context = make_context(
-        tmp_path, binding_source="local", contract_exists=False, state_exists=False
+        tmp_path,
+        binding_source="local",
+        contract_exists=False,
+        state_exists=False,
     )
 
     monkeypatch.setattr(
@@ -138,7 +147,11 @@ def test_run_doctor_warns_when_vault_does_not_exist(
 ) -> None:
     vault_dir = tmp_path / "vault"
     context = make_context(
-        tmp_path, binding_source="local", contract_exists=False, state_exists=False
+        tmp_path,
+        binding_source="local",
+        contract_exists=False,
+        state_exists=False,
+        create_vault_project_dir=False,
     )
 
     monkeypatch.setattr(

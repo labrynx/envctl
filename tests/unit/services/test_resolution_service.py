@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import Any
+from pathlib import Path
 
 import pytest
 
 import envctl.services.resolution_service as resolution_service
+from envctl.domain.contract import Contract
 from envctl.services.resolution_service import load_contract_for_context, resolve_environment
 from tests.support.contexts import make_project_context
 from tests.support.contracts import make_contract, make_standard_contract, make_variable_spec
@@ -14,17 +15,18 @@ def test_load_contract_for_context_uses_repo_contract_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fake_context = make_project_context(repo_contract_path="/tmp/project/.envctl.schema.yaml")
-    captured: dict[str, Any] = {}
+    captured: dict[str, Path] = {}
+    contract = make_contract()
 
-    def fake_load_contract(path: Any) -> Any:
+    def fake_load_contract(path: Path) -> Contract:
         captured["path"] = path
-        return "contract-object"
+        return contract
 
     monkeypatch.setattr(resolution_service, "load_contract", fake_load_contract)
 
     result = load_contract_for_context(fake_context)
 
-    assert result == "contract-object"
+    assert result is contract
     assert captured["path"] == fake_context.repo_contract_path
 
 

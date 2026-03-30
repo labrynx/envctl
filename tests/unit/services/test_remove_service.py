@@ -7,10 +7,11 @@ import pytest
 
 import envctl.services.remove_service as remove_service
 from envctl.domain.operations import RemovePlan
+from envctl.domain.project import ProjectContext
 from tests.support.contexts import make_project_context
 
 
-def make_context(tmp_path: Path):
+def make_context(tmp_path: Path) -> ProjectContext:
     """Build a filesystem-backed project context for remove-service tests."""
     repo_root = tmp_path / "repo"
     repo_root.mkdir(parents=True, exist_ok=True)
