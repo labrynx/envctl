@@ -17,23 +17,23 @@ from envctl.domain.contract_inference import (
 )
 from envctl.domain.project import ProjectContext
 from envctl.services.init_service import InitResult, run_init
+from tests.support.contexts import make_project_context
 
 
 def make_context(tmp_path: Path) -> ProjectContext:
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
 
-    vault_project_dir = tmp_path / "vault" / "projects" / "demo--abc123"
-
-    return ProjectContext(
+    return make_project_context(
         project_slug="demo",
-        project_id="abc123",
+        project_key="demo",
+        project_id="prj_aaaaaaaaaaaaaaaa",
         repo_root=repo_root,
-        repo_env_path=repo_root / ".env.local",
+        repo_remote=None,
+        binding_source="local",
         repo_contract_path=repo_root / ".envctl.schema.yaml",
-        vault_project_dir=vault_project_dir,
-        vault_values_path=vault_project_dir / "values.env",
-        vault_state_path=vault_project_dir / "state.json",
+        vault_project_dir=tmp_path / "vault" / "projects" / "demo--prj_aaaaaaaaaaaaaaaa",
+        repo_env_path=repo_root / ".env.local",
     )
 
 
@@ -67,12 +67,15 @@ def test_run_init_creates_vault_files_and_preserves_existing_contract(
     assert context.vault_state_path.exists()
 
     state = yaml.safe_load(context.vault_state_path.read_text(encoding="utf-8"))
-    assert state == {
-        "version": 1,
-        "project_slug": "demo",
-        "project_id": "abc123",
-        "repo_root": str(context.repo_root),
-    }
+    assert state["version"] == 2
+    assert state["project_slug"] == "demo"
+    assert state["project_key"] == "demo"
+    assert state["project_id"] == "prj_aaaaaaaaaaaaaaaa"
+    assert state["repo_root"] == str(context.repo_root)
+    assert state["git_remote"] is None
+    assert state["known_paths"] == [str(context.repo_root)]
+    assert "created_at" in state
+    assert "last_seen_at" in state
 
 
 def test_run_init_creates_starter_contract_when_requested(monkeypatch, tmp_path: Path) -> None:
