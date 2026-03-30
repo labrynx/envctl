@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -12,10 +13,12 @@ from envctl.config.defaults import (
     get_default_schema_filename,
     get_default_vault_dir,
 )
+from envctl.constants import ENVCTL_RUNTIME_MODE_ENVVAR
 from envctl.domain.app_config import AppConfig
+from envctl.domain.runtime import RuntimeMode
 from envctl.errors import ConfigError
 
-SUPPORTED_KEYS = {"vault_dir", "env_filename", "schema_filename"}
+SUPPORTED_KEYS = {"vault_dir", "env_filename", "schema_filename", "runtime_mode"}
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -43,6 +46,18 @@ def _validate_filename(name: str, label: str) -> str:
     return value
 
 
+def _validate_runtime_mode(value: object, source_label: str) -> RuntimeMode:
+    """Validate and normalize one runtime mode value."""
+    normalized = str(value).strip().lower()
+    try:
+        return RuntimeMode(normalized)
+    except ValueError as exc:
+        allowed = ", ".join(mode.value for mode in RuntimeMode)
+        raise ConfigError(
+            f"Invalid runtime mode in {source_label}: {value!r}. Expected one of: {allowed}"
+        ) from exc
+
+
 def load_config() -> AppConfig:
     """Resolve the application configuration."""
     config_path = get_default_config_path()
@@ -57,11 +72,24 @@ def load_config() -> AppConfig:
 
     vault_dir = Path(raw.get("vault_dir", get_default_vault_dir())).expanduser().resolve()
     env_filename = _validate_filename(
-        raw.get("env_filename", get_default_env_filename()), "env_filename"
+        raw.get("env_filename", get_default_env_filename()),
+        "env_filename",
     )
     schema_filename = _validate_filename(
         raw.get("schema_filename", get_default_schema_filename()),
         "schema_filename",
+    )
+
+    config_runtime_mode = _validate_runtime_mode(
+        raw.get("runtime_mode", RuntimeMode.LOCAL.value),
+        "config file",
+    )
+
+    env_runtime_mode_raw = os.environ.get(ENVCTL_RUNTIME_MODE_ENVVAR)
+    runtime_mode = (
+        _validate_runtime_mode(env_runtime_mode_raw, ENVCTL_RUNTIME_MODE_ENVVAR)
+        if env_runtime_mode_raw is not None
+        else config_runtime_mode
     )
 
     return AppConfig(
@@ -69,4 +97,5 @@ def load_config() -> AppConfig:
         vault_dir=vault_dir,
         env_filename=env_filename,
         schema_filename=schema_filename,
+        runtime_mode=runtime_mode,
     )

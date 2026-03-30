@@ -22,6 +22,8 @@ from envctl.cli.commands.status import status_command
 from envctl.cli.commands.sync import sync_command
 from envctl.cli.commands.unset import unset_command
 from envctl.cli.commands.vault import vault_app
+from envctl.cli.runtime import set_cli_state
+from envctl.domain.runtime import OutputFormat
 
 app = typer.Typer(help="envctl - local environment control plane")
 app.add_typer(config_app, name="config")
@@ -31,6 +33,7 @@ app.add_typer(project_app, name="project")
 
 @app.callback()
 def main(
+    ctx: typer.Context,
     version: bool = typer.Option(
         None,
         "--version",
@@ -39,9 +42,18 @@ def main(
         callback=version_callback,
         is_eager=True,
     ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Emit structured JSON output for supported commands.",
+    ),
 ) -> None:
     """envctl - local environment control plane."""
-    return
+    del version
+    set_cli_state(
+        ctx,
+        output_format=OutputFormat.JSON if json_output else OutputFormat.TEXT,
+    )
 
 
 app.command("doctor")(doctor_command)

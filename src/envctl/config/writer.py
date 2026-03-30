@@ -10,6 +10,7 @@ from envctl.config.defaults import (
     get_default_schema_filename,
     get_default_vault_dir,
 )
+from envctl.domain.runtime import RuntimeMode
 from envctl.errors import ConfigError
 from envctl.utils.atomic import write_json_atomic
 from envctl.utils.filesystem import ensure_dir
@@ -30,6 +31,7 @@ def write_default_config_file() -> Path:
             "vault_dir": to_tilde_path(get_default_vault_dir()),
             "env_filename": get_default_env_filename(),
             "schema_filename": get_default_schema_filename(),
+            "runtime_mode": RuntimeMode.LOCAL.value,
         },
     )
     return config_path

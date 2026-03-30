@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from envctl.constants import DEFAULT_PROJECTS_DIRNAME
+from envctl.domain.runtime import RuntimeMode
 
 
 @dataclass(frozen=True)
@@ -16,6 +17,7 @@ class AppConfig:
     vault_dir: Path
     env_filename: str
     schema_filename: str
+    runtime_mode: RuntimeMode
 
     @property
     def projects_dir(self) -> Path:
