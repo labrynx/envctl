@@ -118,7 +118,7 @@ def resolve_environment(context: ProjectContext, contract: Contract) -> Resoluti
 
     unknown_keys = sorted(set(vault_values) - set(contract.variables))
 
-    return ResolutionReport(
+    return ResolutionReport.from_parts(
         values=values,
         missing_required=sorted(missing_required),
         unknown_keys=unknown_keys,
