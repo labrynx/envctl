@@ -14,6 +14,7 @@ Core principles:
 - projection is explicit, not hidden
 - generated files are artifacts, not sources of truth
 - dangerous overwrites must remain visible and controlled
+- contract mutations are explicit and visible
 
 `envctl` is not trying to be a full secret manager. It is trying to be a safe local control plane for environment workflows.
 
@@ -48,6 +49,31 @@ This matters for security because it keeps shared project requirements explicit 
 
 The contract describes what exists.  
 The local vault stores what is currently set.
+
+### Important note about `add`
+
+The `add` command **modifies the repository contract** (`.envctl.schema.yaml`).
+
+This has important implications:
+
+- it creates or updates a variable definition in a versioned file
+- it may introduce new required variables for other developers
+- it may change the expected environment of the project
+- it should be treated as a **shared change**, not a purely local action
+
+Because of this:
+
+- `add` should be used intentionally
+- changes should be reviewed before committing
+- inferred metadata should be verified
+- teams should treat contract updates as part of normal code review
+
+By contrast:
+
+- `set` and `unset` only affect local state
+- `remove` also mutates the contract and should be treated similarly to `add`
+
+This distinction is critical for both correctness and security.
 
 ## Contract security rules
 
