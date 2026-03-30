@@ -41,6 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * centralizes creation of complete `ProjectContext` instances for tests
   * reduces duplication and drift across service and repository test suites
 
+* Rebind command and service test coverage:
+
+  * added unit tests for `rebind` CLI behavior
+  * added unit tests for `rebind` service flows, including value-copy scenarios
+
 ### Changed
 
 * `remove` command flow:
@@ -136,6 +141,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   * removed unused and outdated `InitResult` from `domain/project.py`
   * prevents divergence between declared domain models and actual runtime behavior
+
+* Rebind command and service test coverage:
+
+  * added unit tests for `rebind` CLI behavior
+  * added unit tests for `rebind` service flows, including value-copy scenarios
   
 ### Security
 
