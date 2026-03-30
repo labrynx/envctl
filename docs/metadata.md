@@ -33,11 +33,33 @@ Local state refers to the values that exist on the current machine for the curre
 
 Examples include:
 
+- values written with `envctl add`
 - values written with `envctl set`
 - values collected with `envctl fill`
 - values stored by the default local provider
 
 This state is local by design and should not be committed to source control.
+
+## Contract definitions vs local values
+
+In v2.2, `envctl` distinguishes clearly between:
+
+- variables declared in the contract
+- values stored locally for those variables
+
+This distinction is visible in command semantics:
+
+- `add` → creates contract definition + local value
+- `set` → updates value only
+- `unset` → removes value only
+- `remove` → deletes contract definition + local value
+
+That separation keeps the system explicit:
+
+- the contract defines what exists
+- local state defines what is currently set
+
+This is one of the key semantic rules of the v2.2 model.
 
 ## Optional cache or helper files
 
@@ -57,7 +79,7 @@ The repository owns the shared contract:
 
 ```text
 <repo-root>/.envctl.schema.yaml
-```
+````
 
 That file may define:
 
@@ -66,6 +88,8 @@ That file may define:
 * types
 * non-sensitive defaults
 * sensitivity flags
+* patterns
+* allowed choices
 
 The repository does **not** own the user's local secret state.
 
@@ -112,3 +136,12 @@ Future versions may introduce:
 Even then, the core rule should remain the same:
 
 the repository contract is shared, local values are local, and generated artifacts are not the source of truth.
+
+## Summary
+
+Project identity is derived.
+Contract is shared.
+Values are local.
+Generated env files are disposable artifacts.
+
+That is the metadata model `envctl` is built around.

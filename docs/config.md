@@ -8,7 +8,7 @@ The application configuration is intentionally small. It controls local tool beh
 
 ```text
 ~/.config/envctl/config.json
-```
+````
 
 ## Default vault path
 
@@ -25,7 +25,8 @@ Example:
 ```json
 {
   "vault_dir": "~/.envctl/vault",
-  "env_filename": ".env.local"
+  "env_filename": ".env.local",
+  "schema_filename": ".envctl.schema.yaml"
 }
 ```
 
@@ -39,6 +40,7 @@ Possible future enhancements may include:
 
 * `vault_dir`: absolute path or `~`-based path to the local vault root
 * `env_filename`: repository projection filename, default `.env.local`
+* `schema_filename`: repository contract filename, default `.envctl.schema.yaml`
 
 ## What configuration is for
 
@@ -46,6 +48,7 @@ Application configuration controls local tool defaults such as:
 
 * where the local vault lives
 * which filename is used for materialized environment artifacts
+* which filename is used for the project contract
 * how the tool resolves paths consistently across commands
 
 ## What configuration does not do
@@ -71,7 +74,7 @@ Project-level environment requirements belong in the repository contract file, n
 
 The project contract is expected to live in the repository and be versioned with the project.
 
-Expected filename:
+Default filename:
 
 ```text
 <repo-root>/.envctl.schema.yaml
@@ -87,6 +90,7 @@ The user config answers:
 
 * where is my local vault
 * what is my default projected env filename
+* what is my default contract filename
 
 The project contract answers:
 
@@ -95,8 +99,26 @@ The project contract answers:
 * what basic validation applies
 * which values are sensitive
 * which defaults are allowed
+* which patterns or choices apply
 
 Mixing these two concerns would create confusion and competing sources of truth.
+
+## Contract filename vs artifact filename
+
+It is important to distinguish between these two filenames:
+
+* `schema_filename` → the contract file
+* `env_filename` → the generated environment artifact
+
+By default:
+
+* `schema_filename` = `.envctl.schema.yaml`
+* `env_filename` = `.env.local`
+
+These files play different roles:
+
+* the contract defines what the project expects
+* the generated env file is only a projection of resolved state
 
 ## Permissions
 
@@ -119,3 +141,13 @@ Future additions, if introduced, should still follow these rules:
 * no project contract embedded in config
 * no hidden behavior encoded in local-only settings
 * no required remote dependencies
+
+## Summary
+
+Config defines local tool behavior.
+
+Contract defines project requirements.
+
+Generated env files are artifacts.
+
+Keeping those three concerns separate is one of the main design rules of `envctl`.

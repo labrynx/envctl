@@ -30,9 +30,25 @@ Initializes the current repository for `envctl` v2 workflows.
 Important:
 
 - `init` does **not** ask for secret values
-- `init` does **not** mutate the project contract
+- `init` does **not** invent secrets
+- `init` may create a starter contract or infer one from `.env.example` depending on the selected mode
 - `init` does **not** materialize `.env.local` unless a future explicit flag says so
-- `init` must remain deterministic and safe for repeated execution
+- `init` remains explicit and safe for repeated execution
+
+## envctl add KEY VALUE
+
+Creates or updates a variable in both the project contract and the local provider.
+
+Expected behavior:
+
+- writes the value into the local vault
+- inserts the variable into `.envctl.schema.yaml` when missing
+- may reuse the existing contract entry when already present
+- infers metadata such as type, sensitivity, description, defaults, patterns, and choices where possible
+- supports explicit overrides through flags
+- supports an interactive review flow for inferred metadata
+
+`add` is the main onboarding command when a variable does not yet exist in the contract.
 
 ## envctl set KEY VALUE
 
@@ -41,10 +57,35 @@ Creates or updates one explicit key/value pair in the local provider for the cur
 - requires a valid project context
 - writes one key at a time
 - does not print the stored value back to the terminal
-- does not treat the repository as the source of truth
-- is intended as an explicit local storage command
+- does not modify the contract definition
+- is intended as an explicit local value command
 
-This command is useful for local setup and for testing contract-driven workflows.
+This command is useful when the contract already exists and only the local value needs to change.
+
+## envctl unset KEY
+
+Removes one key from the local provider only.
+
+Expected behavior:
+
+- removes the stored value from the local vault
+- preserves the contract definition
+- does not modify `.envctl.schema.yaml`
+
+`unset` is useful when a value should be cleared locally without changing shared project requirements.
+
+## envctl remove KEY
+
+Removes one key from both the project contract and the local provider.
+
+Expected behavior:
+
+- removes the key from `.envctl.schema.yaml` when declared
+- removes the stored value from the local vault when present
+- may require explicit confirmation from the CLI layer
+- keeps the removal explicit and visible
+
+`remove` is intended for deleting variables from the shared model, not just clearing local state.
 
 ## envctl fill
 
@@ -55,11 +96,12 @@ Expected behavior:
 - reads `.envctl.schema.yaml` from the repository root
 - compares the contract against the current locally available values
 - prompts only for missing required keys
+- uses contract metadata such as description, sensitivity, and defaults when prompting
 - does not echo existing secret values back to the console
 - writes only the values the user explicitly provides
-- leaves already satisfied values unchanged unless future flags explicitly change this behavior
+- leaves already satisfied values unchanged
 
-`fill` is intentionally separate from `init` so that initialization remains deterministic.
+Unlike `set`, `fill` is contract-guided and only targets missing required values.
 
 ## envctl check
 
@@ -71,7 +113,7 @@ Expected behavior:
 - resolves the current environment from supported sources
 - reports missing required variables
 - reports invalid values when type validation fails
-- may report unexpected keys when the command is configured to do so
+- reports unknown keys in the vault where relevant
 - exits non-zero when the contract is not satisfied
 - never modifies files or stored values
 
@@ -171,12 +213,63 @@ Typical checks may include:
 - vault path permissions when the vault exists
 - Git repository detection from the current working directory
 - contract file detection
-- shell or subprocess readiness where relevant
 - local environment sanity checks
 
 The command uses checklist-style output such as `[OK]`, `[WARN]`, and `[FAIL]`.
 
 `doctor` is about host and local tool readiness, not about mutating project state.
+
+## envctl vault edit
+
+Opens the current local vault file in the configured editor.
+
+Expected behavior:
+
+- ensures the vault file exists
+- opens it using the selected editor
+- verifies it can still be read afterwards
+
+This command is for explicit low-level inspection or manual editing.
+
+## envctl vault check
+
+Checks the current vault artifact as a physical file.
+
+Expected behavior:
+
+- reports whether the file exists
+- reports whether it is parseable
+- reports whether file permissions are private enough
+- never mutates contract or values
+
+## envctl vault path
+
+Prints the current vault file path for the active project context.
+
+## envctl vault show
+
+Shows the raw stored values in the local vault.
+
+Expected behavior:
+
+- masks values by default
+- allows raw output only through an explicit flag
+- reflects stored local values, not the fully resolved environment
+
+This differs from `inspect`, which shows resolved state.
+
+## envctl vault prune
+
+Removes keys from the local vault that are not declared in the contract.
+
+Expected behavior:
+
+- compares stored local values against the contract
+- removes undeclared keys explicitly
+- keeps declared keys untouched
+- does not modify the contract
+
+This is useful for cleaning up stale local state after contract changes.
 
 ## envctl help [COMMAND]
 
@@ -188,20 +281,42 @@ Shows help for envctl or for a specific command.
 
 ## Command model summary
 
-The v2 command model is centered on three responsibilities:
+The v2.2 command model is centered on four responsibilities:
 
-- **contract**
+- **contract mutation**
+  - `add`
+  - `remove`
+
+- **value mutation**
+  - `set`
+  - `unset`
+  - `fill`
+
+- **resolution and validation**
   - `check`
   - `inspect`
   - `explain`
-
-- **resolution**
-  - `set`
-  - `fill`
 
 - **projection**
   - `run`
   - `sync`
   - `export`
 
-`init`, `status`, `doctor`, and `config init` support the workflow around those three core responsibilities.
+Supporting commands include:
+
+- `init`
+- `status`
+- `doctor`
+- `config init`
+- `vault ...`
+
+## Operational model summary
+
+The main day-to-day distinction is:
+
+- `add` → contract + value
+- `set` → value only
+- `unset` → remove value only
+- `remove` → remove contract + value
+
+That distinction is intentional and is one of the core behaviors of `envctl` v2.2.

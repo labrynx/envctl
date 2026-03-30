@@ -35,6 +35,20 @@ In practice, that means:
 
 This separation reduces confusion and avoids competing sources of truth.
 
+## Mutation safety model
+
+`envctl` also distinguishes between **contract mutation** and **value mutation**.
+
+- `add` writes contract + local value
+- `set` writes local value only
+- `unset` removes local value only
+- `remove` removes contract + local value
+
+This matters for security because it keeps shared project requirements explicit and prevents accidental drift between repository state and machine-local secrets.
+
+The contract describes what exists.  
+The local vault stores what is currently set.
+
 ## Contract security rules
 
 The repository contract is versioned with the project, so it must remain safe to share.
@@ -46,6 +60,8 @@ The repository contract is versioned with the project, so it must remain safe to
 - declaring basic validation rules
 - marking variables as sensitive
 - providing non-sensitive defaults where appropriate
+- declaring patterns and allowed choices
+- storing provider hints for future extensibility
 
 ### Not allowed
 
@@ -65,7 +81,7 @@ Typical protections include:
 - restrictive directory permissions such as `0700`
 - restrictive file permissions such as `0600`
 - user-owned local paths
-- explicit write operations through commands such as `set` and `fill`
+- explicit write operations through commands such as `add`, `set`, `unset`, and `fill`
 
 Permissions are applied on a best-effort basis and depend on the underlying filesystem.
 
@@ -83,14 +99,14 @@ Projection commands must stay explicit.
 
 - writes a derived env artifact such as `.env.local`
 - must validate before writing
-- should make it clear that the file is generated
-- should follow safe overwrite rules
+- makes it clear that the file is generated
+- follows safe overwrite rules
 
 ### `envctl export`
 
 - prints shell export lines
-- should quote values safely
-- should avoid accidental leakage through misleading formatting
+- quotes values safely
+- should be treated as a shell-facing output mode, not as a hidden storage workflow
 
 Projection should never silently redefine the source of truth.
 
@@ -103,6 +119,9 @@ Commands such as these should remain read-only:
 - `explain`
 - `doctor`
 - `status`
+- `vault check`
+- `vault path`
+- `vault show`
 
 They may analyze contract and local state, but they should not:
 
@@ -112,6 +131,42 @@ They may analyze contract and local state, but they should not:
 - materialize files as a side effect
 
 That distinction is important for user trust.
+
+## Inspect vs vault visibility
+
+`envctl` intentionally exposes two different visibility modes:
+
+### `inspect`
+
+- shows the **resolved environment**
+- respects contract semantics
+- masks sensitive values
+- is the correct command for understanding runtime state
+
+### `vault show`
+
+- shows the **stored local values**
+- reflects the physical vault artifact
+- is useful for low-level debugging
+- should be treated more carefully because it is closer to raw local state
+
+This distinction helps avoid confusion between:
+- what is stored
+- what is resolved
+- what is projected
+
+## Generated files
+
+A projected file such as `.env.local` produced by `envctl sync` is a generated artifact.
+
+It is:
+
+- useful for compatibility
+- derived from resolved state
+- not the source of truth
+- safe to regenerate
+
+This distinction is important. It avoids confusion between stored secrets, declared contract, and materialized outputs.
 
 ## Limitations
 
@@ -139,6 +194,7 @@ That includes:
 - keeping generated env artifacts out of version control
 - keeping project contracts free of secrets
 - understanding when `sync` writes values to disk
+- understanding the difference between local values and shared contract definitions
 
 `envctl doctor` can help identify obvious readiness or storage problems, but it cannot replace host security.
 
@@ -150,7 +206,19 @@ Future improvements may include:
 - optional encryption helpers outside the core model
 - richer diagnostics for insecure local setups
 - better shell-specific safety around exports
+- more explicit machine-readable validation output
 
 Even as the tool evolves, the core security rule should remain the same:
 
 `envctl` should make local environment handling more explicit and less error-prone, not more magical.
+
+## Summary
+
+The security posture of `envctl` depends on explicit separation:
+
+- contract
+- local values
+- resolution
+- projection
+
+That separation is not just an architecture choice. It is also one of the main security properties of the tool.

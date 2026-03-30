@@ -5,7 +5,8 @@
 The v2 model reduces platform coupling by avoiding symlinks as a core requirement. The central workflows are now based on:
 
 - contract loading
-- local resolution
+- local value storage
+- resolution and validation
 - subprocess environment injection
 - optional file materialization
 
@@ -53,6 +54,13 @@ WSL is expected to work well when `envctl` is run inside the Linux environment.
 
 This is usually the best option on Windows when you want predictable permissions and shell behavior.
 
+Typical benefits include:
+
+- more predictable file permissions
+- better compatibility with POSIX-oriented shell output
+- simpler subprocess behavior for `run`
+- more natural handling of generated `.env.local` artifacts
+
 ## Native Windows
 
 Native Windows support is possible, but behavior depends more heavily on the execution environment.
@@ -71,6 +79,36 @@ The v2 architecture is still more portable than a symlink-based model, but shell
 `envctl export` is primarily aimed at POSIX-like shells.
 
 If broader shell support is added later, it should be explicit rather than implicit. For example, future support may include shell-specific output modes instead of trying to guess the target shell automatically.
+
+At the moment:
+
+- `run` is the most portable projection mode
+- `sync` is the most tool-compatible file-based projection mode
+- `export` is the most shell-specific mode
+
+That distinction is useful when choosing which workflow to rely on across platforms.
+
+## Projection portability
+
+Among the projection modes:
+
+### `run`
+
+- usually the most portable
+- injects values in memory
+- avoids shell-specific and filesystem-specific assumptions
+
+### `sync`
+
+- platform-neutral as plain text
+- depends on how the consuming tool reads `.env.local`
+- should remain explicit
+
+### `export`
+
+- POSIX-oriented
+- depends on shell behavior
+- should be treated as shell-specific output, not a universal projection format
 
 ## Generated files
 

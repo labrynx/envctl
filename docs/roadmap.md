@@ -18,9 +18,9 @@ The first stable version focused on a solid, secure, and deterministic foundatio
   - Explicit user-driven mutation
   - Focus on small commands and predictable flows
 
-## v2.0 (current branch target)
+## v2.0 (completed)
 
-The next iteration redefines `envctl` as a local environment control plane, shifting from file management to environment resolution, validation, and projection.
+This version redefined `envctl` as a local environment control plane, shifting from file management to environment resolution, validation, and projection.
 
 - **Core paradigm shift**
   - Environment is treated as a resolved state, not just a file
@@ -37,7 +37,6 @@ The next iteration redefines `envctl` as a local environment control plane, shif
 - **Resolution model**
   - Deterministic resolution pipeline
   - Local provider remains the default value source
-  - Explicit local mutation through commands such as `set` and `fill`
   - Clear distinction between missing, defaulted, and explicitly provided values
 
 - **Projection model**
@@ -53,41 +52,79 @@ The next iteration redefines `envctl` as a local environment control plane, shif
   - `envctl status` summarizes workflow readiness
   - `envctl doctor` checks local environment readiness
 
-## v2.1
+## v2.1–v2.2 (completed consolidation)
 
-Once the control plane model is stable, the next step is to strengthen extensibility and validation.
+This phase consolidated the v2 model and made it operationally complete.
 
-- **Provider system**
-  - Pluggable resolution providers
-  - Local provider remains the default
-  - Optional external providers introduced carefully
-  - Provider hints supported in the contract model
-  - Deterministic fallback and explicit error handling
+- **Contract-aware variable operations**
+  - `add` creates contract definition + local value
+  - `set` updates value only
+  - `unset` removes value only
+  - `remove` removes contract definition + local value
+
+- **Contract inference**
+  - Type inference
+  - Sensitivity inference
+  - Description generation
+  - Defaults, examples, patterns, and choices where appropriate
+
+- **CLI and service architecture**
+  - Modular command structure
+  - Better separation between CLI, services, repositories, adapters, and domain
+  - Cleaner command-specific orchestration
+
+- **Validation hardening**
+  - Stronger typing
+  - Contract validation with `pydantic`
+  - More consistent error handling
+  - Safer resolution and mutation workflows
+
+- **Vault tooling**
+  - `vault check`
+  - `vault edit`
+  - `vault path`
+  - `vault show`
+  - `vault prune`
+
+- **Developer tooling**
+  - Makefile-based workflows
+  - Better test coverage
+  - Improved formatting, linting, and type checking support
+
+## v2.3+
+
+The next iteration should strengthen expressiveness and machine integration without weakening the explicit local-first model.
 
 - **Validation improvements**
-  - Richer type validation
-  - Better error messages and reporting
-  - Contract linting and authoring guidance
-  - Optional unknown-key reporting modes
+  - Richer type constraints
+  - More expressive validation patterns
+  - Better contract authoring guidance
+  - Optional contract linting
 
 - **Machine-readable output**
   - Stable JSON output for selected commands
   - Better scripting and automation support
   - Output models aligned with domain result types
 
-## v2.2+
-
-Further improvements should reduce friction without weakening the explicit local-first model.
-
-- **Multiple environments**
-  - Profile-aware workflows such as `dev`, `test`, `staging`, and `prod`
-  - Profile-aware resolution and projection
-  - Explicit profile selection in commands
-
 - **Developer onboarding**
   - Better first-run workflows
   - Improved guided completion for missing values
   - More helpful readiness and recovery messaging
+
+## v2.4+
+
+Further improvements should reduce friction while preserving explicitness.
+
+- **Multiple environments**
+  - Profile-aware workflows such as `dev`, `test`, `staging`, and `prod`
+  - Explicit profile selection in commands
+  - Profile-aware resolution and projection
+
+- **Provider extensibility**
+  - Pluggable resolution providers
+  - Local provider remains the default
+  - Optional external providers introduced carefully
+  - Deterministic fallback and explicit error handling
 
 - **Import/export workflows**
   - Explicit import helpers
@@ -115,3 +152,13 @@ These are intentionally excluded from the short-term roadmap.
 - Hidden background daemons or automatic watchers
 - Full encryption-at-rest inside the vault by default
 - A terminal UI as a priority over contract, resolution, and projection workflows
+
+## Summary
+
+The roadmap direction is now clearer than in early v2:
+
+- the conceptual model is established
+- the operational model is in place
+- the next steps are about expressiveness, polish, and extensibility
+
+That is a much healthier stage than “still deciding what the tool is".

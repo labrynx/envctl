@@ -29,6 +29,7 @@ The package is organized into the following internal layers:
 - **Domain layer** (`domain/`)
 - **Repository layer** (`repository/`)
 - **Config layer** (`config/`)
+- **Adapters layer** (`adapters/`)
 - **Utility layer** (`utils/`)
 
 These layers are not strict in the enterprise-framework sense, but they define intended responsibilities and dependency direction.
@@ -38,11 +39,12 @@ These layers are not strict in the enterprise-framework sense, but they define i
 In general, dependencies should flow like this:
 
 ```text
-CLI -> Services -> Domain / Repository / Config / Utils
+CLI -> Services -> Domain / Repository / Config / Adapters / Utils
 Repository -> Domain / Utils
 Config -> Domain / Utils
-Utils -> no domain knowledge when possible
-```
+Adapters -> Errors / focused helpers
+Utils -> minimal low-level helpers
+````
 
 The CLI should not implement business logic.
 
@@ -50,15 +52,18 @@ Services should not depend on Typer or terminal formatting.
 
 Repositories should not decide command policy.
 
+Adapters should encapsulate external interactions.
+
 Utilities should remain small and reusable.
 
 ---
 
 ## Core architectural model
 
-At a product level, `envctl` is based on three concerns:
+At a product level, `envctl` is based on four concerns:
 
 * **contract**
+* **value management**
 * **resolution**
 * **projection**
 
@@ -76,6 +81,19 @@ Typical responsibilities:
 * represent allowed defaults and sensitivity flags
 * validate shape and structure
 
+### Value management
+
+Value management controls how local values are created, updated, or removed.
+
+Typical responsibilities:
+
+* add a new variable to the contract and store its first value
+* update a local value without changing shared requirements
+* remove a local value while preserving the contract
+* remove both the contract definition and local value explicitly
+
+That distinction matters. It keeps shared project requirements separate from machine-local state.
+
 ### Resolution
 
 Resolution determines the effective environment state.
@@ -85,6 +103,7 @@ Typical responsibilities:
 * load explicit local values from the provider
 * combine them with contract defaults when allowed
 * identify missing required values
+* validate each resolved value against the declared type and constraints
 * explain how each key is satisfied or why it is not
 
 ### Projection
@@ -98,7 +117,7 @@ Typical responsibilities:
 * materialize a generated `.env.local` file
 * preserve safe overwrite behavior
 
-That conceptual split matters. It prevents the tool from drifting back into “just manipulate one file” thinking.
+That conceptual split prevents the tool from drifting back into “just manipulate one file” thinking.
 
 ---
 
@@ -144,7 +163,7 @@ cli/
 * `cli/app.py` defines the Typer application and registers commands
 * `cli/decorators.py` converts `EnvctlError` exceptions into exit code `1`
 * `cli/formatters.py` renders structured results for humans
-* `cli/commands/*.py` contain one command wrapper each
+* `cli/commands/...` contain command wrappers grouped by workflow
 
 This keeps CLI concerns isolated and makes the service layer reusable in tests.
 
@@ -158,7 +177,7 @@ Location:
 src/envctl/services/
 ```
 
-The service layer contains one orchestration module per command or workflow.
+The service layer contains one orchestration module per command or workflow family.
 
 A service is the place where a command's workflow is coordinated. A typical service:
 
@@ -176,7 +195,7 @@ The service layer should not:
 * parse CLI flags directly
 * become a dumping ground for generic helpers
 
-### Typical service families in v2
+### Typical service families in v2.2
 
 Services usually fall into one of these groups:
 
@@ -187,10 +206,17 @@ Services usually fall into one of these groups:
   * `doctor_service.py`
   * `status_service.py`
 
-* **contract and resolution**
+* **contract and value mutation**
+
+  * `add_service.py`
+  * `remove_service.py`
+  * `set_service.py`
+  * `unset_service.py`
+  * `fill_service.py`
+
+* **resolution and inspection**
 
   * `check_service.py`
-  * `fill_service.py`
   * `inspect_service.py`
   * `explain_service.py`
   * `resolution_service.py`
@@ -201,15 +227,15 @@ Services usually fall into one of these groups:
   * `run_service.py`
   * `sync_service.py`
 
-* **local provider mutation**
+* **vault operations**
 
-  * `set_service.py`
+  * `vault_service.py`
 
 ### Design rule
 
 If logic is specific to one workflow and not reusable, it may stay in the service.
 
-If it looks reusable across commands, it probably belongs in `utils/`, `repository/`, or occasionally `domain/`.
+If it looks reusable across commands, it probably belongs in `utils/`, `repository/`, `adapters/`, or occasionally `domain/`.
 
 ---
 
@@ -223,16 +249,24 @@ src/envctl/domain/
 
 The domain layer defines the structured objects that represent internal application state and command results.
 
-Examples may include:
+Examples include:
 
 * `AppConfig`
 * `ProjectContext`
-* `ProjectContract`
-* `ContractVariable`
-* `ResolutionResult`
+* `Contract`
+* `VariableSpec`
+* `ResolutionReport`
 * `ResolvedValue`
 * `DoctorCheck`
 * `StatusReport`
+* `AddVariableRequest`
+* `AddResult`
+* `SetResult`
+* `UnsetResult`
+* `RemoveResult`
+* `VaultCheckResult`
+* `VaultShowResult`
+* `VaultPruneResult`
 
 The domain layer gives names and structure to the concepts that matter in `envctl`.
 
@@ -243,6 +277,7 @@ It exists to avoid loose dictionaries and unstructured tuples for meaningful app
 * immutable dataclasses
 * explicit command result models
 * contract models
+* inference models
 * resolution models
 * structured diagnostics
 
@@ -266,7 +301,7 @@ src/envctl/repository/
 
 The repository layer bridges persisted local state and structured domain objects.
 
-In v2, this mostly means:
+In v2.2, this mostly means:
 
 * reading the repository contract
 * reconstructing project context from repository and config
@@ -296,18 +331,19 @@ Responsible for:
 
 Responsible for:
 
-* determining repository root
-* resolving slug and fingerprint
-* deriving contract paths and local vault paths
+* determining repo root
+* resolving slug
+* computing stable project identity
+* deriving contract and local vault paths
 * building a typed `ProjectContext`
 
 #### `state_repository.py`
 
 Responsible for:
 
-* reading locally stored values
-* writing explicit local values
-* persisting provider-side state in a consistent format
+* reading persisted local project state
+* writing minimal local project state
+* keeping persisted project identity structured and explicit
 
 ### Why this is separate from `utils/`
 
@@ -349,8 +385,66 @@ It knows about:
 * the config path
 * the vault path
 * the projected env filename
+* the contract filename
 
 That makes it more specific than a low-level helper module.
+
+---
+
+## Adapters layer
+
+Location:
+
+```text
+src/envctl/adapters/
+```
+
+The adapters layer encapsulates narrow interactions with external systems and formats.
+
+Current adapters include:
+
+* `dotenv.py`
+* `editor.py`
+* `git.py`
+
+### Responsibilities
+
+#### `dotenv.py`
+
+Responsible for:
+
+* parsing dotenv-like text
+* loading env files from disk
+* serializing mappings into dotenv-compatible output
+* handling quoting safely
+
+#### `editor.py`
+
+Responsible for:
+
+* resolving the editor command from the environment
+* launching the editor process
+* translating editor invocation failures into application errors
+
+#### `git.py`
+
+Responsible for:
+
+* resolving the current repository root
+* obtaining repository remote information
+* normalizing Git failures into application-level errors
+
+### Why adapters exist
+
+These modules are not just generic helpers.
+
+They represent narrow interfaces to:
+
+* file format handling
+* process launching
+* Git-based repository discovery
+
+Keeping them isolated makes the service layer simpler and easier to test.
 
 ---
 
@@ -367,9 +461,7 @@ The utility layer contains small helper functions that are reusable and ideally 
 ### Typical utility modules
 
 * `atomic.py`
-* `dotenv.py`
 * `filesystem.py`
-* `git.py`
 * `masking.py`
 * `output.py`
 * `permissions.py`
@@ -396,7 +488,6 @@ A utility module should not become a mixed “misc” file.
 * path rendering with `~`
 * slug generation
 * repository fingerprint calculation
-* dotenv normalization
 * secret masking
 * shell quoting
 
@@ -411,71 +502,118 @@ Those belong in services or the CLI layer.
 
 ---
 
-## Command flow example: `envctl init`
+## Request-based service boundaries
 
-`init` is a good example of a bootstrap flow.
+Some workflows now pass structured request models from the CLI layer into services.
+
+For example, `add` builds an explicit request object containing:
+
+* key
+* value
+* inferred or overridden metadata
+* interactive review results
+
+This keeps the service layer independent from CLI prompting while preserving rich workflows.
+
+The CLI collects input.
+The service executes the operation.
+The domain request object forms the boundary.
+
+This is an important design pattern in v2.2.
+
+---
+
+## Command flow example: `envctl add`
+
+`add` is a good example of the current boundary design.
 
 ### CLI layer
 
-`cli/commands/init.py`
+`cli/commands/add/command.py`
 
 Responsibilities:
 
-* receive the optional `PROJECT` argument
-* call `run_init(project_name=project)`
-* print the resulting project context or initialization summary
-
-It does not:
-
-* compute the repository fingerprint
-* parse the contract
-* create provider storage directly
+* receive `KEY` and `VALUE`
+* parse override flags
+* optionally drive the interactive review flow
+* build an `AddVariableRequest`
+* call `run_add(request)`
+* render a user-facing summary
 
 ### Service layer
 
-`services/init_service.py`
+`services/add_service.py`
 
 Responsibilities:
 
 * load config
 * build project context
-* ensure local vault directories exist when needed
-* detect whether a contract file exists
-* prepare local state for future resolution workflows
-* remain deterministic and side-effect conscious
-
-### Repository layer
-
-`repository/project_context.py`
-
-Responsibilities:
-
-* determine repo root
-* resolve slug
-* compute stable project identity
-* derive contract and local storage paths
-* return a typed `ProjectContext`
-
-### Utility layer
-
-Used by the init flow:
-
-* `utils.filesystem.ensure_dir`
-* `utils.permissions.ensure_private_dir_permissions`
-* `utils.project_ids.build_repo_fingerprint`
+* ensure local vault location exists
+* write the value to the local vault
+* load or create the contract
+* infer the variable spec when needed
+* apply overrides
+* write the updated contract when required
+* return an explicit `AddResult`
 
 ### Simplified flow
 
 ```text
-init command
-  -> run_init()
-     -> load_config()
-     -> build_project_context()
-     -> ensure local storage exists
-     -> detect contract
-     -> return initialization result
+add command
+  -> collect flags and optional interactive input
+  -> build AddVariableRequest
+  -> run_add(request)
+     -> load config and project context
+     -> load existing contract or create empty contract
+     -> write value into vault
+     -> infer spec if needed
+     -> apply overrides
+     -> persist contract when changed
+     -> return AddResult
   -> print result
 ```
+
+---
+
+## Command flow example: `envctl fill`
+
+`fill` is a useful example of service separation.
+
+### CLI layer
+
+Responsibilities:
+
+* call `build_fill_plan()`
+* prompt the user for missing required values
+* collect input
+* call `apply_fill(values)`
+* render a summary
+
+### Service layer
+
+Responsibilities split into two focused functions:
+
+* `build_fill_plan()`:
+
+  * loads config and context
+  * loads contract
+  * resolves environment
+  * identifies missing required keys
+  * returns a list of promptable items
+
+* `apply_fill(values)`:
+
+  * loads config and context
+  * loads current local values
+  * applies user-provided values
+  * writes the updated vault content
+  * returns changed keys
+
+This split is deliberate:
+
+* planning stays deterministic
+* prompting stays in the CLI
+* persistence stays in the service
 
 ---
 
@@ -485,8 +623,6 @@ init command
 
 ### CLI layer
 
-`cli/commands/check.py`
-
 Responsibilities:
 
 * call `run_check()`
@@ -494,8 +630,6 @@ Responsibilities:
 * translate failure into a non-zero exit code
 
 ### Service layer
-
-`services/check_service.py`
 
 Responsibilities:
 
@@ -509,8 +643,7 @@ Responsibilities:
 ### Repository layer
 
 * reads the contract
-* reads local provider values
-* reconstructs project context
+* rebuilds project context
 
 ### Domain layer
 
@@ -532,8 +665,6 @@ Returning structured objects makes it easier to:
 
 ### CLI layer
 
-`cli/commands/run.py`
-
 Responsibilities:
 
 * receive the child command and its arguments
@@ -541,8 +672,6 @@ Responsibilities:
 * exit with the child process exit code
 
 ### Service layer
-
-`services/run_service.py`
 
 Responsibilities:
 
@@ -552,14 +681,6 @@ Responsibilities:
 * resolve and validate the environment
 * inject values into the subprocess environment
 * execute the child process safely
-
-### Utility layer
-
-Common helpers may include:
-
-* shell quoting or argument handling
-* environment map preparation
-* masking for diagnostic output
 
 ### Simplified flow
 
@@ -577,11 +698,12 @@ run command
 
 ---
 
-## Why `domain` and `repository` matter even more in v2
+## Why `domain` and `repository` matter even more in v2.2
 
 Originally, a flatter layout can work for a small CLI. But once a tool has:
 
 * a schema/contract
+* explicit value mutation semantics
 * multiple resolution sources
 * multiple projection modes
 * richer diagnostics
@@ -602,7 +724,7 @@ Without `domain`, the project drifts toward:
 Without `repository`, contract loading and local state logic tend to leak into:
 
 * services
-* utils
+* adapters
 * multiple commands independently
 
 That duplication becomes a long-term maintenance problem.
@@ -627,7 +749,7 @@ Put it in `cli/` if it is about:
 Put it in `services/` if it is about:
 
 * orchestrating one workflow
-* coordinating config, repositories, and helpers
+* coordinating config, repositories, adapters, and helpers
 * sequencing validations and side effects
 * returning a domain result
 
@@ -648,6 +770,15 @@ Put it in `repository/` if it is about:
 * local state persistence and loading
 * rebuilding typed state from persisted records
 * translating files into domain objects
+
+## Should this go in `adapters/`?
+
+Put it in `adapters/` if it is about:
+
+* interfacing with external tools or formats
+* launching editors
+* invoking Git
+* parsing or emitting external file formats
 
 ## Should this go in `utils/`?
 
@@ -702,6 +833,17 @@ Do not let user config define project requirements.
 
 Do not let project contracts define local machine-specific paths.
 
+### 7. Mixing contract mutation and value mutation
+
+Do not blur the difference between:
+
+* adding a variable definition
+* setting a local value
+* removing a value
+* removing a variable entirely
+
+That distinction is part of the core product model.
+
 ---
 
 ## Future evolution
@@ -719,6 +861,7 @@ The current layering makes those additions easier because:
 
 * domain results are structured
 * project and provider state resolution are centralized
+* adapters isolate external interactions
 * CLI rendering is already separate from workflow logic
 
 ---
@@ -740,6 +883,7 @@ At a practical level:
 * the **domain** defines meaningful structures
 * the **repository** resolves contracts and local state
 * the **config** layer handles user configuration
+* the **adapters** isolate external interactions
 * the **utils** provide focused helpers
 
 When in doubt, prefer explicit boundaries over convenience.
