@@ -100,6 +100,33 @@ def _prompt_choices(default: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(part.strip() for part in answer.split(",") if part.strip())
 
 
+def _resolve_effective_default(
+    *,
+    effective_default_raw: str | int | bool | None,
+    default: str | None,
+    interactive: bool,
+    effective_type: str,
+) -> str | int | bool | None:
+    """Resolve the final default scalar for the add request.
+
+    There are two different input paths here:
+
+    1. Inferred defaults may already be typed values, such as `3000` or `False`.
+       When the user did not provide `--default` and we are not in interactive mode,
+       we keep those inferred typed values as-is.
+
+    2. CLI and interactive input always arrive as strings. Those values must be
+       coerced explicitly according to the selected variable type.
+    """
+    if default is None and not interactive and not isinstance(effective_default_raw, str):
+        return effective_default_raw
+
+    return _coerce_default(
+        None if effective_default_raw is None else str(effective_default_raw),
+        effective_type,
+    )
+
+
 def _build_request(
     *,
     key: str,
@@ -145,13 +172,11 @@ def _build_request(
         effective_pattern = _prompt_optional_field("Validation pattern", effective_pattern)
         effective_choices = _prompt_choices(effective_choices)
 
-    effective_default = (
-        effective_default_raw
-        if default is None and not interactive and not isinstance(effective_default_raw, str)
-        else _coerce_default(
-            None if effective_default_raw is None else str(effective_default_raw),
-            effective_type,
-        )
+    effective_default = _resolve_effective_default(
+        effective_default_raw=effective_default_raw,
+        default=default,
+        interactive=interactive,
+        effective_type=effective_type,
     )
 
     return AddVariableRequest(
