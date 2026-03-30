@@ -94,6 +94,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * aligns test fixtures with the current identity model and binding fields
   * makes future `ProjectContext` changes easier to absorb in one place
 
+* Init service result model:
+
+  * removed duplicate `InitResult` definition from the domain layer
+  * unified initialization outcome model under `init_service`
+  * eliminates ambiguity between domain and service representations
+
 ### Fixed
 
 * `remove` command inefficiency:
@@ -126,6 +132,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * aligned `state.json` expectations with the version 2 state model
   * removed outdated assumptions from older identity and state structures
 
+* Domain model inconsistency:
+
+  * removed unused and outdated `InitResult` from `domain/project.py`
+  * prevents divergence between declared domain models and actual runtime behavior
+  
 ### Security
 
 * Hardened secret exposure safeguards:
