@@ -34,7 +34,7 @@ def make_context(tmp_path: Path) -> ProjectContext:
 def test_apply_request_to_spec_replaces_requested_fields() -> None:
     spec = VariableSpec(name="APP_NAME")
 
-    updated = add_service._apply_request_to_spec(
+    updated, inferred_spec, inferred_fields_used = add_service._apply_request_to_spec(
         spec,
         AddVariableRequest(
             key="APP_NAME",
@@ -43,7 +43,7 @@ def test_apply_request_to_spec_replaces_requested_fields() -> None:
             override_required=False,
             override_sensitive=False,
             override_description="Demo app",
-            override_default="demo",
+            override_default="a",
             override_example="demo",
             override_pattern=r"^[a-z]+$",
             override_choices=("a", "b"),
@@ -53,16 +53,24 @@ def test_apply_request_to_spec_replaces_requested_fields() -> None:
     assert updated.required is False
     assert updated.sensitive is False
     assert updated.description == "Demo app"
-    assert updated.default == "demo"
+    assert updated.default == "a"
     assert updated.example == "demo"
     assert updated.pattern == r"^[a-z]+$"
     assert updated.choices == ("a", "b")
+    assert inferred_spec is None
+    assert inferred_fields_used == ()
 
 
-def test_apply_request_to_spec_returns_same_spec_when_no_overrides() -> None:
-    spec = VariableSpec(name="APP_NAME", description="Existing")
+def test_apply_request_to_spec_returns_inferred_spec_when_no_overrides() -> None:
+    spec = VariableSpec(
+        name="APP_NAME",
+        description="Existing",
+        type="string",
+        required=True,
+        sensitive=False,
+    )
 
-    updated = add_service._apply_request_to_spec(
+    updated, inferred_spec, inferred_fields_used = add_service._apply_request_to_spec(
         spec,
         AddVariableRequest(
             key="APP_NAME",
@@ -71,6 +79,13 @@ def test_apply_request_to_spec_returns_same_spec_when_no_overrides() -> None:
     )
 
     assert updated == spec
+    assert inferred_spec == {
+        "type": "string",
+        "required": True,
+        "sensitive": False,
+        "description": "Existing",
+    }
+    assert inferred_fields_used == ("type", "required", "sensitive", "description")
 
 
 def test_run_add_creates_contract_and_entry(
@@ -97,12 +112,11 @@ def test_run_add_creates_contract_and_entry(
     assert result.contract_created is True
     assert result.contract_updated is True
     assert result.contract_entry_created is True
-    assert result.declared_in_contract is True
     assert context.vault_values_path.exists()
     assert context.repo_contract_path.exists()
 
 
-def test_run_add_uses_existing_spec_when_present(
+def test_run_add_uses_existing_contract_and_updates_value(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -126,7 +140,8 @@ def test_run_add_uses_existing_spec_when_present(
 
     assert result.contract_created is False
     assert result.contract_entry_created is False
-    assert result.inferred_spec is None
+    assert result.contract_updated is True
+    assert result.inferred_spec is not None
 
 
 def test_run_add_applies_overrides(
@@ -236,7 +251,7 @@ def test_run_add_updates_existing_contract_when_spec_changes(
     assert "New description" in content
 
 
-def test_run_add_does_not_rewrite_contract_when_existing_spec_is_unchanged(
+def test_run_add_writes_contract_when_existing_spec_is_recomputed(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -266,5 +281,5 @@ def test_run_add_does_not_rewrite_contract_when_existing_spec_is_unchanged(
         )
     )
 
-    assert result.contract_updated is False
-    assert written_contracts == []
+    assert result.contract_updated is True
+    assert len(written_contracts) == 1

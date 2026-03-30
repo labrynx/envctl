@@ -1,79 +1,75 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 import envctl.services.unset_service as unset_service
-from envctl.domain.project import ProjectContext
 from tests.support.contexts import make_project_context
 
 
-def make_context(tmp_path: Path) -> ProjectContext:
-    repo_root = tmp_path / "repo"
-    repo_root.mkdir(parents=True, exist_ok=True)
-
-    vault_dir = tmp_path / "vault" / "demo--prj_aaaaaaaaaaaaaaaa"
-
-    return make_project_context(
-        project_slug="demo",
-        project_key="demo",
-        project_id="prj_aaaaaaaaaaaaaaaa",
-        repo_root=repo_root,
-        repo_remote=None,
-        binding_source="local",
-        repo_contract_path=repo_root / ".envctl.schema.yaml",
-        vault_project_dir=vault_dir,
-        vault_values_path=vault_dir / "values.env",
-        vault_state_path=vault_dir / "state.json",
-    )
-
-
-def test_run_unset_removes_key_and_marks_declared(
-    tmp_path: Path,
+def test_run_unset_removes_existing_key_from_active_profile(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    context = make_context(tmp_path)
-    context.vault_project_dir.mkdir(parents=True)
-    context.vault_values_path.write_text("API_KEY=123\n", encoding="utf-8")
+    context = make_project_context()
+    profile_path = context.vault_project_dir / "profiles" / "staging.env"
+
+    written: dict[str, object] = {}
 
     monkeypatch.setattr(
         unset_service,
         "load_project_context",
-        lambda project_name=None, persist_binding=False: (object(), context),
+        lambda: (object(), context),
     )
     monkeypatch.setattr(
         unset_service,
-        "load_contract_optional",
-        lambda path: type("ContractStub", (), {"variables": {"API_KEY": object()}})(),
+        "load_env_file",
+        lambda path: {"APP_NAME": "demo", "PORT": "3000"},
+    )
+    monkeypatch.setattr(
+        unset_service,
+        "_write_profile_values",
+        lambda path, values: written.update({"path": path, "values": values}),
     )
 
-    _, result = unset_service.run_unset("API_KEY")
+    _context, active_profile, resolved_path, removed = unset_service.run_unset(
+        "APP_NAME",
+        "staging",
+    )
 
-    assert result.removed_from_vault is True
-    assert result.declared_in_contract is True
+    assert active_profile == "staging"
+    assert resolved_path == profile_path
+    assert removed is True
+    assert written["path"] == profile_path
+    assert written["values"] == {"PORT": "3000"}
 
 
-def test_run_unset_handles_invalid_contract(
-    tmp_path: Path,
+def test_run_unset_keeps_file_when_key_is_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    context = make_context(tmp_path)
-    context.vault_project_dir.mkdir(parents=True)
-    context.vault_values_path.write_text("", encoding="utf-8")
+    context = make_project_context(vault_values_path="/tmp/values.env")
+    written: dict[str, object] = {}
 
     monkeypatch.setattr(
         unset_service,
         "load_project_context",
-        lambda project_name=None, persist_binding=False: (object(), context),
+        lambda: (object(), context),
     )
     monkeypatch.setattr(
         unset_service,
-        "load_contract_optional",
-        lambda path: (_ for _ in ()).throw(unset_service.ContractError("bad contract")),
+        "load_env_file",
+        lambda path: {"PORT": "3000"},
+    )
+    monkeypatch.setattr(
+        unset_service,
+        "_write_profile_values",
+        lambda path, values: written.update({"path": path, "values": values}),
     )
 
-    _, result = unset_service.run_unset("API_KEY")
+    _context, active_profile, resolved_path, removed = unset_service.run_unset(
+        "APP_NAME",
+        "local",
+    )
 
-    assert result.removed_from_vault is False
-    assert result.declared_in_contract is False
+    assert active_profile == "local"
+    assert resolved_path == context.vault_values_path
+    assert removed is False
+    assert written["values"] == {"PORT": "3000"}

@@ -13,6 +13,7 @@ from tests.support.contexts import make_project_context
 def test_inspect_command_renders_resolution(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    context = make_project_context(repo_root="/tmp/demo")
     report = make_resolution_report(
         values={},
         missing_required=(),
@@ -24,7 +25,12 @@ def test_inspect_command_renders_resolution(
     monkeypatch.setattr(
         inspect_command_module,
         "run_inspect",
-        lambda: ("context", report),
+        lambda profile: (context, "staging", report),
+    )
+    monkeypatch.setattr(
+        inspect_command_module,
+        "get_active_profile",
+        lambda: "staging",
     )
     monkeypatch.setattr(
         inspect_command_module,
@@ -57,7 +63,12 @@ def test_inspect_command_emits_json_when_requested(
     monkeypatch.setattr(
         inspect_command_module,
         "run_inspect",
-        lambda: (context, report),
+        lambda profile: (context, "staging", report),
+    )
+    monkeypatch.setattr(
+        inspect_command_module,
+        "get_active_profile",
+        lambda: "staging",
     )
     monkeypatch.setattr(
         inspect_command_module,
@@ -75,6 +86,7 @@ def test_inspect_command_emits_json_when_requested(
     payload = cast(dict[str, Any], captured["payload"])
     assert payload["ok"] is True
     assert payload["command"] == "inspect"
+    assert payload["data"]["active_profile"] == "staging"
     assert payload["data"]["context"]["project_slug"] == "demo"
     assert payload["data"]["report"]["missing_required"] == ["DATABASE_URL"]
     assert payload["data"]["report"]["unknown_keys"] == ["OLD_KEY"]

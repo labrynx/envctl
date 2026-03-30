@@ -16,8 +16,13 @@ def test_run_command_exits_with_child_return_code(
 ) -> None:
     monkeypatch.setattr(
         run_command_module,
+        "get_active_profile",
+        lambda: "staging",
+    )
+    monkeypatch.setattr(
+        run_command_module,
         "run_command",
-        lambda command: 7,
+        lambda command, profile: ("context", "staging", 7),
     )
 
     with pytest.raises(typer.Exit) as exc_info:
@@ -72,8 +77,13 @@ def test_run_command_is_allowed_in_ci_mode(
     )
     monkeypatch.setattr(
         run_command_module,
+        "get_active_profile",
+        lambda: "ci",
+    )
+    monkeypatch.setattr(
+        run_command_module,
         "run_command",
-        lambda command: 0,
+        lambda command, profile: ("context", "ci", 0),
     )
 
     with pytest.raises(typer.Exit) as exc_info:

@@ -15,10 +15,11 @@ def test_explain_command_outputs_detail_when_present(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    context = make_project_context(repo_root="/tmp/demo")
     item = make_resolved_value(
         key="PORT",
         value="abc",
-        source="vault",
+        source="profile",
         masked=False,
         valid=False,
         detail="Expected an integer",
@@ -27,7 +28,12 @@ def test_explain_command_outputs_detail_when_present(
     monkeypatch.setattr(
         explain_command_module,
         "run_explain",
-        lambda key: ("context", item),
+        lambda key, profile: (context, "staging", item),
+    )
+    monkeypatch.setattr(
+        explain_command_module,
+        "get_active_profile",
+        lambda: "staging",
     )
     monkeypatch.setattr(
         explain_command_module,
@@ -40,8 +46,9 @@ def test_explain_command_outputs_detail_when_present(
     captured = capsys.readouterr()
     output = captured.out
 
+    assert "profile: staging" in output
     assert "key: PORT" in output
-    assert "source: vault" in output
+    assert "source: profile" in output
     assert "value: abc" in output
     assert "valid: no" in output
     assert "detail: Expected an integer" in output
@@ -51,6 +58,7 @@ def test_explain_command_masks_sensitive_values(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    context = make_project_context(repo_root="/tmp/demo")
     item = make_resolved_value(
         key="API_KEY",
         value="super-secret",
@@ -63,7 +71,12 @@ def test_explain_command_masks_sensitive_values(
     monkeypatch.setattr(
         explain_command_module,
         "run_explain",
-        lambda key: ("context", item),
+        lambda key, profile: (context, "local", item),
+    )
+    monkeypatch.setattr(
+        explain_command_module,
+        "get_active_profile",
+        lambda: "local",
     )
     monkeypatch.setattr(
         explain_command_module,
@@ -76,6 +89,7 @@ def test_explain_command_masks_sensitive_values(
     captured = capsys.readouterr()
     output = captured.out
 
+    assert "profile: local" in output
     assert "key: API_KEY" in output
     assert f"value: {mask_value('super-secret')}" in output
     assert "valid: yes" in output
@@ -89,7 +103,7 @@ def test_explain_command_emits_json_when_requested(
     item = make_resolved_value(
         key="API_KEY",
         value="super-secret",
-        source="vault",
+        source="profile",
         masked=True,
         valid=True,
     )
@@ -98,7 +112,12 @@ def test_explain_command_emits_json_when_requested(
     monkeypatch.setattr(
         explain_command_module,
         "run_explain",
-        lambda key: (context, item),
+        lambda key, profile: (context, "staging", item),
+    )
+    monkeypatch.setattr(
+        explain_command_module,
+        "get_active_profile",
+        lambda: "staging",
     )
     monkeypatch.setattr(
         explain_command_module,
@@ -116,6 +135,7 @@ def test_explain_command_emits_json_when_requested(
     payload = cast(dict[str, Any], captured["payload"])
     assert payload["ok"] is True
     assert payload["command"] == "explain"
+    assert payload["data"]["active_profile"] == "staging"
     assert payload["data"]["context"]["project_slug"] == "demo"
     assert payload["data"]["item"]["key"] == "API_KEY"
     assert payload["data"]["item"]["masked"] is True

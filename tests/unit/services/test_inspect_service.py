@@ -34,12 +34,13 @@ def test_run_inspect_returns_context_and_resolution_report(
     )
     monkeypatch.setattr(
         "envctl.services.inspect_service.resolve_environment",
-        lambda _context, _contract: report,
+        lambda _context, _contract, *, active_profile=None: report,
     )
 
-    result_context, result_report = run_inspect()
+    result_context, active_profile, result_report = run_inspect()
 
     assert result_context == context
+    assert active_profile == "local"
     assert result_report is report
     assert result_report.values["APP_NAME"].value == "demo-app"
     assert result_report.unknown_keys == ("LEGACY_KEY",)

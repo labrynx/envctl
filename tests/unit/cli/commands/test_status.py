@@ -29,7 +29,12 @@ def test_status_command_renders_status_report(
     monkeypatch.setattr(
         status_command_module,
         "run_status",
-        lambda: report,
+        lambda profile: ("staging", report),
+    )
+    monkeypatch.setattr(
+        status_command_module,
+        "get_active_profile",
+        lambda: "staging",
     )
     monkeypatch.setattr(
         status_command_module,
@@ -66,7 +71,12 @@ def test_status_command_emits_json_when_requested(
     monkeypatch.setattr(
         status_command_module,
         "run_status",
-        lambda: report,
+        lambda profile: ("staging", report),
+    )
+    monkeypatch.setattr(
+        status_command_module,
+        "get_active_profile",
+        lambda: "staging",
     )
     monkeypatch.setattr(
         status_command_module,
@@ -84,6 +94,7 @@ def test_status_command_emits_json_when_requested(
     payload = cast(dict[str, Any], captured["payload"])
     assert payload["ok"] is True
     assert payload["command"] == "status"
+    assert payload["data"]["active_profile"] == "staging"
     assert payload["data"]["project_slug"] == "demo"
     assert payload["data"]["project_id"] == "prj_aaaaaaaaaaaaaaaa"
     assert payload["data"]["repo_root"] == "/tmp/demo"

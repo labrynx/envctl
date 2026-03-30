@@ -7,20 +7,12 @@ import pytest
 import envctl.services.repair_service as repair_service
 from envctl.domain.app_config import AppConfig
 from envctl.domain.project import BindingSource, ProjectContext
-from envctl.domain.runtime import RuntimeMode
 from envctl.errors import ExecutionError, ProjectDetectionError
+from tests.support.app_config import make_app_config
 
 
 def make_config(tmp_path: Path) -> AppConfig:
-    config_path = tmp_path / "config" / "config.json"
-    vault_dir = tmp_path / "vault"
-    return AppConfig(
-        config_path=config_path,
-        vault_dir=vault_dir,
-        env_filename=".env.local",
-        schema_filename=".envctl.schema.yaml",
-        runtime_mode=RuntimeMode.LOCAL,
-    )
+    return make_app_config(tmp_path)
 
 
 def make_context(

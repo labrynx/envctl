@@ -14,6 +14,7 @@ from tests.support.contexts import make_project_context
 def test_check_command_exits_when_report_is_valid_but_unknown_keys_exist(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    context = make_project_context(repo_root="/tmp/demo")
     report = make_resolution_report(
         values={},
         missing_required=(),
@@ -25,7 +26,7 @@ def test_check_command_exits_when_report_is_valid_but_unknown_keys_exist(
     monkeypatch.setattr(
         check_command_module,
         "run_check",
-        lambda: ("context", report),
+        lambda profile: (context, "staging", report),
     )
     monkeypatch.setattr(
         check_command_module,
@@ -36,6 +37,11 @@ def test_check_command_exits_when_report_is_valid_but_unknown_keys_exist(
         check_command_module,
         "print_warning",
         lambda message: captured.update({"warning": message}),
+    )
+    monkeypatch.setattr(
+        check_command_module,
+        "get_active_profile",
+        lambda: "staging",
     )
     monkeypatch.setattr(
         check_command_module,
@@ -53,6 +59,7 @@ def test_check_command_exits_when_report_is_valid_but_unknown_keys_exist(
 def test_check_command_exits_when_report_is_invalid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    context = make_project_context(repo_root="/tmp/demo")
     report = make_resolution_report(
         values={},
         missing_required=("APP_NAME",),
@@ -63,12 +70,17 @@ def test_check_command_exits_when_report_is_invalid(
     monkeypatch.setattr(
         check_command_module,
         "run_check",
-        lambda: ("context", report),
+        lambda profile: (context, "local", report),
     )
     monkeypatch.setattr(
         check_command_module,
         "render_resolution",
         lambda _report: None,
+    )
+    monkeypatch.setattr(
+        check_command_module,
+        "get_active_profile",
+        lambda: "local",
     )
     monkeypatch.setattr(
         check_command_module,
@@ -97,7 +109,12 @@ def test_check_command_emits_json_when_requested(
     monkeypatch.setattr(
         check_command_module,
         "run_check",
-        lambda: (context, report),
+        lambda profile: (context, "staging", report),
+    )
+    monkeypatch.setattr(
+        check_command_module,
+        "get_active_profile",
+        lambda: "staging",
     )
     monkeypatch.setattr(
         check_command_module,
@@ -115,6 +132,7 @@ def test_check_command_emits_json_when_requested(
     payload = cast(dict[str, Any], captured["payload"])
     assert payload["ok"] is True
     assert payload["command"] == "check"
+    assert payload["data"]["active_profile"] == "staging"
     assert payload["data"]["context"]["project_slug"] == "demo"
     assert payload["data"]["report"]["is_valid"] is True
 
@@ -134,7 +152,12 @@ def test_check_command_emits_json_and_exits_when_invalid(
     monkeypatch.setattr(
         check_command_module,
         "run_check",
-        lambda: (context, report),
+        lambda profile: (context, "local", report),
+    )
+    monkeypatch.setattr(
+        check_command_module,
+        "get_active_profile",
+        lambda: "local",
     )
     monkeypatch.setattr(
         check_command_module,
@@ -153,4 +176,5 @@ def test_check_command_emits_json_and_exits_when_invalid(
     assert exc_info.value.exit_code == 1
     payload = cast(dict[str, Any], captured["payload"])
     assert payload["ok"] is False
+    assert payload["data"]["active_profile"] == "local"
     assert payload["data"]["report"]["missing_required"] == ["DATABASE_URL"]

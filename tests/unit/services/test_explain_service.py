@@ -29,12 +29,13 @@ def test_run_explain_returns_resolved_value(monkeypatch: pytest.MonkeyPatch) -> 
     )
     monkeypatch.setattr(
         "envctl.services.explain_service.resolve_environment",
-        lambda _context, _contract: report,
+        lambda _context, _contract, *, active_profile=None: report,
     )
 
-    result_context, value = run_explain("APP_NAME")
+    result_context, active_profile, value = run_explain("APP_NAME")
 
     assert result_context == context
+    assert active_profile == "local"
     assert value is resolved
     assert value.key == "APP_NAME"
     assert value.value == "demo-app"
@@ -58,7 +59,7 @@ def test_run_explain_raises_when_key_is_not_resolved(
     )
     monkeypatch.setattr(
         "envctl.services.explain_service.resolve_environment",
-        lambda _context, _contract: report,
+        lambda _context, _contract, *, active_profile=None: report,
     )
 
     with pytest.raises(ValidationError, match="Key is not resolved: APP_NAME"):

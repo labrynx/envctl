@@ -16,7 +16,12 @@ def test_doctor_command_exits_with_code_1_when_failures_exist(
     monkeypatch.setattr(
         doctor_command_module,
         "run_doctor",
-        lambda: ["dummy-check"],
+        lambda profile: ("staging", ["dummy-check"]),
+    )
+    monkeypatch.setattr(
+        doctor_command_module,
+        "get_active_profile",
+        lambda: "staging",
     )
     monkeypatch.setattr(
         doctor_command_module,
@@ -41,7 +46,12 @@ def test_doctor_command_returns_normally_when_no_failures_exist(
     monkeypatch.setattr(
         doctor_command_module,
         "run_doctor",
-        lambda: ["dummy-check"],
+        lambda profile: ("local", ["dummy-check"]),
+    )
+    monkeypatch.setattr(
+        doctor_command_module,
+        "get_active_profile",
+        lambda: "local",
     )
     monkeypatch.setattr(
         doctor_command_module,
@@ -65,10 +75,18 @@ def test_doctor_command_emits_json_when_requested(
     monkeypatch.setattr(
         doctor_command_module,
         "run_doctor",
-        lambda: [
-            DoctorCheck("config", "ok", "config ok"),
-            DoctorCheck("vault", "warn", "vault warn"),
-        ],
+        lambda profile: (
+            "staging",
+            [
+                DoctorCheck("config", "ok", "config ok"),
+                DoctorCheck("vault_profile", "warn", "profile missing"),
+            ],
+        ),
+    )
+    monkeypatch.setattr(
+        doctor_command_module,
+        "get_active_profile",
+        lambda: "staging",
     )
     monkeypatch.setattr(
         doctor_command_module,
@@ -86,6 +104,7 @@ def test_doctor_command_emits_json_when_requested(
     payload = cast(dict[str, Any], captured["payload"])
     assert payload["ok"] is True
     assert payload["command"] == "doctor"
+    assert payload["data"]["active_profile"] == "staging"
     assert payload["data"]["has_failures"] is False
     assert len(payload["data"]["checks"]) == 2
 
@@ -98,9 +117,17 @@ def test_doctor_command_emits_json_and_exits_when_failures_exist(
     monkeypatch.setattr(
         doctor_command_module,
         "run_doctor",
-        lambda: [
-            DoctorCheck("git", "fail", "git fail"),
-        ],
+        lambda profile: (
+            "dev",
+            [
+                DoctorCheck("git", "fail", "git fail"),
+            ],
+        ),
+    )
+    monkeypatch.setattr(
+        doctor_command_module,
+        "get_active_profile",
+        lambda: "dev",
     )
     monkeypatch.setattr(
         doctor_command_module,
@@ -119,4 +146,5 @@ def test_doctor_command_emits_json_and_exits_when_failures_exist(
     assert exc_info.value.exit_code == 1
     payload = cast(dict[str, Any], captured["payload"])
     assert payload["ok"] is False
+    assert payload["data"]["active_profile"] == "dev"
     assert payload["data"]["has_failures"] is True

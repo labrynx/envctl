@@ -23,8 +23,9 @@ def test_run_status_reports_missing_contract(
         lambda project_name=None, persist_binding=False: (object(), context),
     )
 
-    report = run_status()
+    active_profile, report = run_status("local")
 
+    assert active_profile == "local"
     assert report.project_slug == "demo"
     assert report.project_id == context.project_id
     assert report.contract_exists is False
@@ -52,8 +53,9 @@ def test_run_status_reports_invalid_contract(
 
     monkeypatch.setattr(status_service, "load_contract_for_context", raise_contract_error)
 
-    report = run_status()
+    active_profile, report = run_status("local")
 
+    assert active_profile == "local"
     assert report.contract_exists is True
     assert report.vault_exists is True
     assert report.resolved_valid is False
@@ -88,11 +90,12 @@ def test_run_status_reports_valid_environment(
     monkeypatch.setattr(
         status_service,
         "resolve_environment",
-        lambda _context, _contract: resolution,
+        lambda _context, _contract, *, active_profile=None: resolution,
     )
 
-    report = run_status()
+    active_profile, report = run_status("local")
 
+    assert active_profile == "local"
     assert report.contract_exists is True
     assert report.vault_exists is True
     assert report.resolved_valid is True
@@ -134,11 +137,12 @@ def test_run_status_reports_missing_invalid_and_unknown_values(
     monkeypatch.setattr(
         status_service,
         "resolve_environment",
-        lambda _context, _contract: resolution,
+        lambda _context, _contract, *, active_profile=None: resolution,
     )
 
-    report = run_status()
+    active_profile, report = run_status("local")
 
+    assert active_profile == "local"
     assert report.resolved_valid is False
     assert report.summary == "The project contract is not satisfied yet."
     assert report.issues == [
@@ -147,3 +151,30 @@ def test_run_status_reports_missing_invalid_and_unknown_values(
         "Unknown keys in vault: OLD_KEY",
     ]
     assert report.suggested_action == "Fix the invalid values in the local vault"
+
+
+def test_run_status_checks_explicit_profile_file_presence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = make_status_context(tmp_path, contract_exists=True, vault_exists=True)
+    contract = object()
+    resolution = make_resolution_report()
+
+    monkeypatch.setattr(
+        status_service,
+        "load_project_context",
+        lambda project_name=None, persist_binding=False: (object(), context),
+    )
+    monkeypatch.setattr(status_service, "load_contract_for_context", lambda _context: contract)
+    monkeypatch.setattr(
+        status_service,
+        "resolve_environment",
+        lambda _context, _contract, *, active_profile=None: resolution,
+    )
+
+    active_profile, report = run_status("staging")
+
+    assert active_profile == "staging"
+    assert report.contract_exists is True
+    assert report.vault_exists is False

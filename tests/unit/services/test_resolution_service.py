@@ -30,26 +30,28 @@ def test_load_contract_for_context_uses_repo_contract_path(
     assert captured["path"] == fake_context.repo_contract_path
 
 
-def test_resolve_environment_prefers_system_over_vault_and_default(
+def test_resolve_environment_prefers_system_over_profile_and_default(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     contract = make_standard_contract()
-    context = make_project_context(vault_values_path="/tmp/vault.env")
+    context = make_project_context()
 
-    monkeypatch.setattr(
-        resolution_service,
-        "load_env_file",
-        lambda _path: {
-            "APP_NAME": "from-vault",
-            "DATABASE_URL": "https://vault.example.com",
+    staging_path = context.vault_project_dir / "profiles" / "staging.env"
+
+    def fake_load_env_file(path: Path) -> dict[str, str]:
+        assert path == staging_path
+        return {
+            "APP_NAME": "from-profile",
+            "DATABASE_URL": "https://profile.example.com",
             "UNKNOWN_KEY": "x",
-        },
-    )
+        }
+
+    monkeypatch.setattr(resolution_service, "load_env_file", fake_load_env_file)
     monkeypatch.setenv("APP_NAME", "from-system")
     monkeypatch.setenv("DATABASE_URL", "https://system.example.com")
     monkeypatch.setenv("DEBUG", "true")
 
-    report = resolve_environment(context, contract)
+    report = resolve_environment(context, contract, active_profile="staging")
 
     assert report.missing_required == ()
     assert report.invalid_keys == ()
@@ -69,18 +71,52 @@ def test_resolve_environment_prefers_system_over_vault_and_default(
     assert report.values["PORT"].source == "default"
 
 
-def test_resolve_environment_marks_missing_required_keys(
+def test_resolve_environment_uses_local_values_env_for_local_profile(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = make_project_context(vault_values_path="/tmp/vault.env")
+    contract = make_standard_contract()
+
+    def fake_load_env_file(path: Path) -> dict[str, str]:
+        assert path == context.vault_values_path
+        return {
+            "APP_NAME": "from-vault",
+            "DATABASE_URL": "https://vault.example.com",
+        }
+
+    monkeypatch.setattr(resolution_service, "load_env_file", fake_load_env_file)
+    monkeypatch.delenv("APP_NAME", raising=False)
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.delenv("DEBUG", raising=False)
+
+    report = resolve_environment(context, contract, active_profile="local")
+
+    assert report.missing_required == ()
+    assert report.invalid_keys == ()
+    assert report.values["APP_NAME"].value == "from-vault"
+    assert report.values["APP_NAME"].source == "vault"
+    assert report.values["DATABASE_URL"].source == "vault"
+    assert report.values["PORT"].source == "default"
+
+
+def test_resolve_environment_does_not_fallback_to_values_env_for_explicit_profiles(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     contract = make_standard_contract()
-    context = make_project_context(vault_values_path="/tmp/vault.env")
+    context = make_project_context()
 
-    monkeypatch.setattr(resolution_service, "load_env_file", lambda _path: {})
+    staging_path = context.vault_project_dir / "profiles" / "staging.env"
+
+    def fake_load_env_file(path: Path) -> dict[str, str]:
+        assert path == staging_path
+        return {}
+
+    monkeypatch.setattr(resolution_service, "load_env_file", fake_load_env_file)
     monkeypatch.delenv("APP_NAME", raising=False)
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.delenv("PORT", raising=False)
 
-    report = resolve_environment(context, contract)
+    report = resolve_environment(context, contract, active_profile="staging")
 
     assert report.missing_required == ("APP_NAME", "DATABASE_URL")
     assert report.invalid_keys == ()
@@ -114,7 +150,7 @@ def test_resolve_environment_marks_invalid_int_bool_url_choice_and_pattern(
     monkeypatch.delenv("ENVIRONMENT", raising=False)
     monkeypatch.delenv("SLUG", raising=False)
 
-    report = resolve_environment(context, contract)
+    report = resolve_environment(context, contract, active_profile="local")
 
     assert report.missing_required == ()
     assert report.invalid_keys == ("DATABASE_URL", "DEBUG", "ENVIRONMENT", "PORT", "SLUG")
@@ -135,30 +171,36 @@ def test_resolve_environment_marks_invalid_int_bool_url_choice_and_pattern(
     assert report.values["SLUG"].detail == "Value does not match pattern: ^[a-z0-9-]+$"
 
 
-def test_resolve_environment_accepts_valid_bool_variants(
+def test_resolve_environment_supports_custom_contract_types(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     contract = make_contract(
         {
-            "DEBUG": make_variable_spec(
-                name="DEBUG",
-                type="bool",
-                required=True,
-                sensitive=False,
-            ),
+            "RETRY_COUNT": make_variable_spec(name="RETRY_COUNT", type="int", required=True),
+            "ENABLE_CACHE": make_variable_spec(name="ENABLE_CACHE", type="bool", required=True),
+            "SERVICE_URL": make_variable_spec(name="SERVICE_URL", type="url", required=True),
         }
     )
     context = make_project_context(vault_values_path="/tmp/vault.env")
 
-    for value in ["true", "false", "1", "0", "yes", "no"]:
-        monkeypatch.setattr(
-            resolution_service,
-            "load_env_file",
-            lambda _path, value=value: {"DEBUG": value},
-        )
-        monkeypatch.delenv("DEBUG", raising=False)
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {
+            "RETRY_COUNT": "3",
+            "ENABLE_CACHE": "true",
+            "SERVICE_URL": "https://example.com",
+        },
+    )
+    monkeypatch.delenv("RETRY_COUNT", raising=False)
+    monkeypatch.delenv("ENABLE_CACHE", raising=False)
+    monkeypatch.delenv("SERVICE_URL", raising=False)
 
-        report = resolve_environment(context, contract)
+    report = resolve_environment(context, contract, active_profile="local")
 
-        assert report.invalid_keys == ()
-        assert report.values["DEBUG"].valid is True
+    assert report.is_valid is True
+    assert report.missing_required == ()
+    assert report.invalid_keys == ()
+    assert report.values["RETRY_COUNT"].source == "vault"
+    assert report.values["ENABLE_CACHE"].source == "vault"
+    assert report.values["SERVICE_URL"].source == "vault"

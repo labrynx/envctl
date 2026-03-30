@@ -5,6 +5,13 @@ from pathlib import Path
 from envctl.domain.project import BindingSource, ProjectContext
 
 
+def _derive_vault_project_dir_from_values_path(vault_values_path: Path) -> Path:
+    """Infer the vault project dir from a values path."""
+    if vault_values_path.parent.name == "profiles":
+        return vault_values_path.parent.parent
+    return vault_values_path.parent
+
+
 def make_project_context(
     *,
     project_slug: str = "demo",
@@ -26,10 +33,17 @@ def make_project_context(
     resolved_repo_contract_path = Path(repo_contract_path or (repo_root / ".envctl.schema.yaml"))
     resolved_repo_env_path = Path(repo_env_path or (repo_root / ".env.local"))
 
-    resolved_vault_project_dir = Path(
-        vault_project_dir
-        or (repo_root.parent / "vault" / "projects" / f"{project_slug}--{project_id}")
-    )
+    if vault_project_dir is not None:
+        resolved_vault_project_dir = Path(vault_project_dir)
+    elif vault_values_path is not None:
+        resolved_vault_project_dir = _derive_vault_project_dir_from_values_path(
+            Path(vault_values_path)
+        )
+    else:
+        resolved_vault_project_dir = (
+            repo_root.parent / "vault" / "projects" / f"{project_slug}--{project_id}"
+        )
+
     resolved_vault_values_path = Path(
         vault_values_path or (resolved_vault_project_dir / "values.env")
     )

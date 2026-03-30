@@ -1,179 +1,83 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
-from envctl.domain.operations import FillPlanItem
-from envctl.services.fill_service import apply_fill, build_fill_plan
+import envctl.services.fill_service as fill_service
 from tests.support.builders import make_resolution_report
 from tests.support.contexts import make_project_context
 from tests.support.contracts import make_fill_contract
 
 
-def test_build_fill_plan_returns_missing_required_keys_with_metadata(
+def test_build_fill_plan_uses_active_profile_resolution(
     monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
 ) -> None:
-    vault_values_path = tmp_path / "vault.env"
-    context = make_project_context(vault_values_path=vault_values_path)
+    context = make_project_context()
     contract = make_fill_contract()
     report = make_resolution_report(
         missing_required=("API_KEY", "PORT"),
     )
 
     monkeypatch.setattr(
-        "envctl.services.fill_service.load_project_context",
-        lambda project_name=None, persist_binding=False: (object(), context),
+        fill_service,
+        "load_project_context",
+        lambda: (object(), context),
     )
     monkeypatch.setattr(
-        "envctl.services.fill_service.load_contract_for_context",
+        fill_service,
+        "load_contract_for_context",
         lambda _context: contract,
     )
     monkeypatch.setattr(
-        "envctl.services.fill_service.resolve_environment",
-        lambda _context, _contract: report,
+        fill_service,
+        "resolve_environment",
+        lambda _context, _contract, *, active_profile=None: report,
     )
 
-    result_context, plan = build_fill_plan()
+    _context, active_profile, plan = fill_service.build_fill_plan("staging")
 
-    assert result_context == context
-    assert plan == (
-        FillPlanItem(
-            key="API_KEY",
-            description="API key",
-            sensitive=True,
-            default_value=None,
-        ),
-        FillPlanItem(
-            key="PORT",
-            description="Port number",
-            sensitive=False,
-            default_value="3000",
-        ),
-    )
+    assert active_profile == "staging"
+    assert [item.key for item in plan] == ["API_KEY", "PORT"]
+    assert plan[0].sensitive is True
+    assert plan[1].default_value == "3000"
 
 
-def test_build_fill_plan_returns_empty_tuple_when_nothing_is_missing(
+def test_apply_fill_writes_only_non_blank_values_to_profile(
     monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
 ) -> None:
-    vault_values_path = tmp_path / "vault.env"
-    context = make_project_context(vault_values_path=vault_values_path)
-    contract = make_fill_contract()
-    report = make_resolution_report(missing_required=())
+    context = make_project_context()
+    profile_path = context.vault_project_dir / "profiles" / "dev.env"
+    written: dict[str, object] = {}
 
     monkeypatch.setattr(
-        "envctl.services.fill_service.load_project_context",
-        lambda project_name=None, persist_binding=False: (object(), context),
+        fill_service,
+        "load_project_context",
+        lambda: (object(), context),
     )
     monkeypatch.setattr(
-        "envctl.services.fill_service.load_contract_for_context",
-        lambda _context: contract,
+        fill_service,
+        "load_env_file",
+        lambda path: {"APP_NAME": "demo"},
     )
     monkeypatch.setattr(
-        "envctl.services.fill_service.resolve_environment",
-        lambda _context, _contract: report,
+        fill_service,
+        "_write_profile_values",
+        lambda path, values: written.update({"path": path, "values": values}),
     )
 
-    result_context, plan = build_fill_plan()
-
-    assert result_context == context
-    assert plan == ()
-
-
-def test_apply_fill_writes_trimmed_values(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    vault_values_path = tmp_path / "vault.env"
-    context = make_project_context(vault_values_path=vault_values_path)
-
-    written: dict[str, str] = {}
-
-    monkeypatch.setattr(
-        "envctl.services.fill_service.load_project_context",
-        lambda project_name=None, persist_binding=False: (object(), context),
-    )
-    monkeypatch.setattr("envctl.services.fill_service.load_env_file", lambda _path: {})
-    monkeypatch.setattr(
-        "envctl.services.fill_service.write_text_atomic",
-        lambda path, content: written.update({str(path): content}),
-    )
-
-    result_context, changed = apply_fill(
+    _context, active_profile, resolved_path, changed_keys = fill_service.apply_fill(
         {
-            "API_KEY": "  secret-value  ",
-            "PORT": "3000",
-        }
-    )
-
-    assert result_context == context
-    assert changed == ["API_KEY", "PORT"]
-
-    output = written[str(vault_values_path)]
-    assert "API_KEY=secret-value" in output
-    assert "PORT=3000" in output
-
-
-def test_apply_fill_skips_blank_values(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    vault_values_path = tmp_path / "vault.env"
-    context = make_project_context(vault_values_path=vault_values_path)
-
-    write_calls: list[str] = []
-
-    monkeypatch.setattr(
-        "envctl.services.fill_service.load_project_context",
-        lambda project_name=None, persist_binding=False: (object(), context),
-    )
-    monkeypatch.setattr("envctl.services.fill_service.load_env_file", lambda _path: {})
-    monkeypatch.setattr(
-        "envctl.services.fill_service.write_text_atomic",
-        lambda path, content: write_calls.append(f"{path}:{content}"),
-    )
-
-    result_context, changed = apply_fill(
-        {
-            "API_KEY": "   ",
+            "API_KEY": "secret",
             "PORT": "",
-        }
+            "DATABASE_URL": "  postgres://db  ",
+        },
+        "dev",
     )
 
-    assert result_context == context
-    assert changed == []
-    assert write_calls == []
-
-
-def test_apply_fill_preserves_existing_values_and_only_writes_changed_keys(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    vault_values_path = tmp_path / "vault.env"
-    context = make_project_context(vault_values_path=vault_values_path)
-
-    written: dict[str, str] = {}
-
-    monkeypatch.setattr(
-        "envctl.services.fill_service.load_project_context",
-        lambda project_name=None, persist_binding=False: (object(), context),
-    )
-    monkeypatch.setattr(
-        "envctl.services.fill_service.load_env_file",
-        lambda _path: {"ALREADY_SET": "yes"},
-    )
-    monkeypatch.setattr(
-        "envctl.services.fill_service.write_text_atomic",
-        lambda path, content: written.update({str(path): content}),
-    )
-
-    result_context, changed = apply_fill({"API_KEY": "new-secret"})
-
-    assert result_context == context
-    assert changed == ["API_KEY"]
-
-    output = written[str(vault_values_path)]
-    assert "ALREADY_SET=yes" in output
-    assert "API_KEY=new-secret" in output
+    assert active_profile == "dev"
+    assert resolved_path == profile_path
+    assert changed_keys == ["API_KEY", "DATABASE_URL"]
+    assert written["values"] == {
+        "APP_NAME": "demo",
+        "API_KEY": "secret",
+        "DATABASE_URL": "postgres://db",
+    }

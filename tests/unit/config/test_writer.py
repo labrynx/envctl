@@ -9,35 +9,49 @@ from envctl.errors import ConfigError
 from envctl.utils.tilde import to_tilde_path
 
 
-def test_write_default_config_file_creates_config(
-    monkeypatch: pytest.MonkeyPatch,
+def test_write_default_config_file_creates_expected_json(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    config_path = tmp_path / "config" / "config.json"
-    vault_dir = tmp_path / "vault"
+    config_path = tmp_path / "config.json"
 
     monkeypatch.setattr(writer_module, "get_default_config_path", lambda: config_path)
-    monkeypatch.setattr(writer_module, "get_default_vault_dir", lambda: vault_dir)
+    monkeypatch.setattr(writer_module, "get_default_vault_dir", lambda: tmp_path / "vault")
     monkeypatch.setattr(writer_module, "get_default_env_filename", lambda: ".env.local")
-    monkeypatch.setattr(writer_module, "get_default_schema_filename", lambda: ".envctl.schema.yaml")
+    monkeypatch.setattr(
+        writer_module,
+        "get_default_schema_filename",
+        lambda: ".envctl.schema.yaml",
+    )
 
-    path = writer_module.write_default_config_file()
+    written: dict[str, object] = {}
 
-    assert path == config_path
-    assert config_path.exists()
+    monkeypatch.setattr(writer_module, "ensure_dir", lambda path: None)
 
-    content = config_path.read_text(encoding="utf-8")
-    assert to_tilde_path(vault_dir) in content
-    assert '".env.local"' in content
-    assert '".envctl.schema.yaml"' in content
+    def fake_write_json_atomic(path: Path, payload: dict[str, object]) -> None:
+        written["path"] = path
+        written["payload"] = payload
+
+    monkeypatch.setattr(writer_module, "write_json_atomic", fake_write_json_atomic)
+
+    result = writer_module.write_default_config_file()
+
+    assert result == config_path
+    assert written["path"] == config_path
+    assert written["payload"] == {
+        "vault_dir": to_tilde_path(tmp_path / "vault"),
+        "env_filename": ".env.local",
+        "schema_filename": ".envctl.schema.yaml",
+        "runtime_mode": "local",
+        "default_profile": "local",
+    }
 
 
 def test_write_default_config_file_rejects_existing_file(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    config_path = tmp_path / "config" / "config.json"
-    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path = tmp_path / "config.json"
     config_path.write_text("{}", encoding="utf-8")
 
     monkeypatch.setattr(writer_module, "get_default_config_path", lambda: config_path)

@@ -4,83 +4,75 @@ import pytest
 
 import envctl.services.export_service as export_service
 from envctl.errors import ValidationError
-from envctl.services.export_service import run_export
 from tests.support.builders import make_resolution_report, make_resolved_value
 from tests.support.contexts import make_project_context
 
 
-def test_run_export_returns_shell_lines_for_valid_environment(
+def test_run_export_returns_shell_lines_for_active_profile(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    context = make_project_context(repo_root="/tmp/demo")
-    contract = object()
+    context = make_project_context()
     report = make_resolution_report(
         values={
-            "APP_NAME": make_resolved_value(
-                key="APP_NAME",
-                value="demo",
-                source="vault",
-                valid=True,
-            ),
-            "DATABASE_URL": make_resolved_value(
-                key="DATABASE_URL",
-                value="https://db.example.com",
-                source="vault",
-                valid=True,
-                masked=True,
-            ),
-        }
+            "APP_NAME": make_resolved_value(key="APP_NAME", value="demo", source="profile"),
+            "PORT": make_resolved_value(key="PORT", value="3000", source="default"),
+        },
     )
 
-    monkeypatch.setattr(
-        export_service,
-        "load_project_context",
-        lambda project_name=None, persist_binding=False: (object(), context),
-    )
-    monkeypatch.setattr(
-        export_service,
-        "load_contract_for_context",
-        lambda _context: contract,
-    )
+    monkeypatch.setattr(export_service, "load_project_context", lambda: (object(), context))
+    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: object())
     monkeypatch.setattr(
         export_service,
         "resolve_environment",
-        lambda _context, _contract: report,
+        lambda _context, _contract, *, active_profile=None: report,
+    )
+    monkeypatch.setattr(
+        export_service,
+        "to_shell_export_lines",
+        lambda values: "\n".join(f"export {key}='{value}'" for key, value in values.items()) + "\n",
     )
 
-    lines = run_export()
+    _context, active_profile, rendered = export_service.run_export("staging")
 
-    assert lines == [
-        "export APP_NAME='demo'",
-        "export DATABASE_URL='https://db.example.com'",
-    ]
+    assert active_profile == "staging"
+    assert "export APP_NAME='demo'" in rendered
+    assert "export PORT='3000'" in rendered
 
 
-def test_run_export_raises_when_environment_is_invalid(
+def test_run_export_rejects_invalid_resolution(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    context = make_project_context(repo_root="/tmp/demo")
-    contract = object()
+    context = make_project_context()
     report = make_resolution_report(missing_required=("DATABASE_URL",))
 
-    monkeypatch.setattr(
-        export_service,
-        "load_project_context",
-        lambda project_name=None, persist_binding=False: (object(), context),
-    )
-    monkeypatch.setattr(
-        export_service,
-        "load_contract_for_context",
-        lambda _context: contract,
-    )
+    monkeypatch.setattr(export_service, "load_project_context", lambda: (object(), context))
+    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: object())
     monkeypatch.setattr(
         export_service,
         "resolve_environment",
-        lambda _context, _contract: report,
+        lambda _context, _contract, *, active_profile=None: report,
     )
 
-    with pytest.raises(
-        ValidationError,
-        match="Cannot export because the resolved environment is invalid",
-    ):
-        run_export()
+    with pytest.raises(ValidationError, match="Environment contract is not satisfied"):
+        export_service.run_export("dev")
+
+
+def test_run_export_rejects_unknown_keys(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = make_project_context()
+    report = make_resolution_report(
+        values={"APP_NAME": make_resolved_value(key="APP_NAME", value="demo")},
+        unknown_keys=("OLD_KEY",),
+    )
+
+    monkeypatch.setattr(export_service, "load_project_context", lambda: (object(), context))
+    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: object())
+    monkeypatch.setattr(
+        export_service,
+        "resolve_environment",
+        lambda _context, _contract, *, active_profile=None: report,
+    )
+
+    with pytest.raises(ValidationError, match="Vault contains unknown keys"):
+        export_service.run_export("dev")

@@ -54,6 +54,8 @@ def test_add_command_calls_service_and_prints_full_inference(
         repo_contract_path="/tmp/repo/.envctl.schema.yaml",
     )
     result = SimpleNamespace(
+        active_profile="local",
+        profile_path="/tmp/vault/values.env",
         contract_created=True,
         contract_updated=True,
         contract_entry_created=True,
@@ -91,11 +93,16 @@ def test_add_command_calls_service_and_prints_full_inference(
 
     captured: dict[str, Any] = {}
 
-    def fake_run_add(request: AddVariableRequest) -> tuple[object, object]:
+    def fake_run_add(
+        request: AddVariableRequest,
+        active_profile: str | None = None,
+    ) -> tuple[object, object]:
         captured["request"] = request
+        captured["active_profile"] = active_profile
         return context, result
 
     monkeypatch.setattr(add_command_module, "run_add", fake_run_add)
+    monkeypatch.setattr(add_command_module, "get_active_profile", lambda: "local")
 
     add_command_module.add_command(
         key="DATABASE_URL",
@@ -116,6 +123,7 @@ def test_add_command_calls_service_and_prints_full_inference(
     output = capsys.readouterr().out
     request = cast(AddVariableRequest, captured["request"])
 
+    assert captured["active_profile"] == "local"
     assert request.key == "DATABASE_URL"
     assert request.value == "postgres://user:pass@localhost:5432/app"
     assert request.override_type == "url"
@@ -127,7 +135,8 @@ def test_add_command_calls_service_and_prints_full_inference(
     assert request.override_pattern == "^postgres://"
     assert request.override_choices == ("a", "b")
 
-    assert "[OK] Added 'DATABASE_URL' to contract and local vault" in output
+    assert "[OK] Added 'DATABASE_URL' to contract and profile 'local'" in output
+    assert "profile: local" in output
     assert "vault_values: /tmp/vault/values.env" in output
     assert "contract: /tmp/repo/.envctl.schema.yaml" in output
     assert "contract_created: yes" in output
@@ -149,6 +158,8 @@ def test_add_command_prints_minimal_output_when_inference_is_missing(
         repo_contract_path="/tmp/repo/.envctl.schema.yaml",
     )
     result = SimpleNamespace(
+        active_profile="local",
+        profile_path="/tmp/vault/values.env",
         contract_created=False,
         contract_updated=False,
         contract_entry_created=False,
@@ -158,11 +169,16 @@ def test_add_command_prints_minimal_output_when_inference_is_missing(
 
     captured: dict[str, Any] = {}
 
-    def fake_run_add(request: AddVariableRequest) -> tuple[object, object]:
+    def fake_run_add(
+        request: AddVariableRequest,
+        active_profile: str | None = None,
+    ) -> tuple[object, object]:
         captured["request"] = request
+        captured["active_profile"] = active_profile
         return context, result
 
     monkeypatch.setattr(add_command_module, "run_add", fake_run_add)
+    monkeypatch.setattr(add_command_module, "get_active_profile", lambda: "local")
 
     add_command_module.add_command(
         key="APP_NAME",
@@ -183,10 +199,12 @@ def test_add_command_prints_minimal_output_when_inference_is_missing(
     output = capsys.readouterr().out
     request = cast(AddVariableRequest, captured["request"])
 
+    assert captured["active_profile"] == "local"
     assert request.key == "APP_NAME"
     assert request.value == "demo"
 
-    assert "[OK] Added 'APP_NAME' to contract and local vault" in output
+    assert "[OK] Added 'APP_NAME' to contract and profile 'local'" in output
+    assert "profile: local" in output
     assert "vault_values: /tmp/vault/values.env" in output
     assert "contract: /tmp/repo/.envctl.schema.yaml" in output
     assert "contract_created: yes" not in output
@@ -208,6 +226,8 @@ def test_add_command_omits_optional_inferred_fields_when_not_present(
         repo_contract_path="/tmp/repo/.envctl.schema.yaml",
     )
     result = SimpleNamespace(
+        active_profile="local",
+        profile_path="/tmp/vault/values.env",
         contract_created=False,
         contract_updated=True,
         contract_entry_created=True,
@@ -218,8 +238,9 @@ def test_add_command_omits_optional_inferred_fields_when_not_present(
     monkeypatch.setattr(
         add_command_module,
         "run_add",
-        lambda request: (context, result),
+        lambda request, active_profile=None: (context, result),
     )
+    monkeypatch.setattr(add_command_module, "get_active_profile", lambda: "local")
 
     add_command_module.add_command(
         key="APP_NAME",
@@ -239,6 +260,8 @@ def test_add_command_omits_optional_inferred_fields_when_not_present(
 
     output = capsys.readouterr().out
 
+    assert "profile: local" in output
+    assert "vault_values: /tmp/vault/values.env" in output
     assert "inferred_type: string" in output
     assert "required:" not in output
     assert "sensitive:" not in output

@@ -27,7 +27,7 @@ def test_vault_check_command_exits_when_file_does_not_exist(
     monkeypatch.setattr(
         vault_check_module,
         "run_vault_check",
-        lambda: ("context", result),
+        lambda profile=None: ("context", "local", result),
     )
 
     with pytest.raises(typer.Exit) as exc:
@@ -58,7 +58,7 @@ def test_vault_check_command_exits_when_file_is_not_parseable(
     monkeypatch.setattr(
         vault_check_module,
         "run_vault_check",
-        lambda: ("context", result),
+        lambda profile=None: ("context", "local", result),
     )
 
     with pytest.raises(typer.Exit) as exc:
@@ -89,7 +89,7 @@ def test_vault_check_command_succeeds_when_file_is_valid(
     monkeypatch.setattr(
         vault_check_module,
         "run_vault_check",
-        lambda: ("context", result),
+        lambda profile=None: ("context", "local", result),
     )
 
     vault_check_module.vault_check_command()
@@ -121,7 +121,7 @@ def test_vault_check_command_exits_when_permissions_are_not_private(
     monkeypatch.setattr(
         vault_check_module,
         "run_vault_check",
-        lambda: ("context", result),
+        lambda profile=None: ("context", "local", result),
     )
 
     with pytest.raises(typer.Exit) as exc:

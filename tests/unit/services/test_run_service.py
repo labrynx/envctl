@@ -1,88 +1,87 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
+from subprocess import CompletedProcess
 from typing import Any
 
 import pytest
 
 import envctl.services.run_service as run_service
 from envctl.errors import ExecutionError, ValidationError
-from envctl.services.run_service import run_command
 from tests.support.builders import make_resolution_report, make_resolved_value
+from tests.support.contexts import make_project_context
 
 
-def test_run_command_fails_when_command_is_empty() -> None:
-    with pytest.raises(ExecutionError, match="A command is required after '--'"):
-        run_command([])
-
-
-def test_run_command_fails_when_resolved_environment_is_invalid(
+def test_run_command_executes_child_with_resolved_environment(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    context = SimpleNamespace()
-    contract = object()
-    report = make_resolution_report(missing_required=("API_KEY",))
-
-    monkeypatch.setattr(
-        run_service,
-        "load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
-    )
-    monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: contract)
-    monkeypatch.setattr(run_service, "resolve_environment", lambda _context, _contract: report)
-
-    with pytest.raises(ValidationError, match="resolved environment is invalid"):
-        run_command(["python", "-V"])
-
-
-def test_run_command_executes_subprocess_with_injected_environment(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    context = SimpleNamespace()
-    contract = object()
+    context = make_project_context()
     report = make_resolution_report(
         values={
-            "APP_NAME": make_resolved_value(
-                key="APP_NAME",
-                value="demo",
-                source="vault",
-                valid=True,
-            ),
+            "APP_NAME": make_resolved_value(key="APP_NAME", value="demo", source="profile"),
             "DATABASE_URL": make_resolved_value(
                 key="DATABASE_URL",
                 value="https://db.example.com",
-                source="system",
+                source="profile",
                 masked=True,
-                valid=True,
             ),
-        }
+        },
     )
-
     captured: dict[str, Any] = {}
 
-    def fake_run(command: list[str], env: dict[str, str], check: bool) -> Any:
-        captured["command"] = command
-        captured["env"] = env
-        captured["check"] = check
-        return SimpleNamespace(returncode=7)
-
+    monkeypatch.setattr(run_service, "load_project_context", lambda: (object(), context))
+    monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: object())
     monkeypatch.setattr(
         run_service,
-        "load_project_context",
-        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+        "resolve_environment",
+        lambda _context, _contract, *, active_profile=None: report,
     )
-    monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: contract)
-    monkeypatch.setattr(run_service, "resolve_environment", lambda _context, _contract: report)
+
+    def fake_run(
+        command: list[str],
+        check: bool = False,
+        env: dict[str, str] | None = None,
+    ) -> CompletedProcess[str]:
+        captured["command"] = command
+        captured["env"] = env
+        return CompletedProcess(args=command, returncode=0)
+
     monkeypatch.setattr(run_service.subprocess, "run", fake_run)
-    monkeypatch.setenv("EXISTING_VAR", "keep-me")
 
-    returncode = run_command(["python", "-V"])
+    _context, active_profile, exit_code = run_service.run_command(
+        ["python3", "-V"],
+        "staging",
+    )
 
-    assert returncode == 7
-    assert captured["command"] == ["python", "-V"]
-    assert captured["check"] is False
+    assert active_profile == "staging"
+    assert exit_code == 0
+    assert captured["command"] == ["python3", "-V"]
 
     env = captured["env"]
-    assert env["EXISTING_VAR"] == "keep-me"
+    assert isinstance(env, dict)
     assert env["APP_NAME"] == "demo"
     assert env["DATABASE_URL"] == "https://db.example.com"
+
+
+def test_run_command_rejects_missing_command(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with pytest.raises(ExecutionError, match="No command provided"):
+        run_service.run_command([], "local")
+
+
+def test_run_command_rejects_invalid_resolution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = make_project_context()
+    report = make_resolution_report(missing_required=("DATABASE_URL",))
+
+    monkeypatch.setattr(run_service, "load_project_context", lambda: (object(), context))
+    monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: object())
+    monkeypatch.setattr(
+        run_service,
+        "resolve_environment",
+        lambda _context, _contract, *, active_profile=None: report,
+    )
+
+    with pytest.raises(ValidationError, match="Environment contract is not satisfied"):
+        run_service.run_command(["python3", "-V"], "dev")

@@ -34,7 +34,11 @@ def test_fill_command_outputs_success_when_keys_are_changed(
 
     monkeypatch.setattr(
         "envctl.cli.commands.fill.command.build_fill_plan",
-        lambda: (context, plan),
+        lambda profile: (context, "staging", plan),
+    )
+    monkeypatch.setattr(
+        "envctl.cli.commands.fill.command.get_active_profile",
+        lambda: "staging",
     )
     monkeypatch.setattr(
         "envctl.cli.commands.fill.command.typer_prompt",
@@ -42,13 +46,14 @@ def test_fill_command_outputs_success_when_keys_are_changed(
     )
     monkeypatch.setattr(
         "envctl.cli.commands.fill.command.apply_fill",
-        lambda values: (context, ["API_KEY", "PORT"]),
+        lambda values, profile: (context, "staging", "/tmp/staging.env", ["API_KEY", "PORT"]),
     )
 
     fill_command()
 
     output = capsys.readouterr().out
     assert "Filled 2 key(s) for demo-project" in output
+    assert "profile: staging" in output
     assert "keys: API_KEY, PORT" in output
 
 
@@ -60,13 +65,18 @@ def test_fill_command_outputs_warning_when_nothing_to_fill(
 
     monkeypatch.setattr(
         "envctl.cli.commands.fill.command.build_fill_plan",
-        lambda: (context, ()),
+        lambda profile: (context, "local", ()),
+    )
+    monkeypatch.setattr(
+        "envctl.cli.commands.fill.command.get_active_profile",
+        lambda: "local",
     )
 
     fill_command()
 
     output = capsys.readouterr().out
     assert "No keys were changed" in output
+    assert "profile: local" in output
 
 
 def test_fill_command_outputs_warning_when_apply_fill_changes_nothing(
@@ -85,7 +95,11 @@ def test_fill_command_outputs_warning_when_apply_fill_changes_nothing(
 
     monkeypatch.setattr(
         "envctl.cli.commands.fill.command.build_fill_plan",
-        lambda: (context, plan),
+        lambda profile: (context, "dev", plan),
+    )
+    monkeypatch.setattr(
+        "envctl.cli.commands.fill.command.get_active_profile",
+        lambda: "dev",
     )
     monkeypatch.setattr(
         "envctl.cli.commands.fill.command.typer_prompt",
@@ -93,13 +107,14 @@ def test_fill_command_outputs_warning_when_apply_fill_changes_nothing(
     )
     monkeypatch.setattr(
         "envctl.cli.commands.fill.command.apply_fill",
-        lambda values: (context, []),
+        lambda values, profile: (context, "dev", "/tmp/dev.env", []),
     )
 
     fill_command()
 
     output = capsys.readouterr().out
     assert "No keys were changed" in output
+    assert "profile: dev" in output
 
 
 def test_fill_command_rejects_ci_mode(
