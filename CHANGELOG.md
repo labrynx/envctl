@@ -5,7 +5,118 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+---
+
 ## [Unreleased]
+
+### Added
+
+* Confirmation prompt in `vault show --raw`:
+
+  * prevents accidental exposure of unmasked secret values
+  * requires explicit user approval before printing raw values
+
+* Remove preflight model:
+
+  * introduced `RemovePlan` domain model
+  * enables separation between inspection and execution
+  * prepares CLI for richer confirmation logic
+
+* Inference tracking in `add`:
+
+  * added `inferred_fields_used` to `AddResult`
+  * allows CLI to show only relevant inferred metadata
+  * improves transparency of contract inference
+
+### Changed
+
+* `remove` command flow:
+
+  * refactored to avoid double loading of project context
+  * preflight inspection separated from execution logic
+  * improved UX consistency and internal clarity
+
+* `add` command UX:
+
+  * inference warnings are now conditional:
+
+    * only shown when new contract entries are created
+    * only shown when inferred fields are actually used
+  * avoids noise when updating existing variables or using explicit overrides
+
+* Default coercion logic in `add`:
+
+  * clarified `_coerce_default` behavior
+  * improved consistency between CLI input and contract types
+  * better handling of `int` and `bool` defaults
+
+* Resolution model:
+
+  * `ResolutionReport` made structurally immutable
+  * improved safety and predictability of resolution results
+  * reduces risk of accidental mutation across services
+
+* Internal architecture improvements:
+
+  * cleaner separation between:
+
+    * preflight vs execution (remove)
+    * inference vs override (add)
+  * reduced duplication in context loading
+  * improved service-level consistency
+
+### Fixed
+
+* `remove` command inefficiency:
+
+  * removed redundant context loading
+
+* `add` command noise:
+
+  * eliminated unnecessary inference warnings
+
+* Lint and type issues:
+
+  * resolved `ruff` complexity and style warnings
+  * fixed `mypy` compatibility issues (e.g. `datetime.UTC`)
+  * restored compatibility in `state_repository` (`write_state`)
+
+### Security
+
+* Hardened secret exposure safeguards:
+
+  * `vault show --raw` now requires explicit confirmation
+  * reduces risk of accidental leakage in terminal sessions
+
+* Documentation updates:
+
+  * clarified that `add` mutates the repository contract
+  * reinforced distinction between:
+
+    * contract mutation (shared)
+    * value mutation (local)
+
+### Documentation
+
+* Updated architecture, commands, and security model:
+
+  * clarified contract mutation semantics
+  * documented `add` as a shared, versioned operation
+  * improved consistency across docs
+
+### Notes
+
+* This iteration focuses on **UX hardening and semantic clarity**, not new surface area
+* Key improvements:
+
+  * less noise
+  * safer defaults
+  * clearer separation of responsibilities
+* Prepares the codebase for:
+
+  * richer CLI interactions
+  * future policy layers
+  * machine-readable outputs
 
 ---
 
