@@ -11,7 +11,7 @@ COMMAND_ARGUMENT = typer.Argument(..., metavar="COMMAND [ARGS]...")
 
 
 @handle_errors
-def run_command(
+def run_command_cli(
     command: list[str] = COMMAND_ARGUMENT,
 ) -> None:
     """Run a command with the resolved environment injected."""

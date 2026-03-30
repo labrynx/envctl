@@ -16,7 +16,7 @@ from envctl.cli.commands.init import init_command
 from envctl.cli.commands.inspect import inspect_command
 from envctl.cli.commands.project import project_app
 from envctl.cli.commands.remove import remove_command
-from envctl.cli.commands.run import run_command
+from envctl.cli.commands.run import run_command_cli
 from envctl.cli.commands.set import set_command
 from envctl.cli.commands.status import status_command
 from envctl.cli.commands.sync import sync_command
@@ -57,6 +57,6 @@ app.command("explain")(explain_command)
 app.command("sync")(sync_command)
 app.command("export")(export_command)
 app.command("run", context_settings={"allow_extra_args": True, "ignore_unknown_options": True})(
-    run_command
+    run_command_cli
 )
 app.command("status")(status_command)
