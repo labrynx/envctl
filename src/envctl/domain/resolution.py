@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
 
@@ -37,12 +37,12 @@ class ResolutionReport:
     def from_parts(
         cls,
         *,
-        values: dict[str, ResolvedValue],
-        missing_required: list[str],
-        unknown_keys: list[str],
-        invalid_keys: list[str],
+        values: Mapping[str, ResolvedValue],
+        missing_required: Sequence[str],
+        unknown_keys: Sequence[str],
+        invalid_keys: Sequence[str],
     ) -> ResolutionReport:
-        """Build an immutable resolution report from mutable builder structures."""
+        """Build an immutable resolution report from input collections."""
         return cls(
             values=MappingProxyType(dict(values)),
             missing_required=tuple(missing_required),

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
+
 from envctl.domain.resolution import ResolutionReport, ResolvedValue
 
 
@@ -25,15 +27,15 @@ def make_resolved_value(
 
 def make_resolution_report(
     *,
-    values: dict[str, ResolvedValue] | None = None,
-    missing_required: list[str] | None = None,
-    unknown_keys: list[str] | None = None,
-    invalid_keys: list[str] | None = None,
+    values: Mapping[str, ResolvedValue] | None = None,
+    missing_required: Sequence[str] | None = None,
+    unknown_keys: Sequence[str] | None = None,
+    invalid_keys: Sequence[str] | None = None,
 ) -> ResolutionReport:
     """Build a resolution report with sensible defaults."""
-    return ResolutionReport(
-        values=values or {},
-        missing_required=missing_required or [],
-        unknown_keys=unknown_keys or [],
-        invalid_keys=invalid_keys or [],
+    return ResolutionReport.from_parts(
+        values=dict(values or {}),
+        missing_required=list(missing_required or ()),
+        unknown_keys=list(unknown_keys or ()),
+        invalid_keys=list(invalid_keys or ()),
     )
