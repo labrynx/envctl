@@ -8,7 +8,7 @@ The application configuration is intentionally small. It controls local tool beh
 
 ```text
 ~/.config/envctl/config.json
-````
+```
 
 ## Default vault path
 
