@@ -1,5 +1,36 @@
-version: 1
-variables: {}
-meta:
-  project_key: envctl
-  project_name: envctl
+variables:
+  APP_NAME:
+    type: string
+    required: true
+    sensitive: false
+    description: Application name
+
+  APP_VERSION:
+    type: string
+    required: true
+    sensitive: false
+    description: Application version
+
+  APP_ENV:
+    type: string
+    required: true
+    sensitive: false
+    description: Runtime environment
+
+  DATABASE_URL:
+    type: string
+    required: true
+    sensitive: true
+    description: Database connection string
+
+  API_SECRET_KEY:
+    type: string
+    required: true
+    sensitive: true
+    description: Secret key for signing tokens
+
+  LOG_LEVEL:
+    type: string
+    required: true
+    sensitive: false
+    description: Logging level
