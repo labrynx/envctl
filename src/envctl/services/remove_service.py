@@ -7,7 +7,6 @@ from envctl.domain.operations import RemoveResult
 from envctl.domain.project import ProjectContext
 from envctl.repository.contract_repository import (
     load_contract_optional,
-    remove_variable,
     write_contract,
 )
 from envctl.services.context_service import load_project_context
@@ -17,7 +16,7 @@ from envctl.utils.filesystem import ensure_dir
 
 def run_remove(key: str) -> tuple[ProjectContext, RemoveResult]:
     """Remove one key from vault and contract."""
-    _config, context = load_project_context()
+    _config, context = load_project_context(persist_binding=True)
 
     ensure_dir(context.vault_project_dir)
 
@@ -31,7 +30,7 @@ def run_remove(key: str) -> tuple[ProjectContext, RemoveResult]:
 
     removed_from_contract = False
     if has_contract_entry and contract is not None:
-        updated_contract = remove_variable(contract, key)
+        updated_contract = contract.without_variable(key)
         write_contract(context.repo_contract_path, updated_contract)
         removed_from_contract = True
 

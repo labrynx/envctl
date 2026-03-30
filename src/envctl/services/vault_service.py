@@ -16,9 +16,9 @@ from envctl.utils.atomic import write_text_atomic
 from envctl.utils.filesystem import ensure_dir, ensure_file
 
 
-def _load_vault_context() -> ProjectContext:
+def _load_vault_context(*, persist_binding: bool = False) -> ProjectContext:
     """Resolve the current project context for vault operations."""
-    _config, context = load_project_context()
+    _config, context = load_project_context(persist_binding=persist_binding)
     return context
 
 
@@ -41,7 +41,7 @@ def _has_private_file_permissions(path: str | os.PathLike[str]) -> bool:
 
 def run_vault_edit() -> tuple[ProjectContext, EditResult]:
     """Open the local vault file in the user's editor."""
-    context = _load_vault_context()
+    context = _load_vault_context(persist_binding=True)
     created = _ensure_vault_file(context)
 
     open_file(str(context.vault_values_path))
@@ -138,7 +138,8 @@ def get_unknown_vault_keys() -> tuple[ProjectContext, tuple[str, ...]]:
 
 def run_vault_prune() -> tuple[ProjectContext, VaultPruneResult]:
     """Remove keys from the vault that are not declared in the contract."""
-    context, unknown_keys = get_unknown_vault_keys()
+    context = _load_vault_context(persist_binding=True)
+    _context, unknown_keys = get_unknown_vault_keys()
 
     values = load_env_file(context.vault_values_path)
     if not unknown_keys:
@@ -157,8 +158,3 @@ def run_vault_prune() -> tuple[ProjectContext, VaultPruneResult]:
         removed_keys=unknown_keys,
         kept_keys=len(pruned_values),
     )
-
-
-def run_edit() -> tuple[ProjectContext, EditResult]:
-    """Backward-compatible wrapper for legacy edit command."""
-    return run_vault_edit()

@@ -9,8 +9,8 @@ from envctl.domain.operations import AddResult, AddVariableRequest
 from envctl.domain.project import ProjectContext
 from envctl.repository.contract_repository import (
     create_empty_contract,
+    ensure_contract_metadata,
     load_contract_optional,
-    upsert_variable,
     write_contract,
 )
 from envctl.services.context_service import load_project_context
@@ -57,7 +57,7 @@ def _apply_request_to_spec(
 
 def run_add(request: AddVariableRequest) -> tuple[ProjectContext, AddResult]:
     """Add or update a key in vault and contract."""
-    _config, context = load_project_context()
+    _config, context = load_project_context(persist_binding=True)
 
     ensure_dir(context.vault_project_dir)
 
@@ -72,8 +72,17 @@ def run_add(request: AddVariableRequest) -> tuple[ProjectContext, AddResult]:
     inferred_spec: dict[str, object] | None = None
 
     if contract is None:
-        contract = create_empty_contract()
+        contract = create_empty_contract(
+            project_key=context.project_key,
+            project_name=context.project_slug,
+        )
         contract_created = True
+    else:
+        contract = ensure_contract_metadata(
+            contract,
+            project_key=context.project_key,
+            project_name=context.project_slug,
+        )
 
     existing = contract.variables.get(request.key)
 
@@ -86,8 +95,8 @@ def run_add(request: AddVariableRequest) -> tuple[ProjectContext, AddResult]:
 
     final_spec = _apply_request_to_spec(base_spec, request)
 
-    if existing is None or final_spec != existing:
-        contract = upsert_variable(contract, final_spec)
+    if existing is None or final_spec != existing or contract_created:
+        contract = contract.with_variable(final_spec)
         write_contract(context.repo_contract_path, contract)
         contract_updated = True
 

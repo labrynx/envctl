@@ -14,7 +14,7 @@ from envctl.utils.filesystem import ensure_dir
 
 def run_set(key: str, value: str) -> tuple[ProjectContext, SetResult]:
     """Create or update one explicit key in the vault values file only."""
-    _config, context = load_project_context()
+    _config, context = load_project_context(persist_binding=True)
 
     ensure_dir(context.vault_project_dir)
 

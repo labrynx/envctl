@@ -14,7 +14,7 @@ from envctl.utils.filesystem import ensure_dir
 
 def run_unset(key: str) -> tuple[ProjectContext, UnsetResult]:
     """Remove one key from the local vault only."""
-    _config, context = load_project_context()
+    _config, context = load_project_context(persist_binding=True)
 
     ensure_dir(context.vault_project_dir)
 

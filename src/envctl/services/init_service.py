@@ -12,7 +12,8 @@ from envctl.adapters.dotenv import load_env_file
 from envctl.constants import CONTRACT_VERSION, DEFAULT_ENV_EXAMPLE_FILENAME
 from envctl.domain.contract_inference import infer_spec
 from envctl.domain.project import ConfirmFn, ProjectContext
-from envctl.repository.state_repository import write_state
+from envctl.repository.contract_repository import ensure_contract_metadata
+from envctl.repository.contract_repository import load_contract_optional
 from envctl.services.context_service import load_project_context
 from envctl.utils.atomic import write_text_atomic
 from envctl.utils.filesystem import ensure_dir, ensure_file
@@ -37,17 +38,13 @@ def run_init(
     confirm: ConfirmFn | None = None,
 ) -> tuple[ProjectContext, InitResult]:
     """Initialize the current project inside the local vault."""
-    _config, context = load_project_context(project_name=project_name)
+    _config, context = load_project_context(
+        project_name=project_name,
+        persist_binding=True,
+    )
 
     ensure_dir(context.vault_project_dir)
     ensure_file(context.vault_values_path, "")
-
-    write_state(
-        context.vault_state_path,
-        project_slug=context.project_slug,
-        project_id=context.project_id,
-        repo_root=str(context.repo_root),
-    )
 
     init_result = _ensure_contract(
         context=context,
@@ -65,7 +62,15 @@ def _ensure_contract(
     confirm: ConfirmFn | None,
 ) -> InitResult:
     """Create a contract when it does not exist yet."""
-    if context.repo_contract_path.exists():
+    existing_contract = load_contract_optional(context.repo_contract_path)
+    if existing_contract is not None:
+        updated_contract = ensure_contract_metadata(
+            existing_contract,
+            project_key=context.project_key,
+            project_name=context.project_slug,
+        )
+        if updated_contract != existing_contract:
+            _write_contract_payload(context, updated_contract.to_contract_payload())
         return InitResult(contract_created=False)
 
     resolved_mode = _resolve_contract_mode(
@@ -157,6 +162,10 @@ def _build_contract_from_example(context: ProjectContext) -> dict[str, object]:
 
     return {
         "version": CONTRACT_VERSION,
+        "meta": {
+            "project_key": context.project_key,
+            "project_name": context.project_slug,
+        },
         "variables": variables,
     }
 
@@ -165,6 +174,10 @@ def _build_starter_contract(context: ProjectContext) -> dict[str, object]:
     """Create a small starter contract scaffold."""
     return {
         "version": CONTRACT_VERSION,
+        "meta": {
+            "project_key": context.project_key,
+            "project_name": context.project_slug,
+        },
         "variables": {
             "APP_NAME": {
                 "type": "string",

@@ -35,7 +35,7 @@ def build_fill_plan() -> tuple[ProjectContext, tuple[FillPlanItem, ...]]:
 
 def apply_fill(values: Mapping[str, str]) -> tuple[ProjectContext, list[str]]:
     """Persist collected values into the local vault."""
-    _config, context = load_project_context()
+    _config, context = load_project_context(persist_binding=True)
     data = load_env_file(context.vault_values_path)
     changed: list[str] = []
 
