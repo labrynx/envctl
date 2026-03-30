@@ -192,17 +192,20 @@ def test_run_remains_allowed_in_ci_mode_text_output(
 
     output_path = workspace / "child-output.txt"
 
+    script = (
+        "from pathlib import Path; "
+        "import os; "
+        "output = os.getenv('APP_NAME', ''); "
+        f"Path({str(output_path)!r}).write_text(output, encoding='utf-8')"
+    )
+
     result = runner.invoke(
         app,
         [
             "run",
             "python3",
             "-c",
-            (
-                "from pathlib import Path; "
-                "import os; "
-                f"Path({str(output_path)!r}).write_text(os.getenv('APP_NAME', ''), encoding='utf-8')"
-            ),
+            script,
         ],
     )
 

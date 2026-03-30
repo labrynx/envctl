@@ -76,7 +76,9 @@ def test_get_repo_remote_returns_value_when_available(monkeypatch, tmp_path: Pat
     repo_root.mkdir()
 
     monkeypatch.setattr(
-        git_adapters, "_run_git", lambda args, cwd=None, check=True: "git@github.com:alessbarb/envctl.git"
+        git_adapters,
+        "_run_git",
+        lambda args, cwd=None, check=True: "git@github.com:alessbarb/envctl.git",
     )
 
     result = get_repo_remote(repo_root)

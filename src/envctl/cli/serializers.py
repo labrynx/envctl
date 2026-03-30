@@ -11,7 +11,7 @@ import typer
 
 from envctl.domain.doctor import DoctorCheck
 from envctl.domain.project import ProjectContext
-from envctl.domain.resolution import ResolvedValue, ResolutionReport
+from envctl.domain.resolution import ResolutionReport, ResolvedValue
 from envctl.domain.status import StatusReport
 from envctl.utils.masking import mask_value
 

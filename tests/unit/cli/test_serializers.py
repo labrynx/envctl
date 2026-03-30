@@ -4,14 +4,14 @@ from envctl.cli.serializers import (
     serialize_doctor_checks,
     serialize_error,
     serialize_project_context,
-    serialize_resolved_value,
     serialize_resolution_report,
+    serialize_resolved_value,
     serialize_status_report,
 )
 from envctl.domain.doctor import DoctorCheck
 from envctl.domain.status import StatusReport
 from envctl.utils.masking import mask_value
-from tests.support.builders import make_resolved_value, make_resolution_report
+from tests.support.builders import make_resolution_report, make_resolved_value
 from tests.support.contexts import make_project_context
 
 

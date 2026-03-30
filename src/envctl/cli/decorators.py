@@ -46,9 +46,7 @@ def text_output_only(command_name: str) -> Callable[[Callable[..., Any]], Callab
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             if is_json_output():
-                raise ExecutionError(
-                    f"JSON output is not supported for '{command_name}' yet."
-                )
+                raise ExecutionError(f"JSON output is not supported for '{command_name}' yet.")
             return func(*args, **kwargs)
 
         return wrapper

@@ -27,9 +27,7 @@ def test_run_doctor_reports_ok_for_existing_private_vault_and_git_repo(
     repo_contract_path.parent.mkdir(parents=True, exist_ok=True)
     repo_contract_path.write_text("version: 1\nvariables: {}\n", encoding="utf-8")
 
-    vault_state_path = (
-        tmp_path / "vault" / "projects" / "demo--prj_aaaaaaaaaaaaaaaa" / "state.json"
-    )
+    vault_state_path = tmp_path / "vault" / "projects" / "demo--prj_aaaaaaaaaaaaaaaa" / "state.json"
     vault_state_path.parent.mkdir(parents=True, exist_ok=True)
     vault_state_path.write_text("{}", encoding="utf-8")
 
@@ -95,7 +93,11 @@ def test_run_doctor_warns_when_vault_is_world_writable(monkeypatch, tmp_path: Pa
             project_id="prj_aaaaaaaaaaaaaaaa",
             binding_source="local",
             repo_contract_path=tmp_path / "repo" / ".envctl.schema.yaml",
-            vault_state_path=tmp_path / "vault" / "projects" / "demo--prj_aaaaaaaaaaaaaaaa" / "state.json",
+            vault_state_path=tmp_path
+            / "vault"
+            / "projects"
+            / "demo--prj_aaaaaaaaaaaaaaaa"
+            / "state.json",
         ),
     )
 
@@ -121,7 +123,11 @@ def test_run_doctor_warns_when_vault_does_not_exist(monkeypatch, tmp_path: Path)
             project_id="prj_aaaaaaaaaaaaaaaa",
             binding_source="local",
             repo_contract_path=tmp_path / "repo" / ".envctl.schema.yaml",
-            vault_state_path=tmp_path / "vault" / "projects" / "demo--prj_aaaaaaaaaaaaaaaa" / "state.json",
+            vault_state_path=tmp_path
+            / "vault"
+            / "projects"
+            / "demo--prj_aaaaaaaaaaaaaaaa"
+            / "state.json",
         ),
     )
 
