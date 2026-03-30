@@ -109,3 +109,37 @@ class VaultPruneResult:
     path: Path
     removed_keys: tuple[str, ...]
     kept_keys: int
+
+
+@dataclass(frozen=True)
+class BindResult:
+    """Result of binding the current repository to an existing project id."""
+
+    project_id: str
+    changed: bool
+
+
+@dataclass(frozen=True)
+class UnbindResult:
+    """Result of removing the local repo-to-vault binding."""
+
+    removed: bool
+    previous_project_id: str | None
+
+
+@dataclass(frozen=True)
+class RebindResult:
+    """Result of rebinding the current checkout to a fresh project id."""
+
+    previous_project_id: str | None
+    new_project_id: str
+    copied_values: bool
+
+
+@dataclass(frozen=True)
+class RepairResult:
+    """Result of repairing local identity state."""
+
+    status: str
+    detail: str
+    project_id: str | None = None

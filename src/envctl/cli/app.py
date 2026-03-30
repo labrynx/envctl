@@ -6,6 +6,7 @@ import typer
 
 from envctl.cli.callbacks import version_callback
 from envctl.cli.commands.add import add_command
+from envctl.cli.commands.bind import bind_command
 from envctl.cli.commands.check import check_command
 from envctl.cli.commands.config import config_app
 from envctl.cli.commands.doctor import doctor_command
@@ -14,11 +15,14 @@ from envctl.cli.commands.export import export_command
 from envctl.cli.commands.fill import fill_command
 from envctl.cli.commands.init import init_command
 from envctl.cli.commands.inspect import inspect_command
+from envctl.cli.commands.rebind import rebind_command
 from envctl.cli.commands.remove import remove_command
+from envctl.cli.commands.repair import repair_command
 from envctl.cli.commands.run import run_command_cli
 from envctl.cli.commands.set import set_command
 from envctl.cli.commands.status import status_command
 from envctl.cli.commands.sync import sync_command
+from envctl.cli.commands.unbind import unbind_command
 from envctl.cli.commands.unset import unset_command
 from envctl.cli.commands.vault import vault_app
 
@@ -44,6 +48,10 @@ def main(
 
 app.command("doctor")(doctor_command)
 app.command("init")(init_command)
+app.command("bind")(bind_command)
+app.command("unbind")(unbind_command)
+app.command("rebind")(rebind_command)
+app.command("repair")(repair_command)
 app.command("add")(add_command)
 app.command("set")(set_command)
 app.command("unset")(unset_command)
