@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.decorators import handle_errors
+from envctl.cli.decorators import handle_errors, text_output_only
 from envctl.services.vault_service import run_vault_check
 from envctl.utils.output import print_kv, print_success, print_warning
 
 
 @handle_errors
+@text_output_only("vault check")
 def vault_check_command() -> None:
     """Check the local vault file as a physical artifact."""
     _context, result = run_vault_check()

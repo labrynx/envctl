@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.decorators import handle_errors
+from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
 from envctl.services.repair_service import run_repair
 from envctl.utils.output import print_kv, print_success, print_warning
 
 
 @handle_errors
+@requires_writable_runtime("project repair")
+@text_output_only("project repair")
 def project_repair_command(
     create_if_missing: bool = typer.Option(
         False,

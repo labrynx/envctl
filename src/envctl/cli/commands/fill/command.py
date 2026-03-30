@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from envctl.cli.callbacks import typer_prompt
-from envctl.cli.decorators import handle_errors
+from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
 from envctl.services.fill_service import apply_fill, build_fill_plan
 from envctl.utils.output import print_kv, print_success, print_warning
 
 
 @handle_errors
+@requires_writable_runtime("fill")
+@text_output_only("fill")
 def fill_command() -> None:
     """Interactively fill missing required values."""
     context, plan = build_fill_plan()

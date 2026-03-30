@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.decorators import handle_errors
+from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
 from envctl.services.init_service import InitContractMode, run_init
 from envctl.utils.output import print_kv, print_success, print_warning
 
@@ -21,6 +21,8 @@ def typer_confirm(message: str, default: bool) -> bool:
 
 
 @handle_errors
+@requires_writable_runtime("init")
+@text_output_only("init")
 def init_command(
     project: str | None = typer.Argument(default=None),
     contract: InitContractMode = CONTRACT_OPTION,

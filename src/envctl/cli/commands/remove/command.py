@@ -5,12 +5,14 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.callbacks import typer_confirm
-from envctl.cli.decorators import handle_errors
+from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
 from envctl.services.remove_service import plan_remove, run_remove
 from envctl.utils.output import print_kv, print_success, print_warning
 
 
 @handle_errors
+@requires_writable_runtime("remove")
+@text_output_only("remove")
 def remove_command(
     key: str = typer.Argument(...),
     yes: bool = typer.Option(False, "--yes", help="Skip confirmation."),

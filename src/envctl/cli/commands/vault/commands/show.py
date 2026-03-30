@@ -5,7 +5,7 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.callbacks import typer_confirm
-from envctl.cli.decorators import handle_errors
+from envctl.cli.decorators import handle_errors, text_output_only
 from envctl.repository.contract_repository import load_contract_optional
 from envctl.services.vault_service import run_vault_show
 from envctl.utils.masking import mask_value
@@ -13,6 +13,7 @@ from envctl.utils.output import print_kv, print_warning
 
 
 @handle_errors
+@text_output_only("vault show")
 def vault_show_command(
     raw: bool = typer.Option(
         False,

@@ -5,7 +5,7 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.callbacks import typer_confirm, typer_prompt
-from envctl.cli.decorators import handle_errors
+from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
 from envctl.domain.contract_inference import infer_spec
 from envctl.domain.operations import AddVariableRequest
 from envctl.services.add_service import run_add
@@ -194,6 +194,8 @@ def _build_request(
 
 
 @handle_errors
+@requires_writable_runtime("add")
+@text_output_only("add")
 def add_command(
     key: str = typer.Argument(...),
     value: str = typer.Argument(...),

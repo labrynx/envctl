@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from envctl.cli.decorators import handle_errors
+from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
 from envctl.services.unbind_service import run_unbind
 from envctl.utils.output import print_kv, print_success, print_warning
 
 
 @handle_errors
+@requires_writable_runtime("project unbind")
+@text_output_only("project unbind")
 def project_unbind_command() -> None:
     """Remove the local repo-to-vault binding for the current checkout."""
     repo_root, result = run_unbind()

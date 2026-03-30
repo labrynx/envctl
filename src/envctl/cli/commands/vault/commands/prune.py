@@ -5,12 +5,14 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.callbacks import typer_confirm
-from envctl.cli.decorators import handle_errors
+from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
 from envctl.services.vault_service import get_unknown_vault_keys, run_vault_prune
 from envctl.utils.output import print_kv, print_success, print_warning
 
 
 @handle_errors
+@requires_writable_runtime("vault prune")
+@text_output_only("vault prune")
 def vault_prune_command(
     yes: bool = typer.Option(
         False,

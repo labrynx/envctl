@@ -5,12 +5,14 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.callbacks import typer_confirm
-from envctl.cli.decorators import handle_errors
+from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
 from envctl.services.rebind_service import run_rebind
 from envctl.utils.output import print_kv, print_success, print_warning
 
 
 @handle_errors
+@requires_writable_runtime("project rebind")
+@text_output_only("project rebind")
 def project_rebind_command(
     copy_values: bool = typer.Option(
         True,
