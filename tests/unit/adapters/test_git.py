@@ -95,12 +95,12 @@ def test_get_repo_remote_returns_value_when_available(
     monkeypatch.setattr(
         git_adapters,
         "_run_git",
-        lambda args, cwd=None, check=True: "git@github.com:alessbarb/envctl.git",
+        lambda args, cwd=None, check=True: "git@github.com:labrynx/envctl.git",
     )
 
     result = get_repo_remote(repo_root)
 
-    assert result == "git@github.com:alessbarb/envctl.git"
+    assert result == "git@github.com:labrynx/envctl.git"
 
 
 def test_get_repo_remote_returns_none_when_git_lookup_fails(

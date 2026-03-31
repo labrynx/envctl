@@ -6,7 +6,8 @@ import pytest
 import typer
 
 import envctl.cli.callbacks as callbacks_module
-from envctl.cli.callbacks import typer_confirm, typer_prompt, version_callback
+from envctl.adapters.input import confirm
+from envctl.cli.callbacks import version_callback
 
 
 def test_version_callback_does_nothing_when_flag_is_false() -> None:
@@ -101,7 +102,10 @@ def test_typer_confirm_passes_correct_arguments(
 
     monkeypatch.setattr(callbacks_module.typer, "confirm", fake_confirm)
 
-    result = typer_confirm("Are you sure?", default=True)
+    result = confirm(
+        message="Are you sure?", 
+        default=True
+    )
 
     assert result is True
     assert captured == {

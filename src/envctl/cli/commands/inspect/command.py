@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-import typer
-
 from envctl.cli.decorators import handle_errors
-from envctl.cli.formatters import render_resolution
+from envctl.cli.presenters import render_resolution_view
 from envctl.cli.runtime import get_active_profile, is_json_output
-from envctl.cli.serializers import emit_json, serialize_project_context, serialize_resolution_report
+from envctl.cli.serializers import (
+    emit_json,
+    serialize_project_context,
+    serialize_resolution_report,
+)
 from envctl.services.inspect_service import run_inspect
-from envctl.utils.output import print_kv
 
 
 @handle_errors
@@ -31,6 +32,7 @@ def inspect_command() -> None:
         )
         return
 
-    print_kv("profile", active_profile)
-    typer.echo()
-    render_resolution(report)
+    render_resolution_view(
+        profile=active_profile,
+        report=report,
+    )

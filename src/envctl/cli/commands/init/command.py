@@ -5,8 +5,8 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
+from envctl.cli.presenters import render_init_result
 from envctl.services.init_service import InitContractMode, run_init
-from envctl.utils.output import print_kv, print_success, print_warning
 
 CONTRACT_OPTION = typer.Option(
     "ask",
@@ -34,17 +34,14 @@ def init_command(
         confirm=typer_confirm,
     )
 
-    print_success(f"Initialized {context.display_name}")
-    print_kv("project_key", context.project_key)
-    print_kv("binding_source", context.binding_source)
-    print_kv("repo_root", str(context.repo_root))
-    print_kv("contract", str(context.repo_contract_path))
-    print_kv("vault_dir", str(context.vault_project_dir))
-    print_kv("vault_values", str(context.vault_values_path))
-    print_kv("vault_state", str(context.vault_state_path))
-
-    if init_result.contract_created:
-        print_kv("contract_created", "yes")
-        print_kv("contract_template", init_result.contract_template or "custom")
-    elif init_result.contract_skipped:
-        print_warning("No contract file was created")
+    render_init_result(
+        project_key=context.project_key,
+        binding_source=context.binding_source,
+        repo_root=context.repo_root,
+        contract_path=context.repo_contract_path,
+        vault_dir=context.vault_project_dir,
+        vault_values_path=context.vault_values_path,
+        vault_state_path=context.vault_state_path,
+        init_result=init_result,
+        display_name=context.display_name,
+    )

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from _pytest.capture import CaptureFixture
 
-from envctl.utils.output import print_error, print_kv, print_success, print_warning
+from envctl.utils.output import print_cancelled, print_error, print_kv, print_success, print_warning
 
 
 def test_print_success_outputs_ok_prefix(capsys: CaptureFixture[str]) -> None:
@@ -32,3 +32,11 @@ def test_print_kv_outputs_key_value_pair(capsys: CaptureFixture[str]) -> None:
 
     captured = capsys.readouterr()
     assert captured.out.strip() == "key: value"
+
+
+def test_print_cancelled_uses_standard_warning_message(capsys: object) -> None:
+    """It should emit the shared cancellation message."""
+    print_cancelled()
+    captured = capsys.readouterr().out
+
+    assert captured == "[WARN] Nothing was changed.\n"

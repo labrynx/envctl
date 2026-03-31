@@ -9,8 +9,8 @@ from envctl.cli.decorators import (
     requires_writable_runtime,
     text_output_only,
 )
+from envctl.cli.presenters import render_profile_create_result
 from envctl.services.profile_service import run_profile_create
-from envctl.utils.output import print_kv, print_success, print_warning
 
 PROFILE_ARGUMENT = typer.Argument(...)
 
@@ -24,10 +24,8 @@ def profile_create_command(
     """Create one explicit empty profile."""
     _context, result = run_profile_create(profile)
 
-    if result.created:
-        print_success(f"Created profile '{result.profile}'")
-    else:
-        print_warning(f"Profile '{result.profile}' already exists")
-
-    print_kv("profile", result.profile)
-    print_kv("path", str(result.path))
+    render_profile_create_result(
+        profile=result.profile,
+        path=result.path,
+        created=result.created,
+    )

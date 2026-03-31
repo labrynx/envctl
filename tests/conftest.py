@@ -51,7 +51,7 @@ def patch_git_for_repo(monkeypatch: pytest.MonkeyPatch, repo: Path) -> None:
             return str(repo)
 
         if args == ["remote", "get-url", "origin"]:
-            return "git@github.com:alessbarb/envctl.git"
+            return "git@github.com:labrynx/envctl.git"
 
         if args == ["config", "--local", "--get", "envctl.projectId"]:
             return git_config_store.get("envctl.projectId", "")

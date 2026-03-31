@@ -5,9 +5,9 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors, text_output_only
+from envctl.cli.presenters import render_profile_path_result
 from envctl.cli.runtime import get_active_profile
 from envctl.services.profile_service import run_profile_path
-from envctl.utils.output import print_kv
 
 PROFILE_ARGUMENT = typer.Argument(None)
 
@@ -22,5 +22,8 @@ def profile_path_command(
         profile=profile,
         active_profile=get_active_profile(),
     )
-    print_kv("profile", result.profile)
-    print_kv("path", str(result.path))
+
+    render_profile_path_result(
+        profile=result.profile,
+        path=result.path,
+    )

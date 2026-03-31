@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.callbacks import typer_confirm
+from envctl.adapters.input import confirm
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
+from envctl.cli.presenters import render_project_rebind_result
+from envctl.cli.prompts import build_project_rebind_confirmation_message
 from envctl.services.rebind_service import run_rebind
-from envctl.utils.output import print_kv, print_success, print_warning
+from envctl.utils.output import print_cancelled
 
 
 @handle_errors
@@ -27,21 +29,22 @@ def project_rebind_command(
 ) -> None:
     """Rebind the current checkout to a fresh project identity."""
     if not yes:
-        approved = typer_confirm(
-            "This will generate a new project identity for the current checkout. Continue?",
-            False,
+        approved = confirm(
+            message=build_project_rebind_confirmation_message(),
+            default=False,
         )
         if not approved:
-            print_warning("Nothing was changed.")
+            print_cancelled()
             return
 
     context, result = run_rebind(copy_values=copy_values)
 
-    print_success(f"Rebound repository to {context.display_name}")
-    if result.previous_project_id is not None:
-        print_kv("previous_project_id", result.previous_project_id)
-    print_kv("new_project_id", result.new_project_id)
-    print_kv("copied_values", "yes" if result.copied_values else "no")
-    print_kv("repo_root", str(context.repo_root))
-    print_kv("vault_dir", str(context.vault_project_dir))
-    print_kv("vault_values", str(context.vault_values_path))
+    render_project_rebind_result(
+        display_name=context.display_name,
+        previous_project_id=result.previous_project_id,
+        new_project_id=result.new_project_id,
+        copied_values=result.copied_values,
+        repo_root=context.repo_root,
+        vault_dir=context.vault_project_dir,
+        vault_values_path=context.vault_values_path,
+    )

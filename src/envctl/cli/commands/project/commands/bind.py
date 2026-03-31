@@ -5,8 +5,8 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
+from envctl.cli.presenters import render_project_bind_result
 from envctl.services.bind_service import run_bind
-from envctl.utils.output import print_kv, print_success, print_warning
 
 
 @handle_errors
@@ -18,14 +18,13 @@ def project_bind_command(
     """Bind the current repository checkout to an existing vault."""
     context, result = run_bind(project_id)
 
-    if result.changed:
-        print_success(f"Bound repository to {context.display_name}")
-    else:
-        print_warning(f"Repository already bound to {context.display_name}")
-
-    print_kv("project_key", context.project_key)
-    print_kv("project_id", context.project_id)
-    print_kv("binding_source", context.binding_source)
-    print_kv("repo_root", str(context.repo_root))
-    print_kv("vault_dir", str(context.vault_project_dir))
-    print_kv("vault_values", str(context.vault_values_path))
+    render_project_bind_result(
+        changed=result.changed,
+        display_name=context.display_name,
+        project_key=context.project_key,
+        project_id=context.project_id,
+        binding_source=context.binding_source,
+        repo_root=context.repo_root,
+        vault_dir=context.vault_project_dir,
+        vault_values_path=context.vault_values_path,
+    )

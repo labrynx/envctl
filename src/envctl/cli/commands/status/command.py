@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from envctl.cli.decorators import handle_errors
-from envctl.cli.formatters import render_status
+from envctl.cli.presenters import render_status_view
 from envctl.cli.runtime import get_active_profile, is_json_output
 from envctl.cli.serializers import emit_json, serialize_status_report
 from envctl.services.status_service import run_status
-from envctl.utils.output import print_kv
 
 
 @handle_errors
@@ -27,5 +26,7 @@ def status_command() -> None:
         )
         return
 
-    print_kv("profile", active_profile)
-    render_status(report)
+    render_status_view(
+        profile=active_profile,
+        report=report,
+    )

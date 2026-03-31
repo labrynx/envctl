@@ -4,15 +4,20 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.callbacks import typer_confirm
+from envctl.adapters.input import confirm
 from envctl.cli.decorators import (
     handle_errors,
     requires_writable_runtime,
     text_output_only,
 )
+from envctl.cli.presenters import (
+    render_vault_prune_cancelled,
+    render_vault_prune_no_changes,
+    render_vault_prune_result,
+)
+from envctl.cli.prompts import build_vault_prune_confirmation_message
 from envctl.cli.runtime import get_active_profile
 from envctl.services.vault_service import get_unknown_vault_keys, run_vault_prune
-from envctl.utils.output import print_kv, print_success, print_warning
 
 YES_OPTION = typer.Option(
     False,
@@ -32,27 +37,33 @@ def vault_prune_command(
         get_active_profile()
     )
 
-    print_kv("profile", active_profile)
-    print_kv("vault_values", str(profile_path))
-
     if not unknown_keys:
-        print_warning("No unknown keys were removed")
+        render_vault_prune_no_changes(
+            profile=active_profile,
+            path=profile_path,
+        )
         return
 
     if not yes:
-        approved = typer_confirm(
-            f"Remove {len(unknown_keys)} unknown key(s) from profile '{active_profile}'?",
-            False,
+        approved = confirm(
+            message=build_vault_prune_confirmation_message(
+                profile=active_profile,
+                unknown_key_count=len(unknown_keys),
+            ),
+            default=False,
         )
         if not approved:
-            print_warning("No unknown keys were removed")
-            print_kv("kept_keys", "unchanged")
+            render_vault_prune_cancelled(
+                profile=active_profile,
+                path=profile_path,
+            )
             return
 
-    _context, resolved_profile, _profile_path, result = run_vault_prune(get_active_profile())
+    _context, resolved_profile, profile_path, result = run_vault_prune(get_active_profile())
 
-    print_success(
-        f"Removed {len(result.removed_keys)} unknown key(s) from profile '{resolved_profile}'"
+    render_vault_prune_result(
+        profile=resolved_profile,
+        path=profile_path,
+        removed_keys=result.removed_keys,
+        kept_keys=result.kept_keys,
     )
-    print_kv("removed_keys", ", ".join(result.removed_keys))
-    print_kv("kept_keys", str(result.kept_keys))

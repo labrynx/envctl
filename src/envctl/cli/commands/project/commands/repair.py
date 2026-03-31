@@ -5,8 +5,8 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
+from envctl.cli.presenters import render_project_repair_result
 from envctl.services.repair_service import run_repair
-from envctl.utils.output import print_kv, print_success, print_warning
 
 
 @handle_errors
@@ -30,16 +30,12 @@ def project_repair_command(
         recreate_bound_vault=recreate_bound_vault,
     )
 
-    if result.status in {"healthy", "repaired", "created", "recreated"}:
-        print_success(result.detail)
-    else:
-        print_warning(result.detail)
-
-    if context is not None:
-        print_kv("project_id", context.project_id)
-        print_kv("binding_source", context.binding_source)
-        print_kv("repo_root", str(context.repo_root))
-        print_kv("vault_dir", str(context.vault_project_dir))
-        print_kv("vault_values", str(context.vault_values_path))
-    elif result.project_id is not None:
-        print_kv("project_id", result.project_id)
+    render_project_repair_result(
+        status=result.status,
+        detail=result.detail,
+        project_id=context.project_id if context is not None else result.project_id,
+        binding_source=context.binding_source if context is not None else None,
+        repo_root=context.repo_root if context is not None else None,
+        vault_dir=context.vault_project_dir if context is not None else None,
+        vault_values_path=context.vault_values_path if context is not None else None,
+    )

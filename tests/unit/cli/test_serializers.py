@@ -20,7 +20,7 @@ from tests.support.contexts import make_project_context
 def test_serialize_project_context_returns_expected_shape() -> None:
     context = make_project_context(
         repo_root="/tmp/demo",
-        repo_remote="git@github.com:alessbarb/envctl.git",
+        repo_remote="git@github.com:labrynx/envctl.git",
     )
 
     payload = serialize_project_context(context)
@@ -30,7 +30,7 @@ def test_serialize_project_context_returns_expected_shape() -> None:
     assert payload["project_id"] == "prj_aaaaaaaaaaaaaaaa"
     assert payload["display_name"] == "demo (prj_aaaaaaaaaaaaaaaa)"
     assert payload["repo_root"] == "/tmp/demo"
-    assert payload["repo_remote"] == "git@github.com:alessbarb/envctl.git"
+    assert payload["repo_remote"] == "git@github.com:labrynx/envctl.git"
     assert payload["binding_source"] == "local"
     assert payload["repo_contract_path"].endswith(".envctl.schema.yaml")
     assert payload["vault_values_path"].endswith("values.env")

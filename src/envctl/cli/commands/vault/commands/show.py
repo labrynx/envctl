@@ -4,13 +4,19 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.callbacks import typer_confirm
+from envctl.adapters.input import confirm
 from envctl.cli.decorators import handle_errors, text_output_only
+from envctl.cli.presenters import (
+    render_vault_show_cancelled,
+    render_vault_show_empty,
+    render_vault_show_missing,
+    render_vault_show_values,
+)
+from envctl.cli.prompts import build_vault_show_raw_confirmation_message
 from envctl.cli.runtime import get_active_profile
 from envctl.repository.contract_repository import load_contract_optional
 from envctl.services.vault_service import run_vault_show
 from envctl.utils.masking import mask_value
-from envctl.utils.output import print_kv, print_warning
 
 RAW_OPTION = typer.Option(
     False,
@@ -46,37 +52,46 @@ def vault_show_command(
     context, active_profile, result = run_vault_show(selected_profile)
 
     if not result.exists:
-        print_warning("Vault file does not exist")
-        print_kv("profile", active_profile)
-        print_kv("vault_values", str(result.path))
+        render_vault_show_missing(
+            profile=active_profile,
+            path=result.path,
+        )
         raise typer.Exit(code=1)
 
-    print_kv("profile", active_profile)
-    print_kv("vault_values", str(result.path))
-
     if not result.values:
-        print_warning("Vault file is empty")
+        render_vault_show_empty(
+            profile=active_profile,
+            path=result.path,
+        )
         return
 
     if raw:
-        approved = typer_confirm(
-            "This will display unmasked secret values. Continue?",
+        approved = confirm(
+            build_vault_show_raw_confirmation_message(),
             default=False,
         )
         if not approved:
-            print_warning("Nothing was shown.")
+            render_vault_show_cancelled(
+                profile=active_profile,
+                path=result.path,
+            )
             return
 
     contract = load_contract_optional(context.repo_contract_path)
     contract_variables = contract.variables if contract is not None else {}
 
-    typer.echo("Values:")
+    rendered_values: dict[str, str] = {}
     for key in sorted(result.values):
         value = result.values[key]
         spec = contract_variables.get(key)
-        rendered = _render_vault_value(
+        rendered_values[key] = _render_vault_value(
             raw=raw,
             value=value,
             sensitive=spec is None or spec.sensitive,
         )
-        typer.echo(f"  {key}={rendered}")
+
+    render_vault_show_values(
+        profile=active_profile,
+        path=result.path,
+        values=rendered_values,
+    )

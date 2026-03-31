@@ -5,9 +5,9 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors, requires_writable_runtime
+from envctl.cli.presenters import render_set_result
 from envctl.cli.runtime import get_active_profile
 from envctl.services.set_service import run_set
-from envctl.utils.output import print_kv, print_success
 
 
 @handle_errors
@@ -23,6 +23,8 @@ def set_command(
         active_profile=get_active_profile(),
     )
 
-    print_success(f"Set '{key}' in profile '{active_profile}'")
-    print_kv("profile", active_profile)
-    print_kv("vault_values", str(profile_path))
+    render_set_result(
+        key=key,
+        profile=active_profile,
+        profile_path=profile_path,
+    )

@@ -4,14 +4,16 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.callbacks import typer_confirm
+from envctl.adapters.input import confirm
 from envctl.cli.decorators import (
     handle_errors,
     requires_writable_runtime,
     text_output_only,
 )
+from envctl.cli.presenters import render_profile_remove_result
+from envctl.cli.prompts import build_profile_remove_confirmation_message
 from envctl.services.profile_service import run_profile_remove
-from envctl.utils.output import print_kv, print_success, print_warning
+from envctl.utils.output import print_cancelled
 
 PROFILE_ARGUMENT = typer.Argument(...)
 YES_OPTION = typer.Option(
@@ -30,20 +32,18 @@ def profile_remove_command(
 ) -> None:
     """Remove one explicit profile."""
     if not yes:
-        approved = typer_confirm(
-            f"Remove profile '{profile}'?",
+        approved = confirm(
+            message=build_profile_remove_confirmation_message(profile),
             default=False,
         )
         if not approved:
-            print_warning("Nothing was changed.")
+            print_cancelled()
             return
 
     _context, result = run_profile_remove(profile)
 
-    if result.removed:
-        print_success(f"Removed profile '{result.profile}'")
-    else:
-        print_warning(f"Profile '{result.profile}' does not exist")
-
-    print_kv("profile", result.profile)
-    print_kv("path", str(result.path))
+    render_profile_remove_result(
+        profile=result.profile,
+        path=result.path,
+        removed=result.removed,
+    )

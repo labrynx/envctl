@@ -9,8 +9,8 @@ from envctl.cli.decorators import (
     requires_writable_runtime,
     text_output_only,
 )
+from envctl.cli.presenters import render_profile_copy_result
 from envctl.services.profile_service import run_profile_copy
-from envctl.utils.output import print_kv, print_success
 
 SOURCE_ARGUMENT = typer.Argument(...)
 TARGET_ARGUMENT = typer.Argument(...)
@@ -26,9 +26,10 @@ def profile_copy_command(
     """Copy one profile into another."""
     _context, result = run_profile_copy(source, target)
 
-    print_success(f"Copied profile '{result.source_profile}' into '{result.target_profile}'")
-    print_kv("source_profile", result.source_profile)
-    print_kv("target_profile", result.target_profile)
-    print_kv("source_path", str(result.source_path))
-    print_kv("target_path", str(result.target_path))
-    print_kv("copied_keys", str(result.copied_keys))
+    render_profile_copy_result(
+        source_profile=result.source_profile,
+        target_profile=result.target_profile,
+        source_path=result.source_path,
+        target_path=result.target_path,
+        copied_keys=result.copied_keys,
+    )
