@@ -1,18 +1,20 @@
 # Mental Model
 
-If you understand this page, you understand `envctl`.
+If you understand this page, the rest of `envctl` becomes much easier to follow.
 
-Everything else is a consequence of this model.
+Most of the commands, workflows, and design choices make sense once you see the model underneath them.
 
 ## The five parts
 
-Think of `envctl` as five explicit parts:
+A useful way to think about `envctl` is as five connected parts:
 
 - **contract**
 - **vault**
 - **profile**
 - **resolution**
 - **projection**
+
+Each one has a different job. Keeping them separate is one of the reasons the tool stays easier to reason about.
 
 ## Contract
 
@@ -24,7 +26,7 @@ It lives in the repository:
 <repo-root>/.envctl.schema.yaml
 ```
 
-It may define:
+It may describe things like:
 
 * which variables exist
 * whether they are required
@@ -35,18 +37,19 @@ It may define:
 
 The contract must not contain secrets.
 
+A good way to think about it is this: the contract is the shared description of the project’s requirements.
+
 ## Vault
 
 The vault stores local machine-owned values outside the repository.
 
 This is where real values live.
 
-The vault is local by design.
-It is not meant to be shared through version control.
+The vault is local by design. It is not meant to be shared through version control, and it is not supposed to become part of the project source tree.
 
 ## Profile
 
-A profile selects one local value namespace for the same contract.
+A profile selects one local value set for the same contract.
 
 Examples:
 
@@ -65,11 +68,13 @@ A profile does **not** change:
 * descriptions
 * sensitivity flags
 
+So profiles give you multiple local setups for one project contract. They do not create multiple versions of the contract itself.
+
 ## Resolution
 
-Resolution is how `envctl` decides what value each variable gets.
+Resolution is how `envctl` decides what value each variable gets at runtime.
 
-The effective model is:
+The effective order is:
 
 ```text
 process environment
@@ -77,22 +82,23 @@ process environment
 -> contract defaults
 ```
 
-This is explicit and deterministic.
+That means the current process environment can override the active profile, and the contract can still provide non-sensitive defaults if no explicit value is set.
 
-There is no hidden profile inheritance.
+There is no hidden profile inheritance. The rules are meant to stay visible and easy to trace.
 
 ## Projection
 
 Projection is how resolved state becomes usable.
 
-Main projection modes:
+The main projection modes are:
 
 * `run` → inject values into a subprocess
 * `sync` → generate `.env.local`
-* `export` → emit shell export lines
+* `export` → print shell export lines
 
-Projected files are artifacts.
-They are not the source of truth.
+Projected files are outputs. They are not the source of truth.
+
+That matters because it keeps generated artifacts from silently becoming the real configuration model.
 
 ## The most important distinction
 
@@ -102,9 +108,11 @@ The profile vault defines what is currently set.
 
 The resolved environment defines what actually runs.
 
-That distinction explains almost every command.
+That distinction explains most command behavior.
 
-## Why command semantics look the way they do
+## Why the commands behave the way they do
+
+Once you keep those layers separate, these command semantics make sense:
 
 * `add` → contract + active-profile value
 * `set` → active-profile value only
@@ -113,26 +121,26 @@ That distinction explains almost every command.
 
 This is intentional.
 
-It prevents shared requirements and local state from collapsing into one thing.
+It stops shared requirements and machine-local values from getting mixed together.
 
 ## Runtime mode is different
 
 `runtime_mode` is not a profile.
 
-* **profile** = value namespace
-* **runtime mode** = command policy
+* **profile** = which local value set to use
+* **runtime mode** = which command policy applies
 
-Example:
+For example:
 
-* `profile = "ci"` means “use the `ci` values”
-* `runtime_mode = "ci"` means “apply CI command restrictions”
+* `profile = "ci"` means “use the `ci` profile values”
+* `runtime_mode = "ci"` means “apply CI restrictions to command behavior”
 
-They are separate on purpose.
+They are related only because they may both matter in the same workflow. They are not the same concept.
 
-## If you remember only one sentence
+## If you remember only one thing
 
 > The contract defines what exists.
 > The vault stores local values.
-> The active profile selects one value set.
+> The active profile selects one local value set.
 > Resolution decides what runs.
 > Projection makes it usable.

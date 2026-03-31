@@ -1,46 +1,48 @@
 # Metadata and Local State
 
-`envctl` does not treat a repository-local metadata file as the primary source of truth.
+`envctl` does not treat a repository-local metadata file as the main source of truth.
 
-The project contract lives in the repository. Local values live in user-owned local storage. Project identity is derived from the current repository and configuration.
+That is a deliberate design choice.
 
-## Core principle
+The contract belongs to the repository. Real values belong to local storage. Project identity is resolved from the current checkout and local binding state. Those concerns are related, but they are not the same thing, and `envctl` tries hard not to collapse them into one blurry layer.
 
-`envctl` separates these concerns intentionally:
+## The main idea
+
+`envctl` separates these concerns on purpose:
 
 - **contract**: what the project needs
-- **local state**: which values are available on this machine
-- **profiles**: which local value namespace is active
+- **local state**: what values exist on this machine
+- **profiles**: which local value set is active
 - **projection**: how the resolved environment is exposed to tools
 - **identity**: how the current repository is recognized consistently
 
-A repository should not need a mandatory link file just to connect itself to its local environment state.
+A repository should not need a mandatory local link file just to know which environment belongs to it. That would make the repository itself responsible for machine-local state, which is exactly what `envctl` tries to avoid.
 
 ## Repository identity
 
-Project identity is resolved through an explicit local binding model.
+Project identity is handled through the binding model.
 
 `envctl` distinguishes between:
 
 - a **canonical project id** such as `prj_<16-hex>`
 - a **provisional project id** such as `tmp_<hash>`
-- a **logical project key** used to identify the project across checkouts when needed
+- a **logical project key** used when a project needs to be recognized across checkouts
 
-Canonical identity is persisted in local Git config for the current checkout.
+The canonical identity is persisted in local Git config for the current checkout.
 
-When no persisted local binding exists, `envctl` may recover identity from persisted vault state using:
+If no persisted local binding exists yet, `envctl` may still be able to recover the project identity from existing vault state using things like:
 
 - Git remote URL
 - contract metadata such as `meta.project_key`
 - previously seen checkout paths (`known_paths`)
 
-If no persisted identity can be found, a provisional identity is used until a command persists a canonical binding.
+If nothing reliable can be recovered, `envctl` falls back to a provisional identity until a command persists a canonical binding.
 
 ## Persisted local state
 
-Each vault project stores structured local state used for recovery and continuity.
+Each vault project can also store some structured local state to help with recovery and continuity.
 
-Typical fields include:
+Typical fields may include:
 
 - project slug
 - project key
@@ -50,26 +52,26 @@ Typical fields include:
 - known checkout paths
 - timestamps
 
-This state is local operational metadata. It is not the contract and it is not the source of truth for secret values.
+This is operational metadata. It helps `envctl` reconnect things locally, but it is not the contract and it is not the source of truth for secrets.
 
-## Local state
+## What local state means
 
-Local state refers to the values that exist on the current machine for the current project.
+Local state is the set of values that exist on the current machine for the current project.
 
-Examples include:
+That includes things like:
 
 - values written with `envctl add`
 - values written with `envctl set`
 - values collected with `envctl fill`
 - values stored by the default local provider
 
-This state is local by design and should not be committed to source control.
+This state is local by design. It should not be committed to source control.
 
 ## Profiles
 
-Profile state is a refinement of local state.
+Profiles are one layer inside local state.
 
-A profile identifies one explicit local value set for the same project contract.
+A profile gives a name to one local value set for the same project contract. That is how you can keep `local`, `dev`, `staging`, or `ci` values on one machine without changing the shared requirements of the project.
 
 Examples:
 
@@ -90,43 +92,41 @@ Explicit profiles are stored at:
 <vault-project-dir>/profiles/<profile>.env
 ```
 
-Profiles are local and machine-specific, just like the underlying values.
-
-There is no hidden inheritance between profiles.
+Profiles are still local state. They do not change who owns the values, and they do not become part of the repository contract.
 
 ## Contract definitions vs local values
 
-In v2.3, `envctl` distinguishes clearly between:
+In v2.3, `envctl` makes a clear distinction between:
 
 * variables declared in the contract
 * values stored locally for those variables
-* profiles that namespace those local values
+* profiles that group those local values
 
-This distinction is visible in command semantics:
+You can see that distinction in command behavior:
 
-* `add` → creates contract definition + active-profile value
-* `set` → updates active-profile value only
-* `unset` → removes active-profile value only
-* `remove` → deletes contract definition + removes values from all persisted profiles
+* `add` → creates a contract definition and stores an initial value in the active profile
+* `set` → updates the active-profile value only
+* `unset` → removes the active-profile value only
+* `remove` → deletes the contract definition and removes values from all persisted profiles
 
-That separation keeps the system explicit:
+This is one of the core semantic rules of the model:
 
 * the contract defines what exists
 * local profile state defines what is currently set
 
-This is one of the key semantic rules of the v2.3 model.
-
 ## Optional cache or helper files
 
-`envctl` may use local cache files or helper artifacts for performance or compatibility.
+`envctl` may create local cache files or helper artifacts for compatibility or convenience.
 
-If such files exist, they should follow these rules:
+If those files exist, they should follow these rules:
 
 * they are not the source of truth
 * they do not contain the project contract
 * they are safe to delete and regenerate
-* they are ignored by Git where appropriate
+* they should be ignored by Git where appropriate
 * they do not redefine project identity
+
+That way, helper files stay helpers. They do not quietly become part of the model.
 
 ## What the repository owns
 
@@ -136,7 +136,7 @@ The repository owns the shared contract:
 <repo-root>/.envctl.schema.yaml
 ```
 
-That file may define:
+That file may describe:
 
 * required and optional variables
 * descriptions
@@ -152,17 +152,17 @@ The repository does **not** own the user's local secret state.
 
 Local storage owns the machine-specific values used to satisfy the contract.
 
-Those values may differ from one developer machine to another. That is expected.
+Those values may vary from one machine to another. That is normal and expected.
 
-Profiles make that separation more expressive, but they do not change ownership:
+Profiles make that separation easier to work with, but they do not change ownership:
 
 * the contract is still shared
 * profile values are still local
-* projected files are still derived artifacts
+* projected files are still generated artifacts
 
 ## What projected files are
 
-A projected file such as `.env.local` produced by `envctl sync` is a generated artifact.
+A file such as `.env.local`, created by `envctl sync`, is a generated artifact.
 
 It is:
 
@@ -171,13 +171,17 @@ It is:
 * not the source of truth
 * safe to regenerate
 
-This distinction is important. It avoids confusion between stored secrets, declared contract, and materialized outputs.
+This distinction matters because it keeps three separate ideas from getting mixed together:
+
+* what the project declares
+* what the machine stores
+* what a tool happens to consume right now
 
 ## Security note
 
-Any local cache, stored value file, or generated env artifact may reveal information about the developer environment.
+Any local cache, stored value file, or generated env artifact may reveal something about the local developer environment.
 
-Even when such files do not contain the full secret model, they should still be treated carefully:
+Even when those files do not contain the full secret model, they should still be handled carefully:
 
 * keep them out of version control
 * store them in private locations
@@ -185,24 +189,21 @@ Even when such files do not contain the full secret model, they should still be 
 
 ## Future evolution
 
-Future versions may introduce:
+Future versions may add things like:
 
 * richer local provider state formats
 * optional provider-specific caches
-* migration helpers for legacy repository metadata
+* migration helpers for older repository metadata
 * clearer machine-readable state inspection
-* richer profile inspection and management
+* better profile inspection and management
 
-Even then, the core rule should remain the same:
+Even if those features appear, the core rule should stay the same:
 
-the repository contract is shared, profile values are local, and generated artifacts are not the source of truth.
+the contract is shared, profile values are local, and generated artifacts are not the source of truth.
 
 ## Summary
 
-Project identity is derived.
-Contract is shared.
-Profiles namespace local values.
-Generated env files are disposable artifacts.
+Project identity is resolved through local binding. The contract is shared. Profiles organize local values. Generated env files are disposable outputs.
 
 That is the metadata model `envctl` is built around.
 

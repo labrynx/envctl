@@ -1,24 +1,24 @@
 # Use Cases
 
-This document provides practical, progressive use cases for `envctl`.
+This document collects practical ways to use `envctl`.
 
-It is designed as:
+It is meant to help in three situations:
 
-- onboarding material for new users
-- a training reference for real workflows
-- a quick lookup for “how do I do X?”
+- when you are learning the tool for the first time
+- when you want examples of real workflows
+- when you just want to answer the question, “How do I do X?”
 
-The cases are ordered from **basic → intermediate → advanced → real-world scenarios**.
+The cases move from basic to more advanced scenarios.
 
 ## Mental model reminder
 
-Before diving in:
+Before jumping into examples, keep this simple map in mind:
 
 - **contract** → what the project needs
 - **vault** → what your machine has stored
 - **profile** → which local value set is active
 - **resolution** → what is actually used
-- **projection** → how it is applied
+- **projection** → how the result is exposed to tools
 
 ---
 
@@ -39,9 +39,9 @@ envctl check
 
 ## What happens
 
-* config is created
-* the repository is initialized
-* missing values are requested
+* your local config is created
+* the repository is prepared for `envctl`
+* missing required values are requested
 * the environment is validated
 
 ---
@@ -50,17 +50,17 @@ envctl check
 
 ## Goal
 
-Run your app using the resolved environment directly.
+Run your app directly from the resolved environment.
 
 ```bash
 envctl run -- python app.py
 ```
 
-## Why
+## Why this is useful
 
 * no need to create `.env.local`
-* avoids leaking secrets to disk
-* uses the same resolution model as `check` and `inspect`
+* fewer secrets written to disk
+* the same model used by `check` and `inspect` also drives runtime
 
 ---
 
@@ -82,13 +82,15 @@ PORT = 3000 (default)
 DATABASE_URL = po******** (vault)
 ```
 
+This is helpful when the question is not “what is stored?” but “what will actually be used?”
+
 ---
 
 # 4. Debug one variable
 
 ## Goal
 
-Understand why something is failing.
+Understand why one variable is missing, invalid, or unexpected.
 
 ```bash
 envctl explain DATABASE_URL
@@ -98,7 +100,7 @@ envctl explain DATABASE_URL
 
 * a value is missing
 * a value is invalid
-* behavior is unexpected
+* behavior is surprising
 * a default is being used when you expected a stored value
 
 ---
@@ -107,7 +109,7 @@ envctl explain DATABASE_URL
 
 ## Goal
 
-Introduce a new variable to the shared model.
+Introduce a new variable into the shared model.
 
 ```bash
 envctl add REDIS_URL redis://localhost:6379
@@ -117,7 +119,9 @@ envctl add REDIS_URL redis://localhost:6379
 
 * a contract entry is created or updated
 * the initial value is stored in the active profile
-* metadata is inferred automatically
+* metadata may be inferred automatically
+
+Remember that `add` is a shared project change, not just a local tweak.
 
 ---
 
@@ -125,7 +129,7 @@ envctl add REDIS_URL redis://localhost:6379
 
 ## Goal
 
-Update a value without affecting the contract.
+Update a local value without changing the contract.
 
 ```bash
 envctl set PORT 4000
@@ -148,7 +152,7 @@ Clear a value but keep the contract definition.
 envctl unset PORT
 ```
 
-## When to use it
+## When this is useful
 
 * testing fallback behavior
 * forcing `fill` to ask again
@@ -160,7 +164,7 @@ envctl unset PORT
 
 ## Goal
 
-Delete a variable from the project.
+Delete a variable from the shared project model.
 
 ```bash
 envctl remove PORT
@@ -171,13 +175,15 @@ envctl remove PORT
 * the variable is removed from the contract
 * the value is removed from all persisted profiles
 
+This is a contract change, so it affects the project, not just your local setup.
+
 ---
 
-# 9. After pulling changes
+# 9. After pulling contract changes
 
 ## Goal
 
-Sync your local setup with an updated contract.
+Bring your local setup back in line with an updated contract.
 
 ```bash
 envctl check
@@ -187,7 +193,7 @@ envctl fill
 ## Typical situation
 
 * new required variables were added
-* validation fails until you provide values
+* validation fails until local values are provided
 
 ---
 
@@ -195,7 +201,7 @@ envctl fill
 
 ## Goal
 
-Work with tools that require a file on disk.
+Work with a tool that expects an env file on disk.
 
 ```bash
 envctl sync
@@ -221,8 +227,8 @@ eval "$(envctl export)"
 
 ## Notes
 
-* this is mainly aimed at POSIX-like shells
-* `run` is usually a cleaner default when possible
+* mainly useful in POSIX-like shells
+* `run` is usually the cleaner default when possible
 
 ---
 
@@ -236,14 +242,14 @@ Check host and project readiness.
 envctl doctor
 ```
 
-## Detects
+## Typical checks
 
 * config issues
 * runtime mode
 * active profile
 * vault permissions
 * missing contract
-* repo detection problems
+* repository detection problems
 
 ---
 
@@ -251,7 +257,7 @@ envctl doctor
 
 ## Goal
 
-Get a workflow-oriented overview.
+Get a quick workflow-oriented overview.
 
 ```bash
 envctl status
@@ -260,7 +266,7 @@ envctl status
 ## Typical use
 
 * understand whether the project is ready to run
-* identify what action to take next
+* see what action should come next
 
 ---
 
@@ -268,7 +274,7 @@ envctl status
 
 ## Goal
 
-Check the current profile vault file.
+Check the current profile’s stored vault file.
 
 ```bash
 envctl vault check
@@ -278,9 +284,9 @@ envctl vault show
 
 ## Useful when
 
-* you want to debug stored values
-* you want to inspect the actual vault file path
-* you want to confirm the current active profile file
+* you want to debug stored values directly
+* you want the actual path of the physical vault file
+* you want to confirm which profile file is active
 
 ---
 
@@ -297,7 +303,7 @@ envctl vault prune
 ## When useful
 
 * the contract changed
-* old variables remain in the active profile vault
+* old variables still remain in the active profile’s vault file
 
 ---
 
@@ -312,11 +318,11 @@ envctl --profile dev check
 envctl --profile dev run -- python app.py
 ```
 
-## Why
+## Why this works well
 
 * same contract
 * different local values
-* explicit and easy to reason about
+* explicit and easy to follow
 
 ---
 
@@ -324,7 +330,7 @@ envctl --profile dev run -- python app.py
 
 ## Goal
 
-Start a clean value namespace for another local environment.
+Start a clean local value namespace.
 
 ```bash
 envctl profile create staging
@@ -332,7 +338,7 @@ envctl profile create staging
 
 ## Typical use
 
-* you want one local setup for development and another for staging-like testing
+You want one setup for normal development and another one for staging-like testing.
 
 ---
 
@@ -346,10 +352,10 @@ Use an existing profile as a starting point.
 envctl profile copy dev staging
 ```
 
-## Why
+## Why this is helpful
 
-* avoid re-entering every value by hand
-* keep a close variant of an existing setup
+* avoids re-entering every value by hand
+* lets you create a close variant of an existing setup
 
 ---
 
@@ -374,7 +380,7 @@ envctl profile remove staging --yes
 
 ## Scenario
 
-You want a default setup plus a second environment.
+You want a default setup and a second environment.
 
 ```bash
 envctl set APP_NAME demo
@@ -383,7 +389,7 @@ envctl --profile staging set APP_NAME demo-staging
 envctl --profile staging set DATABASE_URL postgres://localhost/staging
 ```
 
-Now:
+Now you can run either one:
 
 ```bash
 envctl run -- python app.py
@@ -402,14 +408,14 @@ You add a variable:
 envctl add API_KEY placeholder
 ```
 
-Then:
+Then commit the contract change:
 
 ```bash
 git add .envctl.schema.yaml
 git commit
 ```
 
-Other developers:
+Other developers then satisfy that contract locally:
 
 ```bash
 envctl fill
@@ -418,8 +424,8 @@ envctl fill
 ## Why this matters
 
 * `add` is a shared change
-* contract updates must be reviewed
-* values remain local
+* contract updates should be reviewed
+* values stay local
 
 ---
 
@@ -455,13 +461,13 @@ envctl explain DATABASE_URL
 envctl vault show
 ```
 
-## Why this works
+## Why this sequence works
 
 * `status` gives the broad picture
-* `check` confirms validity
-* `inspect` shows resolved state
-* `explain` shows one key in detail
-* `vault show` shows physical stored values
+* `check` confirms whether the contract is satisfied
+* `inspect` shows the resolved state
+* `explain` zooms in on one key
+* `vault show` reveals the physical stored values
 
 ---
 
@@ -477,9 +483,11 @@ envctl project rebind --new-project --empty
 
 ## Use case
 
-* duplicate repo
-* experiment branch
-* intentional identity split
+This can be useful for:
+
+* duplicated repositories
+* experimental branches
+* intentional identity splits
 
 ---
 
@@ -497,7 +505,7 @@ envctl project repair
 
 * the vault was moved
 * local binding is missing
-* recovery is needed after machine or path changes
+* recovery is needed after path or machine changes
 
 ---
 
@@ -518,13 +526,15 @@ envctl check
 envctl run -- npm start
 ```
 
+This gives a clean path from clone to runnable project without passing around `.env.local` files.
+
 ---
 
 # 27. Advanced local multi-environment workflow
 
 ## Scenario
 
-You want `dev`, `staging`, and `ci` profiles locally.
+You want `dev`, `staging`, and `ci` profiles on one machine.
 
 ```bash
 envctl profile create dev
@@ -537,7 +547,7 @@ envctl --profile staging set APP_NAME demo-staging
 envctl --profile ci set APP_NAME demo-ci
 ```
 
-Then:
+Then you can validate or project each one explicitly:
 
 ```bash
 envctl --profile dev check
@@ -562,7 +572,8 @@ envctl vault show
 ## Use only when needed
 
 Normally, `set`, `unset`, `fill`, and `profile` commands are safer.
-`vault edit` is for explicit low-level work.
+
+`vault edit` is for explicit low-level work when you really need it.
 
 ---
 
@@ -601,16 +612,16 @@ envctl --profile staging run -- <command>
 
 # Final takeaway
 
-Use:
+A simple summary of the command model is:
 
-* `add` → introduce variables
+* `add` → introduce variables into the shared model
 * `set` → change active-profile values
 * `unset` → remove active-profile values
 * `remove` → delete variables from the shared model
 * `profile ...` → manage local value namespaces
 * `vault ...` → inspect or maintain physical vault files
 
-And remember:
+And the core model remains:
 
 > The contract defines what exists.
 > The vault defines what is stored.

@@ -9,6 +9,113 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* Prompt/presentation layer for CLI confirmations:
+
+  * introduced `cli/prompts` with dedicated prompt builders
+  * centralizes construction of human-facing confirmation messages
+  * removes string-building logic from command handlers
+  * enables future reuse across different UIs (CLI, TUI, etc.)
+
+* Composite confirmation messages:
+
+  * `remove`, `profile remove`, `project rebind`, `vault prune`, and `vault show --raw` now use structured multi-line prompts
+  * confirmation messages can reflect execution plans (e.g. affected profiles)
+  * improves clarity for destructive operations
+
+* Profile-aware sync target resolution:
+
+  * introduced `build_repo_sync_env_path`
+  * `sync` now materializes environment files per profile:
+
+    * `.env.local` for implicit local profile
+    * `.env.<profile>` for named profiles
+  * enables multi-environment workflows directly in the repository
+
+---
+
+### Changed
+
+* CLI architecture — prompts vs presentation:
+
+  * confirmation message construction moved out of commands into `cli/prompts`
+  * commands now orchestrate flow only (no string formatting)
+  * reinforces separation:
+
+    * prompts → input layer
+    * presenters → output layer
+
+* CLI interaction boundaries:
+
+  * commands no longer embed user-facing text logic
+  * interactive flows (`confirm`, `prompt`) now rely on explicit prompt builders
+  * prepares the CLI for alternative frontends or non-interactive modes
+
+* `sync` command semantics:
+
+  * output file is now derived from the active profile instead of a single fixed path
+  * removes implicit coupling to `context.repo_env_path`
+  * aligns projection layer with profile-aware runtime model
+
+* Internal path responsibilities:
+
+  * repository context no longer dictates sync output location
+  * projection paths are now explicitly resolved per operation
+  * improves clarity between:
+
+    * context (what exists)
+    * projection (what is generated)
+
+* CLI layering consistency:
+
+  * reinforced clean separation between:
+
+    * commands (orchestration)
+    * services (business logic)
+    * prompts (input construction)
+    * presenters (output rendering)
+  * reduces leakage of concerns across layers
+
+---
+
+### Fixed
+
+* Inconsistent sync behavior:
+
+  * `sync` previously ignored active profile when writing `.env`
+  * now correctly reflects selected profile in output file name
+
+* Confirmation message duplication:
+
+  * removed duplicated inline message construction across commands
+  * unified under reusable prompt builders
+
+---
+
+### Notes
+
+* This iteration strengthens the **interaction architecture of the CLI**:
+
+  * clear separation between:
+
+    * input (prompts)
+    * orchestration (commands)
+    * output (presenters)
+
+* Key improvements:
+
+  * more predictable multi-profile behavior (`sync`)
+  * safer and clearer destructive confirmations
+  * cleaner command implementations (less string logic, more intent)
+
+* Prepares the codebase for:
+
+  * richer interactive flows (wizard-style commands)
+  * alternative frontends (TUI, GUI, API)
+  * localization / i18n of CLI messages
+  * policy-aware confirmations (e.g. CI vs local)
+
 ---
 
 ## [2.3.0] – 2026-03-30
