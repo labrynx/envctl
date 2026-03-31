@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "envctl"
-version = "2.3.0"
+version = "2.3.1"
 description = "Local environment control plane for contract-driven development workflows"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -43,10 +43,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/alessbarb/envctl"
-Repository = "https://github.com/alessbarb/envctl"
-Issues = "https://github.com/alessbarb/envctl/issues"
-Changelog = "https://github.com/alessbarb/envctl/releases"
+Homepage = "https://github.com/labrynx/envctl"
+Repository = "https://github.com/labrynx/envctl"
+Issues = "https://github.com/labrynx/envctl/issues"
+Changelog = "https://github.com/labrynx/envctl/releases"
 
 [project.optional-dependencies]
 dev = [

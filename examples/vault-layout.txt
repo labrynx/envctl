@@ -1,8 +1,0 @@
-~/.envctl/vault/
-└── projects/
-    ├── api-service/
-    │   └── .env.local
-    ├── web-app/
-    │   └── .env.local
-    └── worker/
-        └── .env.local
