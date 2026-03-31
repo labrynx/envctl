@@ -11,9 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-* Prompt/presentation layer for CLI confirmations:
+* Prompt/presentation layer for CLI interactions:
 
   * introduced `cli/prompts` with dedicated prompt builders
+  * introduced `cli/presenters` to separate output rendering from command orchestration
   * centralizes construction of human-facing confirmation messages
   * removes string-building logic from command handlers
   * enables future reuse across different UIs (CLI, TUI, etc.)
@@ -31,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
     * `.env.local` for implicit local profile
     * `.env.<profile>` for named profiles
+
   * enables multi-environment workflows directly in the repository
 
 ---
@@ -40,23 +42,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * CLI architecture — prompts vs presentation:
 
   * confirmation message construction moved out of commands into `cli/prompts`
-  * commands now orchestrate flow only (no string formatting)
-  * reinforces separation:
+  * commands now orchestrate flow only, without embedding user-facing formatting logic
+  * reinforces separation between:
 
     * prompts → input layer
     * presenters → output layer
+    * commands → orchestration layer
 
 * CLI interaction boundaries:
 
-  * commands no longer embed user-facing text logic
   * interactive flows (`confirm`, `prompt`) now rely on explicit prompt builders
-  * prepares the CLI for alternative frontends or non-interactive modes
+  * destructive and confirmation-based commands use reusable interaction components
+  * prepares the CLI for alternative frontends and non-interactive policy handling
+
+* CLI output architecture cleanup:
+
+  * legacy formatter-based output handling was removed
+  * output responsibilities are now split more explicitly across presenters, prompts, and shared output utilities
+  * reduces leakage of formatting concerns across command handlers
 
 * `sync` command semantics:
 
   * output file is now derived from the active profile instead of a single fixed path
   * removes implicit coupling to `context.repo_env_path`
-  * aligns projection layer with profile-aware runtime model
+  * aligns projection behavior with the profile-aware runtime model
 
 * Internal path responsibilities:
 
@@ -75,7 +84,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * services (business logic)
     * prompts (input construction)
     * presenters (output rendering)
-  * reduces leakage of concerns across layers
+
+  * makes command implementations smaller and more intention-revealing
+
+* Documentation and repository metadata alignment:
+
+  * refreshed README and documentation for clarity, onboarding, and conceptual consistency
+  * aligned repository links, badges, and references with the current project location
+  * tightened terminology across concepts, workflows, and reference documentation
+
+---
+
+### Removed
+
+* Legacy repository artifacts:
+
+  * removed outdated local helper scripts from `scripts/`
+  * removed obsolete example artifact `examples/vault-layout.txt`
+  * removed legacy formatter-based CLI module and related tests
+  * cleans up repository surface in favor of the current runtime and interaction model
 
 ---
 
@@ -83,31 +110,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Inconsistent sync behavior:
 
-  * `sync` previously ignored active profile when writing `.env`
-  * now correctly reflects selected profile in output file name
+  * `sync` previously ignored the active profile when writing repository env files
+  * now correctly reflects the selected profile in the generated output file name
 
 * Confirmation message duplication:
 
   * removed duplicated inline message construction across commands
-  * unified under reusable prompt builders
+  * unified confirmation text generation under reusable prompt builders
+
+---
+
+### Build
+
+* Package metadata refinements for the next patch release:
+
+  * `pyproject.toml` metadata was finalized for the upcoming `2.3.1` release
+  * packaging information now better matches the current repository and distribution state
 
 ---
 
 ### Notes
 
-* This iteration strengthens the **interaction architecture of the CLI**:
-
-  * clear separation between:
-
-    * input (prompts)
-    * orchestration (commands)
-    * output (presenters)
+* This iteration strengthens the **interaction architecture of the CLI** and the **profile-aware projection model**.
 
 * Key improvements:
 
-  * more predictable multi-profile behavior (`sync`)
-  * safer and clearer destructive confirmations
-  * cleaner command implementations (less string logic, more intent)
+  * clearer separation between input, orchestration, and output
+  * safer and more expressive destructive confirmations
+  * more predictable multi-profile repository sync behavior
+  * cleaner command implementations with less embedded formatting logic
+  * better alignment between documentation, packaging metadata, and repository identity
 
 * Prepares the codebase for:
 
@@ -115,6 +147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * alternative frontends (TUI, GUI, API)
   * localization / i18n of CLI messages
   * policy-aware confirmations (e.g. CI vs local)
+  * broader multi-environment workflows directly from repository projections
 
 ---
 
