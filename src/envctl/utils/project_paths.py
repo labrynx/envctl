@@ -44,3 +44,12 @@ def build_profile_env_path(vault_project_dir: Path, profile: str | None) -> Path
         return vault_project_dir / DEFAULT_VALUES_FILENAME
 
     return build_profiles_dir(vault_project_dir) / f"{normalized}.env"
+
+def build_repo_sync_env_path(repo_root: Path, profile: str | None) -> Path:
+    """Return the repository sync target for the selected profile.
+
+    The implicit local profile is materialized as ``.env.local``.
+    Explicit profiles are materialized as ``.env.<profile>``.
+    """
+    normalized = normalize_profile_name(profile)
+    return repo_root / f".env.{normalized}"

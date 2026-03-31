@@ -53,13 +53,13 @@ def test_upsert_state_preserves_created_at_and_updates_last_seen(tmp_path: Path)
         project_key="demo",
         project_id="prj_aaaaaaaaaaaaaaaa",
         repo_root="/tmp/demo",
-        git_remote="git@github.com:alessbarb/envctl.git",
+        git_remote="git@github.com:labrynx/envctl.git",
     )
 
     updated = read_state(path)
     assert updated is not None
     assert updated["created_at"] == previous["created_at"]
-    assert updated["git_remote"] == "git@github.com:alessbarb/envctl.git"
+    assert updated["git_remote"] == "git@github.com:labrynx/envctl.git"
     assert "/tmp/demo" in updated["known_paths"]
 
 
