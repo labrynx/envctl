@@ -12,7 +12,13 @@ from envctl.constants import CONTRACT_VERSION
 VariableType = Literal["string", "int", "bool", "url"]
 VariableFormat = Literal["json", "url", "csv"]
 
-_KEY_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+VARIABLE_NAME_PATTERN = r"^[A-Za-z_][A-Za-z0-9_]*$"
+_KEY_RE = re.compile(VARIABLE_NAME_PATTERN)
+
+
+def is_valid_variable_name(value: str) -> bool:
+    """Return whether one environment variable name follows the contract rules."""
+    return _KEY_RE.fullmatch(value) is not None
 
 
 class ContractMeta(BaseModel):

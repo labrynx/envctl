@@ -6,6 +6,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
 
+from envctl.domain.expansion import ExpansionErrorInfo, ExpansionStatus
+
 
 @dataclass(frozen=True)
 class ResolvedValue:
@@ -15,6 +17,10 @@ class ResolvedValue:
     value: str
     source: str
     masked: bool
+    raw_value: str | None = None
+    expansion_status: ExpansionStatus = "none"
+    expansion_refs: tuple[str, ...] = ()
+    expansion_error: ExpansionErrorInfo | None = None
     valid: bool = True
     detail: str | None = None
 
