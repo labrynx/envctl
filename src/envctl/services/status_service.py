@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from envctl.domain.status import StatusReport
 from envctl.errors import ContractError
+from envctl.repository.profile_repository import require_persisted_profile, resolve_profile_path
 from envctl.services.context_service import load_project_context
 from envctl.services.resolution_service import load_contract_for_context, resolve_environment
-from envctl.utils.project_paths import build_profile_env_path, normalize_profile_name
+from envctl.utils.project_paths import normalize_profile_name
 
 
 def run_status(active_profile: str | None = None) -> tuple[str, StatusReport]:
@@ -15,7 +16,10 @@ def run_status(active_profile: str | None = None) -> tuple[str, StatusReport]:
     resolved_profile = normalize_profile_name(active_profile)
 
     contract_exists = context.repo_contract_path.exists()
-    profile_env_path = build_profile_env_path(context.vault_project_dir, resolved_profile)
+    if resolved_profile == "local":
+        _resolved_profile, profile_env_path = resolve_profile_path(context, resolved_profile)
+    else:
+        _resolved_profile, profile_env_path = require_persisted_profile(context, resolved_profile)
     vault_exists = profile_env_path.exists()
 
     issues: list[str] = []

@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
-from envctl.adapters.dotenv import dump_env, load_env_file
 from envctl.domain.contract import Contract, VariableFormat, VariableSpec, VariableType
 from envctl.domain.contract_inference import infer_spec
 from envctl.domain.operations import AddVariableRequest, AddVariableResult
@@ -16,19 +13,12 @@ from envctl.repository.contract_repository import (
     load_contract_optional,
     write_contract,
 )
+from envctl.repository.profile_repository import load_profile_values, write_profile_values
 from envctl.services.context_service import load_project_context
-from envctl.utils.atomic import write_text_atomic
-from envctl.utils.filesystem import ensure_dir
-from envctl.utils.project_paths import build_profile_env_path, normalize_profile_name
+from envctl.utils.project_paths import normalize_profile_name
 
 _ALLOWED_VARIABLE_TYPES: tuple[VariableType, ...] = ("string", "int", "bool", "url")
 _ALLOWED_VARIABLE_FORMATS: tuple[VariableFormat, ...] = ("json", "url", "csv")
-
-
-def _write_profile_values(path: Path, values: dict[str, str]) -> None:
-    """Persist one profile values file."""
-    ensure_dir(path.parent)
-    write_text_atomic(path, dump_env(values))
 
 
 def _resolve_variable_type(raw_type: str | None, inferred_type: VariableType) -> VariableType:
@@ -152,7 +142,6 @@ def run_add(
     """Add one variable to the contract and store its initial value in the active profile."""
     _config, context = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
-    profile_path = build_profile_env_path(context.vault_project_dir, resolved_profile)
 
     contract, contract_created = _load_or_create_contract(context)
 
@@ -163,9 +152,18 @@ def run_add(
     updated_contract = contract.with_variable(spec)
     write_contract(context.repo_contract_path, updated_contract)
 
-    profile_values = load_env_file(profile_path)
+    _resolved_profile, profile_path, profile_values = load_profile_values(
+        context,
+        resolved_profile,
+        require_existing_explicit=True,
+    )
     profile_values[request.key] = request.value
-    _write_profile_values(profile_path, profile_values)
+    write_profile_values(
+        context,
+        resolved_profile,
+        profile_values,
+        require_existing_explicit=True,
+    )
 
     result = AddVariableResult(
         key=request.key,

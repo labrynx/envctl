@@ -55,13 +55,26 @@ def test_apply_fill_writes_only_non_blank_values_to_profile(
     )
     monkeypatch.setattr(
         fill_service,
-        "load_env_file",
-        lambda path: {"APP_NAME": "demo"},
+        "load_profile_values",
+        lambda context, profile, require_existing_explicit=False: (
+            profile,
+            context.vault_project_dir / "profiles" / "dev.env",
+            {"APP_NAME": "demo"},
+        ),
     )
     monkeypatch.setattr(
         fill_service,
-        "_write_profile_values",
-        lambda path, values: written.update({"path": path, "values": values}),
+        "write_profile_values",
+        lambda context, profile, values, require_existing_explicit=False: (
+            profile,
+            written.update(
+                {
+                    "path": context.vault_project_dir / "profiles" / "dev.env",
+                    "values": values,
+                }
+            )
+            or context.vault_project_dir / "profiles" / "dev.env",
+        ),
     )
 
     _context, active_profile, resolved_path, changed_keys = fill_service.apply_fill(

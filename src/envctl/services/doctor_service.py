@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from envctl.constants import GIT_CONFIG_PROJECT_ID_KEY
 from envctl.domain.doctor import DoctorCheck
-from envctl.errors import EnvctlError, ProjectDetectionError
+from envctl.repository.profile_repository import require_persisted_profile
 from envctl.repository.project_context import build_project_context
 from envctl.services.context_service import load_project_context
 from envctl.utils.filesystem import is_world_writable
-from envctl.utils.project_paths import build_profile_env_path, normalize_profile_name
+from envctl.utils.project_paths import normalize_profile_name
 
 
 def run_doctor(
@@ -60,118 +60,102 @@ def run_doctor(
             )
         )
 
-    try:
-        context = build_project_context(config)
-        profile_path = build_profile_env_path(
-            context.vault_project_dir,
-            resolved_profile,
-        )
+    context = build_project_context(config)
+    _resolved_profile, profile_path = require_persisted_profile(context, resolved_profile)
 
+    checks.append(
+        DoctorCheck(
+            "project",
+            "ok",
+            f"Resolved project: {context.project_slug} ({context.project_id})",
+        )
+    )
+    checks.append(
+        DoctorCheck(
+            "binding_source",
+            "ok",
+            f"Binding source: {context.binding_source}",
+        )
+    )
+    checks.append(
+        DoctorCheck(
+            "vault_profile_path",
+            "ok",
+            f"Profile vault path: {profile_path}",
+        )
+    )
+
+    if context.binding_source == "local":
         checks.append(
             DoctorCheck(
-                "project",
+                "binding",
                 "ok",
-                f"Resolved project: {context.project_slug} ({context.project_id})",
+                f"Local git binding present in '{GIT_CONFIG_PROJECT_ID_KEY}'",
             )
         )
+    elif context.binding_source == "recovered":
         checks.append(
             DoctorCheck(
-                "binding_source",
-                "ok",
-                f"Binding source: {context.binding_source}",
+                "binding",
+                "warn",
+                (
+                    "No local git binding found. "
+                    "A matching vault was recovered from persisted state."
+                ),
             )
         )
+    else:
         checks.append(
             DoctorCheck(
-                "vault_profile_path",
-                "ok",
-                f"Profile vault path: {profile_path}",
+                "binding",
+                "warn",
+                (
+                    "No persisted binding found yet. "
+                    "Run 'envctl init' or any mutating command to persist it."
+                ),
             )
         )
 
-        if context.binding_source == "local":
-            checks.append(
-                DoctorCheck(
-                    "binding",
-                    "ok",
-                    f"Local git binding present in '{GIT_CONFIG_PROJECT_ID_KEY}'",
-                )
+    if context.repo_contract_path.exists():
+        checks.append(
+            DoctorCheck(
+                "contract",
+                "ok",
+                f"Contract found: {context.repo_contract_path.name}",
             )
-        elif context.binding_source == "recovered":
-            checks.append(
-                DoctorCheck(
-                    "binding",
-                    "warn",
-                    (
-                        "No local git binding found. "
-                        "A matching vault was recovered from persisted state."
-                    ),
-                )
+        )
+    else:
+        checks.append(
+            DoctorCheck(
+                "contract",
+                "warn",
+                f"Contract not found: {context.repo_contract_path}",
             )
-        else:
-            checks.append(
-                DoctorCheck(
-                    "binding",
-                    "warn",
-                    (
-                        "No persisted binding found yet. "
-                        "Run 'envctl init' or any mutating command to persist it."
-                    ),
-                )
-            )
+        )
 
-        if context.repo_contract_path.exists():
-            checks.append(
-                DoctorCheck(
-                    "contract",
-                    "ok",
-                    f"Contract found: {context.repo_contract_path.name}",
-                )
-            )
-        else:
-            checks.append(
-                DoctorCheck(
-                    "contract",
-                    "warn",
-                    f"Contract not found: {context.repo_contract_path}",
-                )
-            )
+    checks.append(
+        DoctorCheck(
+            "vault_profile",
+            "ok",
+            f"Profile vault exists: {profile_path.name}",
+        )
+    )
 
-        if profile_path.exists():
-            checks.append(
-                DoctorCheck(
-                    "vault_profile",
-                    "ok",
-                    f"Profile vault exists: {profile_path.name}",
-                )
+    if context.vault_state_path.exists():
+        checks.append(
+            DoctorCheck(
+                "state",
+                "ok",
+                f"Vault state found: {context.vault_state_path}",
             )
-        else:
-            checks.append(
-                DoctorCheck(
-                    "vault_profile",
-                    "warn",
-                    f"Profile vault file does not exist yet: {profile_path}",
-                )
+        )
+    else:
+        checks.append(
+            DoctorCheck(
+                "state",
+                "warn",
+                "Vault state file does not exist yet",
             )
-
-        if context.vault_state_path.exists():
-            checks.append(
-                DoctorCheck(
-                    "state",
-                    "ok",
-                    f"Vault state found: {context.vault_state_path}",
-                )
-            )
-        else:
-            checks.append(
-                DoctorCheck(
-                    "state",
-                    "warn",
-                    "Vault state file does not exist yet",
-                )
-            )
-
-    except (EnvctlError, ProjectDetectionError) as exc:
-        checks.append(DoctorCheck("project", "warn", str(exc)))
+        )
 
     return resolved_profile, checks

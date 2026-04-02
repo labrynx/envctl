@@ -24,7 +24,8 @@ from envctl.cli.commands.sync import sync_command
 from envctl.cli.commands.unset import unset_command
 from envctl.cli.commands.vault import vault_app
 from envctl.cli.runtime import set_cli_state
-from envctl.config.loader import resolve_default_profile
+from envctl.config.loader import load_config
+from envctl.config.profile_resolution import resolve_active_profile
 from envctl.domain.runtime import OutputFormat
 
 VERSION_OPTION = typer.Option(
@@ -64,7 +65,11 @@ def main(
     """envctl - local environment control plane."""
     del version
 
-    active_profile = profile.strip().lower() if profile is not None else resolve_default_profile()
+    config = load_config()
+    active_profile = resolve_active_profile(
+        profile,
+        config_default_profile=config.default_profile,
+    )
 
     set_cli_state(
         ctx,

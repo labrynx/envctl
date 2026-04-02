@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from io import StringIO
 from urllib.parse import urlparse
 
-from envctl.adapters.dotenv import load_env_file
 from envctl.adapters.process_environment import ProcessEnvironmentProvider
 from envctl.domain.contract import Contract, VariableSpec
 from envctl.domain.expansion import (
@@ -26,8 +25,8 @@ from envctl.domain.expansion import (
 from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport, ResolvedValue
 from envctl.repository.contract_repository import load_contract
+from envctl.repository.profile_repository import load_profile_values
 from envctl.utils.project_paths import (
-    build_profile_env_path,
     is_local_profile,
     normalize_profile_name,
 )
@@ -463,14 +462,12 @@ def resolve_environment(
     """Resolve environment values from the selected profile and system env."""
     resolved_profile = normalize_profile_name(active_profile)
 
-    if is_local_profile(resolved_profile):
-        profile_env_path = context.vault_values_path
-        profile_source = "vault"
-    else:
-        profile_env_path = build_profile_env_path(context.vault_project_dir, resolved_profile)
-        profile_source = "profile"
-
-    profile_values = load_env_file(profile_env_path)
+    _resolved_profile, profile_env_path, profile_values = load_profile_values(
+        context,
+        resolved_profile,
+        require_existing_explicit=True,
+    )
+    profile_source = "vault" if is_local_profile(resolved_profile) else "profile"
     selected_values, missing_required = _build_selected_values(
         contract,
         profile_values=profile_values,

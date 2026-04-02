@@ -19,8 +19,8 @@ def test_run_profile_list_includes_local_and_explicit_profiles(
     )
     monkeypatch.setattr(
         profile_service,
-        "_list_explicit_profiles",
-        lambda _vault_project_dir: ["dev", "staging"],
+        "list_explicit_profiles",
+        lambda _context: ("dev", "staging"),
     )
 
     _context, result = profile_service.run_profile_list("staging")
@@ -42,8 +42,22 @@ def test_run_profile_create_creates_missing_profile(
     )
     monkeypatch.setattr(
         profile_service,
-        "_write_profile_values",
-        lambda path, values: written.update({"path": path, "values": values}),
+        "resolve_profile_path",
+        lambda context, profile: ("dev", context.vault_project_dir / "profiles" / "dev.env"),
+    )
+    monkeypatch.setattr(
+        profile_service,
+        "write_profile_values",
+        lambda context, profile, values: (
+            profile,
+            written.update(
+                {
+                    "path": context.vault_project_dir / "profiles" / "dev.env",
+                    "values": values,
+                }
+            )
+            or context.vault_project_dir / "profiles" / "dev.env",
+        ),
     )
 
     _context, result = profile_service.run_profile_create("dev")
@@ -67,13 +81,26 @@ def test_run_profile_copy_copies_values(
     )
     monkeypatch.setattr(
         profile_service,
-        "load_env_file",
-        lambda path: {"APP_NAME": "demo", "PORT": "3000"},
+        "load_profile_values",
+        lambda context, profile: (
+            profile,
+            context.vault_project_dir / "profiles" / f"{profile}.env",
+            {"APP_NAME": "demo", "PORT": "3000"},
+        ),
     )
     monkeypatch.setattr(
         profile_service,
-        "_write_profile_values",
-        lambda path, values: written.update({"path": path, "values": values}),
+        "write_profile_values",
+        lambda context, profile, values: (
+            profile,
+            written.update(
+                {
+                    "path": context.vault_project_dir / "profiles" / f"{profile}.env",
+                    "values": values,
+                }
+            )
+            or context.vault_project_dir / "profiles" / f"{profile}.env",
+        ),
     )
 
     _context, result = profile_service.run_profile_copy("dev", "staging")
@@ -96,8 +123,12 @@ def test_run_profile_copy_rejects_missing_source(
     )
     monkeypatch.setattr(
         profile_service,
-        "load_env_file",
-        lambda path: {},
+        "load_profile_values",
+        lambda context, profile: (
+            profile,
+            context.vault_project_dir / "profiles" / f"{profile}.env",
+            {},
+        ),
     )
 
     with pytest.raises(ExecutionError, match="Source profile does not exist"):

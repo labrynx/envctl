@@ -13,6 +13,7 @@ def test_add_writes_initial_value_to_explicit_profile(
     workspace: Path,
 ) -> None:
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
+    runner.invoke(app, ["profile", "create", "staging"], catch_exceptions=False)
 
     result = runner.invoke(
         app,
@@ -30,6 +31,9 @@ def test_vault_edit_accepts_profile_override(
     workspace: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    runner.invoke(app, ["config", "init"], catch_exceptions=False)
+    runner.invoke(app, ["profile", "create", "dev"], catch_exceptions=False)
+
     monkeypatch.setattr(
         "envctl.adapters.editor.open_file",
         lambda path: None,
