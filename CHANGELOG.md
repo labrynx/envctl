@@ -93,6 +93,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * aligned repository links, badges, and references with the current project location
   * tightened terminology across concepts, workflows, and reference documentation
 
+* Contract variable key validation:
+
+  * relaxed key validation regex to allow lowercase letters and underscore-prefixed identifiers
+  * previously restricted to strict uppercase environment-style names (`^[A-Z][A-Z0-9_]*$`)
+  * now supports more flexible naming patterns (`^[A-Za-z_][A-Za-z0-9_]*$`)
+  * enables broader compatibility with different naming conventions and tooling
+  
 ---
 
 ### Removed
