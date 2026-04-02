@@ -26,12 +26,12 @@ def test_check_command_exits_when_report_is_valid_but_unknown_keys_exist(
     monkeypatch.setattr(
         check_command_module,
         "run_check",
-        lambda profile: (context, "staging", report),
+        lambda profile, *, group=None: (context, "staging", report),
     )
     monkeypatch.setattr(
         check_command_module,
         "render_resolution_view",
-        lambda *, profile, report: None,
+        lambda *, profile, group, report: None,
     )
     monkeypatch.setattr(
         check_command_module,
@@ -42,6 +42,11 @@ def test_check_command_exits_when_report_is_valid_but_unknown_keys_exist(
         check_command_module,
         "get_active_profile",
         lambda: "staging",
+    )
+    monkeypatch.setattr(
+        check_command_module,
+        "get_selected_group",
+        lambda: "Application",
     )
     monkeypatch.setattr(
         check_command_module,
@@ -70,17 +75,22 @@ def test_check_command_exits_when_report_is_invalid(
     monkeypatch.setattr(
         check_command_module,
         "run_check",
-        lambda profile: (context, "local", report),
+        lambda profile, *, group=None: (context, "local", report),
     )
     monkeypatch.setattr(
         check_command_module,
         "render_resolution_view",
-        lambda *, profile, report: None,
+        lambda *, profile, group, report: None,
     )
     monkeypatch.setattr(
         check_command_module,
         "get_active_profile",
         lambda: "local",
+    )
+    monkeypatch.setattr(
+        check_command_module,
+        "get_selected_group",
+        lambda: None,
     )
     monkeypatch.setattr(
         check_command_module,
@@ -109,12 +119,17 @@ def test_check_command_emits_json_when_requested(
     monkeypatch.setattr(
         check_command_module,
         "run_check",
-        lambda profile: (context, "staging", report),
+        lambda profile, *, group=None: (context, "staging", report),
     )
     monkeypatch.setattr(
         check_command_module,
         "get_active_profile",
         lambda: "staging",
+    )
+    monkeypatch.setattr(
+        check_command_module,
+        "get_selected_group",
+        lambda: "Application",
     )
     monkeypatch.setattr(
         check_command_module,
@@ -133,6 +148,7 @@ def test_check_command_emits_json_when_requested(
     assert payload["ok"] is True
     assert payload["command"] == "check"
     assert payload["data"]["active_profile"] == "staging"
+    assert payload["data"]["selected_group"] == "Application"
     assert payload["data"]["context"]["project_slug"] == "demo"
     assert payload["data"]["report"]["is_valid"] is True
 
@@ -152,12 +168,17 @@ def test_check_command_emits_json_and_exits_when_invalid(
     monkeypatch.setattr(
         check_command_module,
         "run_check",
-        lambda profile: (context, "local", report),
+        lambda profile, *, group=None: (context, "local", report),
     )
     monkeypatch.setattr(
         check_command_module,
         "get_active_profile",
         lambda: "local",
+    )
+    monkeypatch.setattr(
+        check_command_module,
+        "get_selected_group",
+        lambda: None,
     )
     monkeypatch.setattr(
         check_command_module,

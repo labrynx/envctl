@@ -9,6 +9,10 @@ from envctl.domain.operations import RunCommandResult
 from envctl.domain.project import ProjectContext
 from envctl.errors import ExecutionError, ValidationError
 from envctl.services.context_service import load_project_context
+from envctl.services.group_selection_service import (
+    filter_projection_values,
+    filter_resolution_report,
+)
 from envctl.services.resolution_service import (
     load_contract_for_context,
     resolve_environment,
@@ -81,6 +85,8 @@ def _build_docker_warning(command: list[str]) -> tuple[str, ...]:
 def run_command(
     command: list[str],
     active_profile: str | None = None,
+    *,
+    group: str | None = None,
 ) -> tuple[ProjectContext, RunCommandResult]:
     """Run one command with the resolved environment injected."""
     if not command:
@@ -91,14 +97,19 @@ def run_command(
 
     contract = load_contract_for_context(context)
     report = resolve_environment(context, contract, active_profile=resolved_profile)
+    filtered_report = filter_resolution_report(report, contract, group=group)
 
-    if not report.is_valid:
+    if not filtered_report.is_valid:
         raise ValidationError("Environment contract is not satisfied")
 
-    if report.unknown_keys:
+    if filtered_report.unknown_keys:
         raise ValidationError("Vault contains unknown keys")
 
-    resolved_values = {key: item.value for key, item in report.values.items()}
+    resolved_values = filter_projection_values(
+        {key: item.value for key, item in report.values.items()},
+        contract,
+        group=group,
+    )
 
     try:
         completed = subprocess.run(

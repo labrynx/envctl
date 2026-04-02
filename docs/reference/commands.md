@@ -10,6 +10,7 @@ Available global options:
 
 - `--version`, `-V`
 - `--profile`, `-p`
+- `--group`, `-g`
 - `--json`
 
 Profile selection precedence is:
@@ -20,6 +21,9 @@ Profile selection precedence is:
 4. `local`
 
 Named profiles must be created explicitly before use with `envctl profile create <name>`.
+
+`--group` targets only variables whose contract `group` matches the provided label exactly.
+It is a human-facing selection filter, not a namespace or hierarchy.
 
 ## Command groups
 
@@ -169,6 +173,7 @@ Behavior:
 * validates the resolved environment
 * validates placeholder expansion and reference errors
 * validates semantic string formats when declared in the contract (`format`)
+* `--group LABEL` validates only targeted contract variables while still allowing their references to resolve through other declared variables when needed
 * exits non-zero on failure
 * fails fast if the selected explicit profile does not exist
 
@@ -186,6 +191,7 @@ Behavior:
 * shows the effective expanded values
 * indicates expansion state when relevant
 * masks sensitive values
+* `--group LABEL` shows only targeted contract variables
 * fails fast if the selected explicit profile does not exist
 
 Use `inspect` when you want to understand what the runtime view looks like.
@@ -215,6 +221,7 @@ Behavior:
 * injects the resolved environment in memory into the subprocess
 * uses the final expanded values
 * affects the immediate subprocess only
+* `--group LABEL` injects only targeted contract variables
 * fails fast if the selected explicit profile does not exist
 
 Use `run` when the target tool can receive environment variables directly and you do not want to create `.env.local`.

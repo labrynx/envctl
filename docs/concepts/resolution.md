@@ -62,6 +62,11 @@ When `envctl` resolves `${VAR}`:
 * otherwise `envctl` falls back to the current process environment
 * if neither source provides a value, resolution becomes invalid
 
+Optional contract `group` labels do not change this behavior. A targeted command such as
+`envctl --group Application export --format dotenv` may still resolve `${VAR}` references to
+variables declared in other groups. Group selection affects which variables are targeted for the
+command output, not how references are resolved.
+
 `${HOME}` is not a special built-in rule. It works because `HOME` usually exists in the current
 process environment.
 

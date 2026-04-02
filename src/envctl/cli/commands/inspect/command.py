@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from envctl.cli.decorators import handle_errors
 from envctl.cli.presenters import render_resolution_view
-from envctl.cli.runtime import get_active_profile, is_json_output
+from envctl.cli.runtime import get_active_profile, get_selected_group, is_json_output
 from envctl.cli.serializers import (
     emit_json,
     serialize_project_context,
@@ -16,7 +16,8 @@ from envctl.services.inspect_service import run_inspect
 @handle_errors
 def inspect_command() -> None:
     """Inspect the resolved environment."""
-    context, active_profile, report = run_inspect(get_active_profile())
+    selected_group = get_selected_group()
+    context, active_profile, report = run_inspect(get_active_profile(), group=selected_group)
 
     if is_json_output():
         emit_json(
@@ -25,6 +26,7 @@ def inspect_command() -> None:
                 "command": "inspect",
                 "data": {
                     "active_profile": active_profile,
+                    "selected_group": selected_group,
                     "context": serialize_project_context(context),
                     "report": serialize_resolution_report(report),
                 },
@@ -34,5 +36,6 @@ def inspect_command() -> None:
 
     render_resolution_view(
         profile=active_profile,
+        group=selected_group,
         report=report,
     )

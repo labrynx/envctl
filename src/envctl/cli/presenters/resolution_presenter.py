@@ -77,8 +77,11 @@ def render_resolution(report: ResolutionReport) -> None:
 def render_resolution_view(
     *,
     profile: str,
+    group: str | None,
     report: ResolutionReport,
 ) -> None:
     """Render one resolved environment view including the active profile."""
     print_kv("profile", profile)
+    if group is not None:
+        print_kv("group", group)
     render_resolution(report)

@@ -8,7 +8,7 @@ import typer
 
 from envctl.cli.decorators import handle_errors, text_output_only
 from envctl.cli.presenters import render_export_output
-from envctl.cli.runtime import get_active_profile
+from envctl.cli.runtime import get_active_profile, get_selected_group
 from envctl.services.export_service import run_export
 
 
@@ -25,7 +25,11 @@ def export_command(
     ),
 ) -> None:
     """Print the resolved environment as shell export lines."""
-    _context, active_profile, rendered = run_export(get_active_profile(), format=format)
+    _context, active_profile, rendered = run_export(
+        get_active_profile(),
+        format=format,
+        group=get_selected_group(),
+    )
 
     if format == "dotenv":
         print(rendered, end="")

@@ -17,6 +17,7 @@ class CliState:
 
     output_format: OutputFormat = OutputFormat.TEXT
     profile: str = DEFAULT_PROFILE
+    group: str | None = None
 
 
 def set_cli_state(
@@ -24,9 +25,10 @@ def set_cli_state(
     *,
     output_format: OutputFormat,
     profile: str = DEFAULT_PROFILE,
+    group: str | None = None,
 ) -> None:
     """Persist the CLI state on the Typer/Click context."""
-    ctx.obj = CliState(output_format=output_format, profile=profile)
+    ctx.obj = CliState(output_format=output_format, profile=profile, group=group)
 
 
 def get_cli_state() -> CliState:
@@ -50,6 +52,11 @@ def is_json_output() -> bool:
 def get_active_profile() -> str:
     """Return the active CLI profile."""
     return get_cli_state().profile
+
+
+def get_selected_group() -> str | None:
+    """Return the active CLI group filter."""
+    return get_cli_state().group
 
 
 def get_command_path() -> str | None:

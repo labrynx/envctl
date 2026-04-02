@@ -7,6 +7,11 @@ from typing import Literal
 from envctl.domain.project import ProjectContext
 from envctl.errors import ValidationError
 from envctl.services.context_service import load_project_context
+from envctl.services.group_selection_service import (
+    build_variable_groups,
+    filter_projection_values,
+    filter_resolution_report,
+)
 from envctl.services.resolution_service import (
     load_contract_for_context,
     resolve_environment,
@@ -19,6 +24,7 @@ def run_export(
     active_profile: str | None = None,
     *,
     format: Literal["shell", "dotenv"] = "shell",
+    group: str | None = None,
 ) -> tuple[ProjectContext, str, str]:
     """Render the resolved environment as shell export lines."""
     _config, context = load_project_context()
@@ -26,17 +32,26 @@ def run_export(
 
     contract = load_contract_for_context(context)
     report = resolve_environment(context, contract, active_profile=resolved_profile)
+    filtered_report = filter_resolution_report(report, contract, group=group)
 
-    if not report.is_valid:
+    if not filtered_report.is_valid:
         raise ValidationError("Environment contract is not satisfied")
 
-    if report.unknown_keys:
+    if filtered_report.unknown_keys:
         raise ValidationError("Vault contains unknown keys")
 
-    values = {key: item.value for key, item in sorted(report.values.items())}
+    values = filter_projection_values(
+        {key: item.value for key, item in sorted(report.values.items())},
+        contract,
+        group=group,
+    )
 
     if format == "dotenv":
-        rendered = render_dotenv(values, include_header=False)
+        rendered = render_dotenv(
+            values,
+            include_header=False,
+            variable_groups=build_variable_groups(contract, values),
+        )
     else:
         rendered = render_shell_exports(values)
     return context, resolved_profile, rendered

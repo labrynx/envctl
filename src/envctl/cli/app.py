@@ -47,6 +47,12 @@ PROFILE_OPTION = typer.Option(
     "-p",
     help="Select the active environment profile.",
 )
+GROUP_OPTION = typer.Option(
+    None,
+    "--group",
+    "-g",
+    help="Target only variables whose contract group matches LABEL exactly.",
+)
 
 app = typer.Typer(help="envctl - local environment control plane")
 app.add_typer(config_app, name="config")
@@ -61,6 +67,7 @@ def main(
     version: bool = VERSION_OPTION,
     json_output: bool = JSON_OPTION,
     profile: str | None = PROFILE_OPTION,
+    group: str | None = GROUP_OPTION,
 ) -> None:
     """envctl - local environment control plane."""
     del version
@@ -75,6 +82,7 @@ def main(
         ctx,
         output_format=OutputFormat.JSON if json_output else OutputFormat.TEXT,
         profile=active_profile,
+        group=group.strip() or None if group is not None else None,
     )
 
 

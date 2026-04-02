@@ -22,8 +22,13 @@ def test_run_command_exits_with_child_return_code(
     )
     monkeypatch.setattr(
         run_command_module,
+        "get_selected_group",
+        lambda: "Application",
+    )
+    monkeypatch.setattr(
+        run_command_module,
         "run_command",
-        lambda command, profile: (
+        lambda command, profile, *, group=None: (
             "context",
             RunCommandResult(active_profile="staging", exit_code=7),
         ),
@@ -86,8 +91,13 @@ def test_run_command_is_allowed_in_ci_mode(
     )
     monkeypatch.setattr(
         run_command_module,
+        "get_selected_group",
+        lambda: None,
+    )
+    monkeypatch.setattr(
+        run_command_module,
         "run_command",
-        lambda command, profile: (
+        lambda command, profile, *, group=None: (
             "context",
             RunCommandResult(active_profile="ci", exit_code=0),
         ),
@@ -111,8 +121,13 @@ def test_run_command_renders_warnings_before_exit(
     )
     monkeypatch.setattr(
         run_command_module,
+        "get_selected_group",
+        lambda: "Application",
+    )
+    monkeypatch.setattr(
+        run_command_module,
         "run_command",
-        lambda command, profile: (
+        lambda command, profile, *, group=None: (
             "context",
             RunCommandResult(
                 active_profile="dev",
@@ -146,8 +161,13 @@ def test_run_command_renders_no_warnings_when_service_has_none(
     )
     monkeypatch.setattr(
         run_command_module,
+        "get_selected_group",
+        lambda: None,
+    )
+    monkeypatch.setattr(
+        run_command_module,
         "run_command",
-        lambda command, profile: (
+        lambda command, profile, *, group=None: (
             "context",
             RunCommandResult(active_profile="dev", exit_code=0, warnings=()),
         ),

@@ -9,6 +9,7 @@ from envctl.cli.runtime import (
     get_active_profile,
     get_cli_state,
     get_output_format,
+    get_selected_group,
     is_json_output,
     set_cli_state,
 )
@@ -31,15 +32,18 @@ def test_set_cli_state_persists_profile_and_output_format() -> None:
             cast(Any, ctx),
             output_format=OutputFormat.JSON,
             profile="staging",
+            group="Application",
         )
 
         state = get_cli_state()
 
         assert state.output_format == OutputFormat.JSON
         assert state.profile == "staging"
+        assert state.group == "Application"
         assert get_output_format() == OutputFormat.JSON
         assert is_json_output() is True
         assert get_active_profile() == "staging"
+        assert get_selected_group() == "Application"
 
 
 def test_get_cli_state_ignores_non_clistate_context_obj() -> None:

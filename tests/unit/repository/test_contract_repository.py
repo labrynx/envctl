@@ -65,6 +65,7 @@ def test_load_contract_reads_valid_yaml_contract(tmp_path: Path) -> None:
         "variables": {
             "APP_NAME": {
                 "type": "string",
+                "group": "Application",
                 "format": "json",
                 "required": True,
                 "sensitive": False,
@@ -77,6 +78,7 @@ def test_load_contract_reads_valid_yaml_contract(tmp_path: Path) -> None:
 
     assert contract.version == 1
     assert "APP_NAME" in contract.variables
+    assert contract.variables["APP_NAME"].group == "Application"
     assert contract.variables["APP_NAME"].format == "json"
 
 
@@ -93,6 +95,7 @@ def test_write_contract_serializes_contract(tmp_path: Path) -> None:
             "APP_NAME": make_variable_spec(
                 name="APP_NAME",
                 type="string",
+                group="Application",
                 format="csv",
                 required=True,
                 sensitive=False,
@@ -105,6 +108,7 @@ def test_write_contract_serializes_contract(tmp_path: Path) -> None:
     written = yaml.safe_load(path.read_text(encoding="utf-8"))
     assert written["version"] == 1
     assert "APP_NAME" in written["variables"]
+    assert written["variables"]["APP_NAME"]["group"] == "Application"
     assert written["variables"]["APP_NAME"]["format"] == "csv"
 
 

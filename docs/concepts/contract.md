@@ -23,6 +23,7 @@ A contract can describe things like:
 * required and optional variables
 * types
 * optional semantic string formats (`json`, `url`, `csv`)
+* optional human-facing groups
 * descriptions
 * sensitivity flags
 * non-sensitive defaults
@@ -49,6 +50,12 @@ variables:
     type: string
     format: json
     required: false
+
+  APP_URL:
+    type: string
+    required: true
+    group: Application
+    default: http://${APP_NAME}:${PORT}
 ```
 
 This file tells the project what should exist and what shape those values should have. It does not provide the real secret values themselves.
@@ -74,6 +81,25 @@ A good way to think about it is this:
 That separation is one of the core ideas behind `envctl`.
 
 The contract is shared with the project. Values stay local to the machine.
+
+## Optional groups
+
+Variables may declare an optional `group` string such as `Database`, `Observability`, or
+`Docker runtime`.
+
+That label is:
+
+* optional
+* human-facing
+* non-hierarchical
+* used only for selection and presentation
+
+It is not:
+
+* a namespace
+* a dependency boundary
+* a prefix or dotted matching system
+* a rule that changes resolution behavior
 
 ## How the contract changes
 

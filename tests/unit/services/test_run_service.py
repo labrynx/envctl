@@ -9,6 +9,7 @@ import envctl.services.run_service as run_service
 from envctl.errors import ExecutionError, ValidationError
 from tests.support.builders import make_resolution_report, make_resolved_value
 from tests.support.contexts import make_project_context
+from tests.support.contracts import make_contract, make_variable_spec
 
 
 def test_run_command_executes_child_with_resolved_environment(
@@ -262,3 +263,55 @@ def test_run_command_skips_warning_when_docker_env_file_is_used(
     _context, result = run_service.run_command(command, "dev")
 
     assert result.warnings == ()
+
+
+def test_run_command_injects_only_selected_group_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = make_project_context()
+    contract = make_contract(
+        {
+            "APP_NAME": make_variable_spec(name="APP_NAME", group="Application"),
+            "DATABASE_URL": make_variable_spec(name="DATABASE_URL", group="Secrets"),
+        }
+    )
+    report = make_resolution_report(
+        values={
+            "APP_NAME": make_resolved_value(key="APP_NAME", value="demo", source="profile"),
+            "DATABASE_URL": make_resolved_value(
+                key="DATABASE_URL",
+                value="https://db.example.com",
+                source="profile",
+                masked=True,
+            ),
+        },
+        missing_required=("DATABASE_URL",),
+        unknown_keys=("OLD_KEY",),
+        invalid_keys=("DATABASE_URL",),
+    )
+    captured: dict[str, Any] = {}
+
+    monkeypatch.setattr(run_service, "load_project_context", lambda: (object(), context))
+    monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: contract)
+    monkeypatch.setattr(
+        run_service,
+        "resolve_environment",
+        lambda _context, _contract, *, active_profile=None: report,
+    )
+
+    def fake_run(
+        command: list[str],
+        check: bool = False,
+        env: dict[str, str] | None = None,
+    ) -> CompletedProcess[str]:
+        captured["env"] = env
+        return CompletedProcess(args=command, returncode=0)
+
+    monkeypatch.setattr(run_service.subprocess, "run", fake_run)
+
+    run_service.run_command(["python3", "-V"], "staging", group="Application")
+
+    env = captured["env"]
+    assert isinstance(env, dict)
+    assert env["APP_NAME"] == "demo"
+    assert "DATABASE_URL" not in env

@@ -100,6 +100,10 @@ Think of it like this:
 Resolution now includes placeholder expansion as part of the runtime model, so `check`, `inspect`,
 `run`, `sync`, and `export` all see the same final value.
 
+Contracts can also attach an optional human-facing `group` label to variables for organization,
+filtering, and dotenv section rendering. `group` is not a namespace, is not hierarchical, and does
+not change resolution or dependency semantics.
+
 ---
 
 ### Example contract
@@ -128,6 +132,12 @@ variables:
     format: json
     required: false
     sensitive: false
+  APP_URL:
+    type: string
+    required: true
+    sensitive: false
+    group: Application
+    default: http://${APP_NAME}:${PORT}
 ```
 
 This file describes what exists.
@@ -171,6 +181,32 @@ Compatibility notes:
 * before this feature, `${HOME}` stayed literal
 * now `${HOME}` is expanded during resolution
 * `${...}` literal escaping is not supported in v1
+
+## Optional groups
+
+Each contract variable may define an optional `group` label:
+
+```yaml
+variables:
+  DATABASE_URL:
+    type: url
+    required: true
+    sensitive: true
+    group: Database
+```
+
+`group` is used only for:
+
+* organization in the contract
+* CLI targeting with `--group`
+* grouped dotenv output from `sync` and `export --format dotenv`
+
+It does not:
+
+* create namespaces
+* affect `${VAR}` expansion rules
+* restrict cross-variable references
+* imply hierarchy, inheritance, or prefix matching
 
 ---
 

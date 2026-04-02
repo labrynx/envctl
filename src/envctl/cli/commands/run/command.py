@@ -6,7 +6,7 @@ import typer
 
 from envctl.cli.decorators import handle_errors, text_output_only
 from envctl.cli.presenters.run_presenter import render_run_warnings
-from envctl.cli.runtime import get_active_profile
+from envctl.cli.runtime import get_active_profile, get_selected_group
 from envctl.services.run_service import run_command
 
 COMMAND_ARGUMENT = typer.Argument(...)
@@ -19,6 +19,7 @@ def run_command_cli(command: list[str] = COMMAND_ARGUMENT) -> None:
     _context, result = run_command(
         command,
         get_active_profile(),
+        group=get_selected_group(),
     )
     render_run_warnings(result.warnings)
     raise typer.Exit(code=result.exit_code)

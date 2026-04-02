@@ -25,7 +25,7 @@ def test_inspect_command_renders_resolution(
     monkeypatch.setattr(
         inspect_command_module,
         "run_inspect",
-        lambda profile: (context, "staging", report),
+        lambda profile, *, group=None: (context, "staging", report),
     )
     monkeypatch.setattr(
         inspect_command_module,
@@ -34,8 +34,15 @@ def test_inspect_command_renders_resolution(
     )
     monkeypatch.setattr(
         inspect_command_module,
+        "get_selected_group",
+        lambda: "Application",
+    )
+    monkeypatch.setattr(
+        inspect_command_module,
         "render_resolution_view",
-        lambda *, profile, report: called.update({"profile": profile, "report": report}),
+        lambda *, profile, group, report: called.update(
+            {"profile": profile, "group": group, "report": report}
+        ),
     )
     monkeypatch.setattr(
         inspect_command_module,
@@ -46,6 +53,7 @@ def test_inspect_command_renders_resolution(
     inspect_command()
 
     assert called["profile"] == "staging"
+    assert called["group"] == "Application"
     assert called["report"] is report
 
 
@@ -73,12 +81,17 @@ def test_inspect_command_emits_json_when_requested(
     monkeypatch.setattr(
         inspect_command_module,
         "run_inspect",
-        lambda profile: (context, "staging", report),
+        lambda profile, *, group=None: (context, "staging", report),
     )
     monkeypatch.setattr(
         inspect_command_module,
         "get_active_profile",
         lambda: "staging",
+    )
+    monkeypatch.setattr(
+        inspect_command_module,
+        "get_selected_group",
+        lambda: "Application",
     )
     monkeypatch.setattr(
         inspect_command_module,
@@ -97,6 +110,7 @@ def test_inspect_command_emits_json_when_requested(
     assert payload["ok"] is True
     assert payload["command"] == "inspect"
     assert payload["data"]["active_profile"] == "staging"
+    assert payload["data"]["selected_group"] == "Application"
     assert payload["data"]["context"]["project_slug"] == "demo"
     assert payload["data"]["report"]["missing_required"] == ["DATABASE_URL"]
     assert payload["data"]["report"]["unknown_keys"] == ["OLD_KEY"]

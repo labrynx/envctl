@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* Optional contract variable groups:
+
+  * contract variables may now declare an optional human-facing `group` label
+  * `--group` / `-g` can target `check`, `inspect`, `run`, `sync`, and `export`
+  * grouped dotenv projections now render readable section headers
+  * group targeting affects selection and presentation only; it does not introduce namespace or dependency semantics
+
 * Projection format enhancements:
 
   * `sync --output PATH` can write the generated dotenv projection to an explicit file path

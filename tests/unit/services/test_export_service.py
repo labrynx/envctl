@@ -6,6 +6,7 @@ import envctl.services.export_service as export_service
 from envctl.errors import ValidationError
 from tests.support.builders import make_resolution_report, make_resolved_value
 from tests.support.contexts import make_project_context
+from tests.support.contracts import make_contract, make_variable_spec
 
 
 def test_run_export_returns_shell_lines_for_active_profile_by_default(
@@ -18,9 +19,15 @@ def test_run_export_returns_shell_lines_for_active_profile_by_default(
             "PORT": make_resolved_value(key="PORT", value="3000", source="default"),
         },
     )
+    contract = make_contract(
+        {
+            "APP_NAME": make_variable_spec(name="APP_NAME"),
+            "PORT": make_variable_spec(name="PORT"),
+        }
+    )
 
     monkeypatch.setattr(export_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: object())
+    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(
         export_service,
         "resolve_environment",
@@ -46,9 +53,10 @@ def test_run_export_explicit_shell_matches_default(
     report = make_resolution_report(
         values={"APP_NAME": make_resolved_value(key="APP_NAME", value="demo", source="profile")}
     )
+    contract = make_contract({"APP_NAME": make_variable_spec(name="APP_NAME")})
 
     monkeypatch.setattr(export_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: object())
+    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(
         export_service,
         "resolve_environment",
@@ -73,9 +81,10 @@ def test_run_export_returns_dotenv_without_header(
     report = make_resolution_report(
         values={"APP_NAME": make_resolved_value(key="APP_NAME", value="demo", source="profile")}
     )
+    contract = make_contract({"APP_NAME": make_variable_spec(name="APP_NAME")})
 
     monkeypatch.setattr(export_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: object())
+    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(
         export_service,
         "resolve_environment",
@@ -94,9 +103,10 @@ def test_run_export_rejects_invalid_resolution(
 ) -> None:
     context = make_project_context()
     report = make_resolution_report(missing_required=("DATABASE_URL",))
+    contract = make_contract({"DATABASE_URL": make_variable_spec(name="DATABASE_URL")})
 
     monkeypatch.setattr(export_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: object())
+    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(
         export_service,
         "resolve_environment",
@@ -115,9 +125,10 @@ def test_run_export_rejects_unknown_keys(
         values={"APP_NAME": make_resolved_value(key="APP_NAME", value="demo")},
         unknown_keys=("OLD_KEY",),
     )
+    contract = make_contract({"APP_NAME": make_variable_spec(name="APP_NAME")})
 
     monkeypatch.setattr(export_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: object())
+    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(
         export_service,
         "resolve_environment",
@@ -126,3 +137,45 @@ def test_run_export_rejects_unknown_keys(
 
     with pytest.raises(ValidationError, match="Vault contains unknown keys"):
         export_service.run_export("dev")
+
+
+def test_run_export_validates_and_projects_only_selected_group(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = make_project_context()
+    contract = make_contract(
+        {
+            "API_HOST": make_variable_spec(name="API_HOST", group="Network"),
+            "API_URL": make_variable_spec(name="API_URL", group="Application"),
+        }
+    )
+    report = make_resolution_report(
+        values={
+            "API_HOST": make_resolved_value(key="API_HOST", value="host", source="profile"),
+            "API_URL": make_resolved_value(key="API_URL", value="http://host", source="profile"),
+        },
+        missing_required=("API_HOST",),
+        unknown_keys=("OLD_KEY",),
+        invalid_keys=("API_HOST",),
+    )
+
+    monkeypatch.setattr(export_service, "load_project_context", lambda: (object(), context))
+    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
+    monkeypatch.setattr(
+        export_service,
+        "resolve_environment",
+        lambda _context, _contract, *, active_profile=None: report,
+    )
+
+    _context, _profile, rendered = export_service.run_export(
+        "staging",
+        format="dotenv",
+        group="Application",
+    )
+
+    assert rendered == (
+        "# ------------------------------------------------------------------\n"
+        "# Application\n"
+        "# ------------------------------------------------------------------\n"
+        "API_URL=http://host\n"
+    )

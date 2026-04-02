@@ -38,3 +38,51 @@ def test_render_dotenv_matches_dump_env_for_quoting_edge_cases() -> None:
     }
 
     assert render_dotenv(values) == dump_env(values)
+
+
+def test_render_dotenv_groups_variables_with_section_headers() -> None:
+    rendered = render_dotenv(
+        {
+            "POSTGRES_HOST": "localhost",
+            "POSTGRES_PORT": "5432",
+            "ARIA_EVENTD_PORT": "7002",
+        },
+        variable_groups={
+            "POSTGRES_HOST": "Database",
+            "POSTGRES_PORT": "Database",
+            "ARIA_EVENTD_PORT": "Eventd service",
+        },
+    )
+
+    assert rendered == (
+        "# ------------------------------------------------------------------\n"
+        "# Eventd service\n"
+        "# ------------------------------------------------------------------\n"
+        "ARIA_EVENTD_PORT=7002\n\n"
+        "# ------------------------------------------------------------------\n"
+        "# Database\n"
+        "# ------------------------------------------------------------------\n"
+        "POSTGRES_HOST=localhost\n"
+        "POSTGRES_PORT=5432\n"
+    )
+
+
+def test_render_dotenv_keeps_ungrouped_variables_clean() -> None:
+    rendered = render_dotenv(
+        {
+            "APP_NAME": "demo",
+            "DATABASE_URL": "https://db.example.com",
+        },
+        variable_groups={
+            "APP_NAME": None,
+            "DATABASE_URL": "Database",
+        },
+    )
+
+    assert rendered == (
+        "APP_NAME=demo\n\n"
+        "# ------------------------------------------------------------------\n"
+        "# Database\n"
+        "# ------------------------------------------------------------------\n"
+        "DATABASE_URL=https://db.example.com\n"
+    )

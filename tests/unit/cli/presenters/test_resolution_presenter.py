@@ -37,10 +37,11 @@ def test_render_resolution_view_includes_profile_and_sections(
         },
     )
 
-    render_resolution_view(profile="prod", report=report)
+    render_resolution_view(profile="prod", group="Application", report=report)
     captured = capsys.readouterr().out
 
     assert "profile: prod" in captured
+    assert "group: Application" in captured
     assert "Missing required keys" in captured
     assert "DATABASE_URL" in captured
     assert "Invalid keys" in captured
@@ -68,7 +69,7 @@ def test_render_resolution_view_marks_expanded_values(
         }
     )
 
-    render_resolution_view(profile="local", report=report)
+    render_resolution_view(profile="local", group=None, report=report)
     captured = capsys.readouterr().out
 
     assert "AUTH = neo4j/secret (vault) [expanded: USER, PASSWORD]" in captured

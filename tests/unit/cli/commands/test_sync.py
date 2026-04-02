@@ -11,11 +11,12 @@ def test_sync_command_calls_service_with_default_output_path(
     captured: dict[str, object] = {}
 
     monkeypatch.setattr(sync_command_module, "get_active_profile", lambda: "staging")
+    monkeypatch.setattr(sync_command_module, "get_selected_group", lambda: "Application")
     monkeypatch.setattr(
         sync_command_module,
         "run_sync",
-        lambda active_profile=None, output_path=None: captured.update(
-            {"active_profile": active_profile, "output_path": output_path}
+        lambda active_profile=None, output_path=None, group=None: captured.update(
+            {"active_profile": active_profile, "output_path": output_path, "group": group}
         )
         or ("context", "staging", Path("/tmp/demo/.env.staging")),
     )
@@ -27,10 +28,11 @@ def test_sync_command_calls_service_with_default_output_path(
         ),
     )
 
-    sync_command_module.sync_command()
+    sync_command_module.sync_command(output=None)
 
     assert captured["active_profile"] == "staging"
     assert captured["output_path"] is None
+    assert captured["group"] == "Application"
     assert captured["profile"] == "staging"
     assert captured["target_path"] == Path("/tmp/demo/.env.staging")
 
@@ -42,10 +44,11 @@ def test_sync_command_passes_custom_output_path(
     output_path = Path("/tmp/custom.env")
 
     monkeypatch.setattr(sync_command_module, "get_active_profile", lambda: "staging")
+    monkeypatch.setattr(sync_command_module, "get_selected_group", lambda: None)
     monkeypatch.setattr(
         sync_command_module,
         "run_sync",
-        lambda active_profile=None, output_path=None: captured.update(
+        lambda active_profile=None, output_path=None, group=None: captured.update(
             {"active_profile": active_profile, "output_path": output_path}
         )
         or ("context", "staging", output_path),

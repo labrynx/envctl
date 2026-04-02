@@ -28,6 +28,10 @@ That distinction matters a lot. It keeps generated outputs from quietly turning 
 envctl run -- app
 ```
 
+```bash
+envctl --group Application run -- app
+```
+
 This injects values into the subprocess environment.
 
 * no file is created
@@ -35,6 +39,7 @@ This injects values into the subprocess environment.
 * expanded values are passed exactly as resolved
 * values reach the immediate subprocess only
 * this is usually the safest projection mode
+* `--group LABEL` injects only variables declared with that exact contract group
 
 If the target tool supports it, `run` is often the cleanest option because it avoids writing secrets to disk for that workflow.
 
@@ -80,6 +85,10 @@ envctl sync
 envctl sync --output /tmp/env.env
 ```
 
+```bash
+envctl --group Database sync
+```
+
 This creates `.env.local`.
 
 * the file is generated explicitly
@@ -87,6 +96,8 @@ This creates `.env.local`.
 * it is safe to delete and regenerate
 * it contains the final expanded values, not the original `${...}` expressions
 * `--output PATH` writes the same generated dotenv projection to an explicit file path
+* when groups are present, dotenv projection output includes readable section headers
+* `--group LABEL` writes only variables declared with that exact contract group
 
 This mode is useful when another tool really wants a file on disk.
 
@@ -100,6 +111,10 @@ envctl export
 envctl export --format dotenv
 ```
 
+```bash
+envctl --group Application export --format dotenv
+```
+
 This prints shell export lines.
 
 * useful for shell-based workflows
@@ -108,6 +123,7 @@ This prints shell export lines.
 * prints the final expanded values
 * `--format dotenv` prints raw dotenv `KEY=value` lines to stdout
 * dotenv export does not include the sync header
+* `--group LABEL` prints only variables declared with that exact contract group
 
 ## The rule that matters most
 

@@ -22,10 +22,11 @@ def test_root_callback_uses_explicit_profile_over_default(
     monkeypatch.setattr(
         app_module,
         "set_cli_state",
-        lambda ctx, *, output_format, profile: captured.update(
+        lambda ctx, *, output_format, profile, group=None: captured.update(
             {
                 "output_format": output_format,
                 "profile": profile,
+                "group": group,
             }
         ),
     )
@@ -39,3 +40,4 @@ def test_root_callback_uses_explicit_profile_over_default(
     assert result.exit_code == 0
     assert captured["output_format"] == OutputFormat.TEXT
     assert captured["profile"] == "dev"
+    assert captured["group"] is None

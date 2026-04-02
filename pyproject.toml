@@ -71,7 +71,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q --strict-markers --strict-config"
+addopts = "-q --strict-markers --strict-config --import-mode=importlib"
 pythonpath = ["src"]
 
 [tool.ruff]

@@ -69,6 +69,7 @@ class VariableSpec(BaseModel):
     default: str | int | bool | None = None
     provider: str | None = None
     example: str | None = None
+    group: str | None = None
     format: VariableFormat | None = None
     pattern: str | None = None
     choices: tuple[str, ...] = Field(default_factory=tuple)
@@ -87,7 +88,7 @@ class VariableSpec(BaseModel):
         """Normalize the human-readable description."""
         return value.strip()
 
-    @field_validator("provider", "example", "pattern", mode="before")
+    @field_validator("provider", "example", "group", "pattern", mode="before")
     @classmethod
     def normalize_optional_string(cls, value: object) -> str | None:
         """Normalize optional string values."""
@@ -165,6 +166,9 @@ class VariableSpec(BaseModel):
 
         if self.example is not None:
             payload["example"] = self.example
+
+        if self.group is not None:
+            payload["group"] = self.group
 
         if self.format is not None:
             payload["format"] = self.format
