@@ -46,8 +46,8 @@ def test_run_sync_writes_generated_repo_env_file(
     _context, active_profile, target_path = sync_service.run_sync("staging")
 
     assert active_profile == "staging"
-    assert target_path == context.repo_env_path
-    assert captured["path"] == context.repo_env_path
+    assert target_path == context.repo_root / ".env.staging"
+    assert captured["path"] == context.repo_root / ".env.staging"
     assert captured["text"] == "rendered-env\n"
 
 

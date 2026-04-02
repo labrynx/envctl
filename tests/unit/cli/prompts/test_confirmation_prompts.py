@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
-
 from envctl.cli.prompts.confirmation_prompts import (
     build_profile_remove_confirmation_message,
     build_project_rebind_confirmation_message,
@@ -11,6 +9,7 @@ from envctl.cli.prompts.confirmation_prompts import (
     build_vault_prune_confirmation_message,
     build_vault_show_raw_confirmation_message,
 )
+from envctl.domain.operations import RemovePlan
 
 
 def test_build_profile_remove_confirmation_message() -> None:
@@ -27,7 +26,9 @@ def test_build_project_rebind_confirmation_message() -> None:
 
 def test_build_remove_confirmation_message_with_active_and_other_profiles() -> None:
     """It should include active and other profile details when present."""
-    plan = SimpleNamespace(
+    plan = RemovePlan(
+        key="DATABASE_URL",
+        declared_in_contract=True,
         present_in_active_profile=True,
         present_in_other_profiles=("prod", "staging"),
     )
@@ -41,7 +42,9 @@ def test_build_remove_confirmation_message_with_active_and_other_profiles() -> N
 
 def test_build_remove_confirmation_message_without_extra_profile_details() -> None:
     """It should keep the message compact when no extra profile details exist."""
-    plan = SimpleNamespace(
+    plan = RemovePlan(
+        key="DEBUG",
+        declared_in_contract=True,
         present_in_active_profile=False,
         present_in_other_profiles=(),
     )

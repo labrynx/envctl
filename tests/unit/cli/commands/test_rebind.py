@@ -26,7 +26,7 @@ def test_rebind_command_aborts_when_confirmation_is_rejected(
         run_calls.append(copy_values)
         raise AssertionError("run_rebind should not be called when confirmation is rejected")
 
-    monkeypatch.setattr(rebind_command_module, "typer_confirm", fake_confirm)
+    monkeypatch.setattr(rebind_command_module, "confirm", fake_confirm)
     monkeypatch.setattr(rebind_command_module, "run_rebind", fake_run_rebind)
 
     project_rebind_command(yes=False)
@@ -61,7 +61,7 @@ def test_rebind_command_skips_confirmation_when_yes_is_true(
         confirm_calls.append((message, default))
         return True
 
-    monkeypatch.setattr(rebind_command_module, "typer_confirm", fake_confirm)
+    monkeypatch.setattr(rebind_command_module, "confirm", fake_confirm)
     monkeypatch.setattr(
         rebind_command_module,
         "run_rebind",
@@ -93,7 +93,7 @@ def test_rebind_command_prints_rebind_details_with_previous_project_id(
 
     monkeypatch.setattr(
         rebind_command_module,
-        "typer_confirm",
+        "confirm",
         lambda message, default: True,
     )
     monkeypatch.setattr(

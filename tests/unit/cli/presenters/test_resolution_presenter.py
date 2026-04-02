@@ -2,36 +2,37 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
+import pytest
 
 from envctl.cli.presenters.resolution_presenter import (
     render_resolution,
     render_resolution_view,
 )
+from tests.support.builders import make_resolution_report, make_resolved_value
 
 
 def test_render_resolution_view_includes_profile_and_sections(
-    capsys: object,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     """It should render the profile header and resolution sections."""
-    report = SimpleNamespace(
-        missing_required=["DATABASE_URL"],
-        invalid_keys=["PORT"],
-        unknown_keys=["LEGACY_KEY"],
+    report = make_resolution_report(
+        missing_required=("DATABASE_URL",),
+        invalid_keys=("PORT",),
+        unknown_keys=("LEGACY_KEY",),
         values={
-            "PORT": SimpleNamespace(
+            "PORT": make_resolved_value(
+                key="PORT",
                 value="abc",
                 masked=False,
                 source="vault",
                 valid=False,
                 detail="Expected an integer",
             ),
-            "TOKEN": SimpleNamespace(
+            "TOKEN": make_resolved_value(
+                key="TOKEN",
                 value="supersecret",
                 masked=True,
                 source="system",
-                valid=True,
-                detail=None,
             ),
         },
     )
@@ -51,14 +52,9 @@ def test_render_resolution_view_includes_profile_and_sections(
     assert "(system)" in captured
 
 
-def test_render_resolution_handles_empty_values(capsys: object) -> None:
+def test_render_resolution_handles_empty_values(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render an empty resolved values block cleanly."""
-    report = SimpleNamespace(
-        missing_required=[],
-        invalid_keys=[],
-        unknown_keys=[],
-        values={},
-    )
+    report = make_resolution_report()
 
     render_resolution(report)
     captured = capsys.readouterr().out

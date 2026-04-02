@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from envctl.cli.presenters.profile_presenter import (
     render_profile_copy_result,
     render_profile_create_result,
@@ -13,7 +15,7 @@ from envctl.cli.presenters.profile_presenter import (
 )
 
 
-def test_render_profile_list_result(capsys: object) -> None:
+def test_render_profile_list_result(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render active profile and profile list."""
     render_profile_list_result(
         active_profile="local",
@@ -25,7 +27,7 @@ def test_render_profile_list_result(capsys: object) -> None:
     assert "profiles: local, prod, staging" in captured
 
 
-def test_render_profile_create_result_created(capsys: object) -> None:
+def test_render_profile_create_result_created(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render created profile output."""
     render_profile_create_result(
         profile="prod",
@@ -39,7 +41,7 @@ def test_render_profile_create_result_created(capsys: object) -> None:
     assert "path: /tmp/vault/profiles/prod.env" in captured
 
 
-def test_render_profile_create_result_existing(capsys: object) -> None:
+def test_render_profile_create_result_existing(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render existing profile warning."""
     render_profile_create_result(
         profile="prod",
@@ -51,7 +53,7 @@ def test_render_profile_create_result_existing(capsys: object) -> None:
     assert "[WARN] Profile 'prod' already exists" in captured
 
 
-def test_render_profile_copy_result(capsys: object) -> None:
+def test_render_profile_copy_result(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render profile copy output."""
     render_profile_copy_result(
         source_profile="local",
@@ -68,7 +70,7 @@ def test_render_profile_copy_result(capsys: object) -> None:
     assert "copied_keys: 5" in captured
 
 
-def test_render_profile_remove_result_removed(capsys: object) -> None:
+def test_render_profile_remove_result_removed(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render removed profile output."""
     render_profile_remove_result(
         profile="prod",
@@ -80,7 +82,7 @@ def test_render_profile_remove_result_removed(capsys: object) -> None:
     assert "[OK] Removed profile 'prod'" in captured
 
 
-def test_render_profile_remove_result_missing(capsys: object) -> None:
+def test_render_profile_remove_result_missing(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render missing profile warning."""
     render_profile_remove_result(
         profile="prod",
@@ -92,7 +94,7 @@ def test_render_profile_remove_result_missing(capsys: object) -> None:
     assert "[WARN] Profile 'prod' does not exist" in captured
 
 
-def test_render_profile_path_result(capsys: object) -> None:
+def test_render_profile_path_result(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render profile path output."""
     render_profile_path_result(
         profile="staging",

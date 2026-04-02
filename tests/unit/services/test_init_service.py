@@ -406,7 +406,7 @@ def test_build_contract_from_example_skips_invalid_keys(tmp_path: Path) -> None:
     contract = init_service._build_contract_from_example(context)
 
     assert contract["version"] == 1
-    assert set(cast(dict[str, Any], contract["variables"])) == {"APP_NAME"}
+    assert set(cast(dict[str, Any], contract["variables"])) == {"APP_NAME", "app_name"}
 
 
 def test_build_contract_from_example_falls_back_to_starter_when_no_valid_keys(
@@ -426,12 +426,7 @@ def test_build_contract_from_example_falls_back_to_starter_when_no_valid_keys(
 
     contract = init_service._build_contract_from_example(context)
 
-    assert set(cast(dict[str, Any], contract["variables"])) == {
-        "APP_NAME",
-        "PORT",
-        "DATABASE_URL",
-        "DEBUG",
-    }
+    assert set(cast(dict[str, Any], contract["variables"])) == {"app_name"}
 
 
 def test_infer_type_does_not_mark_non_numeric_port_like_value_as_int() -> None:

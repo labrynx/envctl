@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 from pathlib import Path
-from types import SimpleNamespace
+
+import pytest
 
 from envctl.cli.presenters.status_presenter import (
     render_status,
     render_status_view,
 )
+from envctl.domain.status import StatusReport
 
 
-def test_render_status_view_with_issues_and_next_step(capsys: object) -> None:
+def test_render_status_view_with_issues_and_next_step(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render profile, issues, and next step when present."""
-    report = SimpleNamespace(
+    report = StatusReport(
         project_slug="demo-app",
         project_id="prj_1234567890ab",
         repo_root=Path("/workspace/demo-app"),
@@ -42,9 +44,9 @@ def test_render_status_view_with_issues_and_next_step(capsys: object) -> None:
     assert "Run 'envctl init' or create .envctl.schema.yaml" in captured
 
 
-def test_render_status_without_issues(capsys: object) -> None:
+def test_render_status_without_issues(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render a healthy status without issues or next step sections."""
-    report = SimpleNamespace(
+    report = StatusReport(
         project_slug="demo-app",
         project_id="prj_1234567890ab",
         repo_root=Path("/workspace/demo-app"),

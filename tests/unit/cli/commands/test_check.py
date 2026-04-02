@@ -30,8 +30,8 @@ def test_check_command_exits_when_report_is_valid_but_unknown_keys_exist(
     )
     monkeypatch.setattr(
         check_command_module,
-        "render_resolution",
-        lambda _report: None,
+        "render_resolution_view",
+        lambda *, profile, report: None,
     )
     monkeypatch.setattr(
         check_command_module,
@@ -74,8 +74,8 @@ def test_check_command_exits_when_report_is_invalid(
     )
     monkeypatch.setattr(
         check_command_module,
-        "render_resolution",
-        lambda _report: None,
+        "render_resolution_view",
+        lambda *, profile, report: None,
     )
     monkeypatch.setattr(
         check_command_module,

@@ -26,17 +26,9 @@ def fill_command() -> None:
             prompt_label = f"{item.key} — {item.description}"
 
         answers[item.key] = (
-            prompt_secret(
-                prompt_label, 
-                default=item.default_value
-            )
-            if 
-                item.sensitive
-            else 
-                prompt_string(
-                    prompt_label, 
-                    default=item.default_value
-                )
+            prompt_secret(prompt_label, default=item.default_value)
+            if item.sensitive
+            else prompt_string(prompt_label, default=item.default_value)
         )
 
     _context, resolved_profile, profile_path, changed_keys = apply_fill(

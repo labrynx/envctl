@@ -45,6 +45,7 @@ def test_apply_request_to_spec_replaces_requested_fields() -> None:
             override_description="Demo app",
             override_default="a",
             override_example="demo",
+            override_format="json",
             override_pattern=r"^[a-z]+$",
             override_choices=("a", "b"),
         ),
@@ -55,6 +56,7 @@ def test_apply_request_to_spec_replaces_requested_fields() -> None:
     assert updated.description == "Demo app"
     assert updated.default == "a"
     assert updated.example == "demo"
+    assert updated.format == "json"
     assert updated.pattern == r"^[a-z]+$"
     assert updated.choices == ("a", "b")
     assert inferred_spec is None
@@ -170,6 +172,78 @@ def test_run_add_applies_overrides(
     content = context.repo_contract_path.read_text(encoding="utf-8")
     assert "Overridden description" in content
     assert "sensitive: false" in content
+
+
+def test_run_add_applies_format_override(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = make_context(tmp_path)
+
+    monkeypatch.setattr(
+        add_service,
+        "load_project_context",
+        lambda project_name=None, persist_binding=False: (object(), context),
+    )
+    monkeypatch.setattr(add_service, "load_contract_optional", lambda path: None)
+
+    add_service.run_add(
+        AddVariableRequest(
+            key="TEST_JSON",
+            value='{"ok": true}',
+            override_format="json",
+        )
+    )
+
+    content = context.repo_contract_path.read_text(encoding="utf-8")
+    assert "format: json" in content
+
+
+def test_run_add_rejects_invalid_format_override(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = make_context(tmp_path)
+
+    monkeypatch.setattr(
+        add_service,
+        "load_project_context",
+        lambda project_name=None, persist_binding=False: (object(), context),
+    )
+    monkeypatch.setattr(add_service, "load_contract_optional", lambda path: None)
+
+    with pytest.raises(add_service.ValidationError, match="Invalid variable format"):
+        add_service.run_add(
+            AddVariableRequest(
+                key="TEST_JSON",
+                value='{"ok": true}',
+                override_format="xml",
+            )
+        )
+
+
+def test_run_add_rejects_format_for_non_string_type(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = make_context(tmp_path)
+
+    monkeypatch.setattr(
+        add_service,
+        "load_project_context",
+        lambda project_name=None, persist_binding=False: (object(), context),
+    )
+    monkeypatch.setattr(add_service, "load_contract_optional", lambda path: None)
+
+    with pytest.raises(add_service.ValidationError, match="only be used with type 'string'"):
+        add_service.run_add(
+            AddVariableRequest(
+                key="PORT",
+                value="3000",
+                override_type="int",
+                override_format="json",
+            )
+        )
 
 
 def test_run_add_writes_value_to_vault(

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -21,6 +20,7 @@ from envctl.cli.presenters.action_presenter import (
     render_sync_result,
     render_unset_result,
 )
+from envctl.services.init_service import InitResult
 
 
 def test_render_config_init_result(capsys: pytest.CaptureFixture[str]) -> None:
@@ -197,7 +197,7 @@ def test_render_fill_result_without_changes_delegates_to_no_changes(
 
 def test_render_init_result_with_created_contract(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render init output with contract creation details."""
-    init_result = SimpleNamespace(
+    init_result = InitResult(
         contract_created=True,
         contract_template="starter",
         contract_skipped=False,
@@ -225,7 +225,7 @@ def test_render_init_result_with_created_contract(capsys: pytest.CaptureFixture[
 
 def test_render_init_result_with_skipped_contract(capsys: pytest.CaptureFixture[str]) -> None:
     """It should warn when init skipped contract creation."""
-    init_result = SimpleNamespace(
+    init_result = InitResult(
         contract_created=False,
         contract_template=None,
         contract_skipped=True,

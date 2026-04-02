@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from envctl.cli.presenters.project_presenter import (
     render_project_bind_result,
     render_project_rebind_result,
@@ -12,7 +14,7 @@ from envctl.cli.presenters.project_presenter import (
 )
 
 
-def test_render_project_bind_result_changed(capsys: object) -> None:
+def test_render_project_bind_result_changed(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render successful bind output."""
     render_project_bind_result(
         changed=True,
@@ -32,7 +34,7 @@ def test_render_project_bind_result_changed(capsys: object) -> None:
     assert "binding_source: local" in captured
 
 
-def test_render_project_bind_result_unchanged(capsys: object) -> None:
+def test_render_project_bind_result_unchanged(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render already-bound warning output."""
     render_project_bind_result(
         changed=False,
@@ -49,7 +51,7 @@ def test_render_project_bind_result_unchanged(capsys: object) -> None:
     assert "[WARN] Repository already bound to demo-app" in captured
 
 
-def test_render_project_rebind_result_with_previous_id(capsys: object) -> None:
+def test_render_project_rebind_result_with_previous_id(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render rebind output including the previous id."""
     render_project_rebind_result(
         display_name="demo-app",
@@ -68,7 +70,9 @@ def test_render_project_rebind_result_with_previous_id(capsys: object) -> None:
     assert "copied_values: yes" in captured
 
 
-def test_render_project_rebind_result_without_previous_id(capsys: object) -> None:
+def test_render_project_rebind_result_without_previous_id(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     """It should omit the previous id when absent."""
     render_project_rebind_result(
         display_name="demo-app",
@@ -85,7 +89,7 @@ def test_render_project_rebind_result_without_previous_id(capsys: object) -> Non
     assert "copied_values: no" in captured
 
 
-def test_render_project_repair_result_successful(capsys: object) -> None:
+def test_render_project_repair_result_successful(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render successful repair output."""
     render_project_repair_result(
         status="repaired",
@@ -103,7 +107,7 @@ def test_render_project_repair_result_successful(capsys: object) -> None:
     assert "binding_source: local" in captured
 
 
-def test_render_project_repair_result_needs_action(capsys: object) -> None:
+def test_render_project_repair_result_needs_action(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render warning repair output."""
     render_project_repair_result(
         status="needs_action",
@@ -121,7 +125,7 @@ def test_render_project_repair_result_needs_action(capsys: object) -> None:
     assert "binding_source:" not in captured
 
 
-def test_render_project_unbind_result_removed(capsys: object) -> None:
+def test_render_project_unbind_result_removed(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render removed unbind output."""
     render_project_unbind_result(
         removed=True,
@@ -135,7 +139,7 @@ def test_render_project_unbind_result_removed(capsys: object) -> None:
     assert "previous_project_id: prj_1234567890ab" in captured
 
 
-def test_render_project_unbind_result_not_present(capsys: object) -> None:
+def test_render_project_unbind_result_not_present(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render warning when there was no binding."""
     render_project_unbind_result(
         removed=False,

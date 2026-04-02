@@ -5,6 +5,35 @@ from __future__ import annotations
 from pathlib import Path
 
 
+def _unescape_double_quoted_value(value: str) -> str:
+    """Unescape supported dotenv double-quoted sequences."""
+    result: list[str] = []
+    index = 0
+
+    while index < len(value):
+        char = value[index]
+        if char != "\\":
+            result.append(char)
+            index += 1
+            continue
+
+        next_index = index + 1
+        if next_index >= len(value):
+            result.append("\\")
+            break
+
+        next_char = value[next_index]
+        if next_char in {"\\", '"', "$", "`"}:
+            result.append(next_char)
+        else:
+            result.append("\\")
+            result.append(next_char)
+
+        index += 2
+
+    return "".join(result)
+
+
 def parse_env_text(content: str) -> dict[str, str]:
     """Parse a dotenv-like text payload into a mapping."""
     result: dict[str, str] = {}
@@ -22,10 +51,9 @@ def parse_env_text(content: str) -> dict[str, str]:
         if not key:
             continue
 
-        if len(value) >= 2 and (
-            (value.startswith('"') and value.endswith('"'))
-            or (value.startswith("'") and value.endswith("'"))
-        ):
+        if len(value) >= 2 and value.startswith('"') and value.endswith('"'):
+            value = _unescape_double_quoted_value(value[1:-1])
+        elif len(value) >= 2 and value.startswith("'") and value.endswith("'"):
             value = value[1:-1]
 
         result[key] = value

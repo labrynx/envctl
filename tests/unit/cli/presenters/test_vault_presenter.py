@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from envctl.cli.presenters.vault_presenter import (
     render_vault_check_result,
     render_vault_edit_result,
@@ -18,7 +20,7 @@ from envctl.cli.presenters.vault_presenter import (
 )
 
 
-def test_render_vault_check_result_when_file_is_missing(capsys: object) -> None:
+def test_render_vault_check_result_when_file_is_missing(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render the missing vault file case."""
     render_vault_check_result(
         profile="local",
@@ -36,7 +38,7 @@ def test_render_vault_check_result_when_file_is_missing(capsys: object) -> None:
 
 
 def test_render_vault_check_result_when_permissions_are_not_private(
-    capsys: object,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     """It should render the non-private permissions case."""
     render_vault_check_result(
@@ -56,7 +58,7 @@ def test_render_vault_check_result_when_permissions_are_not_private(
     assert "keys: 3" in captured
 
 
-def test_render_vault_check_result_when_file_is_valid(capsys: object) -> None:
+def test_render_vault_check_result_when_file_is_valid(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render the valid vault file case."""
     render_vault_check_result(
         profile="prod",
@@ -72,7 +74,7 @@ def test_render_vault_check_result_when_file_is_valid(capsys: object) -> None:
     assert "private_permissions: yes" in captured
 
 
-def test_render_vault_edit_result_created(capsys: object) -> None:
+def test_render_vault_edit_result_created(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render the created-and-opened vault case."""
     render_vault_edit_result(
         profile="staging",
@@ -85,7 +87,7 @@ def test_render_vault_edit_result_created(capsys: object) -> None:
     assert "profile: staging" in captured
 
 
-def test_render_vault_edit_result_open_existing(capsys: object) -> None:
+def test_render_vault_edit_result_open_existing(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render the opened existing vault case."""
     render_vault_edit_result(
         profile="staging",
@@ -97,7 +99,7 @@ def test_render_vault_edit_result_open_existing(capsys: object) -> None:
     assert "[OK] Opened profile 'staging' vault file" in captured
 
 
-def test_render_vault_path_result(capsys: object) -> None:
+def test_render_vault_path_result(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render the vault path output."""
     render_vault_path_result(
         profile="local",
@@ -109,7 +111,7 @@ def test_render_vault_path_result(capsys: object) -> None:
     assert "vault_values: /tmp/demo/values.env" in captured
 
 
-def test_render_vault_prune_no_changes(capsys: object) -> None:
+def test_render_vault_prune_no_changes(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render the no-changes prune case."""
     render_vault_prune_no_changes(
         profile="prod",
@@ -121,7 +123,7 @@ def test_render_vault_prune_no_changes(capsys: object) -> None:
     assert "[WARN] No unknown keys were removed" in captured
 
 
-def test_render_vault_prune_cancelled(capsys: object) -> None:
+def test_render_vault_prune_cancelled(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render the cancelled prune case."""
     render_vault_prune_cancelled(
         profile="prod",
@@ -133,7 +135,7 @@ def test_render_vault_prune_cancelled(capsys: object) -> None:
     assert "kept_keys: unchanged" in captured
 
 
-def test_render_vault_prune_result(capsys: object) -> None:
+def test_render_vault_prune_result(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render removed and kept key information."""
     render_vault_prune_result(
         profile="prod",
@@ -148,7 +150,7 @@ def test_render_vault_prune_result(capsys: object) -> None:
     assert "kept_keys: 4" in captured
 
 
-def test_render_vault_show_missing(capsys: object) -> None:
+def test_render_vault_show_missing(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render the missing vault show case."""
     render_vault_show_missing(
         profile="local",
@@ -160,7 +162,7 @@ def test_render_vault_show_missing(capsys: object) -> None:
     assert "profile: local" in captured
 
 
-def test_render_vault_show_empty(capsys: object) -> None:
+def test_render_vault_show_empty(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render the empty vault show case."""
     render_vault_show_empty(
         profile="local",
@@ -171,7 +173,7 @@ def test_render_vault_show_empty(capsys: object) -> None:
     assert "[WARN] Vault file is empty" in captured
 
 
-def test_render_vault_show_cancelled(capsys: object) -> None:
+def test_render_vault_show_cancelled(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render the cancelled raw vault display case."""
     render_vault_show_cancelled(
         profile="prod",
@@ -182,7 +184,7 @@ def test_render_vault_show_cancelled(capsys: object) -> None:
     assert "[WARN] Nothing was shown." in captured
 
 
-def test_render_vault_show_values(capsys: object) -> None:
+def test_render_vault_show_values(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render the values section in sorted order."""
     render_vault_show_values(
         profile="prod",

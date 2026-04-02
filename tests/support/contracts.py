@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from envctl.domain.contract import Contract, VariableSpec, VariableType
+from envctl.domain.contract import Contract, VariableFormat, VariableSpec, VariableType
 
 
 def make_variable_spec(
@@ -13,6 +13,7 @@ def make_variable_spec(
     default: str | int | bool | None = None,
     provider: str | None = None,
     example: str | None = None,
+    format: VariableFormat | None = None,
     pattern: str | None = None,
     choices: tuple[str, ...] = (),
 ) -> VariableSpec:
@@ -26,6 +27,7 @@ def make_variable_spec(
         default=default,
         provider=provider,
         example=example,
+        format=format,
         pattern=pattern,
         choices=choices,
     )

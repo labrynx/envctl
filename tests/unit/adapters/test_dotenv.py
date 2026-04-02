@@ -98,3 +98,47 @@ def test_dump_env_quotes_values_with_hash_character() -> None:
     result = dump_env({"PASSWORD": "abc#123"})
 
     assert result == 'PASSWORD="abc#123"\n'
+
+
+def test_parse_env_text_unescapes_supported_double_quoted_sequences() -> None:
+    content = 'VALUE="a\\\\b \\"q\\" \\$HOME \\`cmd\\`"\n'
+
+    result = parse_env_text(content)
+
+    assert result == {"VALUE": 'a\\b "q" $HOME `cmd`'}
+
+
+def test_parse_env_text_roundtrip_keeps_json_array_logical_value() -> None:
+    source = {"TEST_JSON": '["one","two"]', "OTHER": "1234"}
+
+    first_dump = dump_env(source)
+    parsed = parse_env_text(first_dump)
+    second_dump = dump_env(parsed)
+    reparsed = parse_env_text(second_dump)
+
+    assert parsed["TEST_JSON"] == '["one","two"]'
+    assert reparsed["TEST_JSON"] == '["one","two"]'
+    assert reparsed == source
+
+
+def test_parse_env_text_roundtrip_keeps_json_object_logical_value() -> None:
+    source = {"TEST_JSON": '{"bootstrap": true, "owner": "contextd"}'}
+
+    dumped = dump_env(source)
+    reparsed = parse_env_text(dumped)
+
+    assert reparsed == source
+
+
+def test_parse_dump_cycles_are_idempotent_for_escaped_values() -> None:
+    expected = {
+        "TEST_REGEX": '["core.*","evolution.signal.reported.v1"]',
+        "WINDOWS_PATH": r"C:\temp\demo",
+        "QUOTED": 'say "hello"',
+    }
+
+    current = dict(expected)
+    for _ in range(5):
+        current = parse_env_text(dump_env(current))
+
+    assert current == expected

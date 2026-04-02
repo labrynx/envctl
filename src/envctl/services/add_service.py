@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from envctl.adapters.dotenv import dump_env, load_env_file
-from envctl.domain.contract import Contract, VariableSpec, VariableType
+from envctl.domain.contract import Contract, VariableFormat, VariableSpec, VariableType
 from envctl.domain.contract_inference import infer_spec
 from envctl.domain.operations import AddVariableRequest, AddVariableResult
 from envctl.domain.project import ProjectContext
@@ -22,6 +22,7 @@ from envctl.utils.filesystem import ensure_dir
 from envctl.utils.project_paths import build_profile_env_path, normalize_profile_name
 
 _ALLOWED_VARIABLE_TYPES: tuple[VariableType, ...] = ("string", "int", "bool", "url")
+_ALLOWED_VARIABLE_FORMATS: tuple[VariableFormat, ...] = ("json", "url", "csv")
 
 
 def _write_profile_values(path: Path, values: dict[str, str]) -> None:
@@ -43,6 +44,24 @@ def _resolve_variable_type(raw_type: str | None, inferred_type: VariableType) ->
     return normalized  # type: ignore[return-value]
 
 
+def _resolve_variable_format(raw_format: str | None) -> VariableFormat | None:
+    """Resolve one optional string-format hint."""
+    if raw_format is None:
+        return None
+
+    normalized = raw_format.strip().lower()
+    if not normalized:
+        return None
+
+    if normalized not in _ALLOWED_VARIABLE_FORMATS:
+        allowed = ", ".join(_ALLOWED_VARIABLE_FORMATS)
+        raise ValidationError(
+            f"Invalid variable format: {raw_format!r}. Expected one of: {allowed}"
+        )
+
+    return normalized  # type: ignore[return-value]
+
+
 def _apply_request_to_spec(
     inferred: VariableSpec,
     request: AddVariableRequest,
@@ -53,6 +72,10 @@ def _apply_request_to_spec(
     type_ = _resolve_variable_type(request.override_type, inferred.type)
     if request.override_type is None:
         inferred_fields_used.append("type")
+
+    format_ = _resolve_variable_format(request.override_format)
+    if format_ is not None and type_ != "string":
+        raise ValidationError("Variable format can only be used with type 'string'")
 
     required = (
         request.override_required if request.override_required is not None else inferred.required
@@ -82,6 +105,7 @@ def _apply_request_to_spec(
         description=description or "",
         default=request.override_default,
         example=request.override_example,
+        format=format_,
         pattern=request.override_pattern,
         choices=request.override_choices or (),
     )

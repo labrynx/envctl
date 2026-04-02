@@ -19,6 +19,7 @@ class AddVariableRequest:
     override_description: str | None = None
     override_default: str | int | bool | None = None
     override_example: str | None = None
+    override_format: str | None = None
     override_pattern: str | None = None
     override_choices: tuple[str, ...] | None = None
 

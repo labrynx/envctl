@@ -41,8 +41,12 @@ def test_fill_command_outputs_success_when_keys_are_changed(
         lambda: "staging",
     )
     monkeypatch.setattr(
-        "envctl.cli.commands.fill.command.typer_prompt",
-        lambda _message, _secret, _default: next(answers),
+        "envctl.cli.commands.fill.command.prompt_secret",
+        lambda _message, default=None: next(answers),
+    )
+    monkeypatch.setattr(
+        "envctl.cli.commands.fill.command.prompt_string",
+        lambda _message, default=None: next(answers),
     )
     monkeypatch.setattr(
         "envctl.cli.commands.fill.command.apply_fill",
@@ -102,8 +106,8 @@ def test_fill_command_outputs_warning_when_apply_fill_changes_nothing(
         lambda: "dev",
     )
     monkeypatch.setattr(
-        "envctl.cli.commands.fill.command.typer_prompt",
-        lambda _message, _secret, _default: "   ",
+        "envctl.cli.commands.fill.command.prompt_secret",
+        lambda _message, default=None: "   ",
     )
     monkeypatch.setattr(
         "envctl.cli.commands.fill.command.apply_fill",

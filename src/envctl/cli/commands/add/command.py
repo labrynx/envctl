@@ -26,6 +26,7 @@ INTERACTIVE_OPTION = typer.Option(False, "--interactive")
 DESCRIPTION_OPTION = typer.Option(None, "--description")
 DEFAULT_OPTION = typer.Option(None, "--default")
 EXAMPLE_OPTION = typer.Option(None, "--example")
+FORMAT_OPTION = typer.Option(None, "--format")
 PATTERN_OPTION = typer.Option(None, "--pattern")
 CHOICE_OPTION = typer.Option(None, "--choice")
 
@@ -60,6 +61,7 @@ def _collect_interactive_overrides(
     override_sensitive: bool | None,
     default: str | None,
     example: str | None,
+    format_: str | None,
     pattern: str | None,
     choice: list[str] | None,
 ) -> tuple[
@@ -67,6 +69,7 @@ def _collect_interactive_overrides(
     str | None,
     bool | None,
     bool | None,
+    str | None,
     str | None,
     str | None,
     str | None,
@@ -86,6 +89,7 @@ def _collect_interactive_overrides(
 
     resolved_default = prompt_string("Default value", default=default or "")
     resolved_example = prompt_string("Example", default=example or "")
+    resolved_format = prompt_string("Format (json/url/csv)", default=format_ or "")
     resolved_pattern = prompt_string("Pattern", default=pattern or "")
     choices_text = prompt_string(
         "Choices (comma-separated)",
@@ -100,6 +104,7 @@ def _collect_interactive_overrides(
         resolved_sensitive,
         resolved_default,
         resolved_example,
+        resolved_format,
         resolved_pattern,
         resolved_choices,
     )
@@ -118,6 +123,7 @@ def _build_add_request(
     description: str | None,
     default: str | None,
     example: str | None,
+    format_: str | None,
     pattern: str | None,
     choice: list[str] | None,
 ) -> AddVariableRequest:
@@ -129,6 +135,7 @@ def _build_add_request(
     resolved_description = description
     resolved_default = default
     resolved_example = example
+    resolved_format = format_
     resolved_pattern = pattern
     resolved_choice = choice or []
 
@@ -140,6 +147,7 @@ def _build_add_request(
             override_sensitive,
             resolved_default,
             resolved_example,
+            resolved_format,
             resolved_pattern,
             resolved_choice,
         ) = _collect_interactive_overrides(
@@ -149,6 +157,7 @@ def _build_add_request(
             override_sensitive=override_sensitive,
             default=default,
             example=example,
+            format_=format_,
             pattern=pattern,
             choice=choice,
         )
@@ -162,6 +171,7 @@ def _build_add_request(
         override_description=resolved_description,
         override_default=resolved_default or None,
         override_example=resolved_example or None,
+        override_format=resolved_format or None,
         override_pattern=resolved_pattern or None,
         override_choices=tuple(resolved_choice),
     )
@@ -182,6 +192,7 @@ def add_command(
     description: str | None = DESCRIPTION_OPTION,
     default: str | None = DEFAULT_OPTION,
     example: str | None = EXAMPLE_OPTION,
+    format_: str | None = FORMAT_OPTION,
     pattern: str | None = PATTERN_OPTION,
     choice: list[str] | None = CHOICE_OPTION,
 ) -> None:
@@ -198,6 +209,7 @@ def add_command(
         description=description,
         default=default,
         example=example,
+        format_=format_,
         pattern=pattern,
         choice=choice,
     )

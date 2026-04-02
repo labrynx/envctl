@@ -34,7 +34,7 @@ def test_print_kv_outputs_key_value_pair(capsys: CaptureFixture[str]) -> None:
     assert captured.out.strip() == "key: value"
 
 
-def test_print_cancelled_uses_standard_warning_message(capsys: object) -> None:
+def test_print_cancelled_uses_standard_warning_message(capsys: CaptureFixture[str]) -> None:
     """It should emit the shared cancellation message."""
     print_cancelled()
     captured = capsys.readouterr().out

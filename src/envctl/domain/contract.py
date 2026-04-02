@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from envctl.constants import CONTRACT_VERSION
 
 VariableType = Literal["string", "int", "bool", "url"]
+VariableFormat = Literal["json", "url", "csv"]
 
 _KEY_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -62,6 +63,7 @@ class VariableSpec(BaseModel):
     default: str | int | bool | None = None
     provider: str | None = None
     example: str | None = None
+    format: VariableFormat | None = None
     pattern: str | None = None
     choices: tuple[str, ...] = Field(default_factory=tuple)
 
@@ -120,6 +122,9 @@ class VariableSpec(BaseModel):
     @model_validator(mode="after")
     def validate_consistency(self) -> VariableSpec:
         """Validate cross-field consistency."""
+        if self.format is not None and self.type != "string":
+            raise ValueError(f"'format' can only be used with type 'string' for '{self.name}'")
+
         if self.pattern is not None:
             try:
                 re.compile(self.pattern)
@@ -154,6 +159,9 @@ class VariableSpec(BaseModel):
 
         if self.example is not None:
             payload["example"] = self.example
+
+        if self.format is not None:
+            payload["format"] = self.format
 
         if self.pattern is not None:
             payload["pattern"] = self.pattern

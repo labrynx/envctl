@@ -34,8 +34,8 @@ def test_inspect_command_renders_resolution(
     )
     monkeypatch.setattr(
         inspect_command_module,
-        "render_resolution",
-        lambda value: called.update({"report": value}),
+        "render_resolution_view",
+        lambda *, profile, report: called.update({"profile": profile, "report": report}),
     )
     monkeypatch.setattr(
         inspect_command_module,
@@ -45,6 +45,7 @@ def test_inspect_command_renders_resolution(
 
     inspect_command()
 
+    assert called["profile"] == "staging"
     assert called["report"] is report
 
 

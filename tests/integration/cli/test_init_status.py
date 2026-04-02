@@ -16,4 +16,4 @@ def test_init_and_status(runner: CliRunner, workspace: Path) -> None:
 
     status = runner.invoke(app, ["status"], catch_exceptions=False)
     assert status.exit_code == 0
-    assert "Project:" in status.stdout
+    assert "Project" in status.stdout

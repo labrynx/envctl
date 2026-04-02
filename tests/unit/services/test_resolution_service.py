@@ -115,6 +115,7 @@ def test_resolve_environment_does_not_fallback_to_values_env_for_explicit_profil
     monkeypatch.delenv("APP_NAME", raising=False)
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.delenv("PORT", raising=False)
+    monkeypatch.delenv("DEBUG", raising=False)
 
     report = resolve_environment(context, contract, active_profile="staging")
 
@@ -204,3 +205,81 @@ def test_resolve_environment_supports_custom_contract_types(
     assert report.values["RETRY_COUNT"].source == "vault"
     assert report.values["ENABLE_CACHE"].source == "vault"
     assert report.values["SERVICE_URL"].source == "vault"
+
+
+def test_resolve_environment_validates_string_format_json(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = make_contract(
+        {
+            "TEST_JSON": make_variable_spec(
+                name="TEST_JSON",
+                type="string",
+                format="json",
+                required=True,
+            ),
+        }
+    )
+    context = make_project_context(vault_values_path="/tmp/vault.env")
+
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"TEST_JSON": '{"ok": true}'},
+    )
+    monkeypatch.delenv("TEST_JSON", raising=False)
+
+    report = resolve_environment(context, contract, active_profile="local")
+
+    assert report.invalid_keys == ()
+    assert report.values["TEST_JSON"].valid is True
+
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"TEST_JSON": '{\\"broken\\"}'},
+    )
+
+    report = resolve_environment(context, contract, active_profile="local")
+
+    assert report.invalid_keys == ("TEST_JSON",)
+    assert report.values["TEST_JSON"].detail == "Expected a valid JSON string"
+
+
+def test_resolve_environment_validates_string_format_url_and_csv(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = make_contract(
+        {
+            "PUBLIC_ENDPOINT": make_variable_spec(
+                name="PUBLIC_ENDPOINT",
+                type="string",
+                format="url",
+                required=True,
+            ),
+            "TAGS": make_variable_spec(
+                name="TAGS",
+                type="string",
+                format="csv",
+                required=True,
+            ),
+        }
+    )
+    context = make_project_context(vault_values_path="/tmp/vault.env")
+
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {
+            "PUBLIC_ENDPOINT": "not-a-url",
+            "TAGS": " , ",
+        },
+    )
+    monkeypatch.delenv("PUBLIC_ENDPOINT", raising=False)
+    monkeypatch.delenv("TAGS", raising=False)
+
+    report = resolve_environment(context, contract, active_profile="local")
+
+    assert report.invalid_keys == ("PUBLIC_ENDPOINT", "TAGS")
+    assert report.values["PUBLIC_ENDPOINT"].detail == "Expected a valid URL"
+    assert report.values["TAGS"].detail == "Expected a non-empty CSV string"

@@ -6,7 +6,7 @@ import pytest
 import typer
 
 import envctl.cli.callbacks as callbacks_module
-from envctl.adapters.input import confirm
+from envctl.adapters.input import confirm, prompt_secret, prompt_string
 from envctl.cli.callbacks import version_callback
 
 
@@ -27,46 +27,46 @@ def test_version_callback_prints_version_and_exits(
     assert captured.out.strip() == "envctl 9.9.9"
 
 
-def test_typer_prompt_uses_getpass_for_secret_with_user_value(
+def test_prompt_secret_uses_getpass_for_secret_with_user_value(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "envctl.cli.callbacks.getpass.getpass",
+        "envctl.adapters.input.getpass.getpass",
         lambda message: "super-secret",
     )
 
-    result = typer_prompt("API_KEY", True, None)
+    result = prompt_secret("API_KEY", default=None)
 
     assert result == "super-secret"
 
 
-def test_typer_prompt_uses_default_for_secret_when_input_is_empty(
+def test_prompt_secret_uses_default_for_secret_when_input_is_empty(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "envctl.cli.callbacks.getpass.getpass",
+        "envctl.adapters.input.getpass.getpass",
         lambda message: "",
     )
 
-    result = typer_prompt("API_KEY", True, "fallback")
+    result = prompt_secret("API_KEY", default="fallback")
 
     assert result == "fallback"
 
 
-def test_typer_prompt_uses_empty_string_for_secret_when_no_default(
+def test_prompt_secret_uses_empty_string_for_secret_when_no_default(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "envctl.cli.callbacks.getpass.getpass",
+        "envctl.adapters.input.getpass.getpass",
         lambda message: "",
     )
 
-    result = typer_prompt("API_KEY", True, None)
+    result = prompt_secret("API_KEY", default=None)
 
     assert result == ""
 
 
-def test_typer_prompt_uses_typer_prompt_for_non_secret(
+def test_prompt_string_uses_typer_prompt_for_non_secret(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, Any] = {}
@@ -77,9 +77,9 @@ def test_typer_prompt_uses_typer_prompt_for_non_secret(
         captured["show_default"] = show_default
         return "3000"
 
-    monkeypatch.setattr("envctl.cli.callbacks.typer.prompt", fake_prompt)
+    monkeypatch.setattr("envctl.adapters.input.typer.prompt", fake_prompt)
 
-    result = typer_prompt("PORT", False, "3000")
+    result = prompt_string("PORT", default="3000")
 
     assert result == "3000"
     assert captured == {
@@ -102,10 +102,7 @@ def test_typer_confirm_passes_correct_arguments(
 
     monkeypatch.setattr(callbacks_module.typer, "confirm", fake_confirm)
 
-    result = confirm(
-        message="Are you sure?", 
-        default=True
-    )
+    result = confirm(message="Are you sure?", default=True)
 
     assert result is True
     assert captured == {

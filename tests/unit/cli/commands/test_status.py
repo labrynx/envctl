@@ -38,8 +38,8 @@ def test_status_command_renders_status_report(
     )
     monkeypatch.setattr(
         status_command_module,
-        "render_status",
-        lambda value: called.update({"report": value}),
+        "render_status_view",
+        lambda *, profile, report: called.update({"profile": profile, "report": report}),
     )
     monkeypatch.setattr(
         status_command_module,
@@ -49,6 +49,7 @@ def test_status_command_renders_status_report(
 
     status_command()
 
+    assert called["profile"] == "staging"
     assert called["report"] is report
 
 

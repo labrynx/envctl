@@ -100,7 +100,7 @@ def test_profile_remove_command_aborts_on_confirmation_reject(
     monkeypatch: pytest.MonkeyPatch,
     capsys: CaptureFixture[str],
 ) -> None:
-    monkeypatch.setattr(remove_module, "typer_confirm", lambda message, default=False: False)
+    monkeypatch.setattr(remove_module, "confirm", lambda message, default=False: False)
 
     remove_module.profile_remove_command("dev", yes=False)
 

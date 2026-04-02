@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
+import pytest
 
 from envctl.cli.presenters.doctor_presenter import render_doctor_checks
+from envctl.domain.doctor import DoctorCheck
 
 
-def test_render_doctor_checks_only_healthy(capsys: object) -> None:
+def test_render_doctor_checks_only_healthy(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render a healthy doctor summary and no failures."""
     checks = [
-        SimpleNamespace(name="runtime_mode", status="ok", detail="Runtime mode: local"),
-        SimpleNamespace(name="project", status="ok", detail="Resolved project: demo"),
+        DoctorCheck(name="runtime_mode", status="ok", detail="Runtime mode: local"),
+        DoctorCheck(name="project", status="ok", detail="Resolved project: demo"),
     ]
 
     has_failures = render_doctor_checks(checks)
@@ -27,15 +28,15 @@ def test_render_doctor_checks_only_healthy(capsys: object) -> None:
     assert "[OK] project: Resolved project: demo" in captured
 
 
-def test_render_doctor_checks_with_warning(capsys: object) -> None:
+def test_render_doctor_checks_with_warning(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render warnings in the warnings section."""
     checks = [
-        SimpleNamespace(
+        DoctorCheck(
             name="vault_permissions",
             status="warn",
             detail="Vault directory does not exist yet",
         ),
-        SimpleNamespace(
+        DoctorCheck(
             name="binding_source",
             status="ok",
             detail="Binding source: local",
@@ -53,15 +54,15 @@ def test_render_doctor_checks_with_warning(capsys: object) -> None:
     assert "Healthy checks" in captured
 
 
-def test_render_doctor_checks_with_failure(capsys: object) -> None:
+def test_render_doctor_checks_with_failure(capsys: pytest.CaptureFixture[str]) -> None:
     """It should report failures and return True."""
     checks = [
-        SimpleNamespace(
+        DoctorCheck(
             name="project",
             status="fail",
             detail="Project binding is invalid",
         ),
-        SimpleNamespace(
+        DoctorCheck(
             name="vault_profile",
             status="warn",
             detail="Profile vault file does not exist yet",

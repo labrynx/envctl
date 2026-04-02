@@ -33,7 +33,7 @@ def test_sync_and_export_use_explicit_profile_values(
     assert sync.exit_code == 0
     assert "profile: staging" in sync.stdout
 
-    env_file = workspace / ".env.local"
+    env_file = workspace / ".env.staging"
     assert env_file.exists()
     content = env_file.read_text(encoding="utf-8")
     assert "APP_NAME=demo-staging" in content

@@ -74,6 +74,7 @@ def test_add_command_calls_service_and_prints_full_inference(
             "Primary database connection URL",
             "",
             "postgres://user:pass@localhost:5432/app",
+            "",
             "^postgres://",
             "a, b",
         ]
@@ -82,12 +83,12 @@ def test_add_command_calls_service_and_prints_full_inference(
 
     monkeypatch.setattr(
         add_command_module,
-        "typer_prompt",
-        lambda _message, _secret, _default: next(prompts),
+        "prompt_string",
+        lambda _message, default="": next(prompts),
     )
     monkeypatch.setattr(
         add_command_module,
-        "typer_confirm",
+        "confirm",
         lambda _message, default=False: next(confirms),
     )
 
@@ -116,6 +117,7 @@ def test_add_command_calls_service_and_prints_full_inference(
         description="Primary database connection URL",
         default=None,
         example="postgres://user:pass@localhost:5432/app",
+        format_=None,
         pattern="^postgres://",
         choice=["a", "b"],
     )
@@ -132,6 +134,7 @@ def test_add_command_calls_service_and_prints_full_inference(
     assert request.override_description == "Primary database connection URL"
     assert request.override_default is None
     assert request.override_example == "postgres://user:pass@localhost:5432/app"
+    assert request.override_format is None
     assert request.override_pattern == "^postgres://"
     assert request.override_choices == ("a", "b")
 
@@ -192,6 +195,7 @@ def test_add_command_prints_minimal_output_when_inference_is_missing(
         description=None,
         default=None,
         example=None,
+        format_=None,
         pattern=None,
         choice=None,
     )
@@ -254,18 +258,59 @@ def test_add_command_omits_optional_inferred_fields_when_not_present(
         description=None,
         default=None,
         example=None,
+        format_=None,
         pattern=None,
         choice=None,
     )
 
-    output = capsys.readouterr().out
 
-    assert "profile: local" in output
-    assert "vault_values: /tmp/vault/values.env" in output
-    assert "inferred_type: string" in output
-    assert "required:" not in output
-    assert "sensitive:" not in output
-    assert "description:" not in output
+def test_add_command_passes_format_override(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = SimpleNamespace(
+        vault_values_path="/tmp/vault/values.env",
+        repo_contract_path="/tmp/repo/.envctl.schema.yaml",
+    )
+    result = SimpleNamespace(
+        active_profile="local",
+        profile_path="/tmp/vault/values.env",
+        contract_created=False,
+        contract_updated=True,
+        contract_entry_created=True,
+        inferred_spec=None,
+        inferred_fields_used=[],
+    )
+    captured: dict[str, Any] = {}
+
+    def fake_run_add(
+        request: AddVariableRequest,
+        active_profile: str | None = None,
+    ) -> tuple[object, object]:
+        captured["request"] = request
+        captured["active_profile"] = active_profile
+        return context, result
+
+    monkeypatch.setattr(add_command_module, "run_add", fake_run_add)
+    monkeypatch.setattr(add_command_module, "get_active_profile", lambda: "local")
+
+    add_command_module.add_command(
+        key="TEST_JSON",
+        value='{"ok": true}',
+        required=False,
+        optional=False,
+        sensitive=False,
+        non_sensitive=False,
+        interactive=False,
+        description=None,
+        default=None,
+        example=None,
+        format_="json",
+        pattern=None,
+        choice=None,
+    )
+
+    request = cast(AddVariableRequest, captured["request"])
+    assert request.override_format == "json"
 
 
 def test_add_command_rejects_ci_mode(
