@@ -4,6 +4,8 @@ Projection is the part of `envctl` that makes the resolved environment usable.
 
 By the time projection happens, the important work has already been done: the contract has been read, the active profile has been selected, values have been resolved, and validation has happened.
 
+That also means any supported `${VAR}` placeholders have already been expanded.
+
 Projection is simply how that resolved state is exposed to another tool.
 
 It does not define state. It only makes existing state usable.
@@ -30,6 +32,7 @@ This injects values into the subprocess environment.
 
 * no file is created
 * values are passed in memory
+* expanded values are passed exactly as resolved
 * this is usually the safest projection mode
 
 If the target tool supports it, `run` is often the cleanest option because it avoids writing secrets to disk for that workflow.
@@ -45,6 +48,7 @@ This creates `.env.local`.
 * the file is generated explicitly
 * it is a compatibility artifact
 * it is safe to delete and regenerate
+* it contains the final expanded values, not the original `${...}` expressions
 
 This mode is useful when another tool really wants a file on disk.
 
@@ -59,6 +63,7 @@ This prints shell export lines.
 * useful for shell-based workflows
 * more shell-specific than `run`
 * should be treated as output, not storage
+* prints the final expanded values
 
 ## The rule that matters most
 

@@ -8,7 +8,27 @@ That is the point where the contract, the active profile, and any process enviro
 
 If the contract describes what should exist, and the vault stores what is available locally, resolution is the step that decides what finally counts at runtime.
 
-## Resolution order
+## Resolution pipeline
+
+Resolution happens in a small pipeline:
+
+```text
+selection
+-> expansion
+-> validation
+```
+
+That high-level model breaks down like this:
+
+```text
+selection
+-> placeholder parsing/tokenization
+-> placeholder resolution
+-> rendering
+-> validation
+```
+
+## Selection order
 
 The effective order is:
 
@@ -19,6 +39,31 @@ process environment
 ```
 
 In other words, the environment already present in the current process takes priority. If a value is not provided there, `envctl` looks at the active profile. If it is still missing, it can fall back to a non-sensitive default from the contract.
+
+## Expansion
+
+After selection, `envctl` expands supported placeholders inside the selected raw values.
+
+In v1, the only supported placeholder form is:
+
+```text
+${VAR}
+```
+
+That means:
+
+* `${VAR}` is expanded
+* `$VAR` stays literal
+* malformed placeholders make resolution invalid
+
+When `envctl` resolves `${VAR}`:
+
+* if `VAR` is a declared envctl key, that key is resolved first
+* otherwise `envctl` falls back to the current process environment
+* if neither source provides a value, resolution becomes invalid
+
+`${HOME}` is not a special built-in rule. It works because `HOME` usually exists in the current
+process environment.
 
 ## Inputs
 
@@ -36,6 +81,7 @@ These are the pieces that decide the final runtime view.
 The result of resolution is a resolved environment:
 
 * variables have been evaluated
+* supported placeholders have been expanded
 * missing values have been identified
 * validation has been applied
 
@@ -48,6 +94,7 @@ Resolution also validates what it finds.
 That includes checks such as:
 
 * required variables
+* placeholder syntax and reference validity
 * type correctness
 * declared string formats (`json`, `url`, `csv`)
 * allowed values

@@ -95,6 +95,9 @@ Think of it like this:
 
 > the repo defines the rules, your machine provides the data, and envctl builds the final environment.
 
+Resolution now includes placeholder expansion as part of the runtime model, so `check`, `inspect`,
+`run`, `sync`, and `export` all see the same final value.
+
 ---
 
 ### Example contract
@@ -127,6 +130,45 @@ variables:
 
 This file describes what exists.
 It never contains real values.
+
+---
+
+## Variable expansion
+
+`envctl` supports explicit placeholder expansion with `${VAR}` during resolution.
+
+That means the expansion happens before projection, so the effective expanded value is what:
+
+* `inspect` shows
+* `check` validates
+* `run` injects
+* `sync` writes
+* `export` prints
+
+Example:
+
+```dotenv
+INFRA_NEO4J_USER=neo4j
+INFRA_NEO4J_PASSWORD=super-secret
+INFRA_NEO4J_AUTH=${INFRA_NEO4J_USER}/${INFRA_NEO4J_PASSWORD}
+```
+
+`INFRA_NEO4J_AUTH` resolves to the final runtime value, not the literal expression.
+
+Rules:
+
+* only `${VAR}` is supported in v1
+* `$VAR` stays literal
+* if `VAR` is a declared envctl key, envctl resolves that key first
+* otherwise envctl falls back to the current process environment
+* `${HOME}` works when `HOME` exists in the current process environment
+* malformed placeholders or unresolved references make resolution invalid
+
+Compatibility notes:
+
+* before this feature, `${HOME}` stayed literal
+* now `${HOME}` is expanded during resolution
+* `${...}` literal escaping is not supported in v1
 
 ---
 

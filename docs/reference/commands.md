@@ -153,6 +153,7 @@ envctl check
 Behavior:
 
 * validates the resolved environment
+* validates placeholder expansion and reference errors
 * validates semantic string formats when declared in the contract (`format`)
 * exits non-zero on failure
 
@@ -167,6 +168,8 @@ envctl inspect
 Behavior:
 
 * shows resolved state
+* shows the effective expanded values
+* indicates expansion state when relevant
 * masks sensitive values
 
 Use `inspect` when you want to understand what the runtime view looks like.
@@ -180,6 +183,7 @@ envctl explain KEY
 Behavior:
 
 * explains how one key was resolved
+* includes expansion metadata for the resolved key
 
 Use `explain` when one variable is confusing, missing, or coming from a different source than expected.
 
@@ -192,6 +196,7 @@ envctl run -- command
 Behavior:
 
 * injects the resolved environment in memory into the subprocess
+* uses the final expanded values
 
 Use `run` when the target tool can receive environment variables directly and you do not want to create `.env.local`.
 
@@ -204,6 +209,7 @@ envctl sync
 Behavior:
 
 * writes `.env.local`
+* writes the final expanded values, not the original `${...}` expressions
 
 Use `sync` when another tool requires an env file on disk.
 
@@ -216,6 +222,7 @@ envctl export
 Behavior:
 
 * prints shell export lines
+* prints the final expanded values
 
 Use `export` for shell-oriented workflows.
 

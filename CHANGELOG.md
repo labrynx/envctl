@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* Variable expansion during resolution:
+
+  * supports explicit `${VAR}` placeholders in resolved values
+  * placeholders can reference other envctl keys or fall back to process environment variables such as `${HOME}`
+  * expansion errors now invalidate resolution during `check`, `inspect`, `run`, `sync`, and `export`
+  * resolved values now expose expansion state and traceability in CLI/JSON surfaces
+
 * Optional semantic format validation for string variables:
 
   * `VariableSpec` now supports optional `format` hints (`json`, `url`, `csv`)
@@ -73,6 +80,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * output file is now derived from the active profile instead of a single fixed path
   * removes implicit coupling to `context.repo_env_path`
   * aligns projection behavior with the profile-aware runtime model
+
+* Resolution and projection semantics for expanded values:
+
+  * expansion is now part of resolution instead of command-specific behavior
+  * `run`, `sync`, and `export` now project the final expanded values
+  * `sync` no longer preserves `${...}` expressions and instead materializes the effective runtime value
+  * `inspect` / `explain` / JSON output now surface expansion state without exposing sensitive raw values
 
 * Internal path responsibilities:
 
