@@ -11,7 +11,7 @@ from envctl.constants import CONTRACT_VERSION
 
 VariableType = Literal["string", "int", "bool", "url"]
 
-_KEY_RE = re.compile(r"^[A-Z][A-Z0-9_]*$")
+_KEY_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 class ContractMeta(BaseModel):
