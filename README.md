@@ -58,6 +58,8 @@ envctl check            # validate against the contract
 envctl run -- python app.py  # run with env injected
 ```
 
+If you use `envctl run -- docker run ...`, `envctl` injects into the Docker client process, not directly into the container. Forward container variables explicitly with `-e`, `--env`, or `--env-file`.
+
 ---
 
 ## Why not just `.env.local`?

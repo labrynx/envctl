@@ -62,6 +62,32 @@ envctl run -- python app.py
 * fewer secrets written to disk
 * the same model used by `check` and `inspect` also drives runtime
 
+If the command is `docker run`, `envctl` still only injects into the Docker client process. Required container variables must be forwarded explicitly with `-e`, `--env`, or `--env-file`.
+
+Example:
+
+```bash
+envctl run -- docker run --rm -p 7002:7002 \
+  -e ARIA_EVENTD_PORT \
+  -e ARIA_LOG_DIR \
+  -e ARIA_RELATIONAL_STORE_MODE \
+  -e ARIA_RELATIONAL_STORE_PROVIDER \
+  -e ARIA_RELATIONAL_STORE_DSN \
+  -e ARIA_EVENT_BUS_MODE \
+  -e ARIA_EVENT_BUS_PROVIDER \
+  -e ARIA_EVENT_BUS_URL \
+  aria-eventd:dev
+```
+
+If a containerized workflow should disable NATS instead, forward a coherent contract explicitly:
+
+```bash
+envctl run -- docker run --rm \
+  -e ARIA_EVENT_BUS_MODE=disabled \
+  -e ARIA_EVENT_BUS_PROVIDER=none \
+  aria-eventd:dev
+```
+
 ---
 
 # 3. Inspect what your app actually sees

@@ -28,6 +28,7 @@ from envctl.cli.presenters.project_presenter import (
     render_project_repair_result,
     render_project_unbind_result,
 )
+from envctl.cli.presenters.run_presenter import render_run_warnings
 from envctl.cli.presenters.resolution_presenter import (
     render_resolution,
     render_resolution_view,
@@ -69,6 +70,7 @@ __all__ = [
     "render_project_repair_result",
     "render_project_unbind_result",
     "render_remove_result",
+    "render_run_warnings",
     "render_resolution",
     "render_resolution_view",
     "render_set_result",

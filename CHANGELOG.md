@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `run` now warns when invoked as `envctl run -- docker run ...` without a Docker env-file handoff
+  or with only partial `-e` / `--env` forwarding
+* clarified documentation that `run` injects the resolved environment into the immediate subprocess
+  only, and that Docker container workflows still require explicit env forwarding
+
 ---
 
 ## [2.3.3] – 2026-04-02
