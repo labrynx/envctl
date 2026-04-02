@@ -21,13 +21,26 @@ def test_run_unset_removes_existing_key_from_active_profile(
     )
     monkeypatch.setattr(
         unset_service,
-        "load_env_file",
-        lambda path: {"APP_NAME": "demo", "PORT": "3000"},
+        "load_profile_values",
+        lambda context, profile, require_existing_explicit=False: (
+            profile,
+            context.vault_project_dir / "profiles" / "staging.env",
+            {"APP_NAME": "demo", "PORT": "3000"},
+        ),
     )
     monkeypatch.setattr(
         unset_service,
-        "_write_profile_values",
-        lambda path, values: written.update({"path": path, "values": values}),
+        "write_profile_values",
+        lambda context, profile, values, require_existing_explicit=False: (
+            profile,
+            written.update(
+                {
+                    "path": context.vault_project_dir / "profiles" / "staging.env",
+                    "values": values,
+                }
+            )
+            or context.vault_project_dir / "profiles" / "staging.env",
+        ),
     )
 
     _context, active_profile, resolved_path, removed = unset_service.run_unset(
@@ -55,13 +68,21 @@ def test_run_unset_keeps_file_when_key_is_missing(
     )
     monkeypatch.setattr(
         unset_service,
-        "load_env_file",
-        lambda path: {"PORT": "3000"},
+        "load_profile_values",
+        lambda context, profile, require_existing_explicit=False: (
+            profile,
+            context.vault_values_path,
+            {"PORT": "3000"},
+        ),
     )
     monkeypatch.setattr(
         unset_service,
-        "_write_profile_values",
-        lambda path, values: written.update({"path": path, "values": values}),
+        "write_profile_values",
+        lambda context, profile, values, require_existing_explicit=False: (
+            profile,
+            written.update({"path": context.vault_values_path, "values": values})
+            or context.vault_values_path,
+        ),
     )
 
     _context, active_profile, resolved_path, removed = unset_service.run_unset(

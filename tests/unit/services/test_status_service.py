@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 import envctl.services.status_service as status_service
-from envctl.errors import ContractError
+from envctl.errors import ContractError, ExecutionError
 from envctl.services.status_service import run_status
 from tests.support.builders import make_resolution_report, make_resolved_value
 from tests.support.contexts import make_status_context
@@ -153,7 +153,7 @@ def test_run_status_reports_missing_invalid_and_unknown_values(
     assert report.suggested_action == "Fix the invalid values in the local vault"
 
 
-def test_run_status_checks_explicit_profile_file_presence(
+def test_run_status_fails_when_explicit_profile_file_is_missing(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -173,8 +173,5 @@ def test_run_status_checks_explicit_profile_file_presence(
         lambda _context, _contract, *, active_profile=None: resolution,
     )
 
-    active_profile, report = run_status("staging")
-
-    assert active_profile == "staging"
-    assert report.contract_exists is True
-    assert report.vault_exists is False
+    with pytest.raises(ExecutionError, match="Create it with 'envctl profile create staging'"):
+        run_status("staging")

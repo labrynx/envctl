@@ -42,7 +42,9 @@ def test_remove_command_prints_profile_cleanup_summary(
                 {
                     "repo_contract_path": "/tmp/repo/.envctl.schema.yaml",
                     "removed_from_contract": True,
+                    "inspected_profiles": ("local", "dev", "staging"),
                     "removed_from_profiles": ("local", "dev"),
+                    "missing_from_profiles": ("staging",),
                     "affected_paths": ("/tmp/vault/values.env", "/tmp/vault/profiles/dev.env"),
                 },
             )(),
@@ -53,4 +55,6 @@ def test_remove_command_prints_profile_cleanup_summary(
 
     output = capsys.readouterr().out
     assert "Removed 'APP_NAME' from contract and persisted profiles" in output
+    assert "inspected_profiles: local, dev, staging" in output
     assert "removed_from_profiles: local, dev" in output
+    assert "missing_from_profiles: staging" in output

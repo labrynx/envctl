@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 import envctl.services.remove_service as remove_service
@@ -15,31 +13,38 @@ def test_plan_remove_detects_other_profiles(
     context = make_project_context()
     contract = make_standard_contract()
 
+    def build_profile_path(profile: str) -> str:
+        return "values.env" if profile == "local" else f"profiles/{profile}.env"
+
     monkeypatch.setattr(remove_service, "load_project_context", lambda: (object(), context))
     monkeypatch.setattr(remove_service, "load_contract", lambda path: contract)
     monkeypatch.setattr(
         remove_service,
-        "run_profile_list",
-        lambda active_profile=None: (
-            context,
-            type("Result", (), {"profiles": ("local", "dev", "staging")})(),
+        "list_persisted_profiles",
+        lambda _context: ("local", "dev", "staging"),
+    )
+    monkeypatch.setattr(
+        remove_service,
+        "load_profile_values",
+        lambda context, profile, require_existing_explicit=False: (
+            profile,
+            context.vault_project_dir / build_profile_path(profile),
+            (
+                {"APP_NAME": "demo"}
+                if profile == "local"
+                else {"APP_NAME": "demo-dev"}
+                if profile == "dev"
+                else {}
+            ),
         ),
     )
-
-    def fake_load_env_file(path: Path) -> dict[str, str]:
-        if str(path).endswith("values.env"):
-            return {"APP_NAME": "demo"}
-        if str(path).endswith("dev.env"):
-            return {"APP_NAME": "demo-dev"}
-        return {}
-
-    monkeypatch.setattr(remove_service, "load_env_file", fake_load_env_file)
 
     _context, plan = remove_service.plan_remove("APP_NAME", "local")
 
     assert plan.declared_in_contract is True
     assert plan.present_in_active_profile is True
     assert plan.present_in_other_profiles == ("dev",)
+    assert plan.absent_in_other_profiles == ("staging",)
 
 
 def test_run_remove_cleans_all_profiles(
@@ -47,8 +52,10 @@ def test_run_remove_cleans_all_profiles(
 ) -> None:
     context = make_project_context()
     contract = make_standard_contract()
-    written_contracts: list[tuple[Path, object]] = []
-    writes: list[tuple[Path, dict[str, str]]] = []
+    written_contracts: list[tuple[object, object]] = []
+
+    def build_profile_path(profile: str) -> str:
+        return "values.env" if profile == "local" else f"profiles/{profile}.env"
 
     monkeypatch.setattr(remove_service, "load_project_context", lambda: (object(), context))
     monkeypatch.setattr(remove_service, "load_contract", lambda path: contract)
@@ -59,32 +66,39 @@ def test_run_remove_cleans_all_profiles(
     )
     monkeypatch.setattr(
         remove_service,
-        "run_profile_list",
-        lambda active_profile=None: (
-            context,
-            type("Result", (), {"profiles": ("local", "dev", "staging")})(),
-        ),
+        "list_persisted_profiles",
+        lambda _context: ("local", "dev", "staging"),
     )
-
-    def fake_load_env_file(path: Path) -> dict[str, str]:
-        if str(path).endswith("values.env"):
-            return {"APP_NAME": "demo", "PORT": "3000"}
-        if str(path).endswith("dev.env"):
-            return {"APP_NAME": "demo-dev"}
-        if str(path).endswith("staging.env"):
-            return {"PORT": "3000"}
-        return {}
-
-    monkeypatch.setattr(remove_service, "load_env_file", fake_load_env_file)
     monkeypatch.setattr(
         remove_service,
-        "_write_profile_values",
-        lambda path, values: writes.append((path, values)),
+        "load_profile_values",
+        lambda context, profile, require_existing_explicit=False: (
+            profile,
+            context.vault_project_dir / build_profile_path(profile),
+            (
+                {"APP_NAME": "demo", "PORT": "3000"}
+                if profile == "local"
+                else {"APP_NAME": "demo-dev"}
+                if profile == "dev"
+                else {"PORT": "3000"}
+            ),
+        ),
+    )
+    monkeypatch.setattr(
+        remove_service,
+        "remove_key_from_profile",
+        lambda context, profile, key: (
+            profile,
+            context.vault_project_dir / build_profile_path(profile),
+            profile in {"local", "dev"},
+        ),
     )
 
     _context, result = remove_service.run_remove("APP_NAME", "local")
 
     assert result.removed_from_contract is True
+    assert result.inspected_profiles == ("local", "dev", "staging")
     assert result.removed_from_profiles == ("local", "dev")
+    assert result.missing_from_profiles == ("staging",)
     assert len(result.affected_paths) == 2
     assert written_contracts[0][0] == context.repo_contract_path

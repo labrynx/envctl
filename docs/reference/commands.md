@@ -12,6 +12,15 @@ Available global options:
 - `--profile`, `-p`
 - `--json`
 
+Profile selection precedence is:
+
+1. `--profile`
+2. `ENVCTL_PROFILE`
+3. config `default_profile`
+4. `local`
+
+Named profiles must be created explicitly before use with `envctl profile create <name>`.
+
 ## Command groups
 
 Commands are grouped by responsibility.
@@ -81,6 +90,7 @@ Behavior:
 * updates the contract
 * stores the value in the active profile
 * may infer metadata for the contract entry
+* does not initialize other profiles implicitly
 
 Useful options:
 
@@ -102,6 +112,7 @@ Behavior:
 
 * updates the value only
 * does not modify the contract
+* fails fast if the selected explicit profile does not exist
 
 Use `set` when the contract already exists and you only want to change the active-profile value.
 
@@ -115,6 +126,7 @@ Behavior:
 
 * removes the value from the active profile
 * keeps the contract definition
+* fails fast if the selected explicit profile does not exist
 
 Use `unset` when you want to clear a local value without removing the variable from the project.
 
@@ -128,6 +140,7 @@ Behavior:
 
 * removes the contract definition
 * removes the value from all persisted profiles
+* reports which persisted profiles were inspected and changed
 
 Use `remove` when the variable should no longer be part of the shared project model.
 
@@ -141,6 +154,7 @@ Behavior:
 
 * prompts for missing required values
 * uses contract metadata when available
+* fails fast if the selected explicit profile does not exist
 
 Use `fill` when the contract is valid but the active profile is missing required values.
 
@@ -156,6 +170,7 @@ Behavior:
 * validates placeholder expansion and reference errors
 * validates semantic string formats when declared in the contract (`format`)
 * exits non-zero on failure
+* fails fast if the selected explicit profile does not exist
 
 Use `check` when you want a clear pass/fail answer for contract satisfaction.
 
@@ -171,6 +186,7 @@ Behavior:
 * shows the effective expanded values
 * indicates expansion state when relevant
 * masks sensitive values
+* fails fast if the selected explicit profile does not exist
 
 Use `inspect` when you want to understand what the runtime view looks like.
 
@@ -184,6 +200,7 @@ Behavior:
 
 * explains how one key was resolved
 * includes expansion metadata for the resolved key
+* fails fast if the selected explicit profile does not exist
 
 Use `explain` when one variable is confusing, missing, or coming from a different source than expected.
 
@@ -197,6 +214,7 @@ Behavior:
 
 * injects the resolved environment in memory into the subprocess
 * uses the final expanded values
+* fails fast if the selected explicit profile does not exist
 
 Use `run` when the target tool can receive environment variables directly and you do not want to create `.env.local`.
 
@@ -210,6 +228,8 @@ Behavior:
 
 * writes `.env.local`
 * writes the final expanded values, not the original `${...}` expressions
+* writes `.env.<profile>` for named profiles
+* fails fast if the selected explicit profile does not exist
 
 Use `sync` when another tool requires an env file on disk.
 
@@ -223,6 +243,7 @@ Behavior:
 
 * prints shell export lines
 * prints the final expanded values
+* fails fast if the selected explicit profile does not exist
 
 Use `export` for shell-oriented workflows.
 
@@ -235,6 +256,8 @@ envctl status
 Behavior:
 
 * shows a readiness summary
+* shows the active profile
+* fails fast if the selected explicit profile does not exist
 
 Use `status` when you want a quick view of what is ready and what still needs attention.
 

@@ -12,6 +12,7 @@ def test_sync_and_export_use_explicit_profile_values(
     workspace: Path,
 ) -> None:
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
+    runner.invoke(app, ["profile", "create", "staging"], catch_exceptions=False)
 
     runner.invoke(
         app,
@@ -51,6 +52,7 @@ def test_run_uses_explicit_profile_values(
     workspace: Path,
 ) -> None:
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
+    runner.invoke(app, ["profile", "create", "dev"], catch_exceptions=False)
 
     runner.invoke(
         app,

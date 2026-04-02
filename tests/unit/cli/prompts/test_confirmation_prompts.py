@@ -31,6 +31,7 @@ def test_build_remove_confirmation_message_with_active_and_other_profiles() -> N
         declared_in_contract=True,
         present_in_active_profile=True,
         present_in_other_profiles=("prod", "staging"),
+        absent_in_other_profiles=("dev",),
     )
 
     result = build_remove_confirmation_message("DATABASE_URL", plan)
@@ -38,6 +39,7 @@ def test_build_remove_confirmation_message_with_active_and_other_profiles() -> N
     assert "Remove 'DATABASE_URL' from the contract and all profiles?" in result
     assert "- present in the active profile" in result
     assert "- also present in: prod, staging" in result
+    assert "- not present in: dev" in result
 
 
 def test_build_remove_confirmation_message_without_extra_profile_details() -> None:
@@ -47,6 +49,7 @@ def test_build_remove_confirmation_message_without_extra_profile_details() -> No
         declared_in_contract=True,
         present_in_active_profile=False,
         present_in_other_profiles=(),
+        absent_in_other_profiles=(),
     )
 
     result = build_remove_confirmation_message("DEBUG", plan)

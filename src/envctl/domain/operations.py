@@ -57,6 +57,7 @@ class RemovePlan:
     declared_in_contract: bool
     present_in_active_profile: bool
     present_in_other_profiles: tuple[str, ...]
+    absent_in_other_profiles: tuple[str, ...] = ()
 
     @property
     def requires_confirmation(self) -> bool:
@@ -73,6 +74,8 @@ class RemoveVariableResult:
     removed_from_profiles: tuple[str, ...]
     repo_contract_path: Path
     affected_paths: tuple[Path, ...]
+    inspected_profiles: tuple[str, ...] = ()
+    missing_from_profiles: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
