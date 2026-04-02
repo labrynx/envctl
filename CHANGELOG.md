@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* Projection format enhancements:
+
+  * `sync --output PATH` can write the generated dotenv projection to an explicit file path
+  * `export --format dotenv` can print raw dotenv `KEY=value` lines to stdout
+  * projection documentation now includes file-based and stdout-based dotenv workflows
+  * `run` warnings for `docker run` and `docker compose run` now recommend explicit env-file handoff via `envctl export --format dotenv`
+
 * `run` now warns when invoked as `envctl run -- docker run ...` without a Docker env-file handoff
   or with only partial `-e` / `--env` forwarding
 * clarified documentation that `run` injects the resolved environment into the immediate subprocess

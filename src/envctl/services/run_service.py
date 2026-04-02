@@ -25,12 +25,14 @@ def _build_child_env(resolved_values: dict[str, str]) -> dict[str, str]:
 
 def _docker_run_args(command: list[str]) -> list[str] | None:
     """Return docker run arguments when the command launches a container."""
-    if len(command) >= 2 and command[0] == "docker" and command[1] == "run":
+    if command[:2] == ["docker", "run"]:
         return command[2:]
 
-    if len(command) >= 3 and command[0] == "docker" and command[1] == "container":
-        if command[2] == "run":
-            return command[3:]
+    if command[:3] == ["docker", "compose", "run"]:
+        return command[3:]
+
+    if command[:3] == ["docker", "container", "run"]:
+        return command[3:]
 
     return None
 
@@ -56,17 +58,23 @@ def _build_docker_warning(command: list[str]) -> tuple[str, ...]:
     if docker_args is None:
         return ()
 
+    if "--env-file" in docker_args or any(token.startswith("--env-file=") for token in docker_args):
+        return ()
+
     if _has_explicit_docker_env_forwarding(docker_args):
         return (
             "Docker only injects variables into the container when they are forwarded "
             "explicitly with -e, --env, or --env-file. Other envctl-resolved values stay "
-            "in the host-side docker client process unless you forward them too.",
+            "in the host-side docker client process unless you forward them too. "
+            "For container workflows, prefer an explicit env-file handoff such as "
+            "'docker run --env-file <(envctl export --format dotenv) my-image'.",
         )
 
     return (
         "envctl injected the resolved environment into the host-side docker process, not "
         "the container. Forward required container variables explicitly with -e, --env, "
-        "or --env-file.",
+        "or --env-file. For container workflows, prefer an explicit env-file handoff "
+        "such as 'docker run --env-file <(envctl export --format dotenv) my-image'.",
     )
 
 

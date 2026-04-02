@@ -62,7 +62,13 @@ envctl run -- python app.py
 * fewer secrets written to disk
 * the same model used by `check` and `inspect` also drives runtime
 
-If the command is `docker run`, `envctl` still only injects into the Docker client process. Required container variables must be forwarded explicitly with `-e`, `--env`, or `--env-file`.
+If the command is `docker run` or `docker compose run`, `envctl` still only injects into the Docker client process. Required container variables must be forwarded explicitly with `-e`, `--env`, or `--env-file`.
+
+For container workflows, prefer an explicit env-file handoff:
+
+```bash
+docker run --env-file <(envctl export --format dotenv) my-image
+```
 
 Example:
 
@@ -233,6 +239,11 @@ Work with a tool that expects an env file on disk.
 envctl sync
 ```
 
+```bash
+envctl sync --output /tmp/env.env
+docker run --env-file /tmp/env.env my-image
+```
+
 ## Notes
 
 * the file is generated
@@ -249,6 +260,10 @@ Use the resolved environment in the current shell session.
 
 ```bash
 eval "$(envctl export)"
+```
+
+```bash
+docker run --env-file <(envctl export --format dotenv) my-image
 ```
 
 ## Notes

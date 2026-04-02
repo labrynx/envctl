@@ -219,12 +219,13 @@ Behavior:
 
 Use `run` when the target tool can receive environment variables directly and you do not want to create `.env.local`.
 
-For `docker run`, Docker does not inherit the full host process environment into the container automatically. Forward required variables explicitly with `-e`, `--env`, or `--env-file`.
+For `docker run` and `docker compose run`, Docker does not inherit the full host process environment into the container automatically. Forward required variables explicitly with `-e`, `--env`, or `--env-file`. For container workflows, prefer an explicit env-file handoff such as `docker run --env-file <(envctl export --format dotenv) my-image`.
 
 ### `sync`
 
 ```bash
 envctl sync
+envctl sync --output PATH
 ```
 
 Behavior:
@@ -232,6 +233,7 @@ Behavior:
 * writes `.env.local`
 * writes the final expanded values, not the original `${...}` expressions
 * writes `.env.<profile>` for named profiles
+* `--output PATH` writes the generated dotenv file to an explicit location instead
 * fails fast if the selected explicit profile does not exist
 
 Use `sync` when another tool requires an env file on disk.
@@ -240,11 +242,15 @@ Use `sync` when another tool requires an env file on disk.
 
 ```bash
 envctl export
+envctl export --format shell
+envctl export --format dotenv
 ```
 
 Behavior:
 
-* prints shell export lines
+* default output prints shell export lines
+* `--format shell` matches the default output
+* `--format dotenv` prints dotenv `KEY=value` lines to stdout
 * prints the final expanded values
 * fails fast if the selected explicit profile does not exist
 

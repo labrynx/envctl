@@ -156,12 +156,14 @@ Projection commands should remain explicit.
 * should validate before writing
 * makes it visible that the file is generated
 * should follow safe overwrite rules
+* `--output PATH` can write resolved secrets to arbitrary filesystem locations
 
 ### `envctl export`
 
 * prints shell export lines
 * quotes values safely
 * should be treated as shell-facing output, not a hidden storage path
+* `--format dotenv` prints resolved secrets directly to stdout
 
 Projection should never quietly redefine the source of truth.
 

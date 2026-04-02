@@ -38,7 +38,13 @@ This injects values into the subprocess environment.
 
 If the target tool supports it, `run` is often the cleanest option because it avoids writing secrets to disk for that workflow.
 
-If the immediate subprocess is `docker run`, Docker still requires explicit container forwarding such as `-e`, `--env`, or `--env-file`.
+If the immediate subprocess is `docker run` or `docker compose run`, Docker still requires explicit container forwarding such as `-e`, `--env`, or `--env-file`.
+
+For container-oriented workflows, prefer an explicit env-file handoff instead of relying on `envctl run` to reach the container:
+
+```bash
+docker run --env-file <(envctl export --format dotenv) my-image
+```
 
 Example:
 
@@ -70,12 +76,17 @@ envctl run -- docker run --rm \
 envctl sync
 ```
 
+```bash
+envctl sync --output /tmp/env.env
+```
+
 This creates `.env.local`.
 
 * the file is generated explicitly
 * it is a compatibility artifact
 * it is safe to delete and regenerate
 * it contains the final expanded values, not the original `${...}` expressions
+* `--output PATH` writes the same generated dotenv projection to an explicit file path
 
 This mode is useful when another tool really wants a file on disk.
 
@@ -85,12 +96,18 @@ This mode is useful when another tool really wants a file on disk.
 envctl export
 ```
 
+```bash
+envctl export --format dotenv
+```
+
 This prints shell export lines.
 
 * useful for shell-based workflows
 * more shell-specific than `run`
 * should be treated as output, not storage
 * prints the final expanded values
+* `--format dotenv` prints raw dotenv `KEY=value` lines to stdout
+* dotenv export does not include the sync header
 
 ## The rule that matters most
 

@@ -114,7 +114,8 @@ def test_run_command_warns_for_docker_run_without_env_forwarding(
     assert result.warnings == (
         "envctl injected the resolved environment into the host-side docker process, not "
         "the container. Forward required container variables explicitly with -e, --env, "
-        "or --env-file.",
+        "or --env-file. For container workflows, prefer an explicit env-file handoff "
+        "such as 'docker run --env-file <(envctl export --format dotenv) my-image'.",
     )
 
 
@@ -147,7 +148,42 @@ def test_run_command_warns_for_docker_container_run_without_env_forwarding(
     assert result.warnings == (
         "envctl injected the resolved environment into the host-side docker process, not "
         "the container. Forward required container variables explicitly with -e, --env, "
-        "or --env-file.",
+        "or --env-file. For container workflows, prefer an explicit env-file handoff "
+        "such as 'docker run --env-file <(envctl export --format dotenv) my-image'.",
+    )
+
+
+def test_run_command_warns_for_docker_compose_run_without_env_forwarding(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = make_project_context()
+    report = make_resolution_report(
+        values={"APP_NAME": make_resolved_value(key="APP_NAME", value="demo", source="profile")}
+    )
+
+    monkeypatch.setattr(run_service, "load_project_context", lambda: (object(), context))
+    monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: object())
+    monkeypatch.setattr(
+        run_service,
+        "resolve_environment",
+        lambda _context, _contract, *, active_profile=None: report,
+    )
+    monkeypatch.setattr(
+        run_service.subprocess,
+        "run",
+        lambda command, check=False, env=None: CompletedProcess(args=command, returncode=0),
+    )
+
+    _context, result = run_service.run_command(
+        ["docker", "compose", "run", "app"],
+        "dev",
+    )
+
+    assert result.warnings == (
+        "envctl injected the resolved environment into the host-side docker process, not "
+        "the container. Forward required container variables explicitly with -e, --env, "
+        "or --env-file. For container workflows, prefer an explicit env-file handoff "
+        "such as 'docker run --env-file <(envctl export --format dotenv) my-image'.",
     )
 
 
@@ -188,7 +224,9 @@ def test_run_command_warns_when_docker_env_forwarding_is_partial(
     assert result.warnings == (
         "Docker only injects variables into the container when they are forwarded "
         "explicitly with -e, --env, or --env-file. Other envctl-resolved values stay "
-        "in the host-side docker client process unless you forward them too.",
+        "in the host-side docker client process unless you forward them too. "
+        "For container workflows, prefer an explicit env-file handoff such as "
+        "'docker run --env-file <(envctl export --format dotenv) my-image'.",
     )
 
 
