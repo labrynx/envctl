@@ -193,3 +193,12 @@ class ProfilePathResult:
 
     profile: str
     path: Path
+
+
+@dataclass(frozen=True)
+class RunCommandResult:
+    """Result of running one child command with the resolved environment."""
+
+    active_profile: str
+    exit_code: int
+    warnings: tuple[str, ...] = ()

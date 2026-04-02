@@ -33,9 +33,36 @@ This injects values into the subprocess environment.
 * no file is created
 * values are passed in memory
 * expanded values are passed exactly as resolved
+* values reach the immediate subprocess only
 * this is usually the safest projection mode
 
 If the target tool supports it, `run` is often the cleanest option because it avoids writing secrets to disk for that workflow.
+
+If the immediate subprocess is `docker run`, Docker still requires explicit container forwarding such as `-e`, `--env`, or `--env-file`.
+
+Example:
+
+```bash
+envctl run -- docker run --rm -p 7002:7002 \
+  -e ARIA_EVENTD_PORT \
+  -e ARIA_LOG_DIR \
+  -e ARIA_RELATIONAL_STORE_MODE \
+  -e ARIA_RELATIONAL_STORE_PROVIDER \
+  -e ARIA_RELATIONAL_STORE_DSN \
+  -e ARIA_EVENT_BUS_MODE \
+  -e ARIA_EVENT_BUS_PROVIDER \
+  -e ARIA_EVENT_BUS_URL \
+  aria-eventd:dev
+```
+
+Forwarding only part of the contract can leave the container with an incoherent runtime configuration. If you do not want NATS in the containerized workflow, forward a coherent disabled contract instead:
+
+```bash
+envctl run -- docker run --rm \
+  -e ARIA_EVENT_BUS_MODE=disabled \
+  -e ARIA_EVENT_BUS_PROVIDER=none \
+  aria-eventd:dev
+```
 
 ### sync
 

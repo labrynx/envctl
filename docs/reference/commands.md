@@ -214,9 +214,12 @@ Behavior:
 
 * injects the resolved environment in memory into the subprocess
 * uses the final expanded values
+* affects the immediate subprocess only
 * fails fast if the selected explicit profile does not exist
 
 Use `run` when the target tool can receive environment variables directly and you do not want to create `.env.local`.
+
+For `docker run`, Docker does not inherit the full host process environment into the container automatically. Forward required variables explicitly with `-e`, `--env`, or `--env-file`.
 
 ### `sync`
 
