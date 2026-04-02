@@ -148,6 +148,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * `pyproject.toml` metadata was finalized for the upcoming `2.3.1` release
   * packaging information now better matches the current repository and distribution state
 
+* Packaging toolchain compatibility updates:
+
+  * upgraded `twine` dev dependency to `>=6.2,<7.0`
+  * added `pkginfo>=1.12,<2.0` to avoid metadata parsing failures with `Metadata-Version: 2.4`
+  * fixes `twine check dist/*` errors during `make publish-package`
+
 ---
 
 ### Notes

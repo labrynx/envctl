@@ -56,7 +56,8 @@ dev = [
   "mypy>=1.10,<2.0",
   "types-PyYAML>=6.0.12,<7.0.0",
   "build>=1.2,<2.0",
-  "twine>=5.0,<6.0",
+  "twine>=6.2,<7.0",
+  "pkginfo>=1.12,<2.0",
 ]
 
 [project.scripts]
