@@ -74,8 +74,12 @@ def render_explain_value(
     profile: str,
     key: str,
     source: str,
+    raw_value: str | None,
     value: str,
     masked: bool,
+    expansion_status: str,
+    expansion_refs: tuple[str, ...],
+    expansion_error: str | None,
     valid: bool,
     detail: str | None,
 ) -> None:
@@ -85,7 +89,14 @@ def render_explain_value(
     print_kv("profile", profile)
     print_kv("key", key)
     print_kv("source", source)
+    if raw_value is not None:
+        print_kv("raw_value", raw_value)
     print_kv("value", shown_value)
+    print_kv("expansion_status", expansion_status)
+    if expansion_refs:
+        print_kv("expansion_refs", ", ".join(expansion_refs))
+    if expansion_error is not None:
+        print_kv("expansion_error", expansion_error)
     print_kv("valid", "yes" if valid else "no")
 
     if detail:

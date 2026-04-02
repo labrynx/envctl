@@ -46,12 +46,24 @@ def serialize_project_context(context: ProjectContext) -> dict[str, Any]:
 
 def serialize_resolved_value(item: ResolvedValue) -> dict[str, Any]:
     """Serialize one resolved value."""
+    shown_raw_value = None if item.raw_value is None or item.masked else item.raw_value
     shown_value = mask_value(item.value) if item.masked else item.value
     return {
         "key": item.key,
+        "raw_value": shown_raw_value,
         "value": shown_value,
         "source": item.source,
         "masked": item.masked,
+        "expansion_status": item.expansion_status,
+        "expansion_refs": list(item.expansion_refs),
+        "expansion_error": (
+            {
+                "kind": item.expansion_error.kind,
+                "detail": item.expansion_error.detail,
+            }
+            if item.expansion_error is not None
+            else None
+        ),
         "valid": item.valid,
         "detail": item.detail,
     }

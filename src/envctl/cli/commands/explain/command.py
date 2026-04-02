@@ -34,8 +34,12 @@ def explain_command(key: str = typer.Argument(...)) -> None:
         profile=active_profile,
         key=item.key,
         source=item.source,
+        raw_value=item.raw_value,
         value=item.value,
         masked=item.masked,
+        expansion_status=item.expansion_status,
+        expansion_refs=item.expansion_refs,
+        expansion_error=item.expansion_error.detail if item.expansion_error is not None else None,
         valid=item.valid,
         detail=item.detail,
     )

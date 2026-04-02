@@ -54,7 +54,13 @@ def _render_resolved_values(report: ResolutionReport) -> None:
         item = report.values[key]
         shown_value = mask_value(item.value) if item.masked else item.value
         suffix = "" if item.valid else f" — invalid: {item.detail or 'unknown reason'}"
-        typer.echo(f"  {key} = {shown_value} ({item.source}){suffix}")
+        expansion_suffix = ""
+        if item.expansion_status == "expanded":
+            refs = ", ".join(item.expansion_refs)
+            expansion_suffix = f" [expanded{': ' + refs if refs else ''}]"
+        elif item.expansion_status == "error" and item.expansion_error is not None:
+            expansion_suffix = f" [expansion error: {item.expansion_error.kind}]"
+        typer.echo(f"  {key} = {shown_value} ({item.source}){expansion_suffix}{suffix}")
 
 
 def render_resolution(report: ResolutionReport) -> None:
