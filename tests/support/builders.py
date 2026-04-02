@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
+from envctl.domain.expansion import ExpansionErrorInfo, ExpansionStatus
 from envctl.domain.resolution import ResolutionReport, ResolvedValue
 
 
@@ -11,6 +12,10 @@ def make_resolved_value(
     value: str,
     source: str = "vault",
     masked: bool = False,
+    raw_value: str | None = None,
+    expansion_status: ExpansionStatus = "none",
+    expansion_refs: tuple[str, ...] = (),
+    expansion_error: ExpansionErrorInfo | None = None,
     valid: bool = True,
     detail: str | None = None,
 ) -> ResolvedValue:
@@ -20,6 +25,10 @@ def make_resolved_value(
         value=value,
         source=source,
         masked=masked,
+        raw_value=raw_value,
+        expansion_status=expansion_status,
+        expansion_refs=expansion_refs,
+        expansion_error=expansion_error,
         valid=valid,
         detail=detail,
     )

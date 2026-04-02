@@ -6,7 +6,7 @@ import pytest
 
 import envctl.cli.commands.inspect.command as inspect_command_module
 from envctl.cli.commands.inspect import inspect_command
-from tests.support.builders import make_resolution_report
+from tests.support.builders import make_resolution_report, make_resolved_value
 from tests.support.contexts import make_project_context
 
 
@@ -54,7 +54,16 @@ def test_inspect_command_emits_json_when_requested(
 ) -> None:
     context = make_project_context(repo_root="/tmp/demo")
     report = make_resolution_report(
-        values={},
+        values={
+            "AUTH": make_resolved_value(
+                key="AUTH",
+                value="neo4j/secret",
+                source="vault",
+                masked=True,
+                expansion_status="expanded",
+                expansion_refs=("USER", "PASSWORD"),
+            )
+        },
         missing_required=("DATABASE_URL",),
         unknown_keys=("OLD_KEY",),
         invalid_keys=("PORT",),
@@ -92,3 +101,4 @@ def test_inspect_command_emits_json_when_requested(
     assert payload["data"]["report"]["missing_required"] == ["DATABASE_URL"]
     assert payload["data"]["report"]["unknown_keys"] == ["OLD_KEY"]
     assert payload["data"]["report"]["invalid_keys"] == ["PORT"]
+    assert payload["data"]["report"]["values"]["AUTH"]["expansion_status"] == "expanded"

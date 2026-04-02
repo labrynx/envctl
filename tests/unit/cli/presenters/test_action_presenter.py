@@ -88,8 +88,12 @@ def test_render_explain_value_masks_when_needed(capsys: pytest.CaptureFixture[st
         profile="prod",
         key="TOKEN",
         source="system",
+        raw_value=None,
         value="supersecret",
         masked=True,
+        expansion_status="none",
+        expansion_refs=(),
+        expansion_error=None,
         valid=True,
         detail=None,
     )
@@ -108,14 +112,19 @@ def test_render_explain_value_with_detail(capsys: pytest.CaptureFixture[str]) ->
         profile="local",
         key="PORT",
         source="vault",
+        raw_value="abc",
         value="abc",
         masked=False,
+        expansion_status="none",
+        expansion_refs=(),
+        expansion_error=None,
         valid=False,
         detail="Expected an integer",
     )
     captured = capsys.readouterr().out
 
     assert "value: abc" in captured
+    assert "raw_value: abc" in captured
     assert "valid: no" in captured
     assert "detail: Expected an integer" in captured
 

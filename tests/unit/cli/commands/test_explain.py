@@ -49,6 +49,7 @@ def test_explain_command_outputs_detail_when_present(
     assert "profile: staging" in output
     assert "key: PORT" in output
     assert "source: profile" in output
+    assert "raw_value:" not in output
     assert "value: abc" in output
     assert "valid: no" in output
     assert "detail: Expected an integer" in output
@@ -92,6 +93,7 @@ def test_explain_command_masks_sensitive_values(
     assert "profile: local" in output
     assert "key: API_KEY" in output
     assert f"value: {mask_value('super-secret')}" in output
+    assert "raw_value:" not in output
     assert "valid: yes" in output
     assert "detail:" not in output
 
@@ -139,3 +141,4 @@ def test_explain_command_emits_json_when_requested(
     assert payload["data"]["context"]["project_slug"] == "demo"
     assert payload["data"]["item"]["key"] == "API_KEY"
     assert payload["data"]["item"]["masked"] is True
+    assert payload["data"]["item"]["expansion_status"] == "none"

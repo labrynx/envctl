@@ -52,6 +52,28 @@ def test_render_resolution_view_includes_profile_and_sections(
     assert "(system)" in captured
 
 
+def test_render_resolution_view_marks_expanded_values(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    report = make_resolution_report(
+        values={
+            "AUTH": make_resolved_value(
+                key="AUTH",
+                value="neo4j/secret",
+                masked=False,
+                source="vault",
+                expansion_status="expanded",
+                expansion_refs=("USER", "PASSWORD"),
+            ),
+        }
+    )
+
+    render_resolution_view(profile="local", report=report)
+    captured = capsys.readouterr().out
+
+    assert "AUTH = neo4j/secret (vault) [expanded: USER, PASSWORD]" in captured
+
+
 def test_render_resolution_handles_empty_values(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render an empty resolved values block cleanly."""
     report = make_resolution_report()

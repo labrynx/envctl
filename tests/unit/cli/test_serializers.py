@@ -47,9 +47,13 @@ def test_serialize_resolved_value_masks_sensitive_values() -> None:
 
     assert payload == {
         "key": "API_KEY",
+        "raw_value": None,
         "value": mask_value("super-secret"),
         "source": "vault",
         "masked": True,
+        "expansion_status": "none",
+        "expansion_refs": [],
+        "expansion_error": None,
         "valid": True,
         "detail": None,
     }
@@ -86,6 +90,7 @@ def test_serialize_resolution_report_returns_expected_shape() -> None:
     assert payload["unknown_keys"] == ["LEGACY_KEY"]
     assert payload["invalid_keys"] == ["PORT"]
     assert payload["values"]["API_KEY"]["value"] == mask_value("super-secret")
+    assert payload["values"]["API_KEY"]["expansion_status"] == "none"
     assert payload["values"]["PORT"]["detail"] == "Expected an integer"
 
 

@@ -283,3 +283,259 @@ def test_resolve_environment_validates_string_format_url_and_csv(
     assert report.invalid_keys == ("PUBLIC_ENDPOINT", "TAGS")
     assert report.values["PUBLIC_ENDPOINT"].detail == "Expected a valid URL"
     assert report.values["TAGS"].detail == "Expected a non-empty CSV string"
+
+
+def test_resolve_environment_expands_contract_references(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = make_contract(
+        {
+            "USER": make_variable_spec(name="USER", type="string", required=True, sensitive=False),
+            "PASSWORD": make_variable_spec(
+                name="PASSWORD",
+                type="string",
+                required=True,
+                sensitive=True,
+            ),
+            "AUTH": make_variable_spec(name="AUTH", type="string", required=True, sensitive=False),
+        }
+    )
+    context = make_project_context(vault_values_path="/tmp/vault.env")
+
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {
+            "USER": "neo4j",
+            "PASSWORD": "super-secret",
+            "AUTH": "${USER}/${PASSWORD}",
+        },
+    )
+    monkeypatch.delenv("USER", raising=False)
+    monkeypatch.delenv("PASSWORD", raising=False)
+    monkeypatch.delenv("AUTH", raising=False)
+
+    report = resolve_environment(context, contract, active_profile="local")
+
+    assert report.invalid_keys == ()
+    assert report.values["AUTH"].value == "neo4j/super-secret"
+    assert report.values["AUTH"].masked is True
+    assert report.values["AUTH"].raw_value is None
+    assert report.values["AUTH"].expansion_status == "expanded"
+    assert report.values["AUTH"].expansion_refs == ("USER", "PASSWORD")
+
+
+def test_resolve_environment_expands_external_process_variables(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = make_contract(
+        {
+            "CACHE_DIR": make_variable_spec(name="CACHE_DIR", type="string", required=True),
+        }
+    )
+    context = make_project_context(vault_values_path="/tmp/vault.env")
+
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"CACHE_DIR": "${HOME}/.cache/demo"},
+    )
+    monkeypatch.setenv("HOME", "/tmp/example-home")
+    monkeypatch.delenv("CACHE_DIR", raising=False)
+
+    report = resolve_environment(context, contract, active_profile="local")
+
+    assert report.invalid_keys == ()
+    assert report.values["CACHE_DIR"].value == "/tmp/example-home/.cache/demo"
+    assert report.values["CACHE_DIR"].expansion_status == "expanded"
+    assert report.values["CACHE_DIR"].expansion_refs == ("HOME",)
+
+
+def test_resolve_environment_prefers_contract_values_over_process_for_expansion(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = make_contract(
+        {
+            "HOME": make_variable_spec(name="HOME", type="string", required=True),
+            "TARGET": make_variable_spec(name="TARGET", type="string", required=True),
+        }
+    )
+    context = make_project_context(vault_values_path="/tmp/vault.env")
+
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"HOME": "/contract-home", "TARGET": "${HOME}/work"},
+    )
+    monkeypatch.setenv("HOME", "/process-home")
+    monkeypatch.delenv("TARGET", raising=False)
+
+    report = resolve_environment(context, contract, active_profile="local")
+
+    assert report.invalid_keys == ()
+    assert report.values["HOME"].source == "system"
+    assert report.values["TARGET"].value == "/process-home/work"
+
+
+def test_resolve_environment_supports_recursive_expansion(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = make_contract(
+        {
+            "A": make_variable_spec(name="A", type="string", required=True),
+            "B": make_variable_spec(name="B", type="string", required=True),
+            "C": make_variable_spec(name="C", type="string", required=True),
+        }
+    )
+    context = make_project_context(vault_values_path="/tmp/vault.env")
+
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"A": "${B}", "B": "${C}", "C": "value"},
+    )
+
+    report = resolve_environment(context, contract, active_profile="local")
+
+    assert report.invalid_keys == ()
+    assert report.values["A"].value == "value"
+    assert report.values["A"].expansion_refs == ("B",)
+
+
+def test_resolve_environment_allows_empty_references(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = make_contract(
+        {
+            "EMPTY": make_variable_spec(name="EMPTY", type="string", required=False),
+            "TARGET": make_variable_spec(name="TARGET", type="string", required=True),
+        }
+    )
+    context = make_project_context(vault_values_path="/tmp/vault.env")
+
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"EMPTY": "", "TARGET": "x${EMPTY}y"},
+    )
+
+    report = resolve_environment(context, contract, active_profile="local")
+
+    assert report.invalid_keys == ()
+    assert report.values["TARGET"].value == "xy"
+
+
+def test_resolve_environment_marks_missing_references_invalid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = make_contract(
+        {
+            "TARGET": make_variable_spec(name="TARGET", type="string", required=True),
+            "OPTIONAL": make_variable_spec(name="OPTIONAL", type="string", required=False),
+        }
+    )
+    context = make_project_context(vault_values_path="/tmp/vault.env")
+
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"TARGET": "${OPTIONAL}"},
+    )
+
+    report = resolve_environment(context, contract, active_profile="local")
+
+    assert report.invalid_keys == ("TARGET",)
+    assert "Expansion reference error" in (report.values["TARGET"].detail or "")
+
+
+def test_resolve_environment_marks_cycles_invalid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = make_contract(
+        {
+            "A": make_variable_spec(name="A", type="string", required=True),
+            "B": make_variable_spec(name="B", type="string", required=True),
+        }
+    )
+    context = make_project_context(vault_values_path="/tmp/vault.env")
+
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"A": "${B}", "B": "${A}"},
+    )
+
+    report = resolve_environment(context, contract, active_profile="local")
+
+    assert report.invalid_keys == ("A", "B")
+    assert "Expansion cycle error" in (report.values["A"].detail or "")
+    assert report.values["A"].expansion_status == "error"
+
+
+def test_resolve_environment_reports_syntax_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = make_contract(
+        {
+            "TARGET": make_variable_spec(name="TARGET", type="string", required=True),
+        }
+    )
+    context = make_project_context(vault_values_path="/tmp/vault.env")
+
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"TARGET": "prefix-${VAR"},
+    )
+
+    report = resolve_environment(context, contract, active_profile="local")
+
+    assert report.invalid_keys == ("TARGET",)
+    assert "Expansion syntax error" in (report.values["TARGET"].detail or "")
+
+
+def test_resolve_environment_leaves_dollar_literals_untouched(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = make_contract(
+        {
+            "TARGET": make_variable_spec(name="TARGET", type="string", required=True),
+        }
+    )
+    context = make_project_context(vault_values_path="/tmp/vault.env")
+
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"TARGET": "$HOME"},
+    )
+
+    report = resolve_environment(context, contract, active_profile="local")
+
+    assert report.invalid_keys == ()
+    assert report.values["TARGET"].value == "$HOME"
+    assert report.values["TARGET"].expansion_status == "none"
+
+
+def test_resolve_environment_validates_types_after_expansion(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = make_contract(
+        {
+            "BASE_PORT": make_variable_spec(name="BASE_PORT", type="string", required=True),
+            "PORT": make_variable_spec(name="PORT", type="int", required=True),
+        }
+    )
+    context = make_project_context(vault_values_path="/tmp/vault.env")
+
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"BASE_PORT": "3000", "PORT": "${BASE_PORT}"},
+    )
+
+    report = resolve_environment(context, contract, active_profile="local")
+
+    assert report.invalid_keys == ()
+    assert report.values["PORT"].value == "3000"
+    assert report.values["PORT"].valid is True
