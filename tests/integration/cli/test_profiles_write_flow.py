@@ -12,7 +12,6 @@ def test_set_and_check_use_explicit_profile_file(
     workspace: Path,
 ) -> None:
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
-    runner.invoke(app, ["profile", "create", "staging"], catch_exceptions=False)
 
     runner.invoke(
         app, ["--profile", "staging", "set", "APP_NAME", "demo-staging"], catch_exceptions=False

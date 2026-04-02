@@ -4,10 +4,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from envctl.adapters.dotenv import dump_env, load_env_file
 from envctl.domain.project import ProjectContext
-from envctl.repository.profile_repository import load_profile_values, write_profile_values
 from envctl.services.context_service import load_project_context
-from envctl.utils.project_paths import normalize_profile_name
+from envctl.utils.atomic import write_text_atomic
+from envctl.utils.filesystem import ensure_dir
+from envctl.utils.project_paths import build_profile_env_path, normalize_profile_name
+
+
+def _write_profile_values(path: Path, values: dict[str, str]) -> None:
+    """Persist one profile values file."""
+    ensure_dir(path.parent)
+    write_text_atomic(path, dump_env(values))
 
 
 def run_set(
@@ -18,18 +26,10 @@ def run_set(
     """Store one value in the active profile."""
     _config, context = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
+    profile_path = build_profile_env_path(context.vault_project_dir, resolved_profile)
 
-    _resolved_profile, _profile_path, values = load_profile_values(
-        context,
-        resolved_profile,
-        require_existing_explicit=True,
-    )
+    values = load_env_file(profile_path)
     values[key] = value
 
-    _resolved_profile, profile_path = write_profile_values(
-        context,
-        resolved_profile,
-        values,
-        require_existing_explicit=True,
-    )
+    _write_profile_values(profile_path, values)
     return context, resolved_profile, profile_path

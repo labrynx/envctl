@@ -6,31 +6,9 @@ import pytest
 
 import envctl.services.resolution_service as resolution_service
 from envctl.domain.contract import Contract
-from envctl.domain.project import ProjectContext
 from envctl.services.resolution_service import load_contract_for_context, resolve_environment
 from tests.support.contexts import make_project_context
 from tests.support.contracts import make_contract, make_standard_contract, make_variable_spec
-
-
-def patch_loaded_profile_values(
-    monkeypatch: pytest.MonkeyPatch,
-    *,
-    context: ProjectContext,
-    values: dict[str, str],
-    profile: str = "local",
-) -> Path:
-    """Patch profile loading through the repository-backed service hook."""
-    path = (
-        context.vault_values_path
-        if profile == "local"
-        else context.vault_project_dir / "profiles" / f"{profile}.env"
-    )
-    monkeypatch.setattr(
-        resolution_service,
-        "load_profile_values",
-        lambda _context, _profile, require_existing_explicit=False: (_profile, path, values),
-    )
-    return path
 
 
 def test_load_contract_for_context_uses_repo_contract_path(
@@ -58,16 +36,17 @@ def test_resolve_environment_prefers_system_over_profile_and_default(
     contract = make_standard_contract()
     context = make_project_context()
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        profile="staging",
-        values={
+    staging_path = context.vault_project_dir / "profiles" / "staging.env"
+
+    def fake_load_env_file(path: Path) -> dict[str, str]:
+        assert path == staging_path
+        return {
             "APP_NAME": "from-profile",
             "DATABASE_URL": "https://profile.example.com",
             "UNKNOWN_KEY": "x",
-        },
-    )
+        }
+
+    monkeypatch.setattr(resolution_service, "load_env_file", fake_load_env_file)
     monkeypatch.setenv("APP_NAME", "from-system")
     monkeypatch.setenv("DATABASE_URL", "https://system.example.com")
     monkeypatch.setenv("DEBUG", "true")
@@ -98,14 +77,14 @@ def test_resolve_environment_uses_local_values_env_for_local_profile(
     context = make_project_context(vault_values_path="/tmp/vault.env")
     contract = make_standard_contract()
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        values={
+    def fake_load_env_file(path: Path) -> dict[str, str]:
+        assert path == context.vault_values_path
+        return {
             "APP_NAME": "from-vault",
             "DATABASE_URL": "https://vault.example.com",
-        },
-    )
+        }
+
+    monkeypatch.setattr(resolution_service, "load_env_file", fake_load_env_file)
     monkeypatch.delenv("APP_NAME", raising=False)
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.delenv("DEBUG", raising=False)
@@ -126,12 +105,13 @@ def test_resolve_environment_does_not_fallback_to_values_env_for_explicit_profil
     contract = make_standard_contract()
     context = make_project_context()
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        profile="staging",
-        values={},
-    )
+    staging_path = context.vault_project_dir / "profiles" / "staging.env"
+
+    def fake_load_env_file(path: Path) -> dict[str, str]:
+        assert path == staging_path
+        return {}
+
+    monkeypatch.setattr(resolution_service, "load_env_file", fake_load_env_file)
     monkeypatch.delenv("APP_NAME", raising=False)
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.delenv("PORT", raising=False)
@@ -152,10 +132,10 @@ def test_resolve_environment_marks_invalid_int_bool_url_choice_and_pattern(
     contract = make_standard_contract()
     context = make_project_context(vault_values_path="/tmp/vault.env")
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        values={
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {
             "APP_NAME": "demo",
             "PORT": "abc",
             "DEBUG": "maybe",
@@ -204,10 +184,10 @@ def test_resolve_environment_supports_custom_contract_types(
     )
     context = make_project_context(vault_values_path="/tmp/vault.env")
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        values={
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {
             "RETRY_COUNT": "3",
             "ENABLE_CACHE": "true",
             "SERVICE_URL": "https://example.com",
@@ -242,10 +222,10 @@ def test_resolve_environment_validates_string_format_json(
     )
     context = make_project_context(vault_values_path="/tmp/vault.env")
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        values={"TEST_JSON": '{"ok": true}'},
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"TEST_JSON": '{"ok": true}'},
     )
     monkeypatch.delenv("TEST_JSON", raising=False)
 
@@ -254,10 +234,10 @@ def test_resolve_environment_validates_string_format_json(
     assert report.invalid_keys == ()
     assert report.values["TEST_JSON"].valid is True
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        values={"TEST_JSON": '{\\"broken\\"}'},
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"TEST_JSON": '{\\"broken\\"}'},
     )
 
     report = resolve_environment(context, contract, active_profile="local")
@@ -287,10 +267,10 @@ def test_resolve_environment_validates_string_format_url_and_csv(
     )
     context = make_project_context(vault_values_path="/tmp/vault.env")
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        values={
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {
             "PUBLIC_ENDPOINT": "not-a-url",
             "TAGS": " , ",
         },
@@ -322,10 +302,10 @@ def test_resolve_environment_expands_contract_references(
     )
     context = make_project_context(vault_values_path="/tmp/vault.env")
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        values={
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {
             "USER": "neo4j",
             "PASSWORD": "super-secret",
             "AUTH": "${USER}/${PASSWORD}",
@@ -355,10 +335,10 @@ def test_resolve_environment_expands_external_process_variables(
     )
     context = make_project_context(vault_values_path="/tmp/vault.env")
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        values={"CACHE_DIR": "${HOME}/.cache/demo"},
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"CACHE_DIR": "${HOME}/.cache/demo"},
     )
     monkeypatch.setenv("HOME", "/tmp/example-home")
     monkeypatch.delenv("CACHE_DIR", raising=False)
@@ -382,10 +362,10 @@ def test_resolve_environment_prefers_contract_values_over_process_for_expansion(
     )
     context = make_project_context(vault_values_path="/tmp/vault.env")
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        values={"HOME": "/contract-home", "TARGET": "${HOME}/work"},
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"HOME": "/contract-home", "TARGET": "${HOME}/work"},
     )
     monkeypatch.setenv("HOME", "/process-home")
     monkeypatch.delenv("TARGET", raising=False)
@@ -409,10 +389,10 @@ def test_resolve_environment_supports_recursive_expansion(
     )
     context = make_project_context(vault_values_path="/tmp/vault.env")
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        values={"A": "${B}", "B": "${C}", "C": "value"},
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"A": "${B}", "B": "${C}", "C": "value"},
     )
 
     report = resolve_environment(context, contract, active_profile="local")
@@ -433,10 +413,10 @@ def test_resolve_environment_allows_empty_references(
     )
     context = make_project_context(vault_values_path="/tmp/vault.env")
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        values={"EMPTY": "", "TARGET": "x${EMPTY}y"},
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"EMPTY": "", "TARGET": "x${EMPTY}y"},
     )
 
     report = resolve_environment(context, contract, active_profile="local")
@@ -456,10 +436,10 @@ def test_resolve_environment_marks_missing_references_invalid(
     )
     context = make_project_context(vault_values_path="/tmp/vault.env")
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        values={"TARGET": "${OPTIONAL}"},
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"TARGET": "${OPTIONAL}"},
     )
 
     report = resolve_environment(context, contract, active_profile="local")
@@ -479,10 +459,10 @@ def test_resolve_environment_marks_cycles_invalid(
     )
     context = make_project_context(vault_values_path="/tmp/vault.env")
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        values={"A": "${B}", "B": "${A}"},
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"A": "${B}", "B": "${A}"},
     )
 
     report = resolve_environment(context, contract, active_profile="local")
@@ -502,10 +482,10 @@ def test_resolve_environment_reports_syntax_errors(
     )
     context = make_project_context(vault_values_path="/tmp/vault.env")
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        values={"TARGET": "prefix-${VAR"},
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"TARGET": "prefix-${VAR"},
     )
 
     report = resolve_environment(context, contract, active_profile="local")
@@ -524,10 +504,10 @@ def test_resolve_environment_leaves_dollar_literals_untouched(
     )
     context = make_project_context(vault_values_path="/tmp/vault.env")
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        values={"TARGET": "$HOME"},
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"TARGET": "$HOME"},
     )
 
     report = resolve_environment(context, contract, active_profile="local")
@@ -548,10 +528,10 @@ def test_resolve_environment_validates_types_after_expansion(
     )
     context = make_project_context(vault_values_path="/tmp/vault.env")
 
-    patch_loaded_profile_values(
-        monkeypatch,
-        context=context,
-        values={"BASE_PORT": "3000", "PORT": "${BASE_PORT}"},
+    monkeypatch.setattr(
+        resolution_service,
+        "load_env_file",
+        lambda _path: {"BASE_PORT": "3000", "PORT": "${BASE_PORT}"},
     )
 
     report = resolve_environment(context, contract, active_profile="local")

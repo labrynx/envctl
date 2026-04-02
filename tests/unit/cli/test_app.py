@@ -16,8 +16,8 @@ def test_root_callback_uses_explicit_profile_over_default(
 
     monkeypatch.setattr(
         app_module,
-        "load_config",
-        lambda: type("Config", (), {"default_profile": "local"})(),
+        "resolve_default_profile",
+        lambda: "local",
     )
     monkeypatch.setattr(
         app_module,

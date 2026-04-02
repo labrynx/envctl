@@ -11,9 +11,6 @@ def test_doctor_reports_active_profile_in_json(
     runner: CliRunner,
     workspace: Path,
 ) -> None:
-    runner.invoke(app, ["config", "init"], catch_exceptions=False)
-    runner.invoke(app, ["profile", "create", "staging"], catch_exceptions=False)
-
     result = runner.invoke(app, ["--profile", "staging", "--json", "doctor"])
 
     assert result.exit_code == 0

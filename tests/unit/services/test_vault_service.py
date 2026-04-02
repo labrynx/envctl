@@ -18,14 +18,6 @@ def test_run_vault_path_returns_explicit_profile_path(
         "load_project_context",
         lambda: (object(), context),
     )
-    monkeypatch.setattr(
-        vault_service,
-        "require_persisted_profile",
-        lambda context, profile: (
-            profile,
-            context.vault_project_dir / "profiles" / "staging.env",
-        ),
-    )
 
     _context, active_profile, path = vault_service.run_vault_path("staging")
 
@@ -71,17 +63,11 @@ def test_get_unknown_vault_keys_uses_active_profile_file(
     )
     monkeypatch.setattr(
         vault_service,
-        "require_persisted_profile",
-        lambda context, profile: (profile, context.vault_project_dir / "profiles" / "dev.env"),
-    )
-    monkeypatch.setattr(
-        vault_service,
-        "load_profile_values",
-        lambda context, profile, require_existing_explicit=False: (
-            profile,
-            context.vault_project_dir / "profiles" / "dev.env",
-            {"APP_NAME": "demo", "UNKNOWN": "x"},
-        ),
+        "load_env_file",
+        lambda path: {
+            "APP_NAME": "demo",
+            "UNKNOWN": "x",
+        },
     )
 
     _context, active_profile, path, unknown_keys = vault_service.get_unknown_vault_keys("dev")
@@ -110,34 +96,17 @@ def test_run_vault_prune_removes_unknown_keys(
     )
     monkeypatch.setattr(
         vault_service,
-        "require_persisted_profile",
-        lambda context, profile: (
-            profile,
-            context.vault_project_dir / "profiles" / "staging.env",
-        ),
+        "load_env_file",
+        lambda path: {
+            "APP_NAME": "demo",
+            "UNKNOWN": "x",
+            "PORT": "3000",
+        },
     )
     monkeypatch.setattr(
         vault_service,
-        "load_profile_values",
-        lambda context, profile, require_existing_explicit=False: (
-            profile,
-            context.vault_project_dir / "profiles" / "staging.env",
-            {"APP_NAME": "demo", "UNKNOWN": "x", "PORT": "3000"},
-        ),
-    )
-    monkeypatch.setattr(
-        vault_service,
-        "write_profile_values",
-        lambda context, profile, values, require_existing_explicit=False: (
-            profile,
-            written.update(
-                {
-                    "path": context.vault_project_dir / "profiles" / "staging.env",
-                    "values": values,
-                }
-            )
-            or context.vault_project_dir / "profiles" / "staging.env",
-        ),
+        "_write_profile_values",
+        lambda path, values: written.update({"path": path, "values": values}),
     )
 
     _context, active_profile, path, result = vault_service.run_vault_prune("staging")
@@ -164,34 +133,19 @@ def test_run_vault_edit_uses_active_profile_path(
         lambda: (object(), context),
     )
     monkeypatch.setattr(
-        vault_service,
-        "require_persisted_profile",
-        lambda context, profile: (
-            profile,
-            context.vault_project_dir / "profiles" / "staging.env",
-        ),
-    )
-    monkeypatch.setattr(
         vault_service.editor_adapter,
         "open_file",
         lambda path: opened.update({"path": path}),
     )
     monkeypatch.setattr(
         vault_service,
-        "write_profile_values",
-        lambda context, profile, values: (
-            profile,
-            context.vault_project_dir / "profiles" / "staging.env",
-        ),
+        "_write_profile_values",
+        lambda path, values: None,
     )
     monkeypatch.setattr(
         vault_service,
-        "load_profile_values",
-        lambda context, profile, require_existing_explicit=False: (
-            profile,
-            context.vault_project_dir / "profiles" / "staging.env",
-            {},
-        ),
+        "load_env_file",
+        lambda path: {},
     )
 
     _context, result = vault_service.run_vault_edit("staging")

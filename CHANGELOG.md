@@ -9,29 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
----
-
-## [2.3.3] – 2026-04-02
-
 ### Added
-
-* Canonical active-profile resolution:
-
-  * centralized active profile precedence under one shared resolver
-  * enforced the order `--profile` → `ENVCTL_PROFILE` → config `default_profile` → `local`
-  * added tests covering precedence and profile-name validation
-
-* Repository-owned profile vault persistence:
-
-  * introduced `repository/profile_repository.py`
-  * centralized path mapping, persisted-profile discovery, profile reads/writes, and key removal
-  * removed more profile-file handling duplication from services
-
-* Repository operating contract for AI contributors:
-
-  * added `AGENTS.md` as the repository-specific implementation contract
-  * formalizes layer ownership, helper reuse rules, testing expectations, and documentation alignment
-  * makes repository-local architectural conventions explicit for future automated and human-assisted changes
 
 * Variable expansion during resolution:
 
@@ -71,30 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   * enables multi-environment workflows directly in the repository
 
+---
+
 ### Changed
-
-* Profile storage model:
-
-  * `values.env` is now documented and enforced as the canonical backing file for implicit `local`
-  * explicit profiles continue to live under `profiles/<name>.env`
-  * removes ambiguity around `values.env` as alias vs primary storage
-
-* Explicit profile behavior:
-
-  * named profiles now fail fast when selected before creation
-  * profile-aware commands instruct users to create missing profiles with `envctl profile create <name>`
-  * keeps read/write behavior explicit and avoids hidden profile creation
-
-* Profile-aware mutation semantics:
-
-  * `add` updates the contract and writes only to the active profile
-  * `set` and `unset` operate only on the active profile
-  * `remove` continues to remove from the contract and all persisted profiles, with clearer affected-profile reporting
-
-* Release metadata:
-
-  * bumped package version to `2.3.3`
-  * aligns package metadata with the current release preparation state
 
 * CLI architecture — prompts vs presentation:
 

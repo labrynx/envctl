@@ -262,9 +262,7 @@ def test_render_remove_result(capsys: pytest.CaptureFixture[str]) -> None:
         key="TOKEN",
         contract_path=Path("/workspace/.envctl.schema.yaml"),
         removed_from_contract=True,
-        inspected_profiles=("local", "prod", "staging"),
         removed_from_profiles=("local", "prod"),
-        missing_from_profiles=("staging",),
         affected_paths=(
             Path("/tmp/vault/values.env"),
             Path("/tmp/vault/profiles/prod.env"),
@@ -275,9 +273,7 @@ def test_render_remove_result(capsys: pytest.CaptureFixture[str]) -> None:
 
     assert "[OK] Removed 'TOKEN' from contract and persisted profiles" in captured
     assert "removed_from_contract: yes" in captured
-    assert "inspected_profiles: local, prod, staging" in captured
     assert "removed_from_profiles: local, prod" in captured
-    assert "missing_from_profiles: staging" in captured
     assert "affected_paths: /tmp/vault/values.env, /tmp/vault/profiles/prod.env" in captured
     assert "repo_root: /workspace" in captured
 

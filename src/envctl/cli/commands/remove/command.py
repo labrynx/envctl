@@ -45,9 +45,7 @@ def remove_command(
         key=key,
         contract_path=result.repo_contract_path,
         removed_from_contract=result.removed_from_contract,
-        inspected_profiles=result.inspected_profiles,
         removed_from_profiles=result.removed_from_profiles,
-        missing_from_profiles=result.missing_from_profiles,
         affected_paths=result.affected_paths,
         repo_root=context.repo_root,
     )

@@ -25,9 +25,6 @@ def build_remove_confirmation_message(key: str, plan: RemovePlan) -> str:
     if plan.present_in_other_profiles:
         lines.append(f"- also present in: {', '.join(plan.present_in_other_profiles)}")
 
-    if plan.absent_in_other_profiles:
-        lines.append(f"- not present in: {', '.join(plan.absent_in_other_profiles)}")
-
     return "\n".join(lines)
 
 

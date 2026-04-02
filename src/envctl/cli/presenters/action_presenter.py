@@ -177,9 +177,7 @@ def render_remove_result(
     key: str,
     contract_path: Path,
     removed_from_contract: bool,
-    inspected_profiles: tuple[str, ...],
     removed_from_profiles: tuple[str, ...],
-    missing_from_profiles: tuple[str, ...],
     affected_paths: tuple[Path, ...],
     repo_root: Path,
 ) -> None:
@@ -190,14 +188,6 @@ def render_remove_result(
     print_kv(
         "removed_from_profiles",
         ", ".join(removed_from_profiles) if removed_from_profiles else "none",
-    )
-    print_kv(
-        "inspected_profiles",
-        ", ".join(inspected_profiles) if inspected_profiles else "none",
-    )
-    print_kv(
-        "missing_from_profiles",
-        ", ".join(missing_from_profiles) if missing_from_profiles else "none",
     )
 
     if affected_paths:

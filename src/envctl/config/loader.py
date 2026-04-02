@@ -13,9 +13,9 @@ from envctl.config.defaults import (
     get_default_schema_filename,
     get_default_vault_dir,
 )
-from envctl.config.profile_resolution import resolve_active_profile, validate_profile_name
 from envctl.constants import (
     DEFAULT_PROFILE,
+    ENVCTL_PROFILE_ENVVAR,
     ENVCTL_RUNTIME_MODE_ENVVAR,
 )
 from envctl.domain.app_config import AppConfig
@@ -68,6 +68,23 @@ def _validate_runtime_mode(value: object, source_label: str) -> RuntimeMode:
         ) from exc
 
 
+def _validate_profile(value: object, source_label: str) -> str:
+    """Validate and normalize one profile name."""
+    normalized = str(value).strip().lower()
+    if not normalized:
+        raise ConfigError(
+            f"Invalid profile in {source_label}: {value!r}. Expected a non-empty string."
+        )
+
+    if "/" in normalized or "\\" in normalized:
+        raise ConfigError(
+            f"Invalid profile in {source_label}: {value!r}. "
+            "Profile names must not contain path separators."
+        )
+
+    return normalized
+
+
 def load_config() -> AppConfig:
     """Resolve the application configuration."""
     config_path = get_default_config_path()
@@ -103,7 +120,7 @@ def load_config() -> AppConfig:
         else config_runtime_mode
     )
 
-    config_default_profile = validate_profile_name(
+    config_default_profile = _validate_profile(
         raw.get("default_profile", DEFAULT_PROFILE),
         "config file",
     )
@@ -126,5 +143,9 @@ def resolve_default_profile() -> str:
     2. config.default_profile
     3. DEFAULT_PROFILE
     """
+    env_profile_raw = os.environ.get(ENVCTL_PROFILE_ENVVAR)
+    if env_profile_raw is not None:
+        return _validate_profile(env_profile_raw, ENVCTL_PROFILE_ENVVAR)
+
     config = load_config()
-    return resolve_active_profile(config_default_profile=config.default_profile)
+    return _validate_profile(config.default_profile, "config file")

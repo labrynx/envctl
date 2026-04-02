@@ -61,15 +61,6 @@ The default active profile.
 
 If no profile is selected explicitly through CLI flags or environment variables, this value is used before falling back to `local`.
 
-Resolution order is always:
-
-1. `--profile`
-2. `ENVCTL_PROFILE`
-3. `default_profile`
-4. `local`
-
-If `default_profile` points to a named profile, that profile must already exist before profile-aware commands can use it.
-
 ## Rules
 
 The config does **not**:
