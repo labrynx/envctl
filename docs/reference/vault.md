@@ -17,6 +17,8 @@ vault/
 
 The default `local` profile is stored in `values.env`. Explicit profiles are stored under `profiles/`.
 
+Vault values are handled as logical strings during read/write operations. Rewriting a profile through `set` or `unset` should not progressively escape untouched structured values.
+
 ## Commands
 
 ### `check`

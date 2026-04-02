@@ -118,6 +118,11 @@ variables:
     required: false
     default: false
     sensitive: false
+  TEST_JSON:
+    type: string
+    format: json
+    required: false
+    sensitive: false
 ```
 
 This file describes what exists.
@@ -205,6 +210,7 @@ envctl doctor
 
 # values
 envctl add DATABASE_URL <value>
+envctl add TEST_JSON '{"key":"value"}' --type string --format json
 envctl set PORT 4000
 envctl unset PORT
 envctl remove PORT
@@ -244,6 +250,27 @@ envctl --json status
 envctl --json inspect
 envctl --json doctor
 ```
+
+---
+
+## Structured string validation
+
+If a variable is a string but carries structured content, declare that semantic format in the contract:
+
+```yaml
+variables:
+  TEST_JSON:
+    type: string
+    format: json
+```
+
+Supported `format` values for `type: string`:
+
+* `json`
+* `url`
+* `csv`
+
+When `format` is declared, `check`, `inspect`, and runtime resolution validate payload semantics, not only raw string presence.
 
 ---
 

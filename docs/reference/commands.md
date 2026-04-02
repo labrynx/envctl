@@ -82,6 +82,14 @@ Behavior:
 * stores the value in the active profile
 * may infer metadata for the contract entry
 
+Useful options:
+
+* `--type` to set variable type explicitly
+* `--format` to set semantic string format (`json`, `url`, `csv`) when `--type string`
+* `--required` / `--optional`
+* `--sensitive` / `--non-sensitive`
+* `--description`, `--default`, `--example`, `--pattern`, `--choice`
+
 Use `add` when the project itself now requires a new variable.
 
 ### `set`
@@ -145,6 +153,7 @@ envctl check
 Behavior:
 
 * validates the resolved environment
+* validates semantic string formats when declared in the contract (`format`)
 * exits non-zero on failure
 
 Use `check` when you want a clear pass/fail answer for contract satisfaction.

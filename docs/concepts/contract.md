@@ -22,6 +22,7 @@ A contract can describe things like:
 
 * required and optional variables
 * types
+* optional semantic string formats (`json`, `url`, `csv`)
 * descriptions
 * sensitivity flags
 * non-sensitive defaults
@@ -43,6 +44,11 @@ variables:
     type: int
     required: true
     default: 3000
+
+  TEST_JSON:
+    type: string
+    format: json
+    required: false
 ```
 
 This file tells the project what should exist and what shape those values should have. It does not provide the real secret values themselves.

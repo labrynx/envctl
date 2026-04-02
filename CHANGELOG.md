@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* Optional semantic format validation for string variables:
+
+  * `VariableSpec` now supports optional `format` hints (`json`, `url`, `csv`)
+  * `envctl add` supports `--format` to persist semantic string intent in `.envctl.schema.yaml`
+  * `check` / `inspect` / runtime resolution now validate declared string formats when present
+  * contracts without `format` remain fully backward-compatible
+
 * Prompt/presentation layer for CLI interactions:
 
   * introduced `cli/prompts` with dedicated prompt builders
@@ -115,6 +122,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* Dotenv roundtrip escaping corruption for structured string payloads:
+
+  * fixed read/write symmetry for double-quoted dotenv values
+  * supported escaped sequences are now unescaped on parse (`\\`, `\"`, `\$`, ``\``)
+  * repeated profile rewrites no longer progressively escape untouched JSON-like values
+  * prevents cumulative corruption across `set` / `unset` and other profile rewrite flows
+
 * Inconsistent sync behavior:
 
   * `sync` previously ignored the active profile when writing repository env files
@@ -137,6 +151,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ### Notes
+
+* This release delivers **phase 1** of profile rewrite stability:
+
+  * semantic idempotence is now guaranteed for untouched values during profile rewrites
+  * byte-for-byte minimal-diff rewrite behavior is planned as a separate follow-up (phase 2)
 
 * This iteration strengthens the **interaction architecture of the CLI** and the **profile-aware projection model**.
 

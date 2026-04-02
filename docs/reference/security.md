@@ -95,6 +95,7 @@ The contract is versioned with the project, so it must remain safe to share.
 * marking variables as sensitive
 * providing non-sensitive defaults where appropriate
 * declaring patterns and allowed choices
+* declaring semantic string formats (`json`, `url`, `csv`) for stricter validation
 * storing provider hints for future extensibility
 
 ### Not allowed
@@ -117,6 +118,7 @@ Typical protections include:
 * restrictive file permissions such as `0600`
 * user-owned local paths
 * explicit write operations through commands such as `add`, `set`, `unset`, and `fill`
+* idempotent value roundtrips for untouched keys during profile rewrites
 
 Permissions are applied on a best-effort basis and depend on the filesystem underneath.
 

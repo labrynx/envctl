@@ -49,6 +49,7 @@ That includes checks such as:
 
 * required variables
 * type correctness
+* declared string formats (`json`, `url`, `csv`)
 * allowed values
 * patterns
 
