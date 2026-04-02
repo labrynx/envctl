@@ -29,33 +29,3 @@ What should have happened?
 ## Additional context
 
 Logs, screenshots, or notes if relevant.
-
-```
-
----
-
-### Feature request (mejorado)
-
-```markdown
----
-name: Feature request
-about: Propose a feature for envctl
-title: "[feature] "
-labels: enhancement
----
-
-## Problem
-
-What problem are you trying to solve?
-
-## Proposed solution
-
-What should envctl do?
-
-## Alternatives considered
-
-Any other approaches?
-
-## Notes
-
-Constraints, edge cases, or design concerns.
