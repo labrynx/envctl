@@ -43,6 +43,10 @@ The implicit default profile is stored as:
 values.env
 ```
 
+This is not a compatibility alias.
+
+`values.env` is the canonical backing file for the implicit `local` profile.
+
 Explicit profiles are stored as:
 
 ```text
@@ -61,6 +65,8 @@ For example:
 
 This means `local` is the default value set, while named profiles live alongside it as separate files.
 
+`envctl` does not use `profiles/local.env`.
+
 ## How profile selection works
 
 Profile selection follows this order:
@@ -71,6 +77,20 @@ Profile selection follows this order:
 4. `local`
 
 That makes the selection rules easy to inspect. There is a clear order, and `envctl` does not silently pick a profile from hidden state.
+
+## Profile existence
+
+The implicit `local` profile is virtual until first write.
+
+That means `values.env` may not exist yet, and `envctl` can still treat `local` as an empty local namespace.
+
+Explicit profiles are different:
+
+* `dev`, `staging`, `ci`, and any other named profile must be created before use
+* commands do not auto-create them implicitly
+* if a named profile does not exist, `envctl` fails fast and tells you to run `envctl profile create <name>`
+
+This keeps profile-aware workflows explicit and predictable.
 
 ## No inheritance
 
@@ -89,7 +109,9 @@ This is intentional. Inheritance sounds convenient until you are debugging a sur
 ## Typical usage
 
 ```bash
+envctl profile create dev
 envctl --profile dev run -- app
+envctl profile create staging
 envctl --profile staging check
 ```
 
@@ -102,6 +124,15 @@ This gives you a simple way to work with multiple local environments while keepi
 * `profile copy`
 * `profile remove`
 * `profile path`
+
+## Mutation semantics
+
+Profile-aware commands follow a fixed model:
+
+* `set` writes only to the active profile
+* `unset` removes only from the active profile
+* `add` updates the contract and writes only to the active profile
+* `remove` updates the contract and removes values from all persisted profiles
 
 ## See also
 
