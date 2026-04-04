@@ -21,6 +21,7 @@ from envctl.constants import (
 from envctl.domain.app_config import AppConfig
 from envctl.domain.runtime import RuntimeMode
 from envctl.errors import ConfigError
+from envctl.services.error_diagnostics import ConfigDiagnostics
 
 SUPPORTED_KEYS = {
     "vault_dir",
@@ -36,27 +37,80 @@ def _read_json(path: Path) -> dict[str, Any]:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        raise ConfigError(f"Invalid JSON config: {path}") from exc
+        raise ConfigError(
+            f"Invalid JSON config: {path}",
+            diagnostics=ConfigDiagnostics(
+                category="invalid_json",
+                path=path,
+                suggested_actions=("fix config.json",),
+            ),
+        ) from exc
     except OSError as exc:
-        raise ConfigError(f"Unable to read config file: {path}") from exc
+        raise ConfigError(
+            f"Unable to read config file: {path}",
+            diagnostics=ConfigDiagnostics(
+                category="unreadable_config",
+                path=path,
+                suggested_actions=("check config file permissions",),
+            ),
+        ) from exc
 
     if not isinstance(data, dict):
-        raise ConfigError(f"Config file must contain a JSON object: {path}")
+        raise ConfigError(
+            f"Config file must contain a JSON object: {path}",
+            diagnostics=ConfigDiagnostics(
+                category="invalid_config_shape",
+                path=path,
+                field="root",
+                suggested_actions=("fix config.json",),
+            ),
+        )
 
     return data
 
 
-def _validate_filename(name: str, label: str) -> str:
+def _validate_filename(
+    name: str,
+    label: str,
+    *,
+    path: Path | None = None,
+    source_label: str | None = None,
+) -> str:
     """Validate a configured file name."""
     value = str(name).strip()
     if not value:
-        raise ConfigError(f"{label} cannot be empty")
+        raise ConfigError(
+            f"{label} cannot be empty",
+            diagnostics=ConfigDiagnostics(
+                category="invalid_filename",
+                path=path,
+                key=label,
+                source_label=source_label,
+                value=str(name),
+                suggested_actions=("fix config.json",),
+            ),
+        )
     if "/" in value:
-        raise ConfigError(f"{label} must be a file name, not a path")
+        raise ConfigError(
+            f"{label} must be a file name, not a path",
+            diagnostics=ConfigDiagnostics(
+                category="invalid_filename",
+                path=path,
+                key=label,
+                source_label=source_label,
+                value=value,
+                suggested_actions=("fix config.json",),
+            ),
+        )
     return value
 
 
-def _validate_runtime_mode(value: object, source_label: str) -> RuntimeMode:
+def _validate_runtime_mode(
+    value: object,
+    source_label: str,
+    *,
+    path: Path | None = None,
+) -> RuntimeMode:
     """Validate and normalize one runtime mode value."""
     normalized = str(value).strip().lower()
     try:
@@ -64,7 +118,14 @@ def _validate_runtime_mode(value: object, source_label: str) -> RuntimeMode:
     except ValueError as exc:
         allowed = ", ".join(mode.value for mode in RuntimeMode)
         raise ConfigError(
-            f"Invalid runtime mode in {source_label}: {value!r}. Expected one of: {allowed}"
+            f"Invalid runtime mode in {source_label}: {value!r}. Expected one of: {allowed}",
+            diagnostics=ConfigDiagnostics(
+                category="invalid_runtime_mode",
+                path=path,
+                source_label=source_label,
+                value=repr(value),
+                suggested_actions=("set runtime_mode to local or ci",),
+            ),
         ) from exc
 
 
@@ -78,22 +139,35 @@ def load_config() -> AppConfig:
         unknown = set(raw.keys()) - SUPPORTED_KEYS
         if unknown:
             keys = ", ".join(sorted(unknown))
-            raise ConfigError(f"Unsupported config key(s): {keys}")
+            raise ConfigError(
+                f"Unsupported config key(s): {keys}",
+                diagnostics=ConfigDiagnostics(
+                    category="unsupported_keys",
+                    path=config_path,
+                    key=keys,
+                    suggested_actions=("remove unsupported config keys",),
+                ),
+            )
 
     vault_dir = Path(raw.get("vault_dir", get_default_vault_dir())).expanduser().resolve()
 
     env_filename = _validate_filename(
         raw.get("env_filename", get_default_env_filename()),
         "env_filename",
+        path=config_path if config_path.exists() else None,
+        source_label="config file",
     )
     schema_filename = _validate_filename(
         raw.get("schema_filename", get_default_schema_filename()),
         "schema_filename",
+        path=config_path if config_path.exists() else None,
+        source_label="config file",
     )
 
     config_runtime_mode = _validate_runtime_mode(
         raw.get("runtime_mode", RuntimeMode.LOCAL.value),
         "config file",
+        path=config_path if config_path.exists() else None,
     )
 
     env_runtime_mode_raw = os.environ.get(ENVCTL_RUNTIME_MODE_ENVVAR)
@@ -103,10 +177,25 @@ def load_config() -> AppConfig:
         else config_runtime_mode
     )
 
-    config_default_profile = validate_profile_name(
-        raw.get("default_profile", DEFAULT_PROFILE),
-        "config file",
-    )
+    try:
+        config_default_profile = validate_profile_name(
+            raw.get("default_profile", DEFAULT_PROFILE),
+            "config file",
+        )
+    except ConfigError as exc:
+        if exc.diagnostics is None:
+            raise ConfigError(
+                str(exc),
+                diagnostics=ConfigDiagnostics(
+                    category="invalid_default_profile",
+                    path=config_path if config_path.exists() else None,
+                    key="default_profile",
+                    source_label="config file",
+                    value=repr(raw.get("default_profile", DEFAULT_PROFILE)),
+                    suggested_actions=("fix config.json",),
+                ),
+            ) from exc
+        raise
 
     return AppConfig(
         config_path=config_path,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, NoReturn, cast
 
 import yaml
 from pydantic import ValidationError as PydanticValidationError
@@ -10,6 +11,11 @@ from pydantic import ValidationError as PydanticValidationError
 from envctl.constants import CONTRACT_VERSION
 from envctl.domain.contract import Contract
 from envctl.errors import ContractError
+from envctl.services.error_diagnostics import (
+    ContractDiagnosticCategory,
+    ContractDiagnosticIssue,
+    ContractDiagnostics,
+)
 from envctl.utils.atomic import write_text_atomic
 
 
@@ -48,29 +54,154 @@ def ensure_contract_metadata(
     )
 
 
-def _normalize_contract_payload(raw: object) -> dict[str, object]:
+def _raise_contract_error(
+    message: str,
+    *,
+    category: ContractDiagnosticCategory,
+    path: Path,
+    key: str | None = None,
+    field: str | None = None,
+    issues: tuple[ContractDiagnosticIssue, ...] = (),
+) -> NoReturn:
+    """Raise one structured contract error."""
+    raise ContractError(
+        message,
+        diagnostics=ContractDiagnostics(
+            category=category,
+            path=path,
+            key=key,
+            field=field,
+            issues=issues,
+            suggested_actions=_build_contract_suggested_actions(category=category, key=key),
+        ),
+    )
+
+
+def _build_contract_suggested_actions(
+    *,
+    category: ContractDiagnosticCategory,
+    key: str | None,
+) -> tuple[str, ...]:
+    """Build compact next-step suggestions for one contract failure."""
+    actions = ["envctl check"]
+
+    if category in {
+        "missing_contract_file",
+        "invalid_yaml",
+        "validation_failed",
+        "invalid_top_level_shape",
+        "invalid_variable_shape",
+    }:
+        actions.append("fix .envctl.schema.yaml")
+
+    if category == "missing_contract_file":
+        actions.append("envctl init --contract starter")
+
+    if category == "invalid_variable_shape" and key is not None:
+        actions.append(f"inspect contract key {key}")
+
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for action in actions:
+        if action in seen:
+            continue
+        seen.add(action)
+        ordered.append(action)
+    return tuple(ordered)
+
+
+def load_contract(path: Path) -> Contract:
+    """Load a contract from disk."""
+    if not path.exists():
+        _raise_contract_error(
+            f"Contract file not found: {path}",
+            category="missing_contract_file",
+            path=path,
+        )
+
+    try:
+        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError:
+        _raise_contract_error(
+            f"Invalid YAML contract: {path}",
+            category="invalid_yaml",
+            path=path,
+        )
+    except OSError:
+        _raise_contract_error(
+            f"Unable to read contract: {path}",
+            category="unreadable_contract",
+            path=path,
+        )
+
+    normalized = _normalize_contract_payload_with_path(raw, path)
+
+    try:
+        return Contract.model_validate(normalized)
+    except PydanticValidationError as exc:
+        _raise_contract_error(
+            f"Invalid contract: {exc}",
+            category="validation_failed",
+            path=path,
+            issues=tuple(
+                ContractDiagnosticIssue(
+                    field=".".join(str(part) for part in error["loc"]),
+                    detail=str(error["msg"]),
+                )
+                for error in exc.errors()
+            ),
+        )
+
+
+def _normalize_contract_payload_with_path(
+    raw: object,
+    path: Path,
+) -> dict[str, object]:
     """Normalize raw YAML into the shape expected by the Pydantic models."""
     if raw is None:
         raw = {}
 
     if not isinstance(raw, dict):
-        raise ContractError("Contract must be a YAML mapping")
+        _raise_contract_error(
+            "Contract must be a YAML mapping",
+            category="invalid_top_level_shape",
+            path=path,
+            field="root",
+        )
 
-    version = raw.get("version", CONTRACT_VERSION)
-    meta_raw = raw.get("meta")
-    variables_raw = raw.get("variables", {})
+    raw_mapping = cast(dict[str, Any], raw)
+
+    version = raw_mapping.get("version", CONTRACT_VERSION)
+    meta_raw = raw_mapping.get("meta")
+    variables_raw = raw_mapping.get("variables", {})
 
     if meta_raw is not None and not isinstance(meta_raw, dict):
-        raise ContractError("'meta' must be a mapping")
+        _raise_contract_error(
+            "'meta' must be a mapping",
+            category="invalid_top_level_shape",
+            path=path,
+            field="meta",
+        )
 
     if not isinstance(variables_raw, dict):
-        raise ContractError("'variables' must be a mapping")
+        _raise_contract_error(
+            "'variables' must be a mapping",
+            category="invalid_top_level_shape",
+            path=path,
+            field="variables",
+        )
 
     variables: dict[str, object] = {}
 
     for key, value in variables_raw.items():
         if not isinstance(value, dict):
-            raise ContractError(f"Variable '{key}' must be a mapping")
+            _raise_contract_error(
+                f"Variable '{key}' must be a mapping",
+                category="invalid_variable_shape",
+                path=path,
+                key=str(key),
+                field="variables",
+            )
         variables[str(key)] = {
             "name": str(key),
             **value,
@@ -81,26 +212,6 @@ def _normalize_contract_payload(raw: object) -> dict[str, object]:
         "meta": meta_raw,
         "variables": variables,
     }
-
-
-def load_contract(path: Path) -> Contract:
-    """Load a contract from disk."""
-    if not path.exists():
-        raise ContractError(f"Contract file not found: {path}")
-
-    try:
-        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except yaml.YAMLError as exc:
-        raise ContractError(f"Invalid YAML contract: {path}") from exc
-    except OSError as exc:
-        raise ContractError(f"Unable to read contract: {path}") from exc
-
-    normalized = _normalize_contract_payload(raw)
-
-    try:
-        return Contract.model_validate(normalized)
-    except PydanticValidationError as exc:
-        raise ContractError(f"Invalid contract: {exc}") from exc
 
 
 def load_contract_optional(path: Path) -> Contract | None:

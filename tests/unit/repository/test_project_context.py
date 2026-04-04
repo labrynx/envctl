@@ -8,8 +8,12 @@ import pytest
 import envctl.repository.project_context as project_context_module
 from envctl.domain.app_config import AppConfig
 from envctl.domain.project import ProjectContext
-from envctl.errors import ProjectDetectionError
+from envctl.errors import ProjectDetectionError, StateError
 from tests.support.app_config import make_app_config
+from tests.support.assertions import (
+    require_project_binding_diagnostics,
+    require_state_diagnostics,
+)
 
 
 def make_config(tmp_path: Path) -> AppConfig:
@@ -55,11 +59,15 @@ def test_find_vault_dir_by_project_id_raises_when_multiple_matches_exist(tmp_pat
     (projects_dir / "demo-a--prj_aaaaaaaaaaaaaaaa").mkdir()
     (projects_dir / "demo-b--prj_aaaaaaaaaaaaaaaa").mkdir()
 
-    with pytest.raises(ProjectDetectionError, match="Multiple vault directories found"):
+    with pytest.raises(ProjectDetectionError, match="Multiple vault directories found") as exc_info:
         project_context_module.find_vault_dir_by_project_id(
             projects_dir,
             "prj_aaaaaaaaaaaaaaaa",
         )
+
+    diagnostics = require_project_binding_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics.category == "multiple_vault_directories"
+    assert diagnostics.project_id == "prj_aaaaaaaaaaaaaaaa"
 
 
 def test_build_project_context_returns_bound_local_context_when_git_binding_exists(
@@ -298,8 +306,12 @@ def test_build_project_context_raises_when_recovery_is_ambiguous(
     monkeypatch.setattr(project_context_module, "get_repo_remote", lambda root: None)
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: Contract())
 
-    with pytest.raises(ProjectDetectionError, match="Ambiguous vault identity"):
+    with pytest.raises(ProjectDetectionError, match="Ambiguous vault identity") as exc_info:
         project_context_module.build_project_context(config)
+
+    diagnostics = require_project_binding_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics.category == "ambiguous_vault_identity"
+    assert diagnostics.matching_ids
 
 
 def test_build_project_context_returns_derived_context_when_nothing_can_be_recovered(
@@ -344,8 +356,11 @@ def test_build_project_context_raises_for_invalid_local_binding(
     monkeypatch.setattr(project_context_module, "get_repo_remote", lambda root: None)
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: None)
 
-    with pytest.raises(ProjectDetectionError, match="Invalid project binding"):
+    with pytest.raises(ProjectDetectionError, match="Invalid project binding") as exc_info:
         project_context_module.build_project_context(config)
+
+    diagnostics = require_project_binding_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics.category == "invalid_bound_project_id"
 
 
 def test_build_project_context_raises_when_bound_project_has_no_matching_vault(
@@ -368,8 +383,11 @@ def test_build_project_context_raises_when_bound_project_has_no_matching_vault(
     monkeypatch.setattr(project_context_module, "get_repo_remote", lambda root: None)
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: None)
 
-    with pytest.raises(ProjectDetectionError, match="no matching vault exists"):
+    with pytest.raises(ProjectDetectionError, match="no matching vault exists") as exc_info:
         project_context_module.build_project_context(config)
+
+    diagnostics = require_project_binding_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics.category == "bound_project_missing_vault"
 
 
 def test_build_context_for_project_id_prefers_state_slug_and_key_when_vault_exists(
@@ -467,3 +485,32 @@ def test_persist_project_binding_writes_state_and_returns_local_context(
     assert state["repo_root"] == str(repo_root)
     assert state["git_remote"] == "git@github.com:alessbarb/demo-app.git"
     assert state["known_paths"] == [str(repo_root)]
+
+
+def test_persist_project_binding_raises_for_non_canonical_project_id(
+    tmp_path: Path,
+) -> None:
+    config = make_config(tmp_path)
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir(parents=True, exist_ok=True)
+
+    context = ProjectContext(
+        project_slug="demo-app",
+        project_key="demo-app",
+        project_id="tmp_deadbeefdeadbeef",
+        repo_root=repo_root,
+        repo_remote=None,
+        binding_source="derived",
+        repo_env_path=repo_root / ".env.local",
+        repo_contract_path=repo_root / ".envctl.schema.yaml",
+        vault_project_dir=config.projects_dir / "placeholder",
+        vault_values_path=config.projects_dir / "placeholder" / "values.env",
+        vault_state_path=config.projects_dir / "placeholder" / "state.json",
+    )
+
+    with pytest.raises(StateError, match="non-canonical project id") as exc_info:
+        project_context_module.persist_project_binding(config, context)
+
+    diagnostics = require_state_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics.category == "non_canonical_project_id"
+    assert diagnostics.field == "project_id"

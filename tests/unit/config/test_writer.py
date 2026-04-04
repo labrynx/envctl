@@ -7,6 +7,7 @@ import pytest
 import envctl.config.writer as writer_module
 from envctl.errors import ConfigError
 from envctl.utils.tilde import to_tilde_path
+from tests.support.assertions import require_config_diagnostics
 
 
 def test_write_default_config_file_creates_expected_json(
@@ -56,5 +57,10 @@ def test_write_default_config_file_rejects_existing_file(
 
     monkeypatch.setattr(writer_module, "get_default_config_path", lambda: config_path)
 
-    with pytest.raises(ConfigError, match="Config file already exists"):
+    with pytest.raises(ConfigError, match="Config file already exists") as exc_info:
         writer_module.write_default_config_file()
+
+    diagnostics = require_config_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics is not None
+    assert diagnostics.category == "config_file_exists"
+    assert diagnostics.path == config_path

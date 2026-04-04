@@ -9,6 +9,7 @@ from envctl.config.loader import load_config, resolve_default_profile
 from envctl.constants import ENVCTL_PROFILE_ENVVAR, ENVCTL_RUNTIME_MODE_ENVVAR
 from envctl.domain.runtime import RuntimeMode
 from envctl.errors import ConfigError
+from tests.support.assertions import require_config_diagnostics
 
 
 def _prepare_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -159,6 +160,128 @@ def test_load_config_rejects_invalid_default_profile_in_config(
 
     with pytest.raises(ConfigError, match="Invalid profile"):
         load_config()
+
+
+def test_load_config_attaches_structured_diagnostics_for_invalid_json(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    home = _prepare_home(tmp_path, monkeypatch)
+    config_dir = home / ".config" / "envctl"
+    config_dir.mkdir(parents=True)
+    config_path = config_dir / "config.json"
+    config_path.write_text("{not-json", encoding="utf-8")
+
+    with pytest.raises(ConfigError) as exc_info:
+        load_config()
+
+    diagnostics = require_config_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics is not None
+    assert diagnostics.category == "invalid_json"
+    assert diagnostics.path == config_path
+
+
+def test_load_config_attaches_structured_diagnostics_for_invalid_shape(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    home = _prepare_home(tmp_path, monkeypatch)
+    config_dir = home / ".config" / "envctl"
+    config_dir.mkdir(parents=True)
+    config_path = config_dir / "config.json"
+    config_path.write_text("[]", encoding="utf-8")
+
+    with pytest.raises(ConfigError) as exc_info:
+        load_config()
+
+    diagnostics = require_config_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics is not None
+    assert diagnostics.category == "invalid_config_shape"
+    assert diagnostics.path == config_path
+    assert diagnostics.field == "root"
+
+
+def test_load_config_attaches_structured_diagnostics_for_unsupported_keys(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    home = _prepare_home(tmp_path, monkeypatch)
+    config_dir = home / ".config" / "envctl"
+    config_dir.mkdir(parents=True)
+    config_path = config_dir / "config.json"
+    config_path.write_text(json.dumps({"oops": True}), encoding="utf-8")
+
+    with pytest.raises(ConfigError) as exc_info:
+        load_config()
+
+    diagnostics = require_config_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics is not None
+    assert diagnostics.category == "unsupported_keys"
+    assert diagnostics.path == config_path
+    assert diagnostics.key == "oops"
+
+
+def test_load_config_attaches_structured_diagnostics_for_invalid_runtime_mode(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    home = _prepare_home(tmp_path, monkeypatch)
+    config_dir = home / ".config" / "envctl"
+    config_dir.mkdir(parents=True)
+    config_path = config_dir / "config.json"
+    config_path.write_text(json.dumps({"runtime_mode": "banana"}), encoding="utf-8")
+
+    with pytest.raises(ConfigError) as exc_info:
+        load_config()
+
+    diagnostics = require_config_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics is not None
+    assert diagnostics.category == "invalid_runtime_mode"
+    assert diagnostics.path == config_path
+    assert diagnostics.source_label == "config file"
+    assert diagnostics.value == "'banana'"
+
+
+def test_load_config_attaches_structured_diagnostics_for_invalid_default_profile(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    home = _prepare_home(tmp_path, monkeypatch)
+    config_dir = home / ".config" / "envctl"
+    config_dir.mkdir(parents=True)
+    config_path = config_dir / "config.json"
+    config_path.write_text(json.dumps({"default_profile": ""}), encoding="utf-8")
+
+    with pytest.raises(ConfigError) as exc_info:
+        load_config()
+
+    diagnostics = require_config_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics is not None
+    assert diagnostics.category == "invalid_default_profile"
+    assert diagnostics.path == config_path
+    assert diagnostics.key == "default_profile"
+    assert diagnostics.source_label == "config file"
+
+
+def test_load_config_attaches_structured_diagnostics_for_invalid_filename(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    home = _prepare_home(tmp_path, monkeypatch)
+    config_dir = home / ".config" / "envctl"
+    config_dir.mkdir(parents=True)
+    config_path = config_dir / "config.json"
+    config_path.write_text(json.dumps({"env_filename": "nested/.env"}), encoding="utf-8")
+
+    with pytest.raises(ConfigError) as exc_info:
+        load_config()
+
+    diagnostics = require_config_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics is not None
+    assert diagnostics.category == "invalid_filename"
+    assert diagnostics.path == config_path
+    assert diagnostics.key == "env_filename"
+    assert diagnostics.source_label == "config file"
 
 
 def test_resolve_default_profile_uses_env_when_present(

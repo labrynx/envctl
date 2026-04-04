@@ -23,6 +23,7 @@ from envctl.domain.project import ProjectContext
 from envctl.errors import ProjectDetectionError, StateError
 from envctl.repository.contract_repository import load_contract_optional
 from envctl.repository.state_repository import read_state, upsert_state
+from envctl.services.error_diagnostics import ProjectBindingDiagnostics, StateDiagnostics
 from envctl.utils.filesystem import ensure_dir
 from envctl.utils.project_ids import is_valid_project_id
 from envctl.utils.project_names import resolve_project_name
@@ -51,7 +52,13 @@ def find_vault_dir_by_project_id(projects_dir: Path, project_id: str) -> Path | 
     if len(matches) > 1:
         options = ", ".join(sorted(path.name for path in matches))
         raise ProjectDetectionError(
-            f"Multiple vault directories found for project id '{project_id}': {options}"
+            f"Multiple vault directories found for project id '{project_id}': {options}",
+            diagnostics=ProjectBindingDiagnostics(
+                category="multiple_vault_directories",
+                project_id=project_id,
+                matching_directories=tuple(sorted(matches)),
+                suggested_actions=("envctl project bind",),
+            ),
         )
     return matches[0]
 
@@ -201,7 +208,13 @@ def _recover_context(
         options = ", ".join(sorted(unique_by_id))
         raise ProjectDetectionError(
             f"Ambiguous vault identity for this repository. Matching project ids: {options}. "
-            f"Bind one explicitly by writing '{GIT_CONFIG_PROJECT_ID_KEY}'."
+            f"Bind one explicitly by writing '{GIT_CONFIG_PROJECT_ID_KEY}'.",
+            diagnostics=ProjectBindingDiagnostics(
+                category="ambiguous_vault_identity",
+                repo_root=repo_root,
+                matching_ids=tuple(sorted(unique_by_id)),
+                suggested_actions=("envctl project bind",),
+            ),
         )
 
     vault_dir, state = next(iter(unique_by_id.values()))
@@ -234,7 +247,13 @@ def build_project_context(config: AppConfig, project_name: str | None = None) ->
     if bound_project_id:
         if not is_valid_project_id(bound_project_id):
             raise ProjectDetectionError(
-                f"Invalid project binding in local git config: {bound_project_id!r}"
+                f"Invalid project binding in local git config: {bound_project_id!r}",
+                diagnostics=ProjectBindingDiagnostics(
+                    category="invalid_bound_project_id",
+                    repo_root=repo_root,
+                    project_id=bound_project_id,
+                    suggested_actions=("envctl project rebind",),
+                ),
             )
 
         vault_dir = find_vault_dir_by_project_id(config.projects_dir, bound_project_id)
@@ -242,7 +261,16 @@ def build_project_context(config: AppConfig, project_name: str | None = None) ->
             raise ProjectDetectionError(
                 f"Bound project id '{bound_project_id}' was found in local git config, "
                 "but no matching vault exists. Run 'envctl repair --recreate-bound-vault' "
-                "or rebind the repository."
+                "or rebind the repository.",
+                diagnostics=ProjectBindingDiagnostics(
+                    category="bound_project_missing_vault",
+                    repo_root=repo_root,
+                    project_id=bound_project_id,
+                    suggested_actions=(
+                        "envctl repair --recreate-bound-vault",
+                        "envctl project rebind",
+                    ),
+                ),
             )
 
         state = read_state(vault_dir / DEFAULT_STATE_FILENAME)
@@ -291,7 +319,15 @@ def build_project_context(config: AppConfig, project_name: str | None = None) ->
 def persist_project_binding(config: AppConfig, context: ProjectContext) -> ProjectContext:
     """Persist the current repo ↔ vault binding and refresh vault state metadata."""
     if not is_valid_project_id(context.project_id):
-        raise StateError(f"Cannot persist a non-canonical project id: {context.project_id!r}")
+        raise StateError(
+            f"Cannot persist a non-canonical project id: {context.project_id!r}",
+            diagnostics=StateDiagnostics(
+                category="non_canonical_project_id",
+                path=context.vault_state_path,
+                field="project_id",
+                suggested_actions=("envctl project rebind",),
+            ),
+        )
 
     ensure_dir(config.projects_dir)
 

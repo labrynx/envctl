@@ -1,8 +1,25 @@
 """Application-specific errors."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from envctl.services.error_diagnostics import ErrorDiagnostics
+
 
 class EnvctlError(Exception):
     """Base application error."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        diagnostics: ErrorDiagnostics | None = None,
+    ) -> None:
+        """Initialize an application error with optional structured diagnostics."""
+        super().__init__(message)
+        self.diagnostics = diagnostics
 
 
 class ConfigError(EnvctlError):

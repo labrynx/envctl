@@ -23,10 +23,12 @@ from envctl.cli.commands.status import status_command
 from envctl.cli.commands.sync import sync_command
 from envctl.cli.commands.unset import unset_command
 from envctl.cli.commands.vault import vault_app
+from envctl.cli.decorators import emit_handled_error
 from envctl.cli.runtime import set_cli_state
 from envctl.config.loader import load_config
 from envctl.config.profile_resolution import resolve_active_profile
 from envctl.domain.runtime import OutputFormat
+from envctl.errors import EnvctlError
 
 VERSION_OPTION = typer.Option(
     None,
@@ -72,11 +74,22 @@ def main(
     """envctl - local environment control plane."""
     del version
 
-    config = load_config()
-    active_profile = resolve_active_profile(
-        profile,
-        config_default_profile=config.default_profile,
-    )
+    try:
+        config = load_config()
+        active_profile = resolve_active_profile(
+            profile,
+            config_default_profile=config.default_profile,
+        )
+    except EnvctlError as exc:
+        command = "envctl"
+        if ctx.invoked_subcommand is not None:
+            command = f"envctl {ctx.invoked_subcommand}"
+        emit_handled_error(
+            exc,
+            json_output=json_output,
+            command=command,
+        )
+        raise typer.Exit(code=1) from exc
 
     set_cli_state(
         ctx,

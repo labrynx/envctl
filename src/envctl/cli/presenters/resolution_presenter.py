@@ -4,42 +4,51 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.presenters.common import print_bullet_list, print_section
+from envctl.cli.presenters.common import print_section
 from envctl.domain.resolution import ResolutionReport
 from envctl.utils.masking import mask_value
 from envctl.utils.output import print_kv
 
 
-def _render_missing_required(report: ResolutionReport) -> None:
-    """Render missing required keys."""
-    if not report.missing_required:
-        return
+def build_resolution_problem_lines(
+    report: ResolutionReport,
+    *,
+    unknown_keys_title: str = "Unknown keys in vault",
+) -> list[str]:
+    """Build actionable problem lines for one resolution report."""
+    lines: list[str] = []
 
-    print_section("Missing required keys")
-    print_bullet_list(report.missing_required)
+    if report.missing_required:
+        lines.extend(("", "Missing required keys"))
+        lines.extend(f"  - {key}" for key in report.missing_required)
+
+    if report.invalid_keys:
+        lines.extend(("", "Invalid keys"))
+        for key in report.invalid_keys:
+            item = report.values.get(key)
+            if item is not None and item.detail:
+                lines.append(f"  - {key}: {item.detail}")
+            else:
+                lines.append(f"  - {key}")
+
+    if report.unknown_keys:
+        lines.extend(("", unknown_keys_title))
+        lines.extend(f"  - {key}" for key in report.unknown_keys)
+
+    return lines
 
 
-def _render_invalid_keys(report: ResolutionReport) -> None:
-    """Render invalid keys."""
-    if not report.invalid_keys:
-        return
-
-    print_section("Invalid keys")
-    for key in report.invalid_keys:
-        item = report.values.get(key)
-        if item is not None and item.detail:
-            typer.echo(f"  - {key}: {item.detail}")
-        else:
-            typer.echo(f"  - {key}")
-
-
-def _render_unknown_keys(report: ResolutionReport) -> None:
-    """Render unknown keys found in the vault."""
-    if not report.unknown_keys:
-        return
-
-    print_section("Unknown keys in vault")
-    print_bullet_list(report.unknown_keys)
+def render_resolution_problems(
+    report: ResolutionReport,
+    *,
+    unknown_keys_title: str = "Unknown keys in vault",
+) -> None:
+    """Render actionable problem sections for one resolution report."""
+    for line in build_resolution_problem_lines(
+        report,
+        unknown_keys_title=unknown_keys_title,
+    ):
+        typer.echo(line)
 
 
 def _render_resolved_values(report: ResolutionReport) -> None:
@@ -68,9 +77,7 @@ def render_resolution(report: ResolutionReport) -> None:
 
     Order matters here: show actionable problems first, then the full resolved view.
     """
-    _render_missing_required(report)
-    _render_invalid_keys(report)
-    _render_unknown_keys(report)
+    render_resolution_problems(report)
     _render_resolved_values(report)
 
 

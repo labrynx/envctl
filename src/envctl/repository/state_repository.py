@@ -9,6 +9,7 @@ from typing import Any
 
 from envctl.constants import STATE_VERSION
 from envctl.errors import StateError
+from envctl.services.error_diagnostics import StateDiagnostics
 from envctl.utils.atomic import write_json_atomic
 
 
@@ -61,7 +62,15 @@ def _normalize_state_payload(raw: dict[str, Any], path: Path) -> dict[str, Any]:
     if version == 1:
         return _migrate_state_v1_to_v2(raw)
 
-    raise StateError(f"Unsupported state version in {path}: {version}")
+    raise StateError(
+        f"Unsupported state version in {path}: {version}",
+        diagnostics=StateDiagnostics(
+            category="unsupported_state_version",
+            path=path,
+            field="version",
+            suggested_actions=("rebind the repository",),
+        ),
+    )
 
 
 def _validate_state_payload(raw: dict[str, Any], path: Path) -> dict[str, Any]:
@@ -73,22 +82,62 @@ def _validate_state_payload(raw: dict[str, Any], path: Path) -> dict[str, Any]:
     known_paths = raw.get("known_paths", [])
 
     if not isinstance(project_id, str) or not project_id.strip():
-        raise StateError(f"State file is missing a valid project_id: {path}")
+        raise StateError(
+            f"State file is missing a valid project_id: {path}",
+            diagnostics=StateDiagnostics(
+                category="missing_required_field",
+                path=path,
+                field="project_id",
+                suggested_actions=("repair the project binding",),
+            ),
+        )
 
     if not isinstance(project_slug, str) or not project_slug.strip():
-        raise StateError(f"State file is missing a valid project_slug: {path}")
+        raise StateError(
+            f"State file is missing a valid project_slug: {path}",
+            diagnostics=StateDiagnostics(
+                category="missing_required_field",
+                path=path,
+                field="project_slug",
+                suggested_actions=("repair the project binding",),
+            ),
+        )
 
     if not isinstance(project_key, str) or not project_key.strip():
-        raise StateError(f"State file is missing a valid project_key: {path}")
+        raise StateError(
+            f"State file is missing a valid project_key: {path}",
+            diagnostics=StateDiagnostics(
+                category="missing_required_field",
+                path=path,
+                field="project_key",
+                suggested_actions=("repair the project binding",),
+            ),
+        )
 
     if not isinstance(repo_root, str) or not repo_root.strip():
-        raise StateError(f"State file is missing a valid repo_root: {path}")
+        raise StateError(
+            f"State file is missing a valid repo_root: {path}",
+            diagnostics=StateDiagnostics(
+                category="missing_required_field",
+                path=path,
+                field="repo_root",
+                suggested_actions=("repair the project binding",),
+            ),
+        )
 
     if known_paths is None:
         known_paths = []
 
     if not isinstance(known_paths, list) or not all(isinstance(item, str) for item in known_paths):
-        raise StateError(f"State file has invalid known_paths: {path}")
+        raise StateError(
+            f"State file has invalid known_paths: {path}",
+            diagnostics=StateDiagnostics(
+                category="invalid_known_paths",
+                path=path,
+                field="known_paths",
+                suggested_actions=("repair the project binding",),
+            ),
+        )
 
     raw["known_paths"] = known_paths
     raw["version"] = STATE_VERSION
@@ -108,12 +157,34 @@ def read_state(path: Path) -> dict[str, Any] | None:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        raise StateError(f"State file is corrupted: {path}") from exc
+        raise StateError(
+            f"State file is corrupted: {path}",
+            diagnostics=StateDiagnostics(
+                category="corrupted_state",
+                path=path,
+                suggested_actions=("repair the project binding",),
+            ),
+        ) from exc
     except OSError as exc:
-        raise StateError(f"Unable to read state file: {path}") from exc
+        raise StateError(
+            f"Unable to read state file: {path}",
+            diagnostics=StateDiagnostics(
+                category="unreadable_state",
+                path=path,
+                suggested_actions=("check state file permissions",),
+            ),
+        ) from exc
 
     if not isinstance(raw, dict):
-        raise StateError(f"State file must contain a JSON object: {path}")
+        raise StateError(
+            f"State file must contain a JSON object: {path}",
+            diagnostics=StateDiagnostics(
+                category="invalid_state_shape",
+                path=path,
+                field="root",
+                suggested_actions=("repair the project binding",),
+            ),
+        )
 
     normalized = _normalize_state_payload(raw, path)
     return _validate_state_payload(normalized, path)

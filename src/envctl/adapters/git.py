@@ -6,6 +6,10 @@ import subprocess
 from pathlib import Path
 
 from envctl.errors import ExecutionError, ProjectDetectionError
+from envctl.services.error_diagnostics import (
+    RepositoryDiscoveryDiagnosticCategory,
+    RepositoryDiscoveryDiagnostics,
+)
 
 
 def _run_git(
@@ -24,14 +28,45 @@ def _run_git(
             text=True,
         )
     except FileNotFoundError as exc:
-        raise ProjectDetectionError("git executable not found") from exc
+        raise ProjectDetectionError(
+            "git executable not found",
+            diagnostics=RepositoryDiscoveryDiagnostics(
+                category="git_not_installed",
+                repo_root=cwd,
+                cwd=cwd,
+                git_args=tuple(args),
+                suggested_actions=("install git",),
+            ),
+        ) from exc
     except subprocess.CalledProcessError as exc:
-        message = (exc.stderr or "").strip() or (exc.stdout or "").strip() or "git command failed"
+        stdout = (exc.stdout or "").strip()
+        stderr = (exc.stderr or "").strip()
+        message = stderr or stdout or "git command failed"
 
         if not check:
             return ""
 
-        raise ProjectDetectionError(message) from exc
+        category: RepositoryDiscoveryDiagnosticCategory = (
+            "not_a_git_repository"
+            if "not a git repository" in message.lower()
+            else "git_command_failed"
+        )
+        raise ProjectDetectionError(
+            message,
+            diagnostics=RepositoryDiscoveryDiagnostics(
+                category=category,
+                repo_root=cwd,
+                cwd=cwd,
+                git_args=tuple(args),
+                git_stdout=stdout or None,
+                git_stderr=stderr or None,
+                suggested_actions=(
+                    ("run envctl inside a git repository",)
+                    if category == "not_a_git_repository"
+                    else ("check git repository access",)
+                ),
+            ),
+        ) from exc
 
     return completed.stdout.strip()
 
@@ -67,10 +102,11 @@ def set_local_git_config(repo_root: Path, key: str, value: str) -> None:
 
 def unset_local_git_config(repo_root: Path, key: str) -> None:
     """Remove one local Git config value when present."""
+    existing = get_local_git_config(repo_root, key)
+    if existing is None:
+        return
+
     try:
         _run_git(["config", "--local", "--unset", key], cwd=repo_root, check=True)
     except ProjectDetectionError as exc:
-        message = str(exc).strip().lower()
-        if "no such section or key" in message or "key does not contain a section" in message:
-            return
         raise ExecutionError(str(exc)) from exc

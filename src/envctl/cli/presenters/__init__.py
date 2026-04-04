@@ -14,6 +14,12 @@ from envctl.cli.presenters.action_presenter import (
     render_sync_result,
     render_unset_result,
 )
+from envctl.cli.presenters.config_error_presenter import (
+    render_config_error,
+)
+from envctl.cli.presenters.contract_error_presenter import (
+    render_contract_error,
+)
 from envctl.cli.presenters.doctor_presenter import render_doctor_checks
 from envctl.cli.presenters.profile_presenter import (
     render_profile_copy_result,
@@ -28,11 +34,21 @@ from envctl.cli.presenters.project_presenter import (
     render_project_repair_result,
     render_project_unbind_result,
 )
+from envctl.cli.presenters.projection_error_presenter import (
+    render_projection_validation_failure,
+)
+from envctl.cli.presenters.repository_error_presenter import (
+    render_project_binding_error,
+    render_repository_discovery_error,
+)
 from envctl.cli.presenters.resolution_presenter import (
+    build_resolution_problem_lines,
     render_resolution,
+    render_resolution_problems,
     render_resolution_view,
 )
 from envctl.cli.presenters.run_presenter import render_run_warnings
+from envctl.cli.presenters.state_error_presenter import render_state_error
 from envctl.cli.presenters.status_presenter import (
     render_status,
     render_status_view,
@@ -51,8 +67,11 @@ from envctl.cli.presenters.vault_presenter import (
 )
 
 __all__ = [
+    "build_resolution_problem_lines",
     "render_add_result",
+    "render_config_error",
     "render_config_init_result",
+    "render_contract_error",
     "render_doctor_checks",
     "render_explain_value",
     "render_export_output",
@@ -66,14 +85,19 @@ __all__ = [
     "render_profile_path_result",
     "render_profile_remove_result",
     "render_project_bind_result",
+    "render_project_binding_error",
     "render_project_rebind_result",
     "render_project_repair_result",
     "render_project_unbind_result",
+    "render_projection_validation_failure",
     "render_remove_result",
+    "render_repository_discovery_error",
     "render_resolution",
+    "render_resolution_problems",
     "render_resolution_view",
     "render_run_warnings",
     "render_set_result",
+    "render_state_error",
     "render_status",
     "render_status_view",
     "render_sync_result",

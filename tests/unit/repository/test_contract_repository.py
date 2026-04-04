@@ -14,6 +14,7 @@ from envctl.repository.contract_repository import (
     load_contract_optional,
     write_contract,
 )
+from tests.support.assertions import require_contract_diagnostics
 from tests.support.contracts import make_contract, make_variable_spec
 
 
@@ -115,16 +116,31 @@ def test_write_contract_serializes_contract(tmp_path: Path) -> None:
 def test_load_contract_raises_when_file_is_missing(tmp_path: Path) -> None:
     path = tmp_path / ".envctl.schema.yaml"
 
-    with pytest.raises(ContractError, match="Contract file not found"):
+    with pytest.raises(ContractError, match="Contract file not found") as exc_info:
         load_contract(path)
+
+    diagnostics = require_contract_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics is not None
+    assert diagnostics.category == "missing_contract_file"
+    assert diagnostics.path == path
+    assert diagnostics.suggested_actions == (
+        "envctl check",
+        "fix .envctl.schema.yaml",
+        "envctl init --contract starter",
+    )
 
 
 def test_load_contract_raises_when_yaml_is_invalid(tmp_path: Path) -> None:
     path = tmp_path / ".envctl.schema.yaml"
     path.write_text(":\n- bad", encoding="utf-8")
 
-    with pytest.raises(ContractError, match="Invalid YAML contract"):
+    with pytest.raises(ContractError, match="Invalid YAML contract") as exc_info:
         load_contract(path)
+
+    diagnostics = require_contract_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics is not None
+    assert diagnostics.category == "invalid_yaml"
+    assert diagnostics.path == path
 
 
 def test_load_contract_raises_when_file_cannot_be_read(
@@ -139,5 +155,54 @@ def test_load_contract_raises_when_file_cannot_be_read(
 
     monkeypatch.setattr(contract_repository.Path, "read_text", broken_read_text)
 
-    with pytest.raises(ContractError, match="Unable to read contract"):
+    with pytest.raises(ContractError, match="Unable to read contract") as exc_info:
         load_contract(path)
+
+    diagnostics = require_contract_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics is not None
+    assert diagnostics.category == "unreadable_contract"
+    assert diagnostics.path == path
+
+
+def test_load_contract_raises_for_invalid_variable_shape_with_structured_diagnostics(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / ".envctl.schema.yaml"
+    path.write_text("version: 1\nvariables:\n  PORT: nope\n", encoding="utf-8")
+
+    with pytest.raises(ContractError, match="Variable 'PORT' must be a mapping") as exc_info:
+        load_contract(path)
+
+    diagnostics = require_contract_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics is not None
+    assert diagnostics.category == "invalid_variable_shape"
+    assert diagnostics.path == path
+    assert diagnostics.key == "PORT"
+    assert diagnostics.field == "variables"
+
+
+def test_load_contract_raises_for_pydantic_validation_with_structured_issues(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / ".envctl.schema.yaml"
+    path.write_text(
+        (
+            "version: 1\n"
+            "variables:\n"
+            "  PORT:\n"
+            "    type: nope\n"
+            "    required: true\n"
+            "    sensitive: false\n"
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ContractError, match="Invalid contract:") as exc_info:
+        load_contract(path)
+
+    diagnostics = require_contract_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics is not None
+    assert diagnostics.category == "validation_failed"
+    assert diagnostics.path == path
+    assert diagnostics.issues
+    assert any(issue.field.startswith("variables.PORT.type") for issue in diagnostics.issues)

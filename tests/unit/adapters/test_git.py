@@ -10,6 +10,7 @@ import pytest
 import envctl.adapters.git as git_adapters
 from envctl.adapters.git import _run_git, get_repo_remote, resolve_repo_root
 from envctl.errors import ProjectDetectionError
+from tests.support.assertions import require_repository_discovery_diagnostics
 
 
 def test_run_git_returns_stripped_stdout(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -31,8 +32,12 @@ def test_run_git_raises_when_git_executable_is_missing(
 
     monkeypatch.setattr(git_adapters.subprocess, "run", fake_run)
 
-    with pytest.raises(ProjectDetectionError, match="git executable not found"):
+    with pytest.raises(ProjectDetectionError, match="git executable not found") as exc_info:
         _run_git(["status"])
+
+    diagnostics = require_repository_discovery_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics is not None
+    assert diagnostics.category == "git_not_installed"
 
 
 def test_run_git_raises_with_stderr_when_git_command_fails(
@@ -47,8 +52,13 @@ def test_run_git_raises_with_stderr_when_git_command_fails(
 
     monkeypatch.setattr(git_adapters.subprocess, "run", fake_run)
 
-    with pytest.raises(ProjectDetectionError, match="fatal: not a git repository"):
+    with pytest.raises(ProjectDetectionError, match="fatal: not a git repository") as exc_info:
         _run_git(["status"])
+
+    diagnostics = require_repository_discovery_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics is not None
+    assert diagnostics.category == "not_a_git_repository"
+    assert diagnostics.git_stderr == "fatal: not a git repository"
 
 
 def test_run_git_raises_generic_message_when_stderr_is_empty(
@@ -63,8 +73,12 @@ def test_run_git_raises_generic_message_when_stderr_is_empty(
 
     monkeypatch.setattr(git_adapters.subprocess, "run", fake_run)
 
-    with pytest.raises(ProjectDetectionError, match="git command failed"):
+    with pytest.raises(ProjectDetectionError, match="git command failed") as exc_info:
         _run_git(["status"])
+
+    diagnostics = require_repository_discovery_diagnostics(exc_info.value.diagnostics)
+    assert diagnostics is not None
+    assert diagnostics.category == "git_command_failed"
 
 
 def test_resolve_repo_root_returns_resolved_path(

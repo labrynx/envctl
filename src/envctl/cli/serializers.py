@@ -13,6 +13,15 @@ from envctl.domain.doctor import DoctorCheck
 from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport, ResolvedValue
 from envctl.domain.status import StatusReport
+from envctl.services.error_diagnostics import (
+    ConfigDiagnostics,
+    ContractDiagnostics,
+    ErrorDiagnostics,
+    ProjectBindingDiagnostics,
+    ProjectionValidationDiagnostics,
+    RepositoryDiscoveryDiagnostics,
+    StateDiagnostics,
+)
 from envctl.utils.masking import mask_value
 
 
@@ -97,6 +106,113 @@ def serialize_status_report(report: StatusReport) -> dict[str, Any]:
     }
 
 
+def serialize_projection_validation_diagnostics(
+    diagnostics: ProjectionValidationDiagnostics,
+) -> dict[str, Any]:
+    """Serialize structured diagnostics for one blocked projection command."""
+    return {
+        "operation": diagnostics.operation,
+        "active_profile": diagnostics.active_profile,
+        "selected_group": diagnostics.selected_group,
+        "report": serialize_resolution_report(diagnostics.report),
+        "suggested_actions": list(diagnostics.suggested_actions),
+    }
+
+
+def serialize_contract_diagnostics(
+    diagnostics: ContractDiagnostics,
+) -> dict[str, Any]:
+    """Serialize structured diagnostics for one contract failure."""
+    return {
+        "category": diagnostics.category,
+        "path": _path_to_str(diagnostics.path),
+        "key": diagnostics.key,
+        "field": diagnostics.field,
+        "issues": [
+            {
+                "field": issue.field,
+                "detail": issue.detail,
+            }
+            for issue in diagnostics.issues
+        ],
+        "suggested_actions": list(diagnostics.suggested_actions),
+    }
+
+
+def serialize_config_diagnostics(
+    diagnostics: ConfigDiagnostics,
+) -> dict[str, Any]:
+    """Serialize structured diagnostics for one configuration failure."""
+    return {
+        "category": diagnostics.category,
+        "path": _path_to_str(diagnostics.path) if diagnostics.path is not None else None,
+        "key": diagnostics.key,
+        "field": diagnostics.field,
+        "source_label": diagnostics.source_label,
+        "value": diagnostics.value,
+        "suggested_actions": list(diagnostics.suggested_actions),
+    }
+
+
+def serialize_state_diagnostics(
+    diagnostics: StateDiagnostics,
+) -> dict[str, Any]:
+    """Serialize structured diagnostics for one state failure."""
+    return {
+        "category": diagnostics.category,
+        "path": _path_to_str(diagnostics.path),
+        "field": diagnostics.field,
+        "suggested_actions": list(diagnostics.suggested_actions),
+    }
+
+
+def serialize_repository_discovery_diagnostics(
+    diagnostics: RepositoryDiscoveryDiagnostics,
+) -> dict[str, Any]:
+    """Serialize structured diagnostics for repository discovery failures."""
+    return {
+        "category": diagnostics.category,
+        "repo_root": _path_to_str(diagnostics.repo_root) if diagnostics.repo_root else None,
+        "cwd": _path_to_str(diagnostics.cwd) if diagnostics.cwd else None,
+        "git_args": list(diagnostics.git_args),
+        "git_stdout": diagnostics.git_stdout,
+        "git_stderr": diagnostics.git_stderr,
+        "suggested_actions": list(diagnostics.suggested_actions),
+    }
+
+
+def serialize_project_binding_diagnostics(
+    diagnostics: ProjectBindingDiagnostics,
+) -> dict[str, Any]:
+    """Serialize structured diagnostics for project binding failures."""
+    return {
+        "category": diagnostics.category,
+        "repo_root": _path_to_str(diagnostics.repo_root) if diagnostics.repo_root else None,
+        "project_id": diagnostics.project_id,
+        "matching_ids": list(diagnostics.matching_ids),
+        "matching_directories": [_path_to_str(path) for path in diagnostics.matching_directories],
+        "suggested_actions": list(diagnostics.suggested_actions),
+    }
+
+
+def serialize_error_diagnostics(diagnostics: ErrorDiagnostics) -> dict[str, Any]:
+    """Serialize one known structured error diagnostics payload."""
+    if isinstance(diagnostics, ProjectionValidationDiagnostics):
+        return serialize_projection_validation_diagnostics(diagnostics)
+    if isinstance(diagnostics, ContractDiagnostics):
+        return serialize_contract_diagnostics(diagnostics)
+    if isinstance(diagnostics, ConfigDiagnostics):
+        return serialize_config_diagnostics(diagnostics)
+    if isinstance(diagnostics, StateDiagnostics):
+        return serialize_state_diagnostics(diagnostics)
+    if isinstance(diagnostics, RepositoryDiscoveryDiagnostics):
+        return serialize_repository_discovery_diagnostics(diagnostics)
+    if isinstance(diagnostics, ProjectBindingDiagnostics):
+        return serialize_project_binding_diagnostics(diagnostics)
+
+    raise TypeError(f"Unsupported diagnostics type: {type(diagnostics).__name__}")
+
+
 def serialize_doctor_checks(checks: Iterable[DoctorCheck]) -> dict[str, Any]:
     """Serialize doctor checks and aggregate their summary."""
     items = list(checks)
@@ -120,13 +236,19 @@ def serialize_error(
     error_type: str,
     message: str,
     command: str | None,
+    details: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Serialize one command error."""
-    return {
+    error_payload: dict[str, Any] = {
+        "type": error_type,
+        "message": message,
+    }
+    if details is not None:
+        error_payload["details"] = dict(details)
+
+    payload: dict[str, Any] = {
         "ok": False,
         "command": command,
-        "error": {
-            "type": error_type,
-            "message": message,
-        },
+        "error": error_payload,
     }
+    return payload
