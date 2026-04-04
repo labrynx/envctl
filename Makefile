@@ -40,12 +40,12 @@ PYTEST_COV_ARGS ?= --cov=$(COV_TARGET) --cov-report=term-missing:skip-covered --
 
 .PHONY: \
 	help \
-	install install-dev \
+	install install-dev bootstrap \
 	lint lint-fix format format-check typecheck \
-	test test-cov test-fast test-debug \
-	check fix \
+	test test-cov test-ci test-fast test-debug \
+	check check-clean fix \
 	clean clean-hard \
-	build-package check-package publish-package \
+	build-package check-package publish-test publish-package \
 	run doctor \
 	status commit push
 
@@ -71,6 +71,10 @@ install: ## Install package in editable mode
 install-dev: ## Install package with development dependencies
 	$(PIP) install -e ".[dev]"
 
+bootstrap: ## Bootstrap a local development environment
+	$(PIP) install --upgrade pip
+	$(PIP) install -e ".[dev]"
+
 # -----------------------------------------
 # Code quality
 # -----------------------------------------
@@ -88,7 +92,7 @@ format-check: ## Check code formatting with Ruff
 	$(RUFF) format --check .
 
 typecheck: ## Run static type checking with mypy
-	$(MYPY) $(SRC)
+	$(MYPY) $(SRC) $(TESTS)
 
 # -----------------------------------------
 # Test suite
@@ -98,6 +102,9 @@ test: ## Run test suite with readable output
 	$(PYTEST) $(PYTEST_BASE_ARGS)
 
 test-cov: ## Run test suite with coverage
+	$(PYTEST) $(PYTEST_BASE_ARGS) $(PYTEST_DEBUG_ARGS) $(PYTEST_COV_ARGS)
+
+test-ci: ## Run CI-oriented test suite with coverage
 	$(PYTEST) $(PYTEST_BASE_ARGS) $(PYTEST_DEBUG_ARGS) $(PYTEST_COV_ARGS)
 
 test-fast: ## Run tests quietly without coverage
@@ -110,9 +117,14 @@ test-debug: ## Run tests with maximum failure detail
 # Composite workflows
 # -----------------------------------------
 
-check: lint format-check typecheck test-cov ## Run full CI-like validation suite
+check: lint format-check typecheck test-ci build-package check-package ## Run full CI-like validation suite
+
+check-clean: clean check ## Run full validation suite from a clean workspace
 
 fix: lint-fix format ## Auto-fix style and formatting issues
+
+deadcode:
+	vulture ${SRC} ${TESTS} --exclude .venv --min-confidence 80
 
 # -----------------------------------------
 # Build and publish
@@ -121,8 +133,11 @@ fix: lint-fix format ## Auto-fix style and formatting issues
 build-package: clean ## Build distribution artifacts
 	$(BUILD)
 
-check-package: ## Validate built distribution metadata
+check-package: build-package ## Validate built distribution metadata
 	$(TWINE) check dist/*
+
+publish-test: build-package check-package ## Upload package to TestPyPI
+	$(TWINE) upload --repository testpypi dist/*
 
 publish-package: build-package check-package ## Upload package to PyPI
 	$(TWINE) upload dist/*
@@ -142,8 +157,7 @@ clean: ## Remove caches, coverage files, and build artifacts
 		coverage.xml \
 		dist \
 		build \
-		.eggs \
-		codereview
+		.eggs
 	find . -type d -name "*.egg-info" -prune -exec rm -rf {} +
 	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
 	find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete
@@ -158,9 +172,8 @@ clean-hard: clean ## Remove additional local environment artifacts
 status: ## Show git status
 	git status
 
-commit: ## Commit all changes (usage: make commit msg="message")
+commit: ## Commit staged changes only (usage: make commit msg="message")
 	@test -n "$(msg)" || (echo 'Error: use make commit msg="your message"' && exit 1)
-	git add .
 	git commit -m "$(msg)"
 
 push: ## Push current branch to origin
@@ -171,7 +184,7 @@ push: ## Push current branch to origin
 # -----------------------------------------
 
 run: ## Run envctl CLI
-	$(PYTHON) -m envctl
+	envctl
 
 doctor: ## Run envctl doctor
-	$(PYTHON) -m envctl doctor
+	envctl doctor

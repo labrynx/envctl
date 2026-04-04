@@ -50,14 +50,15 @@ Changelog = "https://github.com/labrynx/envctl/releases"
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=8.0,<9.0",
-  "pytest-cov>=7.1.0,<8.0.0",
-  "ruff>=0.11,<0.12",
-  "mypy>=1.10,<2.0",
-  "types-PyYAML>=6.0.12,<7.0.0",
-  "build>=1.2,<2.0",
-  "twine>=6.2,<7.0",
-  "pkginfo>=1.12,<2.0",
+  "pytest==8.2.2",
+  "pytest-cov==7.1.0",
+  "ruff==0.11.8",
+  "mypy==1.11.2",
+  "types-PyYAML==6.0.12.20240311",
+  "build==1.2.2",
+  "twine==6.2.0",
+  "pkginfo==1.12.0",
+  "vulture==2.16",
 ]
 
 [project.scripts]
