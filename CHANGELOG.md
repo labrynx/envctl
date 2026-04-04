@@ -11,9 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.3.3] – 2026-04-04
+## [2.3.4] – 2026-04-04
 
 ### Changed
+
+* Developer tooling and validation workflow:
+
+  * pinned development dependencies to exact versions for a more reproducible local and CI baseline
+  * extended the `Makefile` with `bootstrap`, `test-ci`, `check-clean`, `publish-test`, and `deadcode`
+  * `typecheck` now validates both `src` and `tests`
+  * `check` now includes packaging validation as part of the main quality gate
+  * `commit` helper now commits staged changes only instead of implicitly staging everything
+  * `run` / `doctor` Makefile shortcuts now invoke the installed CLI entrypoint directly
 
 * Placeholder expansion and resolution semantics:
 
@@ -97,6 +106,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* Test and fixture stability after internal package splits:
+
+  * corrected shared git test fixtures to remain compatible with keyword-based `_run_git(..., cwd=...)` calls
+  * cleaned up unit-test stubs and helper signatures to remove dead parameters without breaking call compatibility
+  * kept the full quality gate green after the serializer, project-context, and resolution-service package refactors
+
 * Resolution and expansion consistency:
 
   * aligned runtime behavior, tests, and documentation around strict contract-only placeholder resolution
@@ -118,6 +133,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * corrected repository discovery diagnostic category typing
   * cleaned up internal module boundaries to avoid leaking implementation details through public package exports
 
+## Removed
+
+* Dead internal code and legacy module leftovers:
+
+  * removed the unused process-environment adapter
+  * removed the unused `ResolutionError` class
+  * removed unused presenter and output helpers that were no longer part of the active CLI surface
+  * removed legacy flat modules replaced by the new package-based layouts for serializers, project context, and resolution service
+  
 ---
 
 ## [2.3.3] – 2026-04-02
