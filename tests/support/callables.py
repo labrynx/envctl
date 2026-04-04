@@ -5,4 +5,8 @@ from typing import Any, cast
 
 
 def unwrap_callable(value: object) -> Callable[..., Any]:
-    return cast(Callable[..., Any], value.__wrapped__)
+    wrapped = getattr(value, "__wrapped__", None)
+    if wrapped is None or not callable(wrapped):
+        msg = "Expected a wrapped callable with __wrapped__"
+        raise TypeError(msg)
+    return cast(Callable[..., Any], wrapped)

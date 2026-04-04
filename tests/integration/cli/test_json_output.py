@@ -8,6 +8,7 @@ import pytest
 from typer.testing import CliRunner
 
 from envctl.cli.app import app
+from tests.support.profile_values import patch_loaded_profile_values
 
 
 def parse_json_output(output: str) -> dict[str, Any]:
@@ -20,7 +21,12 @@ def test_check_json_outputs_structured_payload_for_invalid_environment(
     workspace: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("APP_NAME", "demo-app")
+    patch_loaded_profile_values(
+        monkeypatch,
+        values={
+            "APP_NAME": "demo-app",
+        },
+    )
 
     result = runner.invoke(app, ["--json", "check"])
 
@@ -43,7 +49,12 @@ def test_sync_json_outputs_structured_projection_validation_error(
     workspace: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("APP_NAME", "demo-app")
+    patch_loaded_profile_values(
+        monkeypatch,
+        values={
+            "APP_NAME": "demo-app",
+        },
+    )
 
     result = runner.invoke(app, ["--json", "sync"])
 
@@ -69,7 +80,7 @@ def test_sync_json_outputs_structured_projection_validation_error(
     app_name = cast(dict[str, Any], report["values"]["APP_NAME"])
     assert app_name["key"] == "APP_NAME"
     assert app_name["value"] == "demo-app"
-    assert app_name["source"] == "system"
+    assert app_name["source"] == "vault"
     assert app_name["valid"] is True
 
 
@@ -78,8 +89,13 @@ def test_check_json_outputs_success_payload_when_environment_is_valid(
     workspace: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("APP_NAME", "demo-app")
-    monkeypatch.setenv("DATABASE_URL", "postgres://user:pass@localhost:5432/app")
+    patch_loaded_profile_values(
+        monkeypatch,
+        values={
+            "APP_NAME": "demo-app",
+            "DATABASE_URL": "postgres://user:pass@localhost:5432/app",
+        },
+    )
 
     result = runner.invoke(app, ["--json", "check"])
 
@@ -197,7 +213,12 @@ def test_inspect_json_outputs_structured_resolution_report(
     workspace: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("APP_NAME", "demo-app")
+    patch_loaded_profile_values(
+        monkeypatch,
+        values={
+            "APP_NAME": "demo-app",
+        },
+    )
 
     result = runner.invoke(app, ["--json", "inspect"])
 
@@ -212,7 +233,7 @@ def test_inspect_json_outputs_structured_resolution_report(
     assert data["report"]["missing_required"] == ["DATABASE_URL"]
     assert "APP_NAME" in data["report"]["values"]
     assert data["report"]["values"]["APP_NAME"]["value"] == "demo-app"
-    assert data["report"]["values"]["APP_NAME"]["source"] == "system"
+    assert data["report"]["values"]["APP_NAME"]["source"] == "vault"
 
 
 def test_explain_json_outputs_one_resolved_item(
@@ -220,8 +241,13 @@ def test_explain_json_outputs_one_resolved_item(
     workspace: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("APP_NAME", "demo-app")
-    monkeypatch.setenv("DATABASE_URL", "postgres://user:pass@localhost:5432/app")
+    patch_loaded_profile_values(
+        monkeypatch,
+        values={
+            "APP_NAME": "demo-app",
+            "DATABASE_URL": "postgres://user:pass@localhost:5432/app",
+        },
+    )
 
     result = runner.invoke(app, ["--json", "explain", "DATABASE_URL"])
 
@@ -234,7 +260,7 @@ def test_explain_json_outputs_one_resolved_item(
     data = cast(dict[str, Any], payload["data"])
     item = cast(dict[str, Any], data["item"])
     assert item["key"] == "DATABASE_URL"
-    assert item["source"] == "system"
+    assert item["source"] == "vault"
     assert item["masked"] is True
     assert item["valid"] is True
     assert str(item["value"]).startswith("po")
@@ -245,7 +271,12 @@ def test_explain_json_outputs_structured_error_for_unresolved_key(
     workspace: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("APP_NAME", "demo-app")
+    patch_loaded_profile_values(
+        monkeypatch,
+        values={
+            "APP_NAME": "demo-app",
+        },
+    )
 
     result = runner.invoke(app, ["--json", "explain", "MISSING_KEY"])
 

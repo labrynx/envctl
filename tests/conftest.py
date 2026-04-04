@@ -47,6 +47,8 @@ def patch_git_for_repo(monkeypatch: pytest.MonkeyPatch, repo: Path) -> None:
     git_config_store: dict[str, str] = {}
 
     def fake_run_git(args: list[str], cwd: Path | None = None, check: bool = True) -> str:
+        del cwd, check
+
         if args == ["rev-parse", "--show-toplevel"]:
             return str(repo)
 

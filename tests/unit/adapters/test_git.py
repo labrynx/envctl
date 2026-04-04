@@ -14,7 +14,7 @@ from tests.support.assertions import require_repository_discovery_diagnostics
 
 
 def test_run_git_returns_stripped_stdout(monkeypatch: pytest.MonkeyPatch) -> None:
-    def fake_run(*args: Any, **kwargs: Any) -> SimpleNamespace:
+    def fake_run(*args: Any, **_kwargs: Any) -> SimpleNamespace:
         return SimpleNamespace(stdout="/tmp/repo\n")
 
     monkeypatch.setattr(git_adapters.subprocess, "run", fake_run)
@@ -27,12 +27,12 @@ def test_run_git_returns_stripped_stdout(monkeypatch: pytest.MonkeyPatch) -> Non
 def test_run_git_raises_when_git_executable_is_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def fake_run(*args: Any, **kwargs: Any) -> SimpleNamespace:
+    def fake_run(*args: Any, **_kwargs: Any) -> SimpleNamespace:
         raise FileNotFoundError("git not found")
 
     monkeypatch.setattr(git_adapters.subprocess, "run", fake_run)
 
-    with pytest.raises(ProjectDetectionError, match="git executable not found") as exc_info:
+    with pytest.raises(ProjectDetectionError, match=r"git executable not found") as exc_info:
         _run_git(["status"])
 
     diagnostics = require_repository_discovery_diagnostics(exc_info.value.diagnostics)
@@ -43,7 +43,7 @@ def test_run_git_raises_when_git_executable_is_missing(
 def test_run_git_raises_with_stderr_when_git_command_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def fake_run(*args: Any, **kwargs: Any) -> SimpleNamespace:
+    def fake_run(*args: Any, **_kwargs: Any) -> SimpleNamespace:
         raise subprocess.CalledProcessError(
             returncode=1,
             cmd=["git", "status"],
@@ -52,7 +52,7 @@ def test_run_git_raises_with_stderr_when_git_command_fails(
 
     monkeypatch.setattr(git_adapters.subprocess, "run", fake_run)
 
-    with pytest.raises(ProjectDetectionError, match="fatal: not a git repository") as exc_info:
+    with pytest.raises(ProjectDetectionError, match=r"fatal: not a git repository") as exc_info:
         _run_git(["status"])
 
     diagnostics = require_repository_discovery_diagnostics(exc_info.value.diagnostics)
@@ -64,7 +64,7 @@ def test_run_git_raises_with_stderr_when_git_command_fails(
 def test_run_git_raises_generic_message_when_stderr_is_empty(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def fake_run(*args: Any, **kwargs: Any) -> SimpleNamespace:
+    def fake_run(*args: Any, **_kwargs: Any) -> SimpleNamespace:
         raise subprocess.CalledProcessError(
             returncode=1,
             cmd=["git", "status"],
@@ -73,7 +73,7 @@ def test_run_git_raises_generic_message_when_stderr_is_empty(
 
     monkeypatch.setattr(git_adapters.subprocess, "run", fake_run)
 
-    with pytest.raises(ProjectDetectionError, match="git command failed") as exc_info:
+    with pytest.raises(ProjectDetectionError, match=r"git command failed") as exc_info:
         _run_git(["status"])
 
     diagnostics = require_repository_discovery_diagnostics(exc_info.value.diagnostics)
@@ -129,6 +129,7 @@ def test_get_repo_remote_returns_none_when_git_lookup_fails(
         cwd: Path | None = None,
         check: bool = True,
     ) -> str:
+        del cwd, check
         raise ProjectDetectionError("remote not found")
 
     monkeypatch.setattr(git_adapters, "_run_git", raise_detection_error)

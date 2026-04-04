@@ -341,7 +341,7 @@ def test_text_output_only_rejects_json_mode(
         lambda: True,
     )
 
-    with pytest.raises(ExecutionError, match="JSON output is not supported"):
+    with pytest.raises(ExecutionError, match=r"JSON output is not supported"):
         sample()
 
 
@@ -372,5 +372,5 @@ def test_requires_writable_runtime_rejects_ci_mode(
         lambda: SimpleNamespace(runtime_mode=RuntimeMode.CI),
     )
 
-    with pytest.raises(ExecutionError, match="CI read-only mode"):
+    with pytest.raises(ExecutionError, match=r"CI read-only mode"):
         sample()

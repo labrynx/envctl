@@ -8,6 +8,7 @@ import pytest
 from typer.testing import CliRunner
 
 from envctl.cli.app import app
+from tests.support.profile_values import patch_loaded_profile_values
 
 
 def parse_json_output(output: str) -> dict[str, Any]:
@@ -143,7 +144,12 @@ def test_check_is_allowed_in_ci_mode_json_output(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
-    monkeypatch.setenv("APP_NAME", "demo-app")
+    patch_loaded_profile_values(
+        monkeypatch,
+        values={
+            "APP_NAME": "demo-app",
+        },
+    )
 
     result = runner.invoke(app, ["--json", "check"])
 
@@ -192,8 +198,13 @@ def test_run_remains_allowed_in_ci_mode_text_output(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
-    monkeypatch.setenv("APP_NAME", "demo-app")
-    monkeypatch.setenv("DATABASE_URL", "postgres://user:pass@localhost:5432/app")
+    patch_loaded_profile_values(
+        monkeypatch,
+        values={
+            "APP_NAME": "demo-app",
+            "DATABASE_URL": "postgres://user:pass@localhost:5432/app",
+        },
+    )
 
     output_path = workspace / "child-output.txt"
 

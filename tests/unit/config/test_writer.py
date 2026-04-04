@@ -57,7 +57,7 @@ def test_write_default_config_file_rejects_existing_file(
 
     monkeypatch.setattr(writer_module, "get_default_config_path", lambda: config_path)
 
-    with pytest.raises(ConfigError, match="Config file already exists") as exc_info:
+    with pytest.raises(ConfigError, match=r"Config file already exists") as exc_info:
         writer_module.write_default_config_file()
 
     diagnostics = require_config_diagnostics(exc_info.value.diagnostics)

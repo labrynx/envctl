@@ -93,5 +93,5 @@ def test_run_doctor_fails_when_profile_file_does_not_exist(
         lambda path: False,
     )
 
-    with pytest.raises(ExecutionError, match="Create it with 'envctl profile create staging'"):
+    with pytest.raises(ExecutionError, match=r"Create it with 'envctl profile create staging'"):
         doctor_service.run_doctor("staging")

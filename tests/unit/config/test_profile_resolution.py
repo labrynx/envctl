@@ -37,5 +37,5 @@ def test_resolve_active_profile_falls_back_to_local() -> None:
 
 
 def test_validate_profile_name_rejects_path_separators() -> None:
-    with pytest.raises(ConfigError, match="Profile names must not contain path separators"):
+    with pytest.raises(ConfigError, match=r"Profile names must not contain path separators"):
         validate_profile_name("bad/name", "--profile")

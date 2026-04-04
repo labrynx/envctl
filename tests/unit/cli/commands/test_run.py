@@ -83,7 +83,7 @@ def test_run_command_json_mode_does_not_call_run_service(
     monkeypatch.setattr(
         run_command_module,
         "run_command",
-        lambda *args, **kwargs: (_ for _ in ()).throw(
+        lambda *args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("run_command should not be called")
         ),
     )
@@ -92,7 +92,7 @@ def test_run_command_json_mode_does_not_call_run_service(
 
     with pytest.raises(
         ExecutionError,
-        match="JSON output is not supported for 'run' yet.",
+        match=r"JSON output is not supported for 'run' yet.",
     ):
         wrapped(["python", "-V"])
 

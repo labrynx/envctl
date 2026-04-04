@@ -5,7 +5,9 @@ from pathlib import Path
 
 import pytest
 
-import envctl.repository.project_context as project_context_module
+import envctl.repository.project_context as project_context_public
+import envctl.repository.project_context.bindings as project_context_bindings
+import envctl.repository.project_context.context as project_context_module
 from envctl.domain.app_config import AppConfig
 from envctl.domain.project import ProjectContext
 from envctl.errors import ProjectDetectionError, StateError
@@ -32,7 +34,7 @@ def test_find_vault_dir_by_project_id_returns_match(tmp_path: Path) -> None:
     expected = projects_dir / "demo-app--prj_aaaaaaaaaaaaaaaa"
     expected.mkdir()
 
-    result = project_context_module.find_vault_dir_by_project_id(
+    result = project_context_public.find_vault_dir_by_project_id(
         projects_dir,
         "prj_aaaaaaaaaaaaaaaa",
     )
@@ -44,7 +46,7 @@ def test_find_vault_dir_by_project_id_returns_none_when_missing(tmp_path: Path) 
     projects_dir = tmp_path / "projects"
     projects_dir.mkdir(parents=True, exist_ok=True)
 
-    result = project_context_module.find_vault_dir_by_project_id(
+    result = project_context_public.find_vault_dir_by_project_id(
         projects_dir,
         "prj_missing00000000",
     )
@@ -59,8 +61,10 @@ def test_find_vault_dir_by_project_id_raises_when_multiple_matches_exist(tmp_pat
     (projects_dir / "demo-a--prj_aaaaaaaaaaaaaaaa").mkdir()
     (projects_dir / "demo-b--prj_aaaaaaaaaaaaaaaa").mkdir()
 
-    with pytest.raises(ProjectDetectionError, match="Multiple vault directories found") as exc_info:
-        project_context_module.find_vault_dir_by_project_id(
+    with pytest.raises(
+        ProjectDetectionError, match=r"Multiple vault directories found"
+    ) as exc_info:
+        project_context_public.find_vault_dir_by_project_id(
             projects_dir,
             "prj_aaaaaaaaaaaaaaaa",
         )
@@ -96,21 +100,21 @@ def test_build_project_context_returns_bound_local_context_when_git_binding_exis
 
     monkeypatch.setattr(project_context_module, "resolve_repo_root", lambda: repo_root)
     monkeypatch.setattr(
-        project_context_module, "resolve_project_name", lambda root, name: "repo-name"
+        project_context_module, "resolve_project_name", lambda _repo_root, name: "repo-name"
     )
     monkeypatch.setattr(
         project_context_module,
         "get_local_git_config",
-        lambda root, key: "prj_aaaaaaaaaaaaaaaa",
+        lambda _repo_root, key: "prj_aaaaaaaaaaaaaaaa",
     )
     monkeypatch.setattr(
         project_context_module,
         "get_repo_remote",
-        lambda root: "git@github.com:alessbarb/demo-app.git",
+        lambda _repo_root: "git@github.com:alessbarb/demo-app.git",
     )
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: None)
 
-    context = project_context_module.build_project_context(config)
+    context = project_context_public.build_project_context(config)
 
     assert context.project_id == "prj_aaaaaaaaaaaaaaaa"
     assert context.project_slug == "demo-app"
@@ -150,17 +154,21 @@ def test_build_project_context_recovers_from_remote_match_when_no_binding_exists
 
     monkeypatch.setattr(project_context_module, "resolve_repo_root", lambda: repo_root)
     monkeypatch.setattr(
-        project_context_module, "resolve_project_name", lambda root, name: "repo-name"
+        project_context_module, "resolve_project_name", lambda _repo_root, name: "repo-name"
     )
-    monkeypatch.setattr(project_context_module, "get_local_git_config", lambda root, key: None)
+    monkeypatch.setattr(
+        project_context_module,
+        "get_local_git_config",
+        lambda _repo_root, key: None,
+    )
     monkeypatch.setattr(
         project_context_module,
         "get_repo_remote",
-        lambda root: "git@github.com:alessbarb/demo-app.git",
+        lambda _repo_root: "git@github.com:alessbarb/demo-app.git",
     )
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: None)
 
-    context = project_context_module.build_project_context(config)
+    context = project_context_public.build_project_context(config)
 
     assert context.project_id == "prj_bbbbbbbbbbbbbbbb"
     assert context.project_slug == "demo-app"
@@ -201,13 +209,17 @@ def test_build_project_context_recovers_from_project_key_when_repo_has_no_remote
 
     monkeypatch.setattr(project_context_module, "resolve_repo_root", lambda: repo_root)
     monkeypatch.setattr(
-        project_context_module, "resolve_project_name", lambda root, name: "repo-name"
+        project_context_module, "resolve_project_name", lambda _repo_root, name: "repo-name"
     )
-    monkeypatch.setattr(project_context_module, "get_local_git_config", lambda root, key: None)
-    monkeypatch.setattr(project_context_module, "get_repo_remote", lambda root: None)
+    monkeypatch.setattr(
+        project_context_module,
+        "get_local_git_config",
+        lambda _repo_root, key: None,
+    )
+    monkeypatch.setattr(project_context_module, "get_repo_remote", lambda _repo_root: None)
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: Contract())
 
-    context = project_context_module.build_project_context(config)
+    context = project_context_public.build_project_context(config)
 
     assert context.project_id == "prj_cccccccccccccccc"
     assert context.project_slug == "demo-app"
@@ -242,13 +254,17 @@ def test_build_project_context_recovers_from_known_paths_when_repo_has_no_remote
 
     monkeypatch.setattr(project_context_module, "resolve_repo_root", lambda: repo_root)
     monkeypatch.setattr(
-        project_context_module, "resolve_project_name", lambda root, name: "repo-name"
+        project_context_module, "resolve_project_name", lambda _repo_root, name: "repo-name"
     )
-    monkeypatch.setattr(project_context_module, "get_local_git_config", lambda root, key: None)
-    monkeypatch.setattr(project_context_module, "get_repo_remote", lambda root: None)
+    monkeypatch.setattr(
+        project_context_module,
+        "get_local_git_config",
+        lambda _repo_root, key: None,
+    )
+    monkeypatch.setattr(project_context_module, "get_repo_remote", lambda _repo_root: None)
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: None)
 
-    context = project_context_module.build_project_context(config)
+    context = project_context_public.build_project_context(config)
 
     assert context.project_id == "prj_dddddddddddddddd"
     assert context.binding_source == "recovered"
@@ -300,14 +316,18 @@ def test_build_project_context_raises_when_recovery_is_ambiguous(
 
     monkeypatch.setattr(project_context_module, "resolve_repo_root", lambda: repo_root)
     monkeypatch.setattr(
-        project_context_module, "resolve_project_name", lambda root, name: "repo-name"
+        project_context_module, "resolve_project_name", lambda _repo_root, name: "repo-name"
     )
-    monkeypatch.setattr(project_context_module, "get_local_git_config", lambda root, key: None)
-    monkeypatch.setattr(project_context_module, "get_repo_remote", lambda root: None)
+    monkeypatch.setattr(
+        project_context_module,
+        "get_local_git_config",
+        lambda _repo_root, key: None,
+    )
+    monkeypatch.setattr(project_context_module, "get_repo_remote", lambda _repo_root: None)
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: Contract())
 
-    with pytest.raises(ProjectDetectionError, match="Ambiguous vault identity") as exc_info:
-        project_context_module.build_project_context(config)
+    with pytest.raises(ProjectDetectionError, match=r"Ambiguous vault identity") as exc_info:
+        project_context_public.build_project_context(config)
 
     diagnostics = require_project_binding_diagnostics(exc_info.value.diagnostics)
     assert diagnostics.category == "ambiguous_vault_identity"
@@ -324,13 +344,17 @@ def test_build_project_context_returns_derived_context_when_nothing_can_be_recov
 
     monkeypatch.setattr(project_context_module, "resolve_repo_root", lambda: repo_root)
     monkeypatch.setattr(
-        project_context_module, "resolve_project_name", lambda root, name: "demo-app"
+        project_context_module, "resolve_project_name", lambda _repo_root, name: "demo-app"
     )
-    monkeypatch.setattr(project_context_module, "get_local_git_config", lambda root, key: None)
-    monkeypatch.setattr(project_context_module, "get_repo_remote", lambda root: None)
+    monkeypatch.setattr(
+        project_context_module,
+        "get_local_git_config",
+        lambda _repo_root, key: None,
+    )
+    monkeypatch.setattr(project_context_module, "get_repo_remote", lambda _repo_root: None)
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: None)
 
-    context = project_context_module.build_project_context(config)
+    context = project_context_public.build_project_context(config)
 
     assert context.binding_source == "derived"
     assert context.project_slug == "demo-app"
@@ -348,16 +372,16 @@ def test_build_project_context_raises_for_invalid_local_binding(
 
     monkeypatch.setattr(project_context_module, "resolve_repo_root", lambda: repo_root)
     monkeypatch.setattr(
-        project_context_module, "resolve_project_name", lambda root, name: "demo-app"
+        project_context_module, "resolve_project_name", lambda _repo_root, name: "demo-app"
     )
     monkeypatch.setattr(
-        project_context_module, "get_local_git_config", lambda root, key: "not-valid"
+        project_context_module, "get_local_git_config", lambda _repo_root, key: "not-valid"
     )
-    monkeypatch.setattr(project_context_module, "get_repo_remote", lambda root: None)
+    monkeypatch.setattr(project_context_module, "get_repo_remote", lambda _repo_root: None)
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: None)
 
-    with pytest.raises(ProjectDetectionError, match="Invalid project binding") as exc_info:
-        project_context_module.build_project_context(config)
+    with pytest.raises(ProjectDetectionError, match=r"Invalid project binding") as exc_info:
+        project_context_public.build_project_context(config)
 
     diagnostics = require_project_binding_diagnostics(exc_info.value.diagnostics)
     assert diagnostics.category == "invalid_bound_project_id"
@@ -373,18 +397,18 @@ def test_build_project_context_raises_when_bound_project_has_no_matching_vault(
 
     monkeypatch.setattr(project_context_module, "resolve_repo_root", lambda: repo_root)
     monkeypatch.setattr(
-        project_context_module, "resolve_project_name", lambda root, name: "demo-app"
+        project_context_module, "resolve_project_name", lambda _repo_root, name: "demo-app"
     )
     monkeypatch.setattr(
         project_context_module,
         "get_local_git_config",
-        lambda root, key: "prj_eeeeeeeeeeeeeeee",
+        lambda _repo_root, key: "prj_eeeeeeeeeeeeeeee",
     )
-    monkeypatch.setattr(project_context_module, "get_repo_remote", lambda root: None)
+    monkeypatch.setattr(project_context_module, "get_repo_remote", lambda _repo_root: None)
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: None)
 
-    with pytest.raises(ProjectDetectionError, match="no matching vault exists") as exc_info:
-        project_context_module.build_project_context(config)
+    with pytest.raises(ProjectDetectionError, match=r"no matching vault exists") as exc_info:
+        project_context_public.build_project_context(config)
 
     diagnostics = require_project_binding_diagnostics(exc_info.value.diagnostics)
     assert diagnostics.category == "bound_project_missing_vault"
@@ -414,13 +438,13 @@ def test_build_context_for_project_id_prefers_state_slug_and_key_when_vault_exis
         },
     )
 
-    monkeypatch.setattr(project_context_module, "get_repo_remote", lambda root: None)
+    monkeypatch.setattr(project_context_module, "get_repo_remote", lambda _repo_root: None)
     monkeypatch.setattr(
-        project_context_module, "resolve_project_name", lambda root, name: "fallback-name"
+        project_context_module, "resolve_project_name", lambda _repo_root, name: "fallback-name"
     )
     monkeypatch.setattr(project_context_module, "load_contract_optional", lambda path: None)
 
-    context = project_context_module.build_context_for_project_id(
+    context = project_context_public.build_context_for_project_id(
         config,
         repo_root=repo_root,
         project_id="prj_ffffffffffffffff",
@@ -445,7 +469,11 @@ def test_persist_project_binding_writes_state_and_returns_local_context(
     def fake_set_local_git_config(repo_root_arg: Path, key: str, value: str) -> None:
         captured_git_config.append((repo_root_arg, key, value))
 
-    monkeypatch.setattr(project_context_module, "set_local_git_config", fake_set_local_git_config)
+    monkeypatch.setattr(
+        project_context_bindings,
+        "set_local_git_config",
+        fake_set_local_git_config,
+    )
 
     context = ProjectContext(
         project_slug="demo-app",
@@ -461,7 +489,7 @@ def test_persist_project_binding_writes_state_and_returns_local_context(
         vault_state_path=config.projects_dir / "placeholder" / "state.json",
     )
 
-    persisted = project_context_module.persist_project_binding(config, context)
+    persisted = project_context_public.persist_project_binding(config, context)
 
     assert persisted.binding_source == "local"
     assert persisted.project_id == "prj_abcdabcdabcdabcd"
@@ -508,8 +536,8 @@ def test_persist_project_binding_raises_for_non_canonical_project_id(
         vault_state_path=config.projects_dir / "placeholder" / "state.json",
     )
 
-    with pytest.raises(StateError, match="non-canonical project id") as exc_info:
-        project_context_module.persist_project_binding(config, context)
+    with pytest.raises(StateError, match=r"non-canonical project id") as exc_info:
+        project_context_public.persist_project_binding(config, context)
 
     diagnostics = require_state_diagnostics(exc_info.value.diagnostics)
     assert diagnostics.category == "non_canonical_project_id"

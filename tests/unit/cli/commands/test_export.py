@@ -142,7 +142,7 @@ def test_export_command_json_mode_does_not_call_export_service(
     monkeypatch.setattr(
         export_command_module,
         "run_export",
-        lambda *args, **kwargs: (_ for _ in ()).throw(
+        lambda *args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("run_export should not be called")
         ),
     )
@@ -154,6 +154,6 @@ def test_export_command_json_mode_does_not_call_export_service(
 
     with pytest.raises(
         ExecutionError,
-        match="JSON output is not supported for 'export' yet.",
+        match=r"JSON output is not supported for 'export' yet.",
     ):
         wrapped()

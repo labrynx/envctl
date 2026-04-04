@@ -212,7 +212,7 @@ def test_run_add_rejects_invalid_format_override(
     )
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: None)
 
-    with pytest.raises(add_service.ValidationError, match="Invalid variable format"):
+    with pytest.raises(add_service.ValidationError, match=r"Invalid variable format"):
         add_service.run_add(
             AddVariableRequest(
                 key="TEST_JSON",
@@ -235,7 +235,7 @@ def test_run_add_rejects_format_for_non_string_type(
     )
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: None)
 
-    with pytest.raises(add_service.ValidationError, match="only be used with type 'string'"):
+    with pytest.raises(add_service.ValidationError, match=r"only be used with type 'string'"):
         add_service.run_add(
             AddVariableRequest(
                 key="PORT",

@@ -173,5 +173,5 @@ def test_run_status_fails_when_explicit_profile_file_is_missing(
         lambda _context, _contract, *, active_profile=None: resolution,
     )
 
-    with pytest.raises(ExecutionError, match="Create it with 'envctl profile create staging'"):
+    with pytest.raises(ExecutionError, match=r"Create it with 'envctl profile create staging'"):
         run_status("staging")

@@ -54,9 +54,11 @@ def test_run_repair_raises_when_local_binding_is_invalid(
 
     monkeypatch.setattr(repair_service, "load_config", lambda: config)
     monkeypatch.setattr(repair_service, "resolve_repo_root", lambda: repo_root)
-    monkeypatch.setattr(repair_service, "get_local_git_config", lambda root, key: "invalid-binding")
+    monkeypatch.setattr(
+        repair_service, "get_local_git_config", lambda _repo_root, key: "invalid-binding"
+    )
 
-    with pytest.raises(ExecutionError, match="Invalid project binding"):
+    with pytest.raises(ExecutionError, match=r"Invalid project binding"):
         repair_service.run_repair()
 
 
@@ -78,7 +80,7 @@ def test_run_repair_returns_healthy_when_bound_vault_exists(
     monkeypatch.setattr(
         repair_service,
         "get_local_git_config",
-        lambda root, key: "prj_aaaaaaaaaaaaaaaa",
+        lambda _repo_root, key: "prj_aaaaaaaaaaaaaaaa",
     )
     monkeypatch.setattr(
         repair_service,
@@ -88,13 +90,13 @@ def test_run_repair_returns_healthy_when_bound_vault_exists(
     monkeypatch.setattr(
         repair_service,
         "build_context_for_project_id",
-        lambda config_arg, repo_root, project_id, binding_source="local": context,
+        lambda _config, repo_root, project_id, binding_source="local": context,
     )
 
     persisted_calls: list[ProjectContext] = []
 
     def fake_persist_project_binding(
-        config_arg: AppConfig, context_arg: ProjectContext
+        _config: AppConfig, context_arg: ProjectContext
     ) -> ProjectContext:
         persisted_calls.append(context_arg)
         return context_arg
@@ -122,7 +124,7 @@ def test_run_repair_returns_needs_action_when_bound_vault_is_missing_and_not_rec
     monkeypatch.setattr(
         repair_service,
         "get_local_git_config",
-        lambda root, key: "prj_bbbbbbbbbbbbbbbb",
+        lambda _repo_root, key: "prj_bbbbbbbbbbbbbbbb",
     )
     monkeypatch.setattr(
         repair_service,
@@ -156,7 +158,7 @@ def test_run_repair_recreates_bound_vault_when_requested(
     monkeypatch.setattr(
         repair_service,
         "get_local_git_config",
-        lambda root, key: "prj_cccccccccccccccc",
+        lambda _repo_root, key: "prj_cccccccccccccccc",
     )
     monkeypatch.setattr(
         repair_service,
@@ -166,10 +168,10 @@ def test_run_repair_recreates_bound_vault_when_requested(
     monkeypatch.setattr(
         repair_service,
         "build_context_for_project_id",
-        lambda config_arg, repo_root, project_id, binding_source="local": context,
+        lambda _config, repo_root, project_id, binding_source="local": context,
     )
     monkeypatch.setattr(
-        repair_service, "persist_project_binding", lambda config_arg, context_arg: context
+        repair_service, "persist_project_binding", lambda _config, context_arg: context
     )
 
     ensured_dirs: list[Path] = []
@@ -199,9 +201,9 @@ def test_run_repair_returns_needs_action_when_recovery_is_ambiguous(
 
     monkeypatch.setattr(repair_service, "load_config", lambda: config)
     monkeypatch.setattr(repair_service, "resolve_repo_root", lambda: repo_root)
-    monkeypatch.setattr(repair_service, "get_local_git_config", lambda root, key: None)
+    monkeypatch.setattr(repair_service, "get_local_git_config", lambda _repo_root, key: None)
 
-    def broken_build_project_context(config_arg: AppConfig) -> ProjectContext:
+    def broken_build_project_context(_config: AppConfig) -> ProjectContext:
         raise ProjectDetectionError("Ambiguous vault identity for this repository.")
 
     monkeypatch.setattr(repair_service, "build_project_context", broken_build_project_context)
@@ -229,8 +231,8 @@ def test_run_repair_returns_healthy_when_context_is_already_local(
 
     monkeypatch.setattr(repair_service, "load_config", lambda: config)
     monkeypatch.setattr(repair_service, "resolve_repo_root", lambda: repo_root)
-    monkeypatch.setattr(repair_service, "get_local_git_config", lambda root, key: None)
-    monkeypatch.setattr(repair_service, "build_project_context", lambda config_arg: context)
+    monkeypatch.setattr(repair_service, "get_local_git_config", lambda _repo_root, key: None)
+    monkeypatch.setattr(repair_service, "build_project_context", lambda _config: context)
 
     repaired_context, result = repair_service.run_repair()
 
@@ -260,12 +262,12 @@ def test_run_repair_persists_recovered_context(
 
     monkeypatch.setattr(repair_service, "load_config", lambda: config)
     monkeypatch.setattr(repair_service, "resolve_repo_root", lambda: repo_root)
-    monkeypatch.setattr(repair_service, "get_local_git_config", lambda root, key: None)
-    monkeypatch.setattr(repair_service, "build_project_context", lambda config_arg: recovered)
+    monkeypatch.setattr(repair_service, "get_local_git_config", lambda _repo_root, key: None)
+    monkeypatch.setattr(repair_service, "build_project_context", lambda _config: recovered)
     monkeypatch.setattr(
         repair_service,
         "persist_project_binding",
-        lambda config_arg, context_arg: repaired,
+        lambda _config, context_arg: repaired,
     )
 
     repaired_context, result = repair_service.run_repair()
@@ -292,8 +294,8 @@ def test_run_repair_returns_needs_action_for_derived_context_when_not_creating(
 
     monkeypatch.setattr(repair_service, "load_config", lambda: config)
     monkeypatch.setattr(repair_service, "resolve_repo_root", lambda: repo_root)
-    monkeypatch.setattr(repair_service, "get_local_git_config", lambda root, key: None)
-    monkeypatch.setattr(repair_service, "build_project_context", lambda config_arg: context)
+    monkeypatch.setattr(repair_service, "get_local_git_config", lambda _repo_root, key: None)
+    monkeypatch.setattr(repair_service, "build_project_context", lambda _config: context)
 
     repaired_context, result = repair_service.run_repair()
 
@@ -326,13 +328,13 @@ def test_run_repair_creates_and_persists_new_binding_when_requested(
 
     monkeypatch.setattr(repair_service, "load_config", lambda: config)
     monkeypatch.setattr(repair_service, "resolve_repo_root", lambda: repo_root)
-    monkeypatch.setattr(repair_service, "get_local_git_config", lambda root, key: None)
-    monkeypatch.setattr(repair_service, "build_project_context", lambda config_arg: derived)
+    monkeypatch.setattr(repair_service, "get_local_git_config", lambda _repo_root, key: None)
+    monkeypatch.setattr(repair_service, "build_project_context", lambda _config: derived)
     monkeypatch.setattr(repair_service, "new_project_id", lambda: "prj_ffffffffffffffff")
     monkeypatch.setattr(
         repair_service,
         "persist_project_binding",
-        lambda config_arg, context_arg: created,
+        lambda _config, context_arg: created,
     )
 
     ensured_dirs: list[Path] = []

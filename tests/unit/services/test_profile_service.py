@@ -131,7 +131,7 @@ def test_run_profile_copy_rejects_missing_source(
         ),
     )
 
-    with pytest.raises(ExecutionError, match="Source profile does not exist"):
+    with pytest.raises(ExecutionError, match=r"Source profile does not exist"):
         profile_service.run_profile_copy("dev", "staging")
 
 
@@ -146,5 +146,5 @@ def test_run_profile_remove_rejects_local_profile(
         lambda: (object(), context),
     )
 
-    with pytest.raises(ValidationError, match="implicit local profile"):
+    with pytest.raises(ValidationError, match=r"implicit local profile"):
         profile_service.run_profile_remove("local")

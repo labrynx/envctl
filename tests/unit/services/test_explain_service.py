@@ -62,5 +62,5 @@ def test_run_explain_raises_when_key_is_not_resolved(
         lambda _context, _contract, *, active_profile=None: report,
     )
 
-    with pytest.raises(ValidationError, match="Key is not resolved: APP_NAME"):
+    with pytest.raises(ValidationError, match=r"Key is not resolved: APP_NAME"):
         run_explain("APP_NAME")

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-import envctl.services.resolution_service as resolution_service
+import envctl.services.resolution_service.resolution as resolution_service_module
 from envctl.domain.contract import Contract
 from envctl.domain.project import ProjectContext
 from envctl.services.resolution_service import load_contract_for_context, resolve_environment
@@ -26,9 +26,13 @@ def patch_loaded_profile_values(
         else context.vault_project_dir / "profiles" / f"{profile}.env"
     )
     monkeypatch.setattr(
-        resolution_service,
+        resolution_service_module,
         "load_profile_values",
-        lambda _context, _profile, require_existing_explicit=False: (_profile, path, values),
+        lambda _context, _profile, require_existing_explicit=False: (
+            _profile,
+            path,
+            values,
+        ),
     )
     return path
 
@@ -44,7 +48,7 @@ def test_load_contract_for_context_uses_repo_contract_path(
         captured["path"] = path
         return contract
 
-    monkeypatch.setattr(resolution_service, "load_contract", fake_load_contract)
+    monkeypatch.setattr(resolution_service_module, "load_contract", fake_load_contract)
 
     result = load_contract_for_context(fake_context)
 
@@ -52,7 +56,7 @@ def test_load_contract_for_context_uses_repo_contract_path(
     assert captured["path"] == fake_context.repo_contract_path
 
 
-def test_resolve_environment_prefers_system_over_profile_and_default(
+def test_resolve_environment_prefers_profile_over_default_and_ignores_system(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     contract = make_standard_contract()
@@ -78,15 +82,12 @@ def test_resolve_environment_prefers_system_over_profile_and_default(
     assert report.invalid_keys == ()
     assert report.unknown_keys == ("UNKNOWN_KEY",)
 
-    assert report.values["APP_NAME"].value == "from-system"
-    assert report.values["APP_NAME"].source == "system"
+    assert report.values["APP_NAME"].value == "from-profile"
+    assert report.values["APP_NAME"].source == "profile:staging"
 
-    assert report.values["DATABASE_URL"].value == "https://system.example.com"
-    assert report.values["DATABASE_URL"].source == "system"
+    assert report.values["DATABASE_URL"].value == "https://profile.example.com"
+    assert report.values["DATABASE_URL"].source == "profile:staging"
     assert report.values["DATABASE_URL"].masked is True
-
-    assert report.values["DEBUG"].value == "true"
-    assert report.values["DEBUG"].source == "system"
 
     assert report.values["PORT"].value == "3000"
     assert report.values["PORT"].source == "default"
@@ -376,7 +377,7 @@ def test_resolve_environment_rejects_unknown_placeholder_references(
     )
 
 
-def test_resolve_environment_prefers_contract_values_over_process_for_expansion(
+def test_resolve_environment_uses_contract_values_for_expansion(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     contract = make_contract(
@@ -398,8 +399,9 @@ def test_resolve_environment_prefers_contract_values_over_process_for_expansion(
     report = resolve_environment(context, contract, active_profile="local")
 
     assert report.invalid_keys == ()
-    assert report.values["HOME"].source == "system"
-    assert report.values["TARGET"].value == "/process-home/work"
+    assert report.values["HOME"].source == "vault"
+    assert report.values["HOME"].value == "/contract-home"
+    assert report.values["TARGET"].value == "/contract-home/work"
 
 
 def test_resolve_environment_supports_recursive_expansion(

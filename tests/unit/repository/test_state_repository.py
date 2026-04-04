@@ -68,7 +68,7 @@ def test_read_state_raises_on_invalid_json(tmp_path: Path) -> None:
     path = tmp_path / "state.json"
     path.write_text("{not-json", encoding="utf-8")
 
-    with pytest.raises(StateError, match="State file is corrupted") as exc_info:
+    with pytest.raises(StateError, match=r"State file is corrupted") as exc_info:
         read_state(path)
 
     diagnostics = require_state_diagnostics(exc_info.value.diagnostics)
@@ -81,7 +81,7 @@ def test_read_state_raises_on_invalid_shape(tmp_path: Path) -> None:
     path = tmp_path / "state.json"
     path.write_text("[]", encoding="utf-8")
 
-    with pytest.raises(StateError, match="State file must contain a JSON object") as exc_info:
+    with pytest.raises(StateError, match=r"State file must contain a JSON object") as exc_info:
         read_state(path)
 
     diagnostics = require_state_diagnostics(exc_info.value.diagnostics)
@@ -102,7 +102,7 @@ def test_read_state_raises_when_file_cannot_be_read(
 
     monkeypatch.setattr(state_repository.Path, "read_text", broken_read_text)
 
-    with pytest.raises(StateError, match="Unable to read state file") as exc_info:
+    with pytest.raises(StateError, match=r"Unable to read state file") as exc_info:
         read_state(path)
 
     diagnostics = require_state_diagnostics(exc_info.value.diagnostics)
@@ -116,7 +116,7 @@ def test_read_state_raises_on_unsupported_state_version_with_structured_diagnost
     path = tmp_path / "state.json"
     path.write_text('{"version": 999}', encoding="utf-8")
 
-    with pytest.raises(StateError, match="Unsupported state version") as exc_info:
+    with pytest.raises(StateError, match=r"Unsupported state version") as exc_info:
         read_state(path)
 
     diagnostics = require_state_diagnostics(exc_info.value.diagnostics)
@@ -132,7 +132,7 @@ def test_read_state_raises_when_required_field_is_missing(tmp_path: Path) -> Non
         encoding="utf-8",
     )
 
-    with pytest.raises(StateError, match="missing a valid project_id") as exc_info:
+    with pytest.raises(StateError, match=r"missing a valid project_id") as exc_info:
         read_state(path)
 
     diagnostics = require_state_diagnostics(exc_info.value.diagnostics)
@@ -152,7 +152,7 @@ def test_read_state_raises_on_invalid_known_paths(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    with pytest.raises(StateError, match="invalid known_paths") as exc_info:
+    with pytest.raises(StateError, match=r"invalid known_paths") as exc_info:
         read_state(path)
 
     diagnostics = require_state_diagnostics(exc_info.value.diagnostics)

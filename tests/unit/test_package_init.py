@@ -1,19 +1,11 @@
 from __future__ import annotations
 
-import importlib
 import sys
 from collections.abc import Callable
 from importlib.metadata import PackageNotFoundError
 from types import ModuleType
 
 import pytest
-
-
-def import_envctl() -> ModuleType:
-    sys.modules.pop("envctl", None)
-    module = importlib.import_module("envctl")
-    assert isinstance(module, ModuleType)
-    return module
 
 
 def reload_envctl_init(

@@ -161,7 +161,7 @@ def test_run_sync_rejects_invalid_resolution(
         ),
     )
 
-    with pytest.raises(ValidationError, match="Cannot sync because") as exc_info:
+    with pytest.raises(ValidationError, match=r"Cannot sync because") as exc_info:
         sync_service.run_sync("dev")
 
     assert exc_info.value.diagnostics == ProjectionValidationDiagnostics(

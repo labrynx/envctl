@@ -47,7 +47,7 @@ def test_load_previous_values_returns_empty_when_values_file_is_missing(
     monkeypatch.setattr(
         rebind_service,
         "find_vault_dir_by_project_id",
-        lambda projects_dir_arg, project_id: previous_vault_dir,
+        lambda _projects_dir, project_id: previous_vault_dir,
     )
 
     result = rebind_service._load_previous_values(projects_dir, "prj_aaaaaaaaaaaaaaaa")
@@ -68,7 +68,7 @@ def test_load_previous_values_reads_existing_values(
     monkeypatch.setattr(
         rebind_service,
         "find_vault_dir_by_project_id",
-        lambda projects_dir_arg, project_id: previous_vault_dir,
+        lambda _projects_dir, project_id: previous_vault_dir,
     )
 
     result = rebind_service._load_previous_values(projects_dir, "prj_aaaaaaaaaaaaaaaa")
@@ -99,17 +99,17 @@ def test_run_rebind_creates_new_binding_without_copying_when_no_previous_values(
 
     monkeypatch.setattr(rebind_service, "load_config", lambda: config)
     monkeypatch.setattr(rebind_service, "resolve_repo_root", lambda: repo_root)
-    monkeypatch.setattr(rebind_service, "get_local_git_config", lambda root, key: None)
+    monkeypatch.setattr(rebind_service, "get_local_git_config", lambda _repo_root, key: None)
     monkeypatch.setattr(rebind_service, "new_project_id", lambda: "prj_bbbbbbbbbbbbbbbb")
     monkeypatch.setattr(
         rebind_service,
         "build_context_for_project_id",
-        lambda config_arg, repo_root, project_id, binding_source="local": context,
+        lambda _config, repo_root, project_id, binding_source="local": context,
     )
     monkeypatch.setattr(
         rebind_service,
         "persist_project_binding",
-        lambda config_arg, context_arg: context,
+        lambda _config, context_arg: context,
     )
 
     context_result, result = rebind_service.run_rebind(copy_values=True)
@@ -146,18 +146,18 @@ def test_run_rebind_copies_previous_values_when_requested(
     monkeypatch.setattr(
         rebind_service,
         "get_local_git_config",
-        lambda root, key: "prj_aaaaaaaaaaaaaaaa",
+        lambda _repo_root, key: "prj_aaaaaaaaaaaaaaaa",
     )
     monkeypatch.setattr(rebind_service, "new_project_id", lambda: "prj_bbbbbbbbbbbbbbbb")
     monkeypatch.setattr(
         rebind_service,
         "build_context_for_project_id",
-        lambda config_arg, repo_root, project_id, binding_source="local": context,
+        lambda _config, repo_root, project_id, binding_source="local": context,
     )
     monkeypatch.setattr(
         rebind_service,
         "persist_project_binding",
-        lambda config_arg, context_arg: context,
+        lambda _config, context_arg: context,
     )
     monkeypatch.setattr(
         rebind_service,
@@ -204,18 +204,18 @@ def test_run_rebind_does_not_copy_values_when_empty_is_requested(
     monkeypatch.setattr(
         rebind_service,
         "get_local_git_config",
-        lambda root, key: "prj_aaaaaaaaaaaaaaaa",
+        lambda _repo_root, key: "prj_aaaaaaaaaaaaaaaa",
     )
     monkeypatch.setattr(rebind_service, "new_project_id", lambda: "prj_bbbbbbbbbbbbbbbb")
     monkeypatch.setattr(
         rebind_service,
         "build_context_for_project_id",
-        lambda config_arg, repo_root, project_id, binding_source="local": context,
+        lambda _config, repo_root, project_id, binding_source="local": context,
     )
     monkeypatch.setattr(
         rebind_service,
         "persist_project_binding",
-        lambda config_arg, context_arg: context,
+        lambda _config, context_arg: context,
     )
     monkeypatch.setattr(
         rebind_service,

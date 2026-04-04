@@ -32,7 +32,7 @@ def test_render_resolution_view_includes_profile_and_sections(
                 key="TOKEN",
                 value="supersecret",
                 masked=True,
-                source="system",
+                source="vault",
             ),
         },
     )
@@ -50,7 +50,7 @@ def test_render_resolution_view_includes_profile_and_sections(
     assert "LEGACY_KEY" in captured
     assert "Resolved values" in captured
     assert "TOKEN = su*********" in captured
-    assert "(system)" in captured
+    assert "(vault)" in captured
 
 
 def test_render_resolution_view_marks_expanded_values(

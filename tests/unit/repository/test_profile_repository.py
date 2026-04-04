@@ -28,7 +28,7 @@ def test_resolve_profile_path_uses_values_env_for_local() -> None:
 def test_require_persisted_profile_rejects_missing_explicit_profile() -> None:
     context = make_project_context()
 
-    with pytest.raises(ExecutionError, match="Create it with 'envctl profile create staging'"):
+    with pytest.raises(ExecutionError, match=r"Create it with 'envctl profile create staging'"):
         require_persisted_profile(context, "staging")
 
 

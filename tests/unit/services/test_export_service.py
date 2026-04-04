@@ -118,7 +118,7 @@ def test_run_export_rejects_invalid_resolution(
         ),
     )
 
-    with pytest.raises(ValidationError, match="Cannot export because") as exc_info:
+    with pytest.raises(ValidationError, match=r"Cannot export because") as exc_info:
         export_service.run_export("dev")
 
     assert exc_info.value.diagnostics == ProjectionValidationDiagnostics(
@@ -154,7 +154,7 @@ def test_run_export_rejects_unknown_keys(
         ),
     )
 
-    with pytest.raises(ValidationError, match="Cannot export because") as exc_info:
+    with pytest.raises(ValidationError, match=r"Cannot export because") as exc_info:
         export_service.run_export("dev")
 
     assert exc_info.value.diagnostics == ProjectionValidationDiagnostics(

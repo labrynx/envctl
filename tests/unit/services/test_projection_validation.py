@@ -77,7 +77,7 @@ def test_resolve_projectable_environment_raises_with_filtered_report_and_actions
         lambda _context, _contract, *, active_profile=None: report,
     )
 
-    with pytest.raises(ValidationError, match="Cannot export because") as exc_info:
+    with pytest.raises(ValidationError, match=r"Cannot export because") as exc_info:
         projection_validation.resolve_projectable_environment(
             context,
             active_profile="staging",

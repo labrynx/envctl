@@ -87,7 +87,7 @@ def test_render_explain_value_masks_when_needed(capsys: pytest.CaptureFixture[st
     render_explain_value(
         profile="prod",
         key="TOKEN",
-        source="system",
+        source="vault",
         raw_value=None,
         value="supersecret",
         masked=True,
@@ -101,7 +101,7 @@ def test_render_explain_value_masks_when_needed(capsys: pytest.CaptureFixture[st
 
     assert "profile: prod" in captured
     assert "key: TOKEN" in captured
-    assert "source: system" in captured
+    assert "source: vault" in captured
     assert "value: su*********" in captured
     assert "valid: yes" in captured
 

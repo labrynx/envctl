@@ -125,7 +125,7 @@ def test_load_config_rejects_invalid_runtime_mode_in_config(
         encoding="utf-8",
     )
 
-    with pytest.raises(ConfigError, match="Invalid runtime mode"):
+    with pytest.raises(ConfigError, match=r"Invalid runtime mode"):
         load_config()
 
 
@@ -136,7 +136,7 @@ def test_load_config_rejects_invalid_runtime_mode_in_env(
     _prepare_home(tmp_path, monkeypatch)
     monkeypatch.setenv(ENVCTL_RUNTIME_MODE_ENVVAR, "banana")
 
-    with pytest.raises(ConfigError, match="Invalid runtime mode"):
+    with pytest.raises(ConfigError, match=r"Invalid runtime mode"):
         load_config()
 
 
@@ -158,7 +158,7 @@ def test_load_config_rejects_invalid_default_profile_in_config(
         encoding="utf-8",
     )
 
-    with pytest.raises(ConfigError, match="Invalid profile"):
+    with pytest.raises(ConfigError, match=r"Invalid profile"):
         load_config()
 
 
@@ -322,5 +322,5 @@ def test_resolve_default_profile_rejects_invalid_env_profile(
     _prepare_home(tmp_path, monkeypatch)
     monkeypatch.setenv(ENVCTL_PROFILE_ENVVAR, "bad/name")
 
-    with pytest.raises(ConfigError, match="Invalid profile"):
+    with pytest.raises(ConfigError, match=r"Invalid profile"):
         resolve_default_profile()

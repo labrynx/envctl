@@ -116,7 +116,7 @@ def test_write_contract_serializes_contract(tmp_path: Path) -> None:
 def test_load_contract_raises_when_file_is_missing(tmp_path: Path) -> None:
     path = tmp_path / ".envctl.schema.yaml"
 
-    with pytest.raises(ContractError, match="Contract file not found") as exc_info:
+    with pytest.raises(ContractError, match=r"Contract file not found") as exc_info:
         load_contract(path)
 
     diagnostics = require_contract_diagnostics(exc_info.value.diagnostics)
@@ -134,7 +134,7 @@ def test_load_contract_raises_when_yaml_is_invalid(tmp_path: Path) -> None:
     path = tmp_path / ".envctl.schema.yaml"
     path.write_text(":\n- bad", encoding="utf-8")
 
-    with pytest.raises(ContractError, match="Invalid YAML contract") as exc_info:
+    with pytest.raises(ContractError, match=r"Invalid YAML contract") as exc_info:
         load_contract(path)
 
     diagnostics = require_contract_diagnostics(exc_info.value.diagnostics)
@@ -155,7 +155,7 @@ def test_load_contract_raises_when_file_cannot_be_read(
 
     monkeypatch.setattr(contract_repository.Path, "read_text", broken_read_text)
 
-    with pytest.raises(ContractError, match="Unable to read contract") as exc_info:
+    with pytest.raises(ContractError, match=r"Unable to read contract") as exc_info:
         load_contract(path)
 
     diagnostics = require_contract_diagnostics(exc_info.value.diagnostics)
@@ -170,7 +170,7 @@ def test_load_contract_raises_for_invalid_variable_shape_with_structured_diagnos
     path = tmp_path / ".envctl.schema.yaml"
     path.write_text("version: 1\nvariables:\n  PORT: nope\n", encoding="utf-8")
 
-    with pytest.raises(ContractError, match="Variable 'PORT' must be a mapping") as exc_info:
+    with pytest.raises(ContractError, match=r"Variable 'PORT' must be a mapping") as exc_info:
         load_contract(path)
 
     diagnostics = require_contract_diagnostics(exc_info.value.diagnostics)
@@ -197,7 +197,7 @@ def test_load_contract_raises_for_pydantic_validation_with_structured_issues(
         encoding="utf-8",
     )
 
-    with pytest.raises(ContractError, match="Invalid contract:") as exc_info:
+    with pytest.raises(ContractError, match=r"Invalid contract:") as exc_info:
         load_contract(path)
 
     diagnostics = require_contract_diagnostics(exc_info.value.diagnostics)

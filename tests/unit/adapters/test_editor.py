@@ -45,7 +45,7 @@ def test_resolve_editor_raises_when_no_editor_found(
     monkeypatch.delenv("EDITOR", raising=False)
     monkeypatch.setattr("shutil.which", lambda name: None)
 
-    with pytest.raises(ExecutionError, match="No editor found"):
+    with pytest.raises(ExecutionError, match=r"No editor found"):
         resolve_editor()
 
 
@@ -75,7 +75,7 @@ def test_open_file_wraps_oserror(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(subprocess, "run", fake_run)
 
-    with pytest.raises(ExecutionError, match="Failed to launch editor: nano"):
+    with pytest.raises(ExecutionError, match=r"Failed to launch editor: nano"):
         open_file("/tmp/demo.env")
 
 
@@ -87,5 +87,5 @@ def test_open_file_raises_on_non_zero_exit(monkeypatch: pytest.MonkeyPatch) -> N
 
     monkeypatch.setattr(subprocess, "run", fake_run)
 
-    with pytest.raises(ExecutionError, match="Editor exited with code 2"):
+    with pytest.raises(ExecutionError, match=r"Editor exited with code 2"):
         open_file("/tmp/demo.env")

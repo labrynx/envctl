@@ -12,7 +12,7 @@ def test_variable_spec_accepts_string_format() -> None:
 
 
 def test_variable_spec_rejects_format_for_non_string_types() -> None:
-    with pytest.raises(ValueError, match="can only be used with type 'string'"):
+    with pytest.raises(ValueError, match=r"can only be used with type 'string'"):
         VariableSpec(name="PORT", type="int", format="json")
 
 

@@ -65,7 +65,7 @@ def test_run_command_executes_child_with_resolved_environment(
 def test_run_command_rejects_missing_command(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    with pytest.raises(ExecutionError, match="No command provided"):
+    with pytest.raises(ExecutionError, match=r"No command provided"):
         run_service.run_command([], "local")
 
 
@@ -90,7 +90,7 @@ def test_run_command_rejects_invalid_resolution(
         ),
     )
 
-    with pytest.raises(ValidationError, match="Cannot run because") as exc_info:
+    with pytest.raises(ValidationError, match=r"Cannot run because") as exc_info:
         run_service.run_command(["python3", "-V"], "dev")
 
     assert exc_info.value.diagnostics == ProjectionValidationDiagnostics(

@@ -31,11 +31,16 @@ def test_root_callback_uses_explicit_profile_over_default(
         ),
     )
 
-    @app.command("dummy-profile-test")
-    def dummy_profile_test() -> None:
+    original_len = len(app.registered_commands)
+
+    @app.command("profile-probe")
+    def _profile_probe() -> None:
         return None
 
-    result = runner.invoke(app, ["--profile", "dev", "dummy-profile-test"])
+    try:
+        result = runner.invoke(app, ["--profile", "dev", "profile-probe"])
+    finally:
+        del app.registered_commands[original_len:]
 
     assert result.exit_code == 0
     assert captured["output_format"] == OutputFormat.TEXT
