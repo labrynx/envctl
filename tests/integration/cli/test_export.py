@@ -91,3 +91,31 @@ def test_export_dotenv_groups_and_filters_selected_group(
         "APP_NAME=demo\n"
         "APP_URL=http://demo:3000\n"
     )
+
+
+def test_export_failure_explains_invalid_keys(
+    runner: CliRunner,
+    workspace: Path,
+) -> None:
+    runner.invoke(app, ["config", "init"], catch_exceptions=False)
+    runner.invoke(app, ["init", "--contract", "starter"], catch_exceptions=False)
+
+    schema_path = workspace / ".envctl.schema.yaml"
+    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    schema["variables"]["PORT"]["type"] = "int"
+    schema_path.write_text(yaml.safe_dump(schema, sort_keys=False), encoding="utf-8")
+
+    runner.invoke(app, ["set", "APP_NAME", "demo"], catch_exceptions=False)
+    runner.invoke(app, ["set", "PORT", "not-an-int"], catch_exceptions=False)
+    runner.invoke(app, ["set", "DATABASE_URL", "https://db.example.com"], catch_exceptions=False)
+
+    result = runner.invoke(app, ["export"], catch_exceptions=False)
+
+    assert result.exit_code == 1
+    assert (
+        "Error: Cannot export because the environment contract is not satisfied." in result.output
+    )
+    assert "Invalid keys" in result.output
+    assert "PORT: Expected an integer" in result.output
+    assert "Run `envctl check`" in result.output
+    assert "Run `envctl explain KEY`" in result.output

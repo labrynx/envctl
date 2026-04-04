@@ -38,6 +38,41 @@ def test_check_json_outputs_structured_payload_for_invalid_environment(
     assert data["report"]["invalid_keys"] == []
 
 
+def test_sync_json_outputs_structured_projection_validation_error(
+    runner: CliRunner,
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("APP_NAME", "demo-app")
+
+    result = runner.invoke(app, ["--json", "sync"])
+
+    assert result.exit_code == 1
+
+    payload = parse_json_output(result.output)
+    assert payload["ok"] is False
+    assert payload["command"] == "envctl sync"
+    assert payload["error"]["type"] == "ValidationError"
+    assert payload["error"]["message"] == (
+        "Cannot sync because the environment contract is not satisfied."
+    )
+    details = cast(dict[str, Any], payload["error"]["details"])
+    assert details["operation"] == "sync"
+    assert details["active_profile"] == "local"
+    assert details["selected_group"] is None
+    assert details["suggested_actions"] == ["envctl fill", "envctl set KEY VALUE"]
+    report = cast(dict[str, Any], details["report"])
+    assert report["is_valid"] is False
+    assert report["missing_required"] == ["DATABASE_URL"]
+    assert report["unknown_keys"] == []
+    assert report["invalid_keys"] == []
+    app_name = cast(dict[str, Any], report["values"]["APP_NAME"])
+    assert app_name["key"] == "APP_NAME"
+    assert app_name["value"] == "demo-app"
+    assert app_name["source"] == "system"
+    assert app_name["valid"] is True
+
+
 def test_check_json_outputs_success_payload_when_environment_is_valid(
     runner: CliRunner,
     workspace: Path,
@@ -58,6 +93,103 @@ def test_check_json_outputs_success_payload_when_environment_is_valid(
     assert data["report"]["is_valid"] is True
     assert data["report"]["missing_required"] == []
     assert sorted(data["report"]["values"]) == ["APP_NAME", "DATABASE_URL", "PORT"]
+
+
+def test_check_json_outputs_structured_contract_error(
+    runner: CliRunner,
+    workspace: Path,
+) -> None:
+    schema_path = workspace / ".envctl.schema.yaml"
+    schema_path.write_text(":\n- bad", encoding="utf-8")
+
+    result = runner.invoke(app, ["--json", "check"])
+
+    assert result.exit_code == 1
+
+    payload = parse_json_output(result.output)
+    assert payload["ok"] is False
+    assert payload["command"] == "envctl check"
+    assert payload["error"]["type"] == "ContractError"
+    assert payload["error"]["message"] == f"Invalid YAML contract: {schema_path}"
+    assert payload["error"]["details"] == {
+        "category": "invalid_yaml",
+        "path": str(schema_path),
+        "key": None,
+        "field": None,
+        "issues": [],
+        "suggested_actions": ["envctl check", "fix .envctl.schema.yaml"],
+    }
+
+
+def test_callback_json_outputs_structured_config_error(
+    runner: CliRunner,
+    workspace: Path,
+) -> None:
+    config_path = workspace.parent / "home" / ".config" / "envctl" / "config.json"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text('{"runtime_mode":"banana"}', encoding="utf-8")
+
+    result = runner.invoke(app, ["--json", "check"])
+
+    assert result.exit_code == 1
+    payload = parse_json_output(result.output)
+    assert payload["error"]["type"] == "ConfigError"
+    assert payload["error"]["details"]["category"] == "invalid_runtime_mode"
+    assert payload["error"]["details"]["path"] == str(config_path)
+    assert payload["error"]["details"]["source_label"] == "config file"
+
+
+def test_status_json_outputs_structured_state_error(
+    runner: CliRunner,
+    workspace: Path,
+) -> None:
+    runner.invoke(app, ["config", "init"], catch_exceptions=False)
+    runner.invoke(app, ["init", "--contract", "starter"], catch_exceptions=False)
+
+    vault_projects_dir = workspace.parent / "home" / ".envctl" / "vault" / "projects"
+    state_path = next(vault_projects_dir.glob("*/state.json"))
+    state_path.write_text("{not-json", encoding="utf-8")
+
+    result = runner.invoke(app, ["--json", "status"])
+
+    assert result.exit_code == 1
+    payload = parse_json_output(result.output)
+    assert payload["error"]["type"] == "StateError"
+    assert payload["error"]["details"]["category"] == "corrupted_state"
+
+
+def test_status_json_outputs_structured_project_binding_error(
+    runner: CliRunner,
+    workspace: Path,
+) -> None:
+    runner.invoke(app, ["config", "init"], catch_exceptions=False)
+
+    vault_projects_dir = workspace.parent / "home" / ".envctl" / "vault" / "projects"
+    first = vault_projects_dir / "demo-a--prj_1111111111111111"
+    second = vault_projects_dir / "demo-b--prj_2222222222222222"
+    first.mkdir(parents=True, exist_ok=True)
+    second.mkdir(parents=True, exist_ok=True)
+    payload = (
+        '{"version":2,"project_slug":"demo","project_key":"demo","project_id":"%s",'
+        '"repo_root":"%s","git_remote":"git@github.com:labrynx/envctl.git",'
+        '"known_paths":[],"created_at":"2026-03-30T00:00:00Z","last_seen_at":"2026-03-30T00:00:00Z"}'
+    )
+    (first / "state.json").write_text(
+        payload % ("prj_1111111111111111", str(workspace)),
+        encoding="utf-8",
+    )
+    (second / "state.json").write_text(
+        payload % ("prj_2222222222222222", str(workspace)),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["--json", "status"])
+
+    assert result.exit_code == 1
+    payload_json = parse_json_output(result.output)
+    assert payload_json["error"]["type"] == "ProjectDetectionError"
+    assert payload_json["error"]["details"]["category"] == "ambiguous_vault_identity"
+    assert payload_json["error"]["details"]["repo_root"] == str(workspace)
 
 
 def test_inspect_json_outputs_structured_resolution_report(

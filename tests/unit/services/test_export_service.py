@@ -4,9 +4,11 @@ import pytest
 
 import envctl.services.export_service as export_service
 from envctl.errors import ValidationError
+from envctl.services.projection_validation import ProjectionValidationDiagnostics
 from tests.support.builders import make_resolution_report, make_resolved_value
 from tests.support.contexts import make_project_context
 from tests.support.contracts import make_contract, make_variable_spec
+from tests.support.projection_validation import raise_projection_error
 
 
 def test_run_export_returns_shell_lines_for_active_profile_by_default(
@@ -27,11 +29,10 @@ def test_run_export_returns_shell_lines_for_active_profile_by_default(
     )
 
     monkeypatch.setattr(export_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(
         export_service,
-        "resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
+        "resolve_projectable_environment",
+        lambda _context, *, active_profile, group, operation: (contract, report),
     )
     monkeypatch.setattr(
         export_service,
@@ -56,11 +57,10 @@ def test_run_export_explicit_shell_matches_default(
     contract = make_contract({"APP_NAME": make_variable_spec(name="APP_NAME")})
 
     monkeypatch.setattr(export_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(
         export_service,
-        "resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
+        "resolve_projectable_environment",
+        lambda _context, *, active_profile, group, operation: (contract, report),
     )
     monkeypatch.setattr(
         export_service,
@@ -84,11 +84,10 @@ def test_run_export_returns_dotenv_without_header(
     contract = make_contract({"APP_NAME": make_variable_spec(name="APP_NAME")})
 
     monkeypatch.setattr(export_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(
         export_service,
-        "resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
+        "resolve_projectable_environment",
+        lambda _context, *, active_profile, group, operation: (contract, report),
     )
 
     _context, active_profile, rendered = export_service.run_export("staging", format="dotenv")
@@ -102,41 +101,69 @@ def test_run_export_rejects_invalid_resolution(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     context = make_project_context()
-    report = make_resolution_report(missing_required=("DATABASE_URL",))
-    contract = make_contract({"DATABASE_URL": make_variable_spec(name="DATABASE_URL")})
+    filtered_report = make_resolution_report(missing_required=("DATABASE_URL",))
 
     monkeypatch.setattr(export_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(
         export_service,
-        "resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
+        "resolve_projectable_environment",
+        lambda _context, *, active_profile, group, operation: (
+            raise_projection_error(
+                operation=operation,
+                profile=active_profile,
+                group=group,
+                report=filtered_report,
+                suggested_actions=("envctl fill", "envctl set KEY VALUE"),
+            )
+        ),
     )
 
-    with pytest.raises(ValidationError, match="Environment contract is not satisfied"):
+    with pytest.raises(ValidationError, match="Cannot export because") as exc_info:
         export_service.run_export("dev")
+
+    assert exc_info.value.diagnostics == ProjectionValidationDiagnostics(
+        operation="export",
+        active_profile="dev",
+        selected_group=None,
+        report=filtered_report,
+        suggested_actions=("envctl fill", "envctl set KEY VALUE"),
+    )
 
 
 def test_run_export_rejects_unknown_keys(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     context = make_project_context()
-    report = make_resolution_report(
+    filtered_report = make_resolution_report(
         values={"APP_NAME": make_resolved_value(key="APP_NAME", value="demo")},
         unknown_keys=("OLD_KEY",),
     )
-    contract = make_contract({"APP_NAME": make_variable_spec(name="APP_NAME")})
 
     monkeypatch.setattr(export_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(
         export_service,
-        "resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
+        "resolve_projectable_environment",
+        lambda _context, *, active_profile, group, operation: (
+            raise_projection_error(
+                operation=operation,
+                profile=active_profile,
+                group=group,
+                report=filtered_report,
+                suggested_actions=("envctl check", "envctl inspect"),
+            )
+        ),
     )
 
-    with pytest.raises(ValidationError, match="Vault contains unknown keys"):
+    with pytest.raises(ValidationError, match="Cannot export because") as exc_info:
         export_service.run_export("dev")
+
+    assert exc_info.value.diagnostics == ProjectionValidationDiagnostics(
+        operation="export",
+        active_profile="dev",
+        selected_group=None,
+        report=filtered_report,
+        suggested_actions=("envctl check", "envctl inspect"),
+    )
 
 
 def test_run_export_validates_and_projects_only_selected_group(
@@ -160,11 +187,10 @@ def test_run_export_validates_and_projects_only_selected_group(
     )
 
     monkeypatch.setattr(export_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(export_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(
         export_service,
-        "resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
+        "resolve_projectable_environment",
+        lambda _context, *, active_profile, group, operation: (contract, report),
     )
 
     _context, _profile, rendered = export_service.run_export(

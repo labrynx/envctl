@@ -345,7 +345,7 @@ def test_resolve_environment_expands_contract_references(
     assert report.values["AUTH"].expansion_refs == ("USER", "PASSWORD")
 
 
-def test_resolve_environment_expands_external_process_variables(
+def test_resolve_environment_rejects_unknown_placeholder_references(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     contract = make_contract(
@@ -365,10 +365,15 @@ def test_resolve_environment_expands_external_process_variables(
 
     report = resolve_environment(context, contract, active_profile="local")
 
-    assert report.invalid_keys == ()
-    assert report.values["CACHE_DIR"].value == "/tmp/example-home/.cache/demo"
-    assert report.values["CACHE_DIR"].expansion_status == "expanded"
+    assert report.invalid_keys == ("CACHE_DIR",)
+    assert report.values["CACHE_DIR"].value == "${HOME}/.cache/demo"
+    assert report.values["CACHE_DIR"].expansion_status == "error"
     assert report.values["CACHE_DIR"].expansion_refs == ("HOME",)
+    assert report.values["CACHE_DIR"].expansion_error is not None
+    assert report.values["CACHE_DIR"].expansion_error.kind == "reference_resolution_error"
+    assert (
+        report.values["CACHE_DIR"].detail == "Expansion reference error: Unknown placeholder 'HOME'"
+    )
 
 
 def test_resolve_environment_prefers_contract_values_over_process_for_expansion(

@@ -7,9 +7,11 @@ import pytest
 
 import envctl.services.run_service as run_service
 from envctl.errors import ExecutionError, ValidationError
+from envctl.services.projection_validation import ProjectionValidationDiagnostics
 from tests.support.builders import make_resolution_report, make_resolved_value
 from tests.support.contexts import make_project_context
 from tests.support.contracts import make_contract, make_variable_spec
+from tests.support.projection_validation import raise_projection_error
 
 
 def test_run_command_executes_child_with_resolved_environment(
@@ -30,11 +32,10 @@ def test_run_command_executes_child_with_resolved_environment(
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(run_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: object())
     monkeypatch.setattr(
         run_service,
-        "resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
+        "resolve_projectable_environment",
+        lambda _context, *, active_profile, group, operation: (object(), report),
     )
 
     def fake_run(
@@ -48,10 +49,7 @@ def test_run_command_executes_child_with_resolved_environment(
 
     monkeypatch.setattr(run_service.subprocess, "run", fake_run)
 
-    _context, result = run_service.run_command(
-        ["python3", "-V"],
-        "staging",
-    )
+    _context, result = run_service.run_command(["python3", "-V"], "staging")
 
     assert result.active_profile == "staging"
     assert result.exit_code == 0
@@ -75,18 +73,33 @@ def test_run_command_rejects_invalid_resolution(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     context = make_project_context()
-    report = make_resolution_report(missing_required=("DATABASE_URL",))
+    filtered_report = make_resolution_report(missing_required=("DATABASE_URL",))
 
     monkeypatch.setattr(run_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: object())
     monkeypatch.setattr(
         run_service,
-        "resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
+        "resolve_projectable_environment",
+        lambda _context, *, active_profile, group, operation: (
+            raise_projection_error(
+                operation=operation,
+                profile=active_profile,
+                group=group,
+                report=filtered_report,
+                suggested_actions=("envctl fill", "envctl set KEY VALUE"),
+            )
+        ),
     )
 
-    with pytest.raises(ValidationError, match="Environment contract is not satisfied"):
+    with pytest.raises(ValidationError, match="Cannot run because") as exc_info:
         run_service.run_command(["python3", "-V"], "dev")
+
+    assert exc_info.value.diagnostics == ProjectionValidationDiagnostics(
+        operation="run",
+        active_profile="dev",
+        selected_group=None,
+        report=filtered_report,
+        suggested_actions=("envctl fill", "envctl set KEY VALUE"),
+    )
 
 
 def test_run_command_warns_for_docker_run_without_env_forwarding(
@@ -98,11 +111,10 @@ def test_run_command_warns_for_docker_run_without_env_forwarding(
     )
 
     monkeypatch.setattr(run_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: object())
     monkeypatch.setattr(
         run_service,
-        "resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
+        "resolve_projectable_environment",
+        lambda _context, *, active_profile, group, operation: (object(), report),
     )
     monkeypatch.setattr(
         run_service.subprocess,
@@ -129,11 +141,10 @@ def test_run_command_warns_for_docker_container_run_without_env_forwarding(
     )
 
     monkeypatch.setattr(run_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: object())
     monkeypatch.setattr(
         run_service,
-        "resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
+        "resolve_projectable_environment",
+        lambda _context, *, active_profile, group, operation: (object(), report),
     )
     monkeypatch.setattr(
         run_service.subprocess,
@@ -163,11 +174,10 @@ def test_run_command_warns_for_docker_compose_run_without_env_forwarding(
     )
 
     monkeypatch.setattr(run_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: object())
     monkeypatch.setattr(
         run_service,
-        "resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
+        "resolve_projectable_environment",
+        lambda _context, *, active_profile, group, operation: (object(), report),
     )
     monkeypatch.setattr(
         run_service.subprocess,
@@ -175,10 +185,7 @@ def test_run_command_warns_for_docker_compose_run_without_env_forwarding(
         lambda command, check=False, env=None: CompletedProcess(args=command, returncode=0),
     )
 
-    _context, result = run_service.run_command(
-        ["docker", "compose", "run", "app"],
-        "dev",
-    )
+    _context, result = run_service.run_command(["docker", "compose", "run", "app"], "dev")
 
     assert result.warnings == (
         "envctl injected the resolved environment into the host-side docker process, not "
@@ -208,11 +215,10 @@ def test_run_command_warns_when_docker_env_forwarding_is_partial(
     )
 
     monkeypatch.setattr(run_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: object())
     monkeypatch.setattr(
         run_service,
-        "resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
+        "resolve_projectable_environment",
+        lambda _context, *, active_profile, group, operation: (object(), report),
     )
     monkeypatch.setattr(
         run_service.subprocess,
@@ -248,11 +254,10 @@ def test_run_command_skips_warning_when_docker_env_file_is_used(
     )
 
     monkeypatch.setattr(run_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: object())
     monkeypatch.setattr(
         run_service,
-        "resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
+        "resolve_projectable_environment",
+        lambda _context, *, active_profile, group, operation: (object(), report),
     )
     monkeypatch.setattr(
         run_service.subprocess,
@@ -292,11 +297,10 @@ def test_run_command_injects_only_selected_group_values(
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(run_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(run_service, "load_contract_for_context", lambda _context: contract)
     monkeypatch.setattr(
         run_service,
-        "resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
+        "resolve_projectable_environment",
+        lambda _context, *, active_profile, group, operation: (contract, report),
     )
 
     def fake_run(

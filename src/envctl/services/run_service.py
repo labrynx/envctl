@@ -7,16 +7,12 @@ import subprocess
 
 from envctl.domain.operations import RunCommandResult
 from envctl.domain.project import ProjectContext
-from envctl.errors import ExecutionError, ValidationError
+from envctl.errors import ExecutionError
 from envctl.services.context_service import load_project_context
 from envctl.services.group_selection_service import (
     filter_projection_values,
-    filter_resolution_report,
 )
-from envctl.services.resolution_service import (
-    load_contract_for_context,
-    resolve_environment,
-)
+from envctl.services.projection_validation import resolve_projectable_environment
 from envctl.utils.project_paths import normalize_profile_name
 
 
@@ -95,15 +91,12 @@ def run_command(
     _config, context = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
 
-    contract = load_contract_for_context(context)
-    report = resolve_environment(context, contract, active_profile=resolved_profile)
-    filtered_report = filter_resolution_report(report, contract, group=group)
-
-    if not filtered_report.is_valid:
-        raise ValidationError("Environment contract is not satisfied")
-
-    if filtered_report.unknown_keys:
-        raise ValidationError("Vault contains unknown keys")
+    contract, report = resolve_projectable_environment(
+        context,
+        active_profile=resolved_profile,
+        group=group,
+        operation="run",
+    )
 
     resolved_values = filter_projection_values(
         {key: item.value for key, item in report.values.items()},

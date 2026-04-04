@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from io import StringIO
 from urllib.parse import urlparse
 
-from envctl.adapters.process_environment import ProcessEnvironmentProvider
 from envctl.domain.contract import Contract, VariableSpec
 from envctl.domain.expansion import (
     MAX_EXPANSION_DEPTH,
@@ -26,10 +25,7 @@ from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport, ResolvedValue
 from envctl.repository.contract_repository import load_contract
 from envctl.repository.profile_repository import load_profile_values
-from envctl.utils.project_paths import (
-    is_local_profile,
-    normalize_profile_name,
-)
+from envctl.utils.project_paths import is_local_profile, normalize_profile_name
 
 
 @dataclass(frozen=True)
@@ -216,9 +212,7 @@ def _resolve_placeholder_value(
     *,
     contract: Contract,
     selected_values: dict[str, _SelectedValue],
-    expanded: dict[str, ExpansionResult],
     derived_sensitive: dict[str, bool],
-    external_provider: ProcessEnvironmentProvider,
     resolve_key: Callable[[str, int], ExpansionResult],
     current_key: str,
     placeholder_name: str,
@@ -226,38 +220,7 @@ def _resolve_placeholder_value(
     depth: int,
 ) -> tuple[str | None, ExpansionResult | None, bool]:
     """Resolve one placeholder to a string or an error result."""
-    if placeholder_name in contract.variables:
-        referenced = selected_values.get(placeholder_name)
-        if referenced is None:
-            return (
-                None,
-                _make_expansion_error_result(
-                    value=selected_values[current_key].raw_value,
-                    kind="reference_resolution_error",
-                    detail=f"Missing value for referenced key '{placeholder_name}'",
-                    refs=tuple(refs),
-                ),
-                False,
-            )
-
-        nested = resolve_key(placeholder_name, depth + 1)
-        if nested.error is not None:
-            return (
-                None,
-                ExpansionResult(
-                    value=selected_values[current_key].raw_value,
-                    status="error",
-                    refs=tuple(refs + list(nested.refs)),
-                    error=nested.error,
-                ),
-                False,
-            )
-
-        inherited_sensitive = referenced.masked or derived_sensitive.get(placeholder_name, False)
-        return nested.value, None, inherited_sensitive
-
-    external_value = external_provider.get(placeholder_name)
-    if external_value is None:
+    if placeholder_name not in contract.variables:
         return (
             None,
             _make_expansion_error_result(
@@ -269,7 +232,37 @@ def _resolve_placeholder_value(
             False,
         )
 
-    return external_value, None, False
+    referenced = selected_values.get(placeholder_name)
+    if referenced is None:
+        return (
+            None,
+            _make_expansion_error_result(
+                value=selected_values[current_key].raw_value,
+                kind="reference_resolution_error",
+                detail=f"Missing value for referenced key '{placeholder_name}'",
+                refs=tuple(refs),
+            ),
+            False,
+        )
+
+    nested = resolve_key(placeholder_name, depth + 1)
+    if nested.error is not None:
+        return (
+            None,
+            ExpansionResult(
+                value=selected_values[current_key].raw_value,
+                status="error",
+                refs=tuple(refs + list(nested.refs)),
+                error=nested.error,
+            ),
+            False,
+        )
+
+    inherited_sensitive = referenced.masked or derived_sensitive.get(
+        placeholder_name,
+        False,
+    )
+    return nested.value, None, inherited_sensitive
 
 
 def _get_cached_or_guarded_result(
@@ -317,7 +310,6 @@ def _expand_segments(
     selected_values: dict[str, _SelectedValue],
     expanded: dict[str, ExpansionResult],
     derived_sensitive: dict[str, bool],
-    external_provider: ProcessEnvironmentProvider,
     resolve_key: Callable[[str, int], ExpansionResult],
     depth: int,
 ) -> tuple[ExpansionResult, bool]:
@@ -335,9 +327,7 @@ def _expand_segments(
         resolved_value, error_result, is_sensitive = _resolve_placeholder_value(
             contract=contract,
             selected_values=selected_values,
-            expanded=expanded,
             derived_sensitive=derived_sensitive,
-            external_provider=external_provider,
             resolve_key=resolve_key,
             current_key=current_key,
             placeholder_name=segment.name,
@@ -359,8 +349,6 @@ def _expand_segments(
 def _expand_selected_values(
     contract: Contract,
     selected_values: dict[str, _SelectedValue],
-    *,
-    external_provider: ProcessEnvironmentProvider,
 ) -> tuple[dict[str, ExpansionResult], dict[str, bool]]:
     """Expand all selected values using contract-aware references."""
     states: dict[str, str] = {key: "unvisited" for key in selected_values}
@@ -405,7 +393,6 @@ def _expand_selected_values(
             selected_values=selected_values,
             expanded=expanded,
             derived_sensitive=derived_sensitive,
-            external_provider=external_provider,
             resolve_key=resolve_key,
             depth=depth,
         )
@@ -477,7 +464,6 @@ def resolve_environment(
     expansion_results, derived_sensitive = _expand_selected_values(
         contract,
         selected_values,
-        external_provider=ProcessEnvironmentProvider(),
     )
 
     values: dict[str, ResolvedValue] = {}
