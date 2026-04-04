@@ -38,10 +38,6 @@ class ValidationError(EnvctlError):
     """Raised when resolved values do not satisfy the contract."""
 
 
-class ResolutionError(EnvctlError):
-    """Raised when environment resolution fails."""
-
-
 class ExecutionError(EnvctlError):
     """Raised when command execution fails."""
 

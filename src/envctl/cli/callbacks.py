@@ -7,7 +7,7 @@ import typer
 from envctl import __version__
 
 
-def version_callback(value: bool) -> None:
+def version_callback(value: bool | None) -> None:
     """Print the version and exit."""
     if value:
         typer.echo(f"envctl {__version__}")

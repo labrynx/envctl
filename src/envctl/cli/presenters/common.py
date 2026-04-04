@@ -34,16 +34,6 @@ def print_bullet_list(items: Iterable[str]) -> None:
         typer.echo(f"  - {item}")
 
 
-def print_status_line(label: str, value: str) -> None:
-    """Print one status-like key/value line."""
-    print_kv_line(label, value)
-
-
-def render_yes_no(value: bool) -> str:
-    """Render one boolean as yes/no."""
-    return "yes" if value else "no"
-
-
 def render_present_missing(value: bool) -> str:
     """Render one boolean as present/missing."""
     return "present" if value else "missing"

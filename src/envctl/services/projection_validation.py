@@ -6,14 +6,12 @@ from envctl.domain.contract import Contract
 from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport
 from envctl.errors import ValidationError
-from envctl.services.context_service import load_project_context
 from envctl.services.error_diagnostics import (
     ProjectionOperation,
     ProjectionValidationDiagnostics,
 )
 from envctl.services.group_selection_service import filter_resolution_report
 from envctl.services.resolution_service import load_contract_for_context, resolve_environment
-from envctl.utils.project_paths import normalize_profile_name
 
 
 def resolve_projectable_environment(
@@ -44,24 +42,6 @@ def resolve_projectable_environment(
             suggested_actions=_build_suggested_actions(filtered_report),
         ),
     )
-
-
-def validate_projection_request(
-    active_profile: str | None = None,
-    *,
-    group: str | None,
-    operation: ProjectionOperation,
-) -> tuple[ProjectContext, str]:
-    """Validate one projection command request without performing the projection."""
-    _config, context = load_project_context()
-    resolved_profile = normalize_profile_name(active_profile)
-    resolve_projectable_environment(
-        context,
-        active_profile=resolved_profile,
-        group=group,
-        operation=operation,
-    )
-    return context, resolved_profile
 
 
 def _build_projection_blocked_message(operation: ProjectionOperation) -> str:

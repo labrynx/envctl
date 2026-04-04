@@ -55,12 +55,6 @@ def print_list(title: str, items: list[str]) -> None:
         typer.echo(f"  - {item}")
 
 
-def print_block(lines: list[str]) -> None:
-    """Print a block of lines."""
-    for line in lines:
-        typer.echo(line)
-
-
 # -----------------------------------------
 # Composite helpers
 # -----------------------------------------
