@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 import envctl.cli.commands.sync.command as sync_command_module
 
 
 def test_sync_command_calls_service_with_default_output_path(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, object] = {}
 
@@ -38,7 +40,7 @@ def test_sync_command_calls_service_with_default_output_path(
 
 
 def test_sync_command_passes_custom_output_path(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, object] = {}
     output_path = Path("/tmp/custom.env")

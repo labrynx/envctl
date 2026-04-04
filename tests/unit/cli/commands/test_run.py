@@ -10,6 +10,8 @@ import envctl.cli.commands.run.command as run_command_module
 from envctl.cli.commands.run import run_command_cli
 from envctl.domain.operations import RunCommandResult
 from envctl.domain.runtime import RuntimeMode
+from envctl.errors import ExecutionError
+from tests.support.callables import unwrap_callable
 
 
 def test_run_command_exits_with_child_return_code(
@@ -45,6 +47,7 @@ def test_run_command_rejects_json_mode(
 ) -> None:
     captured: dict[str, Any] = {}
 
+    monkeypatch.setattr(run_command_module, "is_json_output", lambda: True)
     monkeypatch.setattr(
         "envctl.cli.decorators.is_json_output",
         lambda: True,
@@ -71,6 +74,27 @@ def test_run_command_rejects_json_mode(
             "message": "JSON output is not supported for 'run' yet.",
         },
     }
+
+
+def test_run_command_json_mode_does_not_call_run_service(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(run_command_module, "is_json_output", lambda: True)
+    monkeypatch.setattr(
+        run_command_module,
+        "run_command",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("run_command should not be called")
+        ),
+    )
+
+    wrapped = unwrap_callable(run_command_cli)
+
+    with pytest.raises(
+        ExecutionError,
+        match="JSON output is not supported for 'run' yet.",
+    ):
+        wrapped(["python", "-V"])
 
 
 def test_run_command_is_allowed_in_ci_mode(
