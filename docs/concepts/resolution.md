@@ -58,17 +58,21 @@ That means:
 
 When `envctl` resolves `${VAR}`:
 
-* if `VAR` is a declared envctl key, that key is resolved first
-* otherwise `envctl` falls back to the current process environment
-* if neither source provides a value, resolution becomes invalid
+* `VAR` must be a declared envctl contract key
+* the referenced key is resolved through the same contract-aware resolution pipeline
+* if the referenced key has no selected value, resolution becomes invalid
+* if the placeholder is unknown to the contract, resolution becomes invalid
+
+This is deliberate.
+
+Placeholder expansion is **contract-only**. `envctl` does **not** fall back to arbitrary host process variables during placeholder resolution.
+
+That means expressions such as `${HOME}` are only valid if `HOME` is explicitly declared in the contract.
 
 Optional contract `group` labels do not change this behavior. A targeted command such as
 `envctl --group Application export --format dotenv` may still resolve `${VAR}` references to
 variables declared in other groups. Group selection affects which variables are targeted for the
 command output, not how references are resolved.
-
-`${HOME}` is not a special built-in rule. It works because `HOME` usually exists in the current
-process environment.
 
 ## Inputs
 
@@ -77,7 +81,7 @@ Resolution uses:
 * contract
 * active profile
 * local values
-* optional process environment
+* optional process environment overrides during selection
 
 These are the pieces that decide the final runtime view.
 
@@ -134,7 +138,7 @@ That behavior is deliberate. `envctl` does not silently invent values just to ma
 
 When resolution rules are clear, debugging gets easier.
 
-You do not have to wonder whether a profile inherited something invisibly, or whether a generated file quietly changed what the app sees. You can trace the result back through a small, visible set of inputs.
+You do not have to wonder whether a profile inherited something invisibly, whether a generated file quietly changed what the app sees, or whether a host machine variable leaked into placeholder expansion unexpectedly. You can trace the result back through a small, visible set of inputs.
 
 That makes the system easier to trust and easier to explain.
 

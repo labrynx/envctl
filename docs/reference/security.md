@@ -12,14 +12,14 @@ The security posture of `envctl` is intentionally simple and explicit.
 
 Core principles:
 
-- secrets stay outside repositories
-- project contracts do not contain secret values
-- read-only commands do not mutate local state
-- projection is explicit, not hidden
-- generated files are artifacts, not sources of truth
-- dangerous overwrites stay visible and controlled
-- contract mutations are explicit and reviewable
-- profile selection stays explicit and inspectable
+* secrets stay outside repositories
+* project contracts do not contain secret values
+* read-only commands do not mutate local state
+* projection is explicit, not hidden
+* generated files are artifacts, not sources of truth
+* dangerous overwrites stay visible and controlled
+* contract mutations are explicit and reviewable
+* profile selection stays explicit and inspectable
 
 In other words, `envctl` tries to reduce accidental mistakes more than it tries to hide complexity behind magic.
 
@@ -27,30 +27,60 @@ In other words, `envctl` tries to reduce accidental mistakes more than it tries 
 
 A lot of `envctl`’s security story comes from the way it separates concerns:
 
-- **contract**: what variables the project needs
-- **storage**: where real values live
-- **profiles**: which local value set is active
-- **resolution**: how values are selected and validated
-- **projection**: how the resolved environment is exposed to tools
+* **contract**: what variables the project needs
+* **storage**: where real values live
+* **profiles**: which local value set is active
+* **resolution**: how values are selected and validated
+* **projection**: how the resolved environment is exposed to tools
 
 In practice, that means:
 
-- `.envctl.schema.yaml` describes requirements only
-- local provider state stores real values
-- profiles organize stored values explicitly
-- `check` validates but does not invent values
-- `run`, `sync`, and `export` expose already-resolved state
+* `.envctl.schema.yaml` describes requirements only
+* local provider state stores real values
+* profiles organize stored values explicitly
+* `check` validates but does not invent values
+* `run`, `sync`, and `export` expose already-resolved state
 
 That separation reduces confusion and avoids competing sources of truth.
+
+## Placeholder expansion guarantees
+
+`envctl` enforces a strict rule for placeholder expansion:
+
+* `${VAR}` is only resolved if `VAR` is declared in the contract
+* unknown placeholders are treated as errors
+* no implicit fallback to host process variables is performed during expansion
+
+This means that expressions such as:
+
+```text
+CACHE_DIR=${HOME}/.cache/demo
+```
+
+are invalid unless `HOME` is explicitly declared in the contract.
+
+This is intentional and part of the security model.
+
+It prevents:
+
+* accidental dependency on host-specific variables
+* environment drift between machines
+* implicit leakage of host environment context into resolved application environments
+
+This guarantees that resolution is deterministic across machines.
+
+In short:
+
+> placeholder expansion is explicit, contract-driven, and deterministic
 
 ## Mutation safety
 
 `envctl` also makes an important distinction between **contract mutation** and **value mutation**.
 
-- `add` writes contract + active-profile value
-- `set` writes active-profile value only
-- `unset` removes active-profile value only
-- `remove` removes contract + all persisted profile values
+* `add` writes contract + active-profile value
+* `set` writes active-profile value only
+* `unset` removes active-profile value only
+* `remove` removes contract + all persisted profile values
 
 This matters for security and correctness because it keeps shared project requirements separate from machine-local values.
 

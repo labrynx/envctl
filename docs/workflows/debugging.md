@@ -22,6 +22,15 @@ This tells you whether the resolved environment satisfies the contract.
 
 If `check` fails, you know the problem is real at the contract level, not just a vague runtime symptom.
 
+If `run`, `sync`, or `export` fail first, those commands now show the blocked projection keys directly, but `check` is still the best full pass/fail overview.
+
+If `check`, `status`, or even the global CLI callback fail before resolution, `envctl` now also surfaces structured diagnostics for common setup problems such as:
+
+* invalid contracts
+* invalid config files or runtime mode settings
+* corrupted vault state
+* ambiguous or broken project binding
+
 ## Step 3: inspect the resolved state
 
 ```bash
@@ -35,6 +44,7 @@ This helps answer questions like:
 * which values are actually being used?
 * is a default being applied?
 * is a value missing from the active profile?
+* did one placeholder reference make the value invalid?
 
 ## Step 4: explain one key
 
@@ -43,6 +53,8 @@ envctl explain KEY
 ```
 
 Once the problem narrows down to one variable, `explain` is usually the fastest way to understand it.
+
+That is especially useful after a projection failure points at one invalid or expanded key.
 
 ## Step 5: inspect stored vault values
 
@@ -53,6 +65,34 @@ envctl vault show
 Use this when you need to see the physical stored values in the current profile file.
 
 This is lower-level than `inspect`, so it helps when the question is not “what is the runtime result?” but “what is actually stored on disk?”
+
+## Common expansion pitfall
+
+`envctl` expands `${VAR}` references only for variables declared in the contract.
+
+That means a value like:
+
+```text
+CACHE_DIR=${HOME}/.cache/demo
+```
+
+is invalid unless `HOME` is also a declared contract key.
+
+This is intentional. It prevents placeholder expansion from silently depending on whatever host variables happen to exist in the current machine or shell session.
+
+If you want to use a variable in `${VAR}` form, declare it in the contract first.
+
+## Structured error hints
+
+When `envctl` can classify a failure, the CLI now prints a short summary, concrete facts such as `path`, `field`, `key`, or `project_id`, and compact next steps.
+
+That means you can usually tell apart:
+
+* contract authoring problems
+* config file problems
+* persisted state corruption
+* repository discovery or binding problems
+* projection validation failures
 
 ## Rule of thumb
 

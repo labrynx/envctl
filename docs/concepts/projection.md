@@ -4,7 +4,8 @@ Projection is the part of `envctl` that makes the resolved environment usable.
 
 By the time projection happens, the important work has already been done: the contract has been read, the active profile has been selected, values have been resolved, and validation has happened.
 
-That also means any supported `${VAR}` placeholders have already been expanded.
+That also means any valid contract-declared `${VAR}` placeholders have already been expanded.
+Unknown or invalid placeholder references block projection earlier during resolution.
 
 Projection is simply how that resolved state is exposed to another tool.
 

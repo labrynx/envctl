@@ -9,7 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+* Placeholder expansion semantics during resolution:
+
+  * `${VAR}` expansion is now contract-only
+  * unknown placeholders no longer fall back to the host process environment
+  * expressions such as `${HOME}` now fail unless `HOME` is declared in the contract
+  * keeps resolution deterministic and aligned with envctl's contract-first model
+
+* CLI projection command behavior:
+
+  * `run` and `export` now reject JSON mode before any projection work is attempted
+  * clarifies that JSON output is not currently supported for those commands
+  * avoids partially-coupled command-layer validation seams
+
 ### Added
+
+* Projection failure diagnostics:
+
+  * `run`, `sync`, and `export` now explain which filtered keys blocked projection
+  * projection failures now report missing required keys, invalid keys with details, and unknown keys relative to the active contract
+  * structured JSON errors for projection validation now include machine-readable diagnostics and suggested next steps
+
+* Structured diagnostics for setup and recovery failures:
+
+  * contract loading errors now carry typed diagnostics and render actionable path- and field-aware failures
+  * config loading and config-init collisions now surface structured categories such as invalid JSON, unsupported keys, invalid runtime mode, and existing config file
+  * persisted state and project binding failures now render structured diagnostics for corrupted state, unsupported versions, ambiguous vault identity, invalid bound ids, and missing bound vaults
+  * CLI JSON errors now add machine-readable `error.details` only for supported structured families while keeping the existing envelope stable
 
 * Optional contract variable groups:
 
@@ -30,6 +58,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * clarified documentation that `run` injects the resolved environment into the immediate subprocess
   only, and that Docker container workflows still require explicit env forwarding
 
+### Fixed
+
+* Resolution and expansion consistency:
+
+  * aligned tests and runtime behavior around contract-only placeholder resolution
+  * unknown placeholder references now surface stable expansion reference errors
+  * expansion no longer depends implicitly on ambient host environment variables
+
+* Typing and diagnostics hygiene:
+
+  * tightened serializer typing for structured CLI error payloads
+  * fixed contract repository normalization typing and non-returning error helpers
+  * corrected repository discovery diagnostic category typing
+  
 ---
 
 ## [2.3.3] – 2026-04-02

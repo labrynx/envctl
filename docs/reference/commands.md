@@ -172,6 +172,7 @@ Behavior:
 
 * validates the resolved environment
 * validates placeholder expansion and reference errors
+* placeholder expansion is contract-only: unknown `${VAR}` references are invalid
 * validates semantic string formats when declared in the contract (`format`)
 * `--group LABEL` validates only targeted contract variables while still allowing their references to resolve through other declared variables when needed
 * exits non-zero on failure
@@ -222,9 +223,13 @@ Behavior:
 * uses the final expanded values
 * affects the immediate subprocess only
 * `--group LABEL` injects only targeted contract variables
+* placeholder expansion remains contract-only even when process environment overrides participate in selection
+* when projection is blocked, explains the filtered missing, invalid, or unknown keys and suggests next debugging steps
 * fails fast if the selected explicit profile does not exist
 
 Use `run` when the target tool can receive environment variables directly and you do not want to create `.env.local`.
+
+If `run` cannot project the environment safely, prefer `envctl check` for the full report and `envctl explain KEY` for one confusing key.
 
 For `docker run` and `docker compose run`, Docker does not inherit the full host process environment into the container automatically. Forward required variables explicitly with `-e`, `--env`, or `--env-file`. For container workflows, prefer an explicit env-file handoff such as `docker run --env-file <(envctl export --format dotenv) my-image`.
 
@@ -241,6 +246,8 @@ Behavior:
 * writes the final expanded values, not the original `${...}` expressions
 * writes `.env.<profile>` for named profiles
 * `--output PATH` writes the generated dotenv file to an explicit location instead
+* unknown contract-missing placeholder references block projection before any file is written
+* when projection is blocked, explains the filtered missing, invalid, or unknown keys and suggests next debugging steps
 * fails fast if the selected explicit profile does not exist
 
 Use `sync` when another tool requires an env file on disk.
@@ -259,6 +266,8 @@ Behavior:
 * `--format shell` matches the default output
 * `--format dotenv` prints dotenv `KEY=value` lines to stdout
 * prints the final expanded values
+* placeholder expansion is contract-only and does not read undeclared host variables
+* when projection is blocked, explains the filtered missing, invalid, or unknown keys and suggests next debugging steps
 * fails fast if the selected explicit profile does not exist
 
 Use `export` for shell-oriented workflows.
@@ -273,9 +282,12 @@ Behavior:
 
 * shows a readiness summary
 * shows the active profile
+* surfaces structured diagnostics when config, contract loading, persisted state, or project binding recovery fail before readiness can be computed
 * fails fast if the selected explicit profile does not exist
 
 Use `status` when you want a quick view of what is ready and what still needs attention.
+
+Across commands, when `envctl` can classify a failure it now preserves a stable machine-readable JSON envelope and adds structured `error.details` only for supported error families such as projection validation, contract loading, config loading, persisted state, and project binding or repository discovery.
 
 ### `doctor`
 
