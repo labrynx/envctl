@@ -4,8 +4,6 @@ Resolution is how `envctl` answers the question:
 
 > “What values does the application actually receive?”
 
-That is the point where the contract, the active profile, and any process environment overrides come together.
-
 If the contract describes what should exist, and the vault stores what is available locally, resolution is the step that decides what finally counts at runtime.
 
 ## Resolution pipeline
@@ -33,12 +31,13 @@ selection
 The effective order is:
 
 ```text
-process environment
--> active profile values
+active profile values
 -> contract defaults
 ```
 
-In other words, the environment already present in the current process takes priority. If a value is not provided there, `envctl` looks at the active profile. If it is still missing, it can fall back to a non-sensitive default from the contract.
+In other words, `envctl` first looks at the active profile. If a value is not provided there, it can fall back to a default declared in the contract.
+
+Arbitrary host process variables do not participate in selection.
 
 ## Expansion
 
@@ -81,7 +80,7 @@ Resolution uses:
 * contract
 * active profile
 * local values
-* optional process environment overrides during selection
+* contract defaults
 
 These are the pieces that decide the final runtime view.
 
@@ -138,7 +137,7 @@ That behavior is deliberate. `envctl` does not silently invent values just to ma
 
 When resolution rules are clear, debugging gets easier.
 
-You do not have to wonder whether a profile inherited something invisibly, whether a generated file quietly changed what the app sees, or whether a host machine variable leaked into placeholder expansion unexpectedly. You can trace the result back through a small, visible set of inputs.
+You do not have to wonder whether a profile inherited something invisibly, whether a generated file quietly changed what the app sees, or whether a host machine variable leaked into resolution unexpectedly. You can trace the result back through a small, visible set of contract-defined inputs.
 
 That makes the system easier to trust and easier to explain.
 

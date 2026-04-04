@@ -77,12 +77,11 @@ Resolution is how `envctl` decides what value each variable gets at runtime.
 The effective order is:
 
 ```text
-process environment
--> active profile values
+active profile values
 -> contract defaults
 ```
 
-That means the current process environment can override the active profile, and the contract can still provide non-sensitive defaults if no explicit value is set.
+That means the active profile provides explicit values first, and the contract can still provide non-sensitive defaults if no explicit value is set.
 
 There is no hidden profile inheritance. The rules are meant to stay visible and easy to trace.
 

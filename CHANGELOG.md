@@ -9,14 +9,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [2.3.3] – 2026-04-04
+
 ### Changed
 
-* Placeholder expansion semantics during resolution:
+* Placeholder expansion and resolution semantics:
 
-  * `${VAR}` expansion is now contract-only
-  * unknown placeholders no longer fall back to the host process environment
-  * expressions such as `${HOME}` now fail unless `HOME` is declared in the contract
-  * keeps resolution deterministic and aligned with envctl's contract-first model
+  * `${VAR}` expansion is now strictly contract-only
+  * unknown placeholders no longer fall back to the host or process environment
+  * expressions such as `${HOME}` now fail unless `HOME` is explicitly declared in the contract
+  * resolution no longer treats ambient system variables as implicit overrides
+  * keeps resolution deterministic, system-agnostic, and aligned with envctl's contract-first model
+
+* Documentation and product model alignment:
+
+  * updated README, concepts, commands, and security docs to remove references to implicit process-environment fallback
+  * clarified that placeholder expansion is resolved only through declared contract keys
+  * clarified that host variables only participate when explicitly provided to the subprocess environment, for example `HOME=\${HOME} envctl run -- ...`
+  * strengthened wording around deterministic, cross-machine-safe resolution behavior
+
+* Internal architecture for resolution:
+
+  * refactored resolution logic into a dedicated `services/resolution_service/` package
+  * separated responsibilities across selection, expansion, validation, resolved-value building, and orchestration
+  * removed selection/validation mixing from the old implementation
+  * preserved a small public API while moving implementation details into focused internal modules
+
+* Internal architecture for project context handling:
+
+  * refactored project-context logic into a dedicated `repository/project_context/` package
+  * separated responsibilities across context building, binding persistence, identity generation, vault discovery, and recovery
+  * made the public package surface narrower and clearer while keeping orchestration logic explicit
+
+* CLI serialization architecture:
+
+  * split the previous monolithic CLI serializer module into focused serializer modules for:
+    * common JSON helpers
+    * project context
+    * resolution payloads
+    * status payloads
+    * doctor payloads
+    * structured diagnostics
+    * error envelopes
+  * keeps the public serializer import surface stable while reducing file-level coupling
 
 * CLI projection command behavior:
 
@@ -62,16 +99,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Resolution and expansion consistency:
 
-  * aligned tests and runtime behavior around contract-only placeholder resolution
+  * aligned runtime behavior, tests, and documentation around strict contract-only placeholder resolution
   * unknown placeholder references now surface stable expansion reference errors
   * expansion no longer depends implicitly on ambient host environment variables
+  * resolved expansion uses declared envctl values consistently, including recursive references and empty-reference cases
+
+* Refactor-related test seams:
+
+  * updated unit and integration tests to patch the real implementation modules instead of legacy package-level facades
+  * corrected profile-loading test helpers after the resolution-service package split
+  * corrected project-context tests after moving context logic into repository submodules
+  * keeps tests aligned with the new internal architecture instead of the previous flat module layout
 
 * Typing and diagnostics hygiene:
 
   * tightened serializer typing for structured CLI error payloads
-  * fixed contract repository normalization typing and non-returning error helpers
+  * fixed callback typing for `--version` handling
   * corrected repository discovery diagnostic category typing
-  
+  * cleaned up internal module boundaries to avoid leaking implementation details through public package exports
+
 ---
 
 ## [2.3.3] – 2026-04-02

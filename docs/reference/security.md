@@ -49,7 +49,10 @@ That separation reduces confusion and avoids competing sources of truth.
 
 * `${VAR}` is only resolved if `VAR` is declared in the contract
 * unknown placeholders are treated as errors
-* no implicit fallback to host process variables is performed during expansion
+* no implicit fallback to host process variables is performed during selection or expansion
+
+Resolution is based on contract-declared keys, active-profile values, and contract defaults only.
+Arbitrary host environment variables are not part of the resolved model.
 
 This means that expressions such as:
 

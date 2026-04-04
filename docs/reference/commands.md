@@ -222,8 +222,9 @@ Behavior:
 * injects the resolved environment in memory into the subprocess
 * uses the final expanded values
 * affects the immediate subprocess only
+* only contract-declared keys are resolved and projected
 * `--group LABEL` injects only targeted contract variables
-* placeholder expansion remains contract-only even when process environment overrides participate in selection
+* placeholder expansion remains contract-only and does not read undeclared host variables
 * when projection is blocked, explains the filtered missing, invalid, or unknown keys and suggests next debugging steps
 * fails fast if the selected explicit profile does not exist
 

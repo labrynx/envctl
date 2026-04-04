@@ -171,15 +171,15 @@ Rules:
 
 * only `${VAR}` is supported in v1
 * `$VAR` stays literal
-* if `VAR` is a declared envctl key, envctl resolves that key first
-* otherwise envctl falls back to the current process environment
-* `${HOME}` works when `HOME` exists in the current process environment
+* `VAR` must be a declared envctl contract key
+* placeholder expansion is contract-only
+* `${HOME}` is valid only if `HOME` is explicitly declared in the contract
 * malformed placeholders or unresolved references make resolution invalid
 
 Compatibility notes:
 
 * before this feature, `${HOME}` stayed literal
-* now `${HOME}` is expanded during resolution
+* now `${HOME}` is expanded only when `HOME` is declared in the contract and resolved through envctl
 * `${...}` literal escaping is not supported in v1
 
 ## Optional groups
