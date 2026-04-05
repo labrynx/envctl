@@ -25,7 +25,7 @@ In other words, `envctl` tries to reduce accidental mistakes more than it tries 
 
 ## The security value of the model itself
 
-A lot of `envctl`’s security story comes from the way it separates concerns:
+A lot of `envctl`'s security story comes from the way it separates concerns:
 
 * **contract**: what variables the project needs
 * **storage**: where real values live
@@ -42,6 +42,38 @@ In practice, that means:
 * `run`, `sync`, and `export` expose already-resolved state
 
 That separation reduces confusion and avoids competing sources of truth.
+
+## Encryption at rest
+
+`envctl` supports optional symmetric encryption of vault profile files.
+
+When enabled, every vault file is stored as an AES-128-CBC + HMAC-SHA256 Fernet
+token rather than plain dotenv text.  The encryption layer is transparent — all
+commands work identically regardless of whether encryption is active.
+
+Key properties:
+
+* Algorithm: Fernet (AES-128-CBC + HMAC-SHA256)
+* Key: 32 random bytes, stored in `<vault_dir>/master.key` with mode `0400`
+* IV: randomly generated per write — no two encryptions of the same content
+  produce the same ciphertext
+* Integrity: HMAC-SHA256 — tampering and wrong-key access are both detected
+
+Enable via `~/.config/envctl/config.json`:
+
+```json
+{
+  "encryption": { "enabled": true }
+}
+```
+
+Then migrate existing files:
+
+```bash
+envctl vault encrypt
+```
+
+See [Encryption Reference](encryption.md) for full details.
 
 ## Placeholder expansion guarantees
 
@@ -152,6 +184,7 @@ Typical protections include:
 * user-owned local paths
 * explicit write operations through commands such as `add`, `set`, `unset`, and `fill`
 * idempotent value roundtrips for untouched keys during profile rewrites
+* optional Fernet encryption at rest (see above)
 
 Permissions are applied on a best-effort basis and depend on the filesystem underneath.
 
@@ -167,11 +200,12 @@ That means:
 
 * `dev`, `staging`, and `ci` are names for local value sets
 * switching profile changes which local values are resolved
-* profiles do not provide encryption
 * profiles do not provide privilege separation
 * profiles do not enforce environment-specific policy on their own
 
 The safety value of profiles is clarity, not isolation.
+
+Encryption, when enabled, protects all profiles uniformly under a single key.
 
 ## Projection security rules
 
@@ -190,6 +224,7 @@ Projection commands should remain explicit.
 * makes it visible that the file is generated
 * should follow safe overwrite rules
 * `--output PATH` can write resolved secrets to arbitrary filesystem locations
+* the generated file is **not** encrypted — it is a plaintext artifact
 
 ### `envctl export`
 
@@ -260,6 +295,7 @@ It is:
 * derived from resolved state
 * not the source of truth
 * safe to regenerate
+* **always plaintext** — encryption applies only to vault files, not sync output
 
 This helps avoid confusion between stored secrets, declared contract, and materialized outputs.
 
@@ -269,12 +305,13 @@ This helps avoid confusion between stored secrets, declared contract, and materi
 
 Current limitations include:
 
-* no encryption at rest in the core model
 * no OS keyring integration by default
 * no remote access-control model
 * no protection against a compromised local account
-* no guarantee against exposure on insecure filesystems
+* no guarantee against exposure on insecure filesystems when encryption is disabled
 * no security isolation between profiles beyond explicit separation of values
+* encryption does not protect values in memory or in `sync`-generated files
+* loss of `master.key` means encrypted vault data is unrecoverable
 
 These are part of the intended scope. They are not hidden surprises.
 
@@ -286,6 +323,7 @@ That includes:
 
 * keeping the local account secure
 * storing the vault in a private location
+* backing up `master.key` if encryption is enabled
 * avoiding shared or insecure filesystems
 * keeping generated env artifacts out of version control
 * keeping project contracts free of secrets
@@ -299,8 +337,8 @@ That includes:
 
 Future improvements may include:
 
-* optional provider integrations
-* optional encryption helpers outside the core model
+* OS keyring integration as an alternative key storage backend
+* passphrase-derived keys (PBKDF2 / Argon2id) for vault portability without a key file
 * richer diagnostics for insecure local setups
 * better shell-specific safety around exports
 * more explicit machine-readable validation output
@@ -321,3 +359,6 @@ The security posture of `envctl` depends heavily on explicit separation:
 * projection
 
 That separation is not just an architecture choice. It is also one of the main safety properties of the tool.
+
+Optional encryption at rest adds a layer of protection against accidental disclosure
+without changing the model or the workflow.

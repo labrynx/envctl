@@ -1,6 +1,6 @@
 # envctl
 
-**Your `.env.local` files are undocumented, unvalidated, and drift between machines. envctl fixes that.**
+**Your `.env.local` files drift between machines, hide missing variables, and break when you least expect it. envctl fixes that.**
 
 [![CI](https://github.com/labrynx/envctl/actions/workflows/ci.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
@@ -8,27 +8,39 @@
 
 ---
 
-## What is this?
+## Why this exists
 
-Most projects handle `.env` files like this:
+Most projects handle environment variables in a messy way:
 
-* variables are not documented
-* values get copied between machines
-* something works locally… but breaks somewhere else
+- `.env.local` files are undocumented
+- values get copied between machines
+- something works locally until it suddenly does not
+- CI and local setups behave differently
+- nobody is fully sure which variables are required
 
-`envctl` gives you a simple structure to fix that.
+It works — until it breaks.
+
+`envctl` brings structure to this without turning environment setup into a second project.
+
+---
+
+## What is envctl?
+
+`envctl` is a local-first environment control plane built around a **contract-first model**.
 
 It separates three things that usually get mixed together:
 
-* **what the project needs** → defined in `.envctl.schema.yaml` (committed to the repo)
-* **what you have locally** → stored in a private vault (never in git)
-* **what actually runs** → a validated environment, built on demand
+- **what the project needs** → defined in `.envctl.schema.yaml` and committed to the repository
+- **what you have locally** → stored in a private local vault, outside git
+- **what actually runs** → a validated environment resolved when needed
 
-So you get:
+That gives you:
 
-* no secrets in git
-* no undocumented variables
-* no copy-pasting `.env` files
+- clear, documented variables
+- no secrets in git
+- fewer setup mistakes
+- more predictable local and team workflows
+- explicit validation before execution
 
 ---
 
@@ -36,7 +48,7 @@ So you get:
 
 ```bash
 pip install envctl
-```
+````
 
 Or from source:
 
@@ -51,162 +63,76 @@ pip install -e .
 ## Quickstart
 
 ```bash
-envctl config init      # create your local config
-envctl init             # initialize this repository
-envctl fill             # set missing values (interactive)
-envctl check            # validate against the contract
-envctl run -- python app.py  # run with env injected
+envctl config init
+envctl init
+envctl fill
+envctl check
+envctl run -- python app.py
 ```
 
-If you use `envctl run -- docker run ...`, `envctl` injects into the Docker client process, not directly into the container. Forward container variables explicitly with `-e`, `--env`, or `--env-file`.
+What this does:
+
+* `config init` creates your local envctl config
+* `init` connects the current repository to envctl
+* `fill` asks only for missing values
+* `check` validates the environment before you run anything
+* `run` injects a clean resolved environment into the child process
 
 ---
 
 ## Why not just `.env.local`?
 
-Because it doesn’t scale well.
+Because it does not scale cleanly.
 
-|                                | `.env.local`    | direnv       | Doppler / Infisical | **envctl**                 |
-| ------------------------------ | --------------- | ------------ | ------------------- | -------------------------- |
-| Documents what variables exist | ❌               | ❌            | Partial             | ✅ contract                 |
-| Type validation                | ❌               | ❌            | ❌                   | ✅                          |
-| Values stay off git            | ⚠️ easy to slip | ✅            | ✅ cloud             | ✅ local vault              |
-| Multiple environments          | manual files    | manual files | ✅                   | ✅ profiles                 |
-| No cloud account required      | ✅               | ✅            | ❌                   | ✅                          |
-| Works in CI without mutation   | ❌               | ❌            | ❌                   | ✅ `ENVCTL_RUNTIME_MODE=ci` |
+|                                | `.env.local` | direnv       | Doppler / Infisical | **envctl** |
+| ------------------------------ | ------------ | ------------ | ------------------- | ---------- |
+| Documents variables            | ❌            | ❌            | Partial             | ✅          |
+| Validates values               | ❌            | ❌            | ❌                   | ✅          |
+| Keeps secrets out of git       | ⚠️           | ✅            | ✅ cloud             | ✅ local    |
+| Supports multiple environments | manual files | manual files | ✅                   | ✅ profiles |
+| Works without cloud            | ✅            | ✅            | ❌                   | ✅          |
 
-`envctl` is not a secrets manager.
+`envctl` is **not** a cloud secrets manager.
 
-It’s a **local control plane** for your project’s environment:
+It is a way to make environment handling explicit, predictable, and local-first.
 
-> the contract says what’s needed, your machine provides values, and envctl makes them work together.
+> your repository defines what is needed, your machine provides the values, and envctl resolves the final environment.
+
+---
+
+## A typical workflow
+
+```bash
+# one developer adds a new requirement
+envctl add API_KEY sk-example
+git add .envctl.schema.yaml
+git commit -m "require API_KEY"
+
+# another developer pulls the change
+envctl check
+envctl fill
+envctl run -- python app.py
+```
+
+The contract is shared in git.
+The values stay local.
+The runtime environment is rebuilt consistently when needed.
 
 ---
 
 ## How it works
 
-There are five pieces, but the idea is simple:
+At a high level:
 
-* **contract** → defines what variables exist and their rules
-* **vault** → stores your real values locally
-* **profile** → selects a set of values (`local`, `dev`, `staging`, …)
-* **resolution** → combines everything in a deterministic way
-* **projection** → makes it usable (`run`, `sync`, `export`)
+* **contract** → defines which variables exist and how they should look
+* **vault** → stores the real local values
+* **profile** → selects which local value set to use (`local`, `dev`, `staging`, ...)
+* **resolution** → builds the final validated environment
+* **projection** → applies it through `run`, `sync`, or `export`
 
 Think of it like this:
 
-> the repo defines the rules, your machine provides the data, and envctl builds the final environment.
-
-Resolution now includes placeholder expansion as part of the runtime model, so `check`, `inspect`,
-`run`, `sync`, and `export` all see the same final value.
-
-Contracts can also attach an optional human-facing `group` label to variables for organization,
-filtering, and dotenv section rendering. `group` is not a namespace, is not hierarchical, and does
-not change resolution or dependency semantics.
-
----
-
-### Example contract
-
-```yaml
-# .envctl.schema.yaml — commit this
-version: 1
-variables:
-  DATABASE_URL:
-    type: url
-    required: true
-    sensitive: true
-    description: Primary database connection URL
-  PORT:
-    type: int
-    required: true
-    default: 3000
-    sensitive: false
-  DEBUG:
-    type: bool
-    required: false
-    default: false
-    sensitive: false
-  TEST_JSON:
-    type: string
-    format: json
-    required: false
-    sensitive: false
-  APP_URL:
-    type: string
-    required: true
-    sensitive: false
-    group: Application
-    default: http://${APP_NAME}:${PORT}
-```
-
-This file describes what exists.
-It never contains real values.
-
----
-
-## Variable expansion
-
-`envctl` supports explicit placeholder expansion with `${VAR}` during resolution.
-
-That means the expansion happens before projection, so the effective expanded value is what:
-
-* `inspect` shows
-* `check` validates
-* `run` injects
-* `sync` writes
-* `export` prints
-
-Example:
-
-```dotenv
-INFRA_NEO4J_USER=neo4j
-INFRA_NEO4J_PASSWORD=super-secret
-INFRA_NEO4J_AUTH=${INFRA_NEO4J_USER}/${INFRA_NEO4J_PASSWORD}
-```
-
-`INFRA_NEO4J_AUTH` resolves to the final runtime value, not the literal expression.
-
-Rules:
-
-* only `${VAR}` is supported in v1
-* `$VAR` stays literal
-* `VAR` must be a declared envctl contract key
-* placeholder expansion is contract-only
-* `${HOME}` is valid only if `HOME` is explicitly declared in the contract
-* malformed placeholders or unresolved references make resolution invalid
-
-Compatibility notes:
-
-* before this feature, `${HOME}` stayed literal
-* now `${HOME}` is expanded only when `HOME` is declared in the contract and resolved through envctl
-* `${...}` literal escaping is not supported in v1
-
-## Optional groups
-
-Each contract variable may define an optional `group` label:
-
-```yaml
-variables:
-  DATABASE_URL:
-    type: url
-    required: true
-    sensitive: true
-    group: Database
-```
-
-`group` is used only for:
-
-* organization in the contract
-* CLI targeting with `--group`
-* grouped dotenv output from `sync` and `export --format dotenv`
-
-It does not:
-
-* create namespaces
-* affect `${VAR}` expansion rules
-* restrict cross-variable references
-* imply hierarchy, inheritance, or prefix matching
+> the repository defines the rules, your machine provides the values, and envctl builds the environment you actually run.
 
 ---
 
@@ -215,172 +141,164 @@ It does not:
 Instead of juggling multiple `.env` files:
 
 ```bash
-# set up dev once
 envctl --profile dev fill
-
-# validate staging
 envctl --profile staging check
-
-# run with staging values
 envctl --profile staging run -- python app.py
 ```
 
-Profile selection priority:
-
-1. `--profile`
-2. `ENVCTL_PROFILE`
-3. config default
-4. `local`
-
-Each profile is independent. No hidden inheritance.
+Each profile is explicit and independent.
+No hidden inheritance, no magic fallback between profiles.
 
 ---
 
-## Team workflow
-
-The idea is simple:
-
-* the **contract is shared**
-* the **values are local**
+## Docker note
 
 ```bash
-# developer A
-envctl add API_KEY sk-abc123
-git add .envctl.schema.yaml
-git commit -m "require API_KEY"
-
-# developer B
-git pull
-envctl check   # shows what's missing
-envctl fill    # only asks for missing values
+envctl run -- docker run ...
 ```
 
-No more guessing what goes into `.env`.
+`envctl` injects variables into the **Docker client process**.
+
+To pass them into the container, you still need one of these:
+
+* `-e`
+* `--env`
+* `--env-file`
+
+A common pattern is:
+
+```bash
+docker run --env-file <(envctl export --format dotenv) ...
+```
 
 ---
 
-## CI workflow
+## CI mode
 
 ```bash
 ENVCTL_RUNTIME_MODE=ci envctl check
 ```
 
-In CI mode:
+In CI:
 
-* validation works
-* mutations are blocked (`add`, `set`, `fill`, etc.)
+* validation still works
+* mutating commands are blocked
 
-You can also combine it with profiles:
-
-```bash
-ENVCTL_PROFILE=ci ENVCTL_RUNTIME_MODE=ci envctl check
-```
+That keeps automation predictable and avoids accidental local-style writes in CI environments.
 
 ---
 
 ## Common commands
 
 ```bash
-# validation and visibility
 envctl check
 envctl inspect
 envctl explain DATABASE_URL
 envctl status
 envctl doctor
 
-# values
 envctl add DATABASE_URL <value>
-envctl add TEST_JSON '{"key":"value"}' --type string --format json
 envctl set PORT 4000
 envctl unset PORT
-envctl remove PORT
 
-# run / output
 envctl run -- <command>
 envctl sync
 envctl export
 
-# profiles
 envctl profile list
 envctl profile create staging
-envctl profile copy local staging
-envctl profile remove staging --yes
 
-# vault
-envctl vault show
 envctl vault check
-envctl vault path
-envctl vault prune
-
-# project identity
-envctl project bind <id>
-envctl project rebind
-envctl project repair
+envctl vault show
+envctl vault encrypt
+envctl vault decrypt
 ```
 
 ---
 
-## Machine-readable output
+## When envctl is a good fit
 
-All read commands support `--json`:
+envctl is a strong fit if:
 
-```bash
-envctl --json check
-envctl --json status
-envctl --json inspect
-envctl --json doctor
-```
-
----
-
-## Structured string validation
-
-If a variable is a string but carries structured content, declare that semantic format in the contract:
-
-```yaml
-variables:
-  TEST_JSON:
-    type: string
-    format: json
-```
-
-Supported `format` values for `type: string`:
-
-* `json`
-* `url`
-* `csv`
-
-When `format` is declared, `check`, `inspect`, and runtime resolution validate payload semantics, not only raw string presence.
+* `.env.local` files drift between machines
+* onboarding is fragile
+* CI and local environments do not behave the same way
+* you work with multiple environments
+* you want a local-first workflow without depending on a hosted service
 
 ---
 
-## Design principles
+## When envctl is not the right tool
 
-* Contract-first: the repo defines requirements
-* Deterministic: same inputs → same result
-* Explicit: nothing happens automatically
-* Local-first: no required cloud
-* Generated files are disposable
-* Profiles are value namespaces, not variants
-* CI mode is policy, not a profile
+envctl may be unnecessary if:
+
+* you only have one static `.env` file
+* the project is very small and has no real setup complexity
+* you already rely fully on a centralized secrets platform and do not want local-first handling
 
 ---
 
 ## Security model
 
-* The contract contains **no secrets**
-* Secrets stay on your machine
-* `.env.local` is optional and disposable
-* Sensitive values are masked in output
-* Read-only commands never change state
-* Vault files use restrictive permissions (`0600`)
+* the contract contains **no secrets**
+* secrets stay on your machine
+* sensitive values are masked in normal output
+* vault files use restrictive permissions
+* optional encryption at rest is available for vault files
 
-Important:
+### Vault encryption at rest
+
+If you enable encryption, envctl stores vault files in an encrypted, self-identifying format instead of plaintext.
+
+Enable it in your config:
+
+```json
+{
+  "encryption": {
+    "enabled": true
+  }
+}
+```
+
+Then migrate existing vault files once:
+
+```bash
+envctl vault encrypt
+```
+
+This creates a local key file at:
+
+```text
+~/.envctl/vault/master.key
+```
+
+That key is stored with restrictive permissions.
+
+After encryption is enabled:
+
+* `vault edit` works transparently
+* `vault check` reports whether the file is plaintext, encrypted, using the wrong key, or corrupted
+* decrypt failures are explicit instead of looking like generic parse errors
+
+To migrate back to plaintext:
+
+```bash
+envctl vault decrypt
+```
+
+Then disable encryption in config.
+
+### Important limitation
+
+Encryption at rest helps protect vault files on disk.
+
+It does **not** protect against a fully compromised machine or a compromised user session.
 
 > envctl assumes a trusted machine.
-> If your machine is compromised, your secrets are compromised.
+> If your machine is compromised, your secrets are compromised too.
 
-It’s not a replacement for a team-wide secrets manager.
+Back up your `master.key` carefully.
+If you lose it, encrypted vault data cannot be recovered.
 
 ---
 
@@ -390,6 +308,9 @@ It’s not a replacement for a team-wide secrets manager.
 * [Mental model](https://github.com/labrynx/envctl/blob/main/docs/getting-started/mental-model.md)
 * [Commands reference](https://github.com/labrynx/envctl/blob/main/docs/reference/commands.md)
 * [Profiles reference](https://github.com/labrynx/envctl/blob/main/docs/reference/profiles.md)
+* [Vault reference](https://github.com/labrynx/envctl/blob/main/docs/reference/vault.md)
+* [Encryption reference](https://github.com/labrynx/envctl/blob/main/docs/reference/encryption.md)
+* [Config reference](https://github.com/labrynx/envctl/blob/main/docs/reference/config.md)
 * [CI workflow](https://github.com/labrynx/envctl/blob/main/docs/workflows/ci.md)
 * [Team workflow](https://github.com/labrynx/envctl/blob/main/docs/workflows/team.md)
 * [Security](https://github.com/labrynx/envctl/blob/main/docs/reference/security.md)

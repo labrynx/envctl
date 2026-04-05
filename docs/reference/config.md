@@ -20,7 +20,8 @@ Typical location:
   "env_filename": ".env.local",
   "schema_filename": ".envctl.schema.yaml",
   "runtime_mode": "local",
-  "default_profile": "local"
+  "default_profile": "local",
+  "encryption": { "enabled": false }
 }
 ```
 
@@ -69,6 +70,28 @@ Resolution order is always:
 4. `local`
 
 If `default_profile` points to a named profile, that profile must already exist before profile-aware commands can use it.
+
+### `encryption`
+
+Optional block controlling vault encryption at rest.
+
+```json
+"encryption": { "enabled": true }
+```
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `enabled` | bool | `false` | When `true`, vault files are stored as Fernet-encrypted blobs |
+
+When `enabled` is `true`:
+
+* `envctl` loads or generates `<vault_dir>/master.key` on first use.
+* All vault profile reads and writes pass through the encryption layer transparently.
+* `vault edit` decrypts to a temporary file before opening the editor and
+  re-encrypts afterwards.
+
+See [Encryption Reference](encryption.md) for the full workflow, key backup
+guidance, and migration commands.
 
 ## Rules
 

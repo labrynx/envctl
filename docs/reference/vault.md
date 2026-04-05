@@ -10,6 +10,7 @@ A typical structure looks like this:
 
 ```text
 vault/
+  master.key          ← encryption key (present only when encryption is enabled)
   projects/<slug>--<id>/
     values.env
     profiles/
@@ -61,6 +62,10 @@ envctl vault edit
 
 Opens the current physical vault file in an editor.
 
+When encryption is enabled, the file is transparently decrypted to a temporary
+file before the editor opens, then re-encrypted after the editor exits.  The
+temporary file is always removed.
+
 This is a low-level operation and is best used when you really need to work directly with the stored file.
 
 ### `path`
@@ -82,3 +87,30 @@ envctl vault prune
 Removes keys that are no longer declared in the contract.
 
 This is useful after contract cleanup, when old values are still hanging around in local storage.
+
+### `encrypt`
+
+```bash
+envctl vault encrypt
+```
+
+Encrypts all plaintext vault profile files for the current project.
+
+Run this once after setting `encryption.enabled = true` in your config to migrate
+existing plaintext vault files.  Files already encrypted are skipped automatically.
+
+Requires `encryption.enabled = true` in config.  See the
+[Encryption Reference](encryption.md) for full details.
+
+### `decrypt`
+
+```bash
+envctl vault decrypt
+```
+
+Decrypts all encrypted vault profile files for the current project back to plain text.
+
+Run this before setting `encryption.enabled = false` to avoid leaving `envctl`
+unable to read its own files.  Files already in plaintext are skipped.
+
+Requires `encryption.enabled = true` in config.
