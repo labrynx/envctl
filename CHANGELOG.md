@@ -10,6 +10,12 @@ This project follows Keep a Changelog and uses Semantic Versioning.
 
 [Full Changelog](https://github.com/labrynx/envctl/compare/v2.3.4...HEAD)
 
+---
+
+## [2.4.0] – 2026-04-05
+
+[Full Changelog](https://github.com/labrynx/envctl/compare/v2.3.4...v2.4.0)
+
 ### Added
 
 #### Vault encryption at rest
