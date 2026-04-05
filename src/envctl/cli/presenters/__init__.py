@@ -54,8 +54,11 @@ from envctl.cli.presenters.status_presenter import (
     render_status_view,
 )
 from envctl.cli.presenters.vault_presenter import (
+    render_vault_audit_result,
     render_vault_check_result,
+    render_vault_decrypt_result,
     render_vault_edit_result,
+    render_vault_encrypt_result,
     render_vault_path_result,
     render_vault_prune_cancelled,
     render_vault_prune_no_changes,
@@ -102,8 +105,11 @@ __all__ = [
     "render_status_view",
     "render_sync_result",
     "render_unset_result",
+    "render_vault_audit_result",
     "render_vault_check_result",
+    "render_vault_decrypt_result",
     "render_vault_edit_result",
+    "render_vault_encrypt_result",
     "render_vault_path_result",
     "render_vault_prune_cancelled",
     "render_vault_prune_no_changes",

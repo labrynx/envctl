@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from envctl.vault_crypto import VaultFileState
+
 
 @dataclass(frozen=True)
 class AddVariableRequest:
@@ -96,6 +98,8 @@ class VaultCheckResult:
     parseable: bool
     private_permissions: bool
     key_count: int
+    state: VaultFileState
+    detail: str | None = None
 
 
 @dataclass(frozen=True)
@@ -105,6 +109,8 @@ class VaultShowResult:
     path: Path
     exists: bool
     values: dict[str, str]
+    state: VaultFileState
+    detail: str | None = None
 
 
 @dataclass(frozen=True)
@@ -114,6 +120,43 @@ class VaultPruneResult:
     path: Path
     removed_keys: tuple[str, ...]
     kept_keys: int
+
+
+@dataclass(frozen=True)
+class VaultEncryptResult:
+    """Result of encrypting vault profile files."""
+
+    encrypted_files: tuple[Path, ...]
+    skipped_files: tuple[Path, ...]
+
+
+@dataclass(frozen=True)
+class VaultDecryptResult:
+    """Result of decrypting vault profile files."""
+
+    decrypted_files: tuple[Path, ...]
+    skipped_files: tuple[Path, ...]
+
+
+@dataclass(frozen=True)
+class VaultAuditFileResult:
+    """One audited vault file."""
+
+    path: Path
+    state: VaultFileState
+    detail: str
+    private_permissions: bool
+
+
+@dataclass(frozen=True)
+class VaultAuditProjectResult:
+    """Audit summary for one project vault."""
+
+    project_slug: str
+    project_id: str
+    key_path: Path
+    key_exists: bool
+    files: tuple[VaultAuditFileResult, ...]
 
 
 @dataclass(frozen=True)

@@ -487,6 +487,7 @@ def test_persist_project_binding_writes_state_and_returns_local_context(
         vault_project_dir=config.projects_dir / "placeholder",
         vault_values_path=config.projects_dir / "placeholder" / "values.env",
         vault_state_path=config.projects_dir / "placeholder" / "state.json",
+        vault_key_path=config.projects_dir / "master.key",
     )
 
     persisted = project_context_public.persist_project_binding(config, context)
@@ -534,6 +535,7 @@ def test_persist_project_binding_raises_for_non_canonical_project_id(
         vault_project_dir=config.projects_dir / "placeholder",
         vault_values_path=config.projects_dir / "placeholder" / "values.env",
         vault_state_path=config.projects_dir / "placeholder" / "state.json",
+        vault_key_path=config.projects_dir / "master.key",
     )
 
     with pytest.raises(StateError, match=r"non-canonical project id") as exc_info:

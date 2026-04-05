@@ -41,6 +41,7 @@ def make_context(
         vault_project_dir=vault_project_dir,
         vault_values_path=vault_project_dir / "values.env",
         vault_state_path=vault_project_dir / "state.json",
+        vault_key_path=vault_project_dir / "master.key",
     )
 
 

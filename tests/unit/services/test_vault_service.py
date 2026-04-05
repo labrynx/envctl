@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 import envctl.services.vault_service as vault_service
@@ -16,7 +18,7 @@ def test_run_vault_path_returns_explicit_profile_path(
     monkeypatch.setattr(
         vault_service,
         "load_project_context",
-        lambda: (object(), context),
+        lambda: (SimpleNamespace(encryption_strict=False), context),
     )
     monkeypatch.setattr(
         vault_service,
@@ -42,7 +44,16 @@ def test_run_vault_show_returns_missing_file_state(
     monkeypatch.setattr(
         vault_service,
         "load_project_context",
-        lambda: (object(), context),
+        lambda: (SimpleNamespace(encryption_strict=False), context),
+    )
+    monkeypatch.setattr(
+        vault_service,
+        "load_profile_values",
+        lambda context, profile, require_existing_explicit=False, allow_plaintext=True: (
+            profile,
+            context.vault_values_path,
+            {},
+        ),
     )
 
     _context, active_profile, result = vault_service.run_vault_show("local")
@@ -62,7 +73,7 @@ def test_get_unknown_vault_keys_uses_active_profile_file(
     monkeypatch.setattr(
         vault_service,
         "load_project_context",
-        lambda: (object(), context),
+        lambda: (SimpleNamespace(encryption_strict=False), context),
     )
     monkeypatch.setattr(
         vault_service,
@@ -77,7 +88,7 @@ def test_get_unknown_vault_keys_uses_active_profile_file(
     monkeypatch.setattr(
         vault_service,
         "load_profile_values",
-        lambda context, profile, require_existing_explicit=False: (
+        lambda context, profile, require_existing_explicit=False, allow_plaintext=True: (
             profile,
             context.vault_project_dir / "profiles" / "dev.env",
             {"APP_NAME": "demo", "UNKNOWN": "x"},
@@ -101,7 +112,7 @@ def test_run_vault_prune_removes_unknown_keys(
     monkeypatch.setattr(
         vault_service,
         "load_project_context",
-        lambda: (object(), context),
+        lambda: (SimpleNamespace(encryption_strict=False), context),
     )
     monkeypatch.setattr(
         vault_service,
@@ -119,7 +130,7 @@ def test_run_vault_prune_removes_unknown_keys(
     monkeypatch.setattr(
         vault_service,
         "load_profile_values",
-        lambda context, profile, require_existing_explicit=False: (
+        lambda context, profile, require_existing_explicit=False, allow_plaintext=True: (
             profile,
             context.vault_project_dir / "profiles" / "staging.env",
             {"APP_NAME": "demo", "UNKNOWN": "x", "PORT": "3000"},
@@ -161,7 +172,7 @@ def test_run_vault_edit_uses_active_profile_path(
     monkeypatch.setattr(
         vault_service,
         "load_project_context",
-        lambda: (object(), context),
+        lambda: (SimpleNamespace(encryption_strict=False), context),
     )
     monkeypatch.setattr(
         vault_service,
@@ -179,7 +190,7 @@ def test_run_vault_edit_uses_active_profile_path(
     monkeypatch.setattr(
         vault_service,
         "write_profile_values",
-        lambda context, profile, values: (
+        lambda context, profile, values, require_existing_explicit=False: (
             profile,
             context.vault_project_dir / "profiles" / "staging.env",
         ),
@@ -187,7 +198,7 @@ def test_run_vault_edit_uses_active_profile_path(
     monkeypatch.setattr(
         vault_service,
         "load_profile_values",
-        lambda context, profile, require_existing_explicit=False: (
+        lambda context, profile, require_existing_explicit=False, allow_plaintext=True: (
             profile,
             context.vault_project_dir / "profiles" / "staging.env",
             {},

@@ -19,6 +19,8 @@ class AppConfig:
     schema_filename: str
     runtime_mode: RuntimeMode
     default_profile: str
+    encryption_enabled: bool = False
+    encryption_strict: bool = False
 
     @property
     def projects_dir(self) -> Path:

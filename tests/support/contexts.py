@@ -1,8 +1,13 @@
+# tests/support/contexts.py
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from envctl.domain.project import BindingSource, ProjectContext
+
+if TYPE_CHECKING:
+    from envctl.vault_crypto import VaultCrypto
 
 
 def _derive_vault_project_dir_from_values_path(vault_values_path: Path) -> Path:
@@ -25,6 +30,8 @@ def make_project_context(
     vault_values_path: Path | str | None = None,
     vault_state_path: Path | str | None = None,
     repo_env_path: Path | str | None = None,
+    vault_key_path: Path | str | None = None,
+    vault_crypto: VaultCrypto | None = None,
 ) -> ProjectContext:
     """Build a complete ProjectContext for tests."""
     repo_root = Path(repo_root)
@@ -50,6 +57,7 @@ def make_project_context(
     resolved_vault_state_path = Path(
         vault_state_path or (resolved_vault_project_dir / "state.json")
     )
+    resolved_vault_key_path = Path(vault_key_path or (resolved_vault_project_dir / "master.key"))
 
     return ProjectContext(
         project_slug=project_slug,
@@ -63,6 +71,8 @@ def make_project_context(
         vault_project_dir=resolved_vault_project_dir,
         vault_values_path=resolved_vault_values_path,
         vault_state_path=resolved_vault_state_path,
+        vault_key_path=resolved_vault_key_path,
+        vault_crypto=vault_crypto,
     )
 
 
@@ -104,5 +114,6 @@ def make_status_context(
         vault_project_dir=vault_project_dir,
         vault_values_path=vault_values_path,
         vault_state_path=vault_project_dir / "state.json",
+        vault_key_path=vault_project_dir / "master.key",
         repo_env_path=repo_root / ".env.local",
     )

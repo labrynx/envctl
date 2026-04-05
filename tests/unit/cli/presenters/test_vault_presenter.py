@@ -21,7 +21,6 @@ from envctl.cli.presenters.vault_presenter import (
 
 
 def test_render_vault_check_result_when_file_is_missing(capsys: pytest.CaptureFixture[str]) -> None:
-    """It should render the missing vault file case."""
     render_vault_check_result(
         profile="local",
         path=Path("/tmp/demo/values.env"),
@@ -29,6 +28,8 @@ def test_render_vault_check_result_when_file_is_missing(capsys: pytest.CaptureFi
         parseable=False,
         private_permissions=False,
         key_count=0,
+        state="missing",
+        detail="Vault file does not exist.",
     )
     captured = capsys.readouterr().out
 
@@ -37,10 +38,9 @@ def test_render_vault_check_result_when_file_is_missing(capsys: pytest.CaptureFi
     assert "vault_values: /tmp/demo/values.env" in captured
 
 
-def test_render_vault_check_result_when_permissions_are_not_private(
+def test_render_vault_check_result_when_file_is_plaintext(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """It should render the non-private permissions case."""
     render_vault_check_result(
         profile="prod",
         path=Path("/tmp/demo/prod.env"),
@@ -48,18 +48,17 @@ def test_render_vault_check_result_when_permissions_are_not_private(
         parseable=True,
         private_permissions=False,
         key_count=3,
+        state="plaintext",
+        detail="Run 'envctl vault encrypt' to migrate it.",
     )
     captured = capsys.readouterr().out
 
-    assert "[WARN] Vault file is parseable but permissions are not private enough" in captured
-    assert "profile: prod" in captured
-    assert "parseable: yes" in captured
-    assert "private_permissions: no" in captured
-    assert "keys: 3" in captured
+    assert "[WARN] Vault file is plaintext" in captured
+    assert "state: plaintext" in captured
+    assert "detail: Run 'envctl vault encrypt' to migrate it." in captured
 
 
 def test_render_vault_check_result_when_file_is_valid(capsys: pytest.CaptureFixture[str]) -> None:
-    """It should render the valid vault file case."""
     render_vault_check_result(
         profile="prod",
         path=Path("/tmp/demo/prod.env"),
@@ -67,15 +66,16 @@ def test_render_vault_check_result_when_file_is_valid(capsys: pytest.CaptureFixt
         parseable=True,
         private_permissions=True,
         key_count=2,
+        state="encrypted",
+        detail="Vault file is encrypted and readable.",
     )
     captured = capsys.readouterr().out
 
-    assert "[OK] Vault file looks valid" in captured
+    assert "[OK] Vault file is encrypted and readable" in captured
     assert "private_permissions: yes" in captured
 
 
 def test_render_vault_edit_result_created(capsys: pytest.CaptureFixture[str]) -> None:
-    """It should render the created-and-opened vault case."""
     render_vault_edit_result(
         profile="staging",
         path=Path("/tmp/demo/staging.env"),
@@ -88,7 +88,6 @@ def test_render_vault_edit_result_created(capsys: pytest.CaptureFixture[str]) ->
 
 
 def test_render_vault_edit_result_open_existing(capsys: pytest.CaptureFixture[str]) -> None:
-    """It should render the opened existing vault case."""
     render_vault_edit_result(
         profile="staging",
         path=Path("/tmp/demo/staging.env"),
@@ -100,7 +99,6 @@ def test_render_vault_edit_result_open_existing(capsys: pytest.CaptureFixture[st
 
 
 def test_render_vault_path_result(capsys: pytest.CaptureFixture[str]) -> None:
-    """It should render the vault path output."""
     render_vault_path_result(
         profile="local",
         path=Path("/tmp/demo/values.env"),
@@ -112,7 +110,6 @@ def test_render_vault_path_result(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_render_vault_prune_no_changes(capsys: pytest.CaptureFixture[str]) -> None:
-    """It should render the no-changes prune case."""
     render_vault_prune_no_changes(
         profile="prod",
         path=Path("/tmp/demo/prod.env"),
@@ -124,7 +121,6 @@ def test_render_vault_prune_no_changes(capsys: pytest.CaptureFixture[str]) -> No
 
 
 def test_render_vault_prune_cancelled(capsys: pytest.CaptureFixture[str]) -> None:
-    """It should render the cancelled prune case."""
     render_vault_prune_cancelled(
         profile="prod",
         path=Path("/tmp/demo/prod.env"),
@@ -136,7 +132,6 @@ def test_render_vault_prune_cancelled(capsys: pytest.CaptureFixture[str]) -> Non
 
 
 def test_render_vault_prune_result(capsys: pytest.CaptureFixture[str]) -> None:
-    """It should render removed and kept key information."""
     render_vault_prune_result(
         profile="prod",
         path=Path("/tmp/demo/prod.env"),
@@ -151,7 +146,6 @@ def test_render_vault_prune_result(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_render_vault_show_missing(capsys: pytest.CaptureFixture[str]) -> None:
-    """It should render the missing vault show case."""
     render_vault_show_missing(
         profile="local",
         path=Path("/tmp/demo/values.env"),
@@ -163,7 +157,6 @@ def test_render_vault_show_missing(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_render_vault_show_empty(capsys: pytest.CaptureFixture[str]) -> None:
-    """It should render the empty vault show case."""
     render_vault_show_empty(
         profile="local",
         path=Path("/tmp/demo/values.env"),
@@ -174,7 +167,6 @@ def test_render_vault_show_empty(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_render_vault_show_cancelled(capsys: pytest.CaptureFixture[str]) -> None:
-    """It should render the cancelled raw vault display case."""
     render_vault_show_cancelled(
         profile="prod",
         path=Path("/tmp/demo/prod.env"),
@@ -185,7 +177,6 @@ def test_render_vault_show_cancelled(capsys: pytest.CaptureFixture[str]) -> None
 
 
 def test_render_vault_show_values(capsys: pytest.CaptureFixture[str]) -> None:
-    """It should render the values section in sorted order."""
     render_vault_show_values(
         profile="prod",
         path=Path("/tmp/demo/prod.env"),
@@ -193,11 +184,14 @@ def test_render_vault_show_values(capsys: pytest.CaptureFixture[str]) -> None:
             "Z_KEY": "zzz",
             "A_KEY": "aaa",
         },
+        state="plaintext",
+        detail="Run 'envctl vault encrypt' to migrate it.",
     )
     captured = capsys.readouterr().out
 
     assert "profile: prod" in captured
     assert "vault_values: /tmp/demo/prod.env" in captured
+    assert "state: plaintext" in captured
     assert "Values:" in captured
 
     a_index = captured.index("  A_KEY=aaa")

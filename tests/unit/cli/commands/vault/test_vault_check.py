@@ -21,6 +21,8 @@ def test_vault_check_command_exits_when_file_does_not_exist(
             "private_permissions": False,
             "key_count": 0,
             "path": "/tmp/vault/values.env",
+            "state": "missing",
+            "detail": "Vault file does not exist.",
         },
     )()
 
@@ -39,7 +41,7 @@ def test_vault_check_command_exits_when_file_does_not_exist(
     assert "vault_values: /tmp/vault/values.env" in output
 
 
-def test_vault_check_command_exits_when_file_is_not_parseable(
+def test_vault_check_command_exits_when_file_is_plaintext(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -48,10 +50,12 @@ def test_vault_check_command_exits_when_file_is_not_parseable(
         (),
         {
             "exists": True,
-            "parseable": False,
+            "parseable": True,
             "private_permissions": False,
             "key_count": 0,
             "path": "/tmp/vault/values.env",
+            "state": "plaintext",
+            "detail": "Run 'envctl vault encrypt' to migrate it.",
         },
     )()
 
@@ -66,8 +70,8 @@ def test_vault_check_command_exits_when_file_is_not_parseable(
 
     output = capsys.readouterr().out
     assert exc.value.exit_code == 1
-    assert "[WARN] Vault file is not parseable" in output
-    assert "vault_values: /tmp/vault/values.env" in output
+    assert "[WARN] Vault file is plaintext" in output
+    assert "state: plaintext" in output
 
 
 def test_vault_check_command_succeeds_when_file_is_valid(
@@ -83,6 +87,8 @@ def test_vault_check_command_succeeds_when_file_is_valid(
             "private_permissions": True,
             "key_count": 3,
             "path": "/tmp/vault/values.env",
+            "state": "encrypted",
+            "detail": "Vault file is encrypted and readable.",
         },
     )()
 
@@ -95,7 +101,7 @@ def test_vault_check_command_succeeds_when_file_is_valid(
     vault_check_module.vault_check_command()
 
     output = capsys.readouterr().out
-    assert "[OK] Vault file looks valid" in output
+    assert "[OK] Vault file is encrypted and readable" in output
     assert "vault_values: /tmp/vault/values.env" in output
     assert "parseable: yes" in output
     assert "private_permissions: yes" in output
@@ -115,6 +121,8 @@ def test_vault_check_command_exits_when_permissions_are_not_private(
             "private_permissions": False,
             "key_count": 2,
             "path": "/tmp/vault/values.env",
+            "state": "encrypted",
+            "detail": "Vault file is encrypted and readable.",
         },
     )()
 
@@ -129,8 +137,6 @@ def test_vault_check_command_exits_when_permissions_are_not_private(
 
     output = capsys.readouterr().out
     assert exc.value.exit_code == 1
-    assert "[WARN] Vault file is parseable but permissions are not private enough" in output
-    assert "parseable: yes" in output
     assert "private_permissions: no" in output
     assert "keys: 2" in output
 

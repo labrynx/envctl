@@ -94,4 +94,6 @@ def vault_show_command(
         profile=active_profile,
         path=result.path,
         values=rendered_values,
+        state=result.state,
+        detail=result.detail,
     )

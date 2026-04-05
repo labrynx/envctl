@@ -45,6 +45,7 @@ def test_write_default_config_file_creates_expected_json(
         "schema_filename": ".envctl.schema.yaml",
         "runtime_mode": "local",
         "default_profile": "local",
+        "encryption": {"enabled": False, "strict": False},
     }
 
 

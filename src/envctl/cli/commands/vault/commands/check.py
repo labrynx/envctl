@@ -23,7 +23,14 @@ def vault_check_command() -> None:
         parseable=result.parseable,
         private_permissions=result.private_permissions,
         key_count=result.key_count,
+        state=result.state,
+        detail=result.detail,
     )
 
-    if not result.exists or not result.parseable or not result.private_permissions:
+    if (
+        not result.exists
+        or not result.parseable
+        or not result.private_permissions
+        or result.state in {"plaintext", "wrong_key", "corrupt"}
+    ):
         raise typer.Exit(code=1)

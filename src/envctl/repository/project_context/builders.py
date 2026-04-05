@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from envctl.constants import DEFAULT_STATE_FILENAME, DEFAULT_VALUES_FILENAME
+from envctl.constants import DEFAULT_KEY_FILENAME, DEFAULT_STATE_FILENAME, DEFAULT_VALUES_FILENAME
 from envctl.domain.app_config import AppConfig
 from envctl.domain.project import ProjectContext
 from envctl.utils.project_paths import build_vault_project_dir
@@ -39,4 +39,5 @@ def build_context(
         vault_project_dir=resolved_vault_project_dir,
         vault_values_path=resolved_vault_project_dir / DEFAULT_VALUES_FILENAME,
         vault_state_path=resolved_vault_project_dir / DEFAULT_STATE_FILENAME,
+        vault_key_path=resolved_vault_project_dir / DEFAULT_KEY_FILENAME,
     )

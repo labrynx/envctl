@@ -29,6 +29,7 @@ SUPPORTED_KEYS = {
     "schema_filename",
     "runtime_mode",
     "default_profile",
+    "encryption",
 }
 
 
@@ -129,6 +130,84 @@ def _validate_runtime_mode(
         ) from exc
 
 
+def _parse_encryption_config(
+    raw_encryption: object,
+    *,
+    path: Path | None = None,
+) -> tuple[bool, bool]:
+    """Parse and validate the ``encryption`` configuration block.
+
+    Returns ``(enabled, strict)``.
+    Missing or ``null`` block defaults to ``(False, False)``.
+    """
+    if raw_encryption is None:
+        return False, False
+
+    if not isinstance(raw_encryption, dict):
+        raise ConfigError(
+            "encryption must be a JSON object with 'enabled' and optional 'strict' keys",
+            diagnostics=ConfigDiagnostics(
+                category="invalid_config_shape",
+                path=path,
+                field="encryption",
+                suggested_actions=('use {"encryption": {"enabled": true, "strict": false}}',),
+            ),
+        )
+
+    unknown = set(raw_encryption.keys()) - {"enabled", "strict"}
+    if unknown:
+        keys = ", ".join(sorted(unknown))
+        raise ConfigError(
+            f"Unsupported encryption config key(s): {keys}",
+            diagnostics=ConfigDiagnostics(
+                category="unsupported_keys",
+                path=path,
+                key=keys,
+                suggested_actions=("remove unsupported encryption config keys",),
+            ),
+        )
+
+    enabled = raw_encryption.get("enabled", False)
+    strict = raw_encryption.get("strict", False)
+
+    if not isinstance(enabled, bool):
+        raise ConfigError(
+            f"encryption.enabled must be a boolean, got {enabled!r}",
+            diagnostics=ConfigDiagnostics(
+                category="invalid_config_shape",
+                path=path,
+                field="encryption.enabled",
+                value=repr(enabled),
+                suggested_actions=("set encryption.enabled to true or false",),
+            ),
+        )
+
+    if not isinstance(strict, bool):
+        raise ConfigError(
+            f"encryption.strict must be a boolean, got {strict!r}",
+            diagnostics=ConfigDiagnostics(
+                category="invalid_config_shape",
+                path=path,
+                field="encryption.strict",
+                value=repr(strict),
+                suggested_actions=("set encryption.strict to true or false",),
+            ),
+        )
+
+    if strict and not enabled:
+        raise ConfigError(
+            "encryption.strict cannot be true when encryption.enabled is false",
+            diagnostics=ConfigDiagnostics(
+                category="invalid_config_shape",
+                path=path,
+                field="encryption.strict",
+                suggested_actions=("enable encryption or disable strict mode",),
+            ),
+        )
+
+    return enabled, strict
+
+
 def load_config() -> AppConfig:
     """Resolve the application configuration."""
     config_path = get_default_config_path()
@@ -197,6 +276,11 @@ def load_config() -> AppConfig:
             ) from exc
         raise
 
+    encryption_enabled, encryption_strict = _parse_encryption_config(
+        raw.get("encryption"),
+        path=config_path if config_path.exists() else None,
+    )
+
     return AppConfig(
         config_path=config_path,
         vault_dir=vault_dir,
@@ -204,6 +288,8 @@ def load_config() -> AppConfig:
         schema_filename=schema_filename,
         runtime_mode=runtime_mode,
         default_profile=config_default_profile,
+        encryption_enabled=encryption_enabled,
+        encryption_strict=encryption_strict,
     )
 
 

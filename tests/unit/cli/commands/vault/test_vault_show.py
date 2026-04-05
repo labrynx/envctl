@@ -17,6 +17,8 @@ def test_vault_show_command_exits_when_file_does_not_exist(
         exists=False,
         path="/tmp/vault/profiles/staging.env",
         values={},
+        state="missing",
+        detail="Vault file does not exist.",
     )
 
     monkeypatch.setattr(
@@ -49,6 +51,8 @@ def test_vault_show_command_warns_when_file_is_empty(
         exists=True,
         path="/tmp/vault/values.env",
         values={},
+        state="plaintext",
+        detail="Run 'envctl vault encrypt' to migrate it.",
     )
 
     monkeypatch.setattr(
@@ -88,6 +92,8 @@ def test_vault_show_command_masks_sensitive_contract_values_and_unknown_values(
             "API_KEY": "super-secret",
             "UNKNOWN": "mystery-value",
         },
+        state="plaintext",
+        detail="Run 'envctl vault encrypt' to migrate it.",
     )
     contract = SimpleNamespace(
         variables={
@@ -122,6 +128,7 @@ def test_vault_show_command_masks_sensitive_contract_values_and_unknown_values(
     output = capsys.readouterr().out
     assert "profile: dev" in output
     assert "vault_values: /tmp/vault/profiles/dev.env" in output
+    assert "state: plaintext" in output
     assert "Values:" in output
     assert "  APP_NAME=demo" in output
     assert "  API_KEY=<masked:super-secret>" in output

@@ -42,6 +42,7 @@ def write_default_config_file() -> Path:
             "schema_filename": get_default_schema_filename(),
             "runtime_mode": RuntimeMode.LOCAL.value,
             "default_profile": DEFAULT_PROFILE,
+            "encryption": {"enabled": False, "strict": False},
         },
     )
     return config_path

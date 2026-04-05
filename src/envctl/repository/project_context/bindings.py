@@ -4,6 +4,7 @@ from dataclasses import replace
 
 from envctl.adapters.git import set_local_git_config
 from envctl.constants import (
+    DEFAULT_KEY_FILENAME,
     DEFAULT_STATE_FILENAME,
     DEFAULT_VALUES_FILENAME,
     GIT_CONFIG_PROJECT_ID_KEY,
@@ -62,4 +63,5 @@ def persist_project_binding(config: AppConfig, context: ProjectContext) -> Proje
         vault_project_dir=vault_project_dir,
         vault_values_path=vault_project_dir / DEFAULT_VALUES_FILENAME,
         vault_state_path=state_path,
+        vault_key_path=vault_project_dir / DEFAULT_KEY_FILENAME,
     )

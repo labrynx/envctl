@@ -98,6 +98,11 @@ def test_run_rebind_creates_new_binding_without_copying_when_no_previous_values(
     )
 
     monkeypatch.setattr(rebind_service, "load_config", lambda: config)
+    monkeypatch.setattr(
+        rebind_service,
+        "load_configured_vault_crypto",
+        lambda _config, _context: None,
+    )
     monkeypatch.setattr(rebind_service, "resolve_repo_root", lambda: repo_root)
     monkeypatch.setattr(rebind_service, "get_local_git_config", lambda _repo_root, key: None)
     monkeypatch.setattr(rebind_service, "new_project_id", lambda: "prj_bbbbbbbbbbbbbbbb")
@@ -109,7 +114,7 @@ def test_run_rebind_creates_new_binding_without_copying_when_no_previous_values(
     monkeypatch.setattr(
         rebind_service,
         "persist_project_binding",
-        lambda _config, context_arg: context,
+        lambda _config, context_arg: context_arg,
     )
 
     context_result, result = rebind_service.run_rebind(copy_values=True)
@@ -142,6 +147,11 @@ def test_run_rebind_copies_previous_values_when_requested(
     )
 
     monkeypatch.setattr(rebind_service, "load_config", lambda: config)
+    monkeypatch.setattr(
+        rebind_service,
+        "load_configured_vault_crypto",
+        lambda _config, _context: None,
+    )
     monkeypatch.setattr(rebind_service, "resolve_repo_root", lambda: repo_root)
     monkeypatch.setattr(
         rebind_service,
@@ -157,12 +167,12 @@ def test_run_rebind_copies_previous_values_when_requested(
     monkeypatch.setattr(
         rebind_service,
         "persist_project_binding",
-        lambda _config, context_arg: context,
+        lambda _config, context_arg: context_arg,
     )
     monkeypatch.setattr(
         rebind_service,
         "_load_previous_values",
-        lambda projects_dir, previous_project_id: {
+        lambda projects_dir, previous_project_id, crypto=None: {
             "APP_NAME": "demo",
             "DEBUG": "true",
         },
@@ -200,6 +210,11 @@ def test_run_rebind_does_not_copy_values_when_empty_is_requested(
     )
 
     monkeypatch.setattr(rebind_service, "load_config", lambda: config)
+    monkeypatch.setattr(
+        rebind_service,
+        "load_configured_vault_crypto",
+        lambda _config, _context: None,
+    )
     monkeypatch.setattr(rebind_service, "resolve_repo_root", lambda: repo_root)
     monkeypatch.setattr(
         rebind_service,
@@ -215,12 +230,12 @@ def test_run_rebind_does_not_copy_values_when_empty_is_requested(
     monkeypatch.setattr(
         rebind_service,
         "persist_project_binding",
-        lambda _config, context_arg: context,
+        lambda _config, context_arg: context_arg,
     )
     monkeypatch.setattr(
         rebind_service,
         "_load_previous_values",
-        lambda projects_dir, previous_project_id: {
+        lambda projects_dir, previous_project_id, crypto=None: {
             "APP_NAME": "demo",
         },
     )
