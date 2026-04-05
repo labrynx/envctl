@@ -5,7 +5,10 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from envctl.vault_crypto import VaultCrypto
 
 ConfirmFn = Callable[[str, bool], bool]
 PromptFn = Callable[[str, bool, str | None], str]
@@ -28,6 +31,8 @@ class ProjectContext:
     vault_project_dir: Path
     vault_values_path: Path
     vault_state_path: Path
+    vault_key_path: Path
+    vault_crypto: VaultCrypto | None = None
 
     @property
     def display_name(self) -> str:

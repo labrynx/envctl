@@ -53,6 +53,15 @@ class ExpansionResult:
     error: ExpansionErrorInfo | None = None
 
 
+@dataclass(frozen=True)
+class PlaceholderResolution:
+    """Resolved outcome for one placeholder lookup."""
+
+    value: str | None
+    error_result: ExpansionResult | None
+    inherited_sensitive: bool
+
+
 def parse_placeholder_segments(value: str) -> tuple[tuple[Segment, ...], ExpansionErrorInfo | None]:
     """Parse one raw value into literal and placeholder segments."""
     if "${" not in value:

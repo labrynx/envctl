@@ -9,6 +9,7 @@ from envctl.domain.expansion import (
     ExpansionErrorType,
     ExpansionResult,
     LiteralSegment,
+    PlaceholderResolution,
     Segment,
     parse_placeholder_segments,
 )
@@ -47,62 +48,71 @@ def _resolve_placeholder_value(
     contract: Contract,
     selected_values: dict[str, SelectedValue],
     derived_sensitive: dict[str, bool],
-    resolve_key: Callable[[str, int], ExpansionResult],
+    resolve_key: Callable[[str, int, tuple[str, ...]], ExpansionResult],
     current_key: str,
     placeholder_name: str,
     refs: list[str],
     depth: int,
-) -> tuple[str | None, ExpansionResult | None, bool]:
+    path: tuple[str, ...],
+) -> PlaceholderResolution:
     """Resolve one placeholder to a string or an error result."""
     if placeholder_name not in contract.variables:
-        return (
-            None,
-            _make_expansion_error_result(
+        return PlaceholderResolution(
+            value=None,
+            error_result=_make_expansion_error_result(
                 value=selected_values[current_key].raw_value,
                 kind="reference_resolution_error",
                 detail=f"Unknown placeholder '{placeholder_name}'",
                 refs=tuple(refs),
             ),
-            False,
+            inherited_sensitive=False,
         )
 
     referenced = selected_values.get(placeholder_name)
     if referenced is None:
-        return (
-            None,
-            _make_expansion_error_result(
+        return PlaceholderResolution(
+            value=None,
+            error_result=_make_expansion_error_result(
                 value=selected_values[current_key].raw_value,
                 kind="reference_resolution_error",
                 detail=f"Missing value for referenced key '{placeholder_name}'",
                 refs=tuple(refs),
             ),
-            False,
+            inherited_sensitive=False,
         )
 
-    nested = resolve_key(placeholder_name, depth + 1)
+    nested = resolve_key(placeholder_name, depth + 1, path)
     if nested.error is not None:
-        return (
-            None,
-            ExpansionResult(
+        propagated_refs = (
+            nested.refs if nested.error.kind == "cycle_error" else tuple(refs + list(nested.refs))
+        )
+        return PlaceholderResolution(
+            value=None,
+            error_result=ExpansionResult(
                 value=selected_values[current_key].raw_value,
                 status="error",
-                refs=tuple(refs + list(nested.refs)),
+                refs=propagated_refs,
                 error=nested.error,
             ),
-            False,
+            inherited_sensitive=False,
         )
 
     inherited_sensitive = referenced.masked or derived_sensitive.get(
         placeholder_name,
         False,
     )
-    return nested.value, None, inherited_sensitive
+    return PlaceholderResolution(
+        value=nested.value,
+        error_result=None,
+        inherited_sensitive=inherited_sensitive,
+    )
 
 
 def _get_cached_or_guarded_result(
     *,
     key: str,
     depth: int,
+    path: tuple[str, ...],
     selected_values: dict[str, SelectedValue],
     states: dict[str, str],
     expanded: dict[str, ExpansionResult],
@@ -122,11 +132,12 @@ def _get_cached_or_guarded_result(
 
     state = states[key]
     if state == "visiting":
+        cycle_path = (*path, key)
         result = _make_expansion_error_result(
             value=selected_values[key].raw_value,
             kind="cycle_error",
-            detail=f"Cycle detected while expanding '{key}'",
-            refs=(key,),
+            detail=f"Cycle detected: {' -> '.join(cycle_path)}",
+            refs=cycle_path,
         )
         expanded[key] = result
         return result
@@ -144,8 +155,9 @@ def _expand_segments(
     segments: tuple[Segment, ...],
     selected_values: dict[str, SelectedValue],
     derived_sensitive: dict[str, bool],
-    resolve_key: Callable[[str, int], ExpansionResult],
+    resolve_key: Callable[[str, int, tuple[str, ...]], ExpansionResult],
     depth: int,
+    path: tuple[str, ...],
 ) -> tuple[ExpansionResult, bool]:
     """Expand one parsed segment sequence."""
     parts: list[str] = []
@@ -158,7 +170,7 @@ def _expand_segments(
             continue
 
         refs.append(segment.name)
-        resolved_value, error_result, is_sensitive = _resolve_placeholder_value(
+        resolution = _resolve_placeholder_value(
             contract=contract,
             selected_values=selected_values,
             derived_sensitive=derived_sensitive,
@@ -167,12 +179,13 @@ def _expand_segments(
             placeholder_name=segment.name,
             refs=refs,
             depth=depth,
+            path=path,
         )
-        if error_result is not None:
-            return error_result, inherited_sensitive
+        if resolution.error_result is not None:
+            return resolution.error_result, inherited_sensitive
 
-        inherited_sensitive = inherited_sensitive or is_sensitive
-        parts.append(resolved_value or "")
+        inherited_sensitive = inherited_sensitive or resolution.inherited_sensitive
+        parts.append(resolution.value or "")
 
     return (
         ExpansionResult(value="".join(parts), status="expanded", refs=tuple(refs)),
@@ -189,10 +202,11 @@ def expand_selected_values(
     expanded: dict[str, ExpansionResult] = {}
     derived_sensitive: dict[str, bool] = {key: False for key in selected_values}
 
-    def resolve_key(key: str, depth: int) -> ExpansionResult:
+    def resolve_key(key: str, depth: int, path: tuple[str, ...]) -> ExpansionResult:
         cached = _get_cached_or_guarded_result(
             key=key,
             depth=depth,
+            path=path,
             selected_values=selected_values,
             states=states,
             expanded=expanded,
@@ -229,6 +243,7 @@ def expand_selected_values(
             derived_sensitive=derived_sensitive,
             resolve_key=resolve_key,
             depth=depth,
+            path=(*path, key),
         )
         derived_sensitive[key] = inherited_sensitive
         expanded[key] = result
@@ -236,6 +251,6 @@ def expand_selected_values(
         return result
 
     for key in sorted(selected_values):
-        resolve_key(key, 0)
+        resolve_key(key, 0, ())
 
     return expanded, derived_sensitive

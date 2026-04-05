@@ -495,8 +495,44 @@ def test_resolve_environment_marks_cycles_invalid(
     report = resolve_environment(context, contract, active_profile="local")
 
     assert report.invalid_keys == ("A", "B")
-    assert "Expansion cycle error" in (report.values["A"].detail or "")
+    assert report.values["A"].detail == "Expansion cycle error: Cycle detected: A -> B -> A"
     assert report.values["A"].expansion_status == "error"
+    assert report.values["A"].expansion_refs == ("A", "B", "A")
+    assert report.values["B"].detail == "Expansion cycle error: Cycle detected: A -> B -> A"
+    assert report.values["B"].expansion_status == "error"
+    assert report.values["B"].expansion_refs == ("A", "B", "A")
+
+
+def test_resolve_environment_reports_full_cycle_path_for_longer_cycles(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = make_contract(
+        {
+            "A": make_variable_spec(name="A", type="string", required=True),
+            "B": make_variable_spec(name="B", type="string", required=True),
+            "C": make_variable_spec(name="C", type="string", required=True),
+        }
+    )
+    context = make_project_context(vault_values_path="/tmp/vault.env")
+
+    patch_loaded_profile_values(
+        monkeypatch,
+        context=context,
+        values={"A": "${B}", "B": "${C}", "C": "${A}"},
+    )
+
+    report = resolve_environment(context, contract, active_profile="local")
+
+    assert report.invalid_keys == ("A", "B", "C")
+    expected_detail = "Expansion cycle error: Cycle detected: A -> B -> C -> A"
+    expected_refs = ("A", "B", "C", "A")
+
+    assert report.values["A"].detail == expected_detail
+    assert report.values["A"].expansion_refs == expected_refs
+    assert report.values["B"].detail == expected_detail
+    assert report.values["B"].expansion_refs == expected_refs
+    assert report.values["C"].detail == expected_detail
+    assert report.values["C"].expansion_refs == expected_refs
 
 
 def test_resolve_environment_reports_syntax_errors(

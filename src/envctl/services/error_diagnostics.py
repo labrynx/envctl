@@ -1,10 +1,11 @@
+# src/envctl/services/error_diagnostics.py
 """Typed diagnostics for structured CLI-facing errors."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, TypeAlias
+from typing import Literal
 
 from envctl.domain.resolution import ResolutionReport
 
@@ -128,7 +129,7 @@ class ProjectBindingDiagnostics:
     suggested_actions: tuple[str, ...] = ()
 
 
-ErrorDiagnostics: TypeAlias = (
+ErrorDiagnostics = (
     ProjectionValidationDiagnostics
     | ContractDiagnostics
     | ConfigDiagnostics
