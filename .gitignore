@@ -8,7 +8,7 @@ __pycache__/
 .env.*
 .envctl.json
 !.env.example
-
+.codex
 .pytest_cache
 .coverage
 coverage.xml
