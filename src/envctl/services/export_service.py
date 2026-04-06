@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from typing import Literal
 
+from envctl.domain.deprecations import ContractDeprecationWarning
 from envctl.domain.project import ProjectContext
+from envctl.domain.selection import ContractSelection
 from envctl.services.context_service import load_project_context
-from envctl.services.group_selection_service import (
+from envctl.services.contract_selection_service import (
     build_variable_groups,
     filter_projection_values,
 )
@@ -19,23 +21,23 @@ def run_export(
     active_profile: str | None = None,
     *,
     format: Literal["shell", "dotenv"] = "shell",
-    group: str | None = None,
-) -> tuple[ProjectContext, str, str]:
+    selection: ContractSelection | None = None,
+) -> tuple[ProjectContext, str, str, tuple[ContractDeprecationWarning, ...]]:
     """Render the resolved environment as shell export lines."""
     _config, context = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
 
-    contract, report = resolve_projectable_environment(
+    contract, report, warnings = resolve_projectable_environment(
         context,
         active_profile=resolved_profile,
-        group=group,
+        selection=selection,
         operation="export",
     )
 
     values = filter_projection_values(
         {key: item.value for key, item in sorted(report.values.items())},
         contract,
-        group=group,
+        selection=selection,
     )
 
     if format == "dotenv":
@@ -46,4 +48,4 @@ def run_export(
         )
     else:
         rendered = render_shell_exports(values)
-    return context, resolved_profile, rendered
+    return context, resolved_profile, rendered, warnings

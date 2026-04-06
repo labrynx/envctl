@@ -7,11 +7,10 @@ import subprocess
 
 from envctl.domain.operations import RunCommandResult
 from envctl.domain.project import ProjectContext
+from envctl.domain.selection import ContractSelection
 from envctl.errors import ExecutionError
 from envctl.services.context_service import load_project_context
-from envctl.services.group_selection_service import (
-    filter_projection_values,
-)
+from envctl.services.contract_selection_service import filter_projection_values
 from envctl.services.projection_validation import resolve_projectable_environment
 from envctl.utils.project_paths import normalize_profile_name
 
@@ -82,8 +81,8 @@ def run_command(
     command: list[str],
     active_profile: str | None = None,
     *,
-    group: str | None = None,
-) -> tuple[ProjectContext, RunCommandResult]:
+    selection: ContractSelection | None = None,
+) -> tuple[ProjectContext, RunCommandResult, tuple[object, ...]]:
     """Run one command with the resolved environment injected."""
     if not command:
         raise ExecutionError("No command provided")
@@ -91,17 +90,17 @@ def run_command(
     _config, context = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
 
-    contract, report = resolve_projectable_environment(
+    contract, report, warnings = resolve_projectable_environment(
         context,
         active_profile=resolved_profile,
-        group=group,
+        selection=selection,
         operation="run",
     )
 
     resolved_values = filter_projection_values(
         {key: item.value for key, item in report.values.items()},
         contract,
-        group=group,
+        selection=selection,
     )
 
     try:
@@ -113,8 +112,12 @@ def run_command(
     except OSError as exc:
         raise ExecutionError(f"Failed to launch child process: {command[0]}") from exc
 
-    return context, RunCommandResult(
-        active_profile=resolved_profile,
-        exit_code=completed.returncode,
-        warnings=_build_docker_warning(command),
+    return (
+        context,
+        RunCommandResult(
+            active_profile=resolved_profile,
+            exit_code=completed.returncode,
+            warnings=_build_docker_warning(command),
+        ),
+        warnings,
     )

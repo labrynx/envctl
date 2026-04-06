@@ -28,6 +28,7 @@ from envctl.cli.runtime import set_cli_state
 from envctl.config.loader import load_config
 from envctl.config.profile_resolution import resolve_active_profile
 from envctl.domain.runtime import OutputFormat
+from envctl.domain.selection import ContractSelection
 from envctl.errors import EnvctlError
 
 VERSION_OPTION = typer.Option(
@@ -53,7 +54,17 @@ GROUP_OPTION = typer.Option(
     None,
     "--group",
     "-g",
-    help="Target only variables whose contract group matches LABEL exactly.",
+    help="Target only variables whose contract groups include NAME.",
+)
+SET_OPTION = typer.Option(
+    None,
+    "--set",
+    help="Target one named contract set.",
+)
+VAR_OPTION = typer.Option(
+    None,
+    "--var",
+    help="Target one explicit contract variable.",
 )
 
 app = typer.Typer(help="envctl - local environment control plane")
@@ -70,16 +81,25 @@ def main(
     json_output: bool = JSON_OPTION,
     profile: str | None = PROFILE_OPTION,
     group: str | None = GROUP_OPTION,
+    set_name: str | None = SET_OPTION,
+    variable: str | None = VAR_OPTION,
 ) -> None:
     """envctl - local environment control plane."""
     del version
 
     try:
+        selection = ContractSelection.from_selectors(
+            group=group,
+            set_name=set_name,
+            variable=variable,
+        )
         config = load_config()
         active_profile = resolve_active_profile(
             profile,
             config_default_profile=config.default_profile,
         )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
     except EnvctlError as exc:
         command = "envctl"
         if ctx.invoked_subcommand is not None:
@@ -95,7 +115,9 @@ def main(
         ctx,
         output_format=OutputFormat.JSON if json_output else OutputFormat.TEXT,
         profile=active_profile,
-        group=group.strip() or None if group is not None else None,
+        group=selection.group,
+        set_name=selection.set_name,
+        variable=selection.variable,
     )
 
 

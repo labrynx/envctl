@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from envctl.constants import GIT_CONFIG_PROJECT_ID_KEY
+from envctl.domain.deprecations import ContractDeprecationWarning
 from envctl.domain.doctor import DoctorCheck
+from envctl.repository.contract_repository import load_contract_with_warnings
 from envctl.repository.profile_repository import require_persisted_profile
 from envctl.repository.project_context import build_project_context
 from envctl.services.context_service import load_project_context
@@ -13,11 +15,12 @@ from envctl.utils.project_paths import normalize_profile_name
 
 def run_doctor(
     active_profile: str | None = None,
-) -> tuple[str, list[DoctorCheck]]:
+) -> tuple[str, list[DoctorCheck], tuple[ContractDeprecationWarning, ...]]:
     """Run read-only diagnostics for envctl."""
     config, _ = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
     checks: list[DoctorCheck] = []
+    warnings: tuple[ContractDeprecationWarning, ...] = ()
 
     checks.append(
         DoctorCheck(
@@ -117,6 +120,7 @@ def run_doctor(
         )
 
     if context.repo_contract_path.exists():
+        _contract, warnings = load_contract_with_warnings(context.repo_contract_path)
         checks.append(
             DoctorCheck(
                 "contract",
@@ -158,4 +162,4 @@ def run_doctor(
             )
         )
 
-    return resolved_profile, checks
+    return resolved_profile, checks, warnings

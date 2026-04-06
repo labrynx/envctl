@@ -7,29 +7,33 @@ from pathlib import Path
 import typer
 
 from envctl.cli.decorators import handle_errors, requires_writable_runtime
-from envctl.cli.presenters import render_sync_result
-from envctl.cli.runtime import get_active_profile, get_selected_group
+from envctl.cli.presenters import render_contract_deprecation_warnings, render_sync_result
+from envctl.cli.runtime import get_active_profile, get_contract_selection
 from envctl.services.sync_service import run_sync
 
-OUTPUT_OPTION = typer.Option(
+SYNC_OUTPUT_PATH_OPTION = typer.Option(
     None,
-    "--output",
-    help=(
-        "Write the generated dotenv file to PATH instead of the default "
-        "profile-derived repo-local target."
-    ),
+    "--output-path",
+    help="Custom output path.",
 )
 
 
 @handle_errors
 @requires_writable_runtime("sync")
 def sync_command(
-    output: Path | None = OUTPUT_OPTION,
+    output_path: Path | None = SYNC_OUTPUT_PATH_OPTION,
 ) -> None:
-    """Materialize the resolved environment into the repository env file."""
-    _context, active_profile, target_path = run_sync(
+    """Write the resolved environment into a repository env file."""
+    context, active_profile, target_path, warnings = run_sync(
         get_active_profile(),
-        output_path=output,
-        group=get_selected_group(),
+        output_path=output_path,
+        selection=get_contract_selection(),
     )
-    render_sync_result(profile=active_profile, target_path=target_path)
+
+    if warnings:
+        render_contract_deprecation_warnings(warnings, stderr=True)
+
+    render_sync_result(
+        profile=active_profile,
+        target_path=target_path,
+    )

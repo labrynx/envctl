@@ -5,10 +5,15 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors
-from envctl.cli.presenters import render_resolution_view
-from envctl.cli.runtime import get_active_profile, get_selected_group, is_json_output
+from envctl.cli.presenters import (
+    render_contract_deprecation_warnings,
+    render_resolution_view,
+)
+from envctl.cli.runtime import get_active_profile, get_contract_selection, is_json_output
 from envctl.cli.serializers import (
     emit_json,
+    serialize_contract_deprecation_warnings,
+    serialize_contract_selection,
     serialize_project_context,
     serialize_resolution_report,
 )
@@ -24,8 +29,11 @@ def _is_check_ok(*, is_valid: bool, unknown_keys: list[str] | tuple[str, ...]) -
 @handle_errors
 def check_command() -> None:
     """Validate the current project environment against the contract."""
-    selected_group = get_selected_group()
-    context, active_profile, report = run_check(get_active_profile(), group=selected_group)
+    selection = get_contract_selection()
+    context, active_profile, report, warnings = run_check(
+        get_active_profile(),
+        selection=selection,
+    )
     ok = _is_check_ok(
         is_valid=report.is_valid,
         unknown_keys=report.unknown_keys,
@@ -38,7 +46,8 @@ def check_command() -> None:
                 "command": "check",
                 "data": {
                     "active_profile": active_profile,
-                    "selected_group": selected_group,
+                    "selection": serialize_contract_selection(selection),
+                    "warnings": serialize_contract_deprecation_warnings(warnings),
                     "context": serialize_project_context(context),
                     "report": serialize_resolution_report(report),
                 },
@@ -48,9 +57,12 @@ def check_command() -> None:
             raise typer.Exit(code=1)
         return
 
+    if warnings:
+        render_contract_deprecation_warnings(warnings)
+
     render_resolution_view(
         profile=active_profile,
-        group=selected_group,
+        selection=selection,
         report=report,
     )
 

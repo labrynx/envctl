@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from envctl.domain.deprecations import ContractDeprecationWarning
 from envctl.domain.project import ProjectContext
+from envctl.domain.selection import ContractSelection
+from envctl.errors import ExecutionError
 from envctl.services.context_service import load_project_context
-from envctl.services.group_selection_service import (
+from envctl.services.contract_selection_service import (
     build_variable_groups,
     filter_projection_values,
 )
@@ -20,23 +23,23 @@ def run_sync(
     active_profile: str | None = None,
     *,
     output_path: Path | None = None,
-    group: str | None = None,
-) -> tuple[ProjectContext, str, Path]:
+    selection: ContractSelection | None = None,
+) -> tuple[ProjectContext, str, Path, tuple[ContractDeprecationWarning, ...]]:
     """Materialize the resolved environment into the repository env file."""
     _config, context = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
 
-    contract, report = resolve_projectable_environment(
+    contract, report, warnings = resolve_projectable_environment(
         context,
         active_profile=resolved_profile,
-        group=group,
+        selection=selection,
         operation="sync",
     )
 
     values = filter_projection_values(
         {key: item.value for key, item in sorted(report.values.items())},
         contract,
-        group=group,
+        selection=selection,
     )
 
     rendered = render_dotenv(
@@ -45,6 +48,14 @@ def run_sync(
         variable_groups=build_variable_groups(contract, values),
     )
     target_path = output_path or build_repo_sync_env_path(context.repo_root, resolved_profile)
-    write_text_atomic(target_path, rendered)
 
-    return context, resolved_profile, target_path
+    try:
+        write_text_atomic(target_path, rendered)
+    except IsADirectoryError as exc:
+        raise ExecutionError(f"Output path must be a file, not a directory: {target_path}") from exc
+    except OSError as exc:
+        raise ExecutionError(
+            f"Could not write synced environment file: {target_path}: {exc.strerror or exc}"
+        ) from exc
+
+    return context, resolved_profile, target_path, warnings

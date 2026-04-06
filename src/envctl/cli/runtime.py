@@ -9,6 +9,7 @@ import typer
 
 from envctl.constants import DEFAULT_PROFILE
 from envctl.domain.runtime import OutputFormat
+from envctl.domain.selection import ContractSelection
 
 
 @dataclass(frozen=True)
@@ -18,6 +19,8 @@ class CliState:
     output_format: OutputFormat = OutputFormat.TEXT
     profile: str = DEFAULT_PROFILE
     group: str | None = None
+    set_name: str | None = None
+    variable: str | None = None
 
 
 def set_cli_state(
@@ -26,9 +29,17 @@ def set_cli_state(
     output_format: OutputFormat,
     profile: str = DEFAULT_PROFILE,
     group: str | None = None,
+    set_name: str | None = None,
+    variable: str | None = None,
 ) -> None:
     """Persist the CLI state on the Typer/Click context."""
-    ctx.obj = CliState(output_format=output_format, profile=profile, group=group)
+    ctx.obj = CliState(
+        output_format=output_format,
+        profile=profile,
+        group=group,
+        set_name=set_name,
+        variable=variable,
+    )
 
 
 def get_cli_state() -> CliState:
@@ -57,6 +68,26 @@ def get_active_profile() -> str:
 def get_selected_group() -> str | None:
     """Return the active CLI group filter."""
     return get_cli_state().group
+
+
+def get_selected_set() -> str | None:
+    """Return the active CLI set selector."""
+    return get_cli_state().set_name
+
+
+def get_selected_var() -> str | None:
+    """Return the active CLI variable selector."""
+    return get_cli_state().variable
+
+
+def get_contract_selection() -> ContractSelection:
+    """Return the normalized active contract selection."""
+    state = get_cli_state()
+    return ContractSelection.from_selectors(
+        group=state.group,
+        set_name=state.set_name,
+        variable=state.variable,
+    )
 
 
 def get_command_path() -> str | None:
