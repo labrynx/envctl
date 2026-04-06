@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=80", "setuptools-scm[simple]>=9.2", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "envctl"
-version = "2.4.1"
+dynamic = ["version"]
 description = "Local environment control plane for contract-driven development workflows"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -44,6 +44,9 @@ dependencies = [
   "cryptography>=46.0.6,<47",
 ]
 
+[tool.setuptools_scm]
+local_scheme = "no-local-version"
+
 [project.urls]
 Homepage = "https://github.com/labrynx/envctl"
 Repository = "https://github.com/labrynx/envctl"
@@ -64,6 +67,7 @@ dev = [
   "bandit[toml]==1.9.4",
   "pre-commit==4.5.1",
   "import-linter==2.4",
+  "setuptools-scm[simple]>=9.2",
 ]
 
 [project.scripts]
