@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import cast
-
 from envctl.domain.contract import Contract, VariableFormat, VariableSpec, VariableType
 from envctl.domain.contract_inference import infer_spec
 from envctl.domain.operations import AddVariableRequest, AddVariableResult
@@ -33,7 +31,7 @@ def _resolve_variable_type(raw_type: str | None, inferred_type: VariableType) ->
         allowed = ", ".join(_ALLOWED_VARIABLE_TYPES)
         raise ValidationError(f"Invalid variable type: {raw_type!r}. Expected one of: {allowed}")
 
-    return cast(VariableType, normalized)
+    return normalized
 
 
 def _resolve_variable_format(raw_format: str | None) -> VariableFormat | None:
@@ -51,7 +49,7 @@ def _resolve_variable_format(raw_format: str | None) -> VariableFormat | None:
             f"Invalid variable format: {raw_format!r}. Expected one of: {allowed}"
         )
 
-    return cast(VariableFormat, normalized)
+    return normalized
 
 
 def _apply_request_to_spec(
