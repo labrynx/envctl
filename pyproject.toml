@@ -56,7 +56,7 @@ dev = [
   "pytest-cov==7.1.0",
   "ruff==0.11.8",
   "mypy==1.11.2",
-  "types-PyYAML==6.0.12.20240311",
+  "types-PyYAML==6.0.12.20250915",
   "types-cryptography",
   "build==1.2.2",
   "twine==6.2.0",
