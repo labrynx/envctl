@@ -4,15 +4,14 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.decorators import handle_errors
-from envctl.cli.presenters import render_check_result, render_contract_deprecation_warnings
-from envctl.cli.runtime import get_active_profile, get_contract_selection, is_json_output
-from envctl.cli.serializers import (
-    emit_json,
-    serialize_check_result,
-    serialize_command_warnings,
-    serialize_contract_deprecation_warnings,
+from envctl.cli.command_support import (
+    build_json_command_payload,
+    render_contract_warnings_if_any,
 )
+from envctl.cli.decorators import handle_errors
+from envctl.cli.presenters import render_check_result
+from envctl.cli.runtime import get_active_profile, get_contract_selection, is_json_output
+from envctl.cli.serializers import emit_json, serialize_check_result
 from envctl.services.check_service import run_check
 
 
@@ -26,23 +25,19 @@ def check_command() -> None:
 
     if is_json_output():
         emit_json(
-            {
-                "ok": result.ok,
-                "command": "check",
-                "data": {
-                    **serialize_check_result(result, context=context),
-                    "warnings": serialize_contract_deprecation_warnings(warnings)
-                    + serialize_command_warnings(result.warnings),
-                },
-            }
+            build_json_command_payload(
+                command="check",
+                ok=result.ok,
+                data=serialize_check_result(result, context=context),
+                contract_warnings=warnings,
+                command_warnings=result.warnings,
+            )
         )
         if not result.ok:
             raise typer.Exit(code=1)
         return
 
-    if warnings:
-        render_contract_deprecation_warnings(warnings)
-
+    render_contract_warnings_if_any(warnings)
     render_check_result(result)
 
     if not result.ok:

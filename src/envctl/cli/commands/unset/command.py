@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.decorators import handle_errors, requires_writable_runtime
+from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
 from envctl.cli.presenters import render_unset_result
 from envctl.cli.runtime import get_active_profile
 from envctl.services.unset_service import run_unset
@@ -12,6 +12,7 @@ from envctl.services.unset_service import run_unset
 
 @handle_errors
 @requires_writable_runtime("unset")
+@text_output_only("unset")
 def unset_command(
     key: str = typer.Argument(...),
 ) -> None:

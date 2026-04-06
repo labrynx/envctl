@@ -17,7 +17,15 @@ from envctl.cli.presenters.check_presenter import render_check_result
 from envctl.cli.presenters.config_error_presenter import render_config_error
 from envctl.cli.presenters.contract_error_presenter import render_contract_error
 from envctl.cli.presenters.deprecation_presenter import render_contract_deprecation_warnings
-from envctl.cli.presenters.inspect_presenter import render_inspect_key_result, render_inspect_result
+from envctl.cli.presenters.inspect_presenter import (
+    render_contract_group_result,
+    render_contract_groups_summary,
+    render_contract_set_result,
+    render_contract_sets_summary,
+    render_contracts_result,
+    render_inspect_key_result,
+    render_inspect_result,
+)
 from envctl.cli.presenters.profile_presenter import (
     render_profile_copy_result,
     render_profile_create_result,
@@ -62,6 +70,11 @@ __all__ = [
     "render_config_init_result",
     "render_contract_deprecation_warnings",
     "render_contract_error",
+    "render_contract_group_result",
+    "render_contract_groups_summary",
+    "render_contract_set_result",
+    "render_contract_sets_summary",
+    "render_contracts_result",
     "render_export_output",
     "render_fill_no_changes",
     "render_fill_result",

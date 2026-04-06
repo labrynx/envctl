@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from envctl.cli.command_support import build_json_command_payload
 from envctl.cli.decorators import handle_errors
 from envctl.cli.presenters import render_status_view
 from envctl.cli.runtime import get_active_profile, is_json_output
@@ -18,11 +19,10 @@ def status_command() -> None:
         payload = serialize_status_report(report)
         payload["active_profile"] = active_profile
         emit_json(
-            {
-                "ok": True,
-                "command": "status",
-                "data": payload,
-            }
+            build_json_command_payload(
+                command="status",
+                data=payload,
+            )
         )
         return
 
