@@ -82,8 +82,8 @@ envctl fill
 envctl run -- python app.py
 ```
 
-The contract is shared in git.  
-The values stay local.  
+The contract is shared in git.
+The values stay local.
 The runtime environment is rebuilt consistently when needed.
 
 ---
@@ -148,7 +148,7 @@ envctl may be unnecessary if:
 - sensitive values are masked in output
 - optional encryption at rest is available
 
-> envctl assumes a trusted machine.  
+> envctl assumes a trusted machine.
 > If your machine is compromised, your secrets are compromised too.
 
 ---

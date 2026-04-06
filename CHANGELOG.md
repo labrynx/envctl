@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-This release makes contracts modular without sacrificing determinism. 
+This release makes contracts modular without sacrificing determinism.
 You can now split your contract across files, but envctl still resolves everything into a single, predictable result.
 The CLI is now more consistent across commands, making it easier to understand and reason about what envctl is doing.
 

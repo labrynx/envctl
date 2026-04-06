@@ -1,0 +1,51 @@
+exclude: |
+  (?x)^(
+    src/.*\.egg-info/.*|
+    build/.*|
+    dist/.*|
+    \.mypy_cache/.*|
+    \.pytest_cache/.*|
+    \.ruff_cache/.*
+  )$
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.8
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: mypy
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: bandit
+        name: bandit
+        entry: bandit -c pyproject.toml -r src
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: pytest-fast
+        name: pytest-fast
+        entry: pytest -q --maxfail=1
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

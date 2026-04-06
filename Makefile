@@ -14,6 +14,7 @@ MYPY ?= mypy
 BANDIT ?= bandit
 COV_MIN ?= 85
 PYTEST ?= pytest
+PRE_COMMIT ?= pre-commit
 BUILD ?= python -m build
 TWINE ?= python -m twine
 
@@ -49,7 +50,8 @@ PYTEST_COV_ARGS ?= --cov=$(COV_TARGET) --cov-report=term-missing:skip-covered --
 	clean clean-hard \
 	build-package check-package publish-test publish-package \
 	run doctor \
-	status commit push
+	status commit push \
+	pre-commit-install pre-commit-run pre-push-run
 
 # -----------------------------------------
 # Help
@@ -175,6 +177,16 @@ clean-hard: clean ## Remove additional local environment artifacts
 # -----------------------------------------
 # Git helpers
 # -----------------------------------------
+
+pre-commit-install: ## Install pre-commit hooks
+	$(PRE_COMMIT) install
+	$(PRE_COMMIT) install --hook-type pre-push
+
+pre-commit-run: ## Run pre-commit on all files
+	$(PRE_COMMIT) run --all-files
+
+pre-push-run: ## Run pre-push hooks on all files
+	$(PRE_COMMIT) run --hook-stage pre-push --all-files
 
 status: ## Show git status
 	git status

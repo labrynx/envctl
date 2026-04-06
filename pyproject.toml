@@ -63,6 +63,7 @@ dev = [
   "pkginfo==1.12.0",
   "vulture==2.16",
   "bandit[toml]==1.8.3",
+  "pre-commit==4.2.0",
 ]
 
 [project.scripts]
@@ -82,6 +83,16 @@ pythonpath = ["src"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+exclude = [
+  ".git",
+  ".mypy_cache",
+  ".pytest_cache",
+  ".ruff_cache",
+  ".venv",
+  "build",
+  "dist",
+  "src/*.egg-info",
+]
 
 [tool.ruff.lint]
 select = [
@@ -117,6 +128,7 @@ indent-style = "space"
 python_version = "3.12"
 mypy_path = "src"
 files = ["src", "tests"]
+exclude = '(^build/|^dist/|^src/.*\.egg-info/)'
 namespace_packages = true
 explicit_package_bases = true
 
@@ -148,5 +160,5 @@ module = ["cryptography.*"]
 ignore_missing_imports = true
 
 [tool.bandit]
-exclude_dirs = ["tests", ".venv", "dist", "build"]
+exclude_dirs = ["tests", ".venv", "dist", "build", "src/envctl.egg-info"]
 skips = ["B101", "B404"]
