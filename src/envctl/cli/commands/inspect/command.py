@@ -2,29 +2,60 @@
 
 from __future__ import annotations
 
+import typer
+
 from envctl.cli.decorators import handle_errors
 from envctl.cli.presenters import (
     render_contract_deprecation_warnings,
-    render_resolution_view,
+    render_inspect_key_result,
+    render_inspect_result,
 )
 from envctl.cli.runtime import get_active_profile, get_contract_selection, is_json_output
 from envctl.cli.serializers import (
     emit_json,
+    serialize_command_warnings,
     serialize_contract_deprecation_warnings,
-    serialize_contract_selection,
-    serialize_project_context,
-    serialize_resolution_report,
+    serialize_inspect_key_result,
+    serialize_inspect_result,
 )
-from envctl.services.inspect_service import run_inspect
+from envctl.errors import ExecutionError
+from envctl.services.inspect_service import run_inspect, run_inspect_key
 
 
 @handle_errors
-def inspect_command() -> None:
-    """Inspect the resolved environment."""
-    selection = get_contract_selection()
-    context, active_profile, report, warnings = run_inspect(
+def inspect_command(key: str | None = typer.Argument(None)) -> None:
+    """Inspect the resolved environment or one key in detail."""
+    if key is not None:
+        selection = get_contract_selection()
+        if selection.mode != "full":
+            raise ExecutionError(
+                "Cannot combine `inspect KEY` with --group, --set, or --var. "
+                "Use either a positional key or a scope selector."
+            )
+        _context, key_result, warnings = run_inspect_key(key, get_active_profile())
+
+        if is_json_output():
+            emit_json(
+                {
+                    "ok": True,
+                    "command": "inspect",
+                    "data": {
+                        **serialize_inspect_key_result(key_result),
+                        "warnings": serialize_contract_deprecation_warnings(warnings)
+                        + serialize_command_warnings(key_result.warnings),
+                    },
+                }
+            )
+            return
+
+        if warnings:
+            render_contract_deprecation_warnings(warnings)
+        render_inspect_key_result(key_result)
+        return
+
+    _context, inspect_result, warnings = run_inspect(
         get_active_profile(),
-        selection=selection,
+        selection=get_contract_selection(),
     )
 
     if is_json_output():
@@ -33,11 +64,9 @@ def inspect_command() -> None:
                 "ok": True,
                 "command": "inspect",
                 "data": {
-                    "active_profile": active_profile,
-                    "selection": serialize_contract_selection(selection),
-                    "warnings": serialize_contract_deprecation_warnings(warnings),
-                    "context": serialize_project_context(context),
-                    "report": serialize_resolution_report(report),
+                    **serialize_inspect_result(inspect_result),
+                    "warnings": serialize_contract_deprecation_warnings(warnings)
+                    + serialize_command_warnings(inspect_result.warnings),
                 },
             }
         )
@@ -46,8 +75,4 @@ def inspect_command() -> None:
     if warnings:
         render_contract_deprecation_warnings(warnings)
 
-    render_resolution_view(
-        profile=active_profile,
-        selection=selection,
-        report=report,
-    )
+    render_inspect_result(inspect_result)
