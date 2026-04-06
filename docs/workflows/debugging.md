@@ -46,15 +46,17 @@ This helps answer questions like:
 * is a value missing from the active profile?
 * did one placeholder reference make the value invalid?
 
-## Step 4: explain one key
+## Step 4: inspect one key
 
 ```bash
-envctl explain KEY
+envctl inspect KEY
 ```
 
-Once the problem narrows down to one variable, `explain` is usually the fastest way to understand it.
+Once the problem narrows down to one variable, `inspect KEY` is usually the fastest way to understand it.
 
 That is especially useful after a projection failure points at one invalid or expanded key.
+
+`envctl explain KEY` still works for now, but it is deprecated in favor of `envctl inspect KEY` and is scheduled for removal in v2.6.0.`
 
 ## Step 5: inspect stored vault values
 
@@ -98,7 +100,9 @@ That means you can usually tell apart:
 
 A good mental shortcut is:
 
-* `inspect` → resolved state
+* `check` → short validation and next actions
+* `inspect` → full resolved state and context
+* `inspect KEY` → one variable in detail
 * `vault show` → stored values
 
 If you keep that distinction in mind, debugging gets much easier.

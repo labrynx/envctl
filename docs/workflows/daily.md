@@ -33,10 +33,10 @@ This is especially useful if a value is coming from a default, a profile, or the
 ## Debug one variable
 
 ```bash
-envctl explain KEY
+envctl inspect KEY
 ```
 
-Use `explain` when the problem is really about one key, not the whole environment.
+Use `inspect KEY` when the problem is really about one key, not the whole environment. `explain KEY` still works for now, but it is deprecated.
 
 ## Switch environment
 

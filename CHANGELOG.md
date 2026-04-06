@@ -17,12 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `check` now behaves like a compact diagnostic command, focused on problems, actions, and a short summary instead of dumping every resolved value
+- `inspect` is now the main detailed diagnostic command and can also inspect one variable directly with `envctl inspect KEY`
 - Variables now use `groups` as the primary grouping field, with deterministic internal normalization
 - Validation and projection now follow one explicit contract scope: full contract, `--group`, `--set`, or `--var`
 - `doctor`, `check`, `inspect`, `export`, `run`, and `sync` surface scope-aware behavior more consistently
 
 ### Deprecated
 
+- `envctl doctor` is now a deprecated alias of `envctl inspect` and is scheduled for removal in `v2.6.0`
+- `envctl explain KEY` is now a deprecated alias of `envctl inspect KEY` and is scheduled for removal in `v2.6.0`
 - Legacy `group` is still accepted, but it is normalized to `groups: [value]` and should be migrated
 - Legacy `required` is still accepted for compatibility, but it no longer has functional meaning
 

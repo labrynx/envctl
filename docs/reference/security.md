@@ -241,8 +241,8 @@ Commands such as these should remain read-only:
 
 * `check`
 * `inspect`
-* `explain`
-* `doctor`
+* `inspect KEY`
+* `inspect`
 * `status`
 * `profile list`
 * `profile path`
@@ -331,7 +331,7 @@ That includes:
 * understanding the difference between local values and shared contract definitions
 * understanding that profiles are namespaces, not security barriers
 
-`envctl doctor` can help identify obvious readiness or storage problems, but it cannot replace host security.
+`envctl inspect` can help identify obvious readiness or storage problems, but it cannot replace host security. The deprecated `envctl doctor` alias still works during the transition.
 
 ## Future security direction
 

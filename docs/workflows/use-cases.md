@@ -125,7 +125,7 @@ This is helpful when the question is not “what is stored?” but “what will 
 Understand why one variable is missing, invalid, or unexpected.
 
 ```bash
-envctl explain DATABASE_URL
+envctl inspect DATABASE_URL
 ```
 
 ## Useful when
@@ -280,7 +280,7 @@ docker run --env-file <(envctl export --format dotenv) my-image
 Check host and project readiness.
 
 ```bash
-envctl doctor
+envctl inspect
 ```
 
 ## Typical checks
@@ -498,7 +498,7 @@ Something fails and you are not sure why.
 envctl status
 envctl check
 envctl inspect
-envctl explain DATABASE_URL
+envctl inspect DATABASE_URL
 envctl vault show
 ```
 
@@ -507,7 +507,7 @@ envctl vault show
 * `status` gives the broad picture
 * `check` confirms whether the contract is satisfied
 * `inspect` shows the resolved state
-* `explain` zooms in on one key
+* `inspect KEY` zooms in on one key
 * `vault show` reveals the physical stored values
 
 ---
@@ -639,7 +639,7 @@ envctl fill
 
 ```bash
 envctl inspect
-envctl explain KEY
+envctl inspect KEY
 ```
 
 ### Working with multiple local environments

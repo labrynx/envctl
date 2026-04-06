@@ -216,9 +216,8 @@ That keeps automation predictable and avoids accidental local-style writes in CI
 ```bash
 envctl check
 envctl inspect
-envctl explain DATABASE_URL
+envctl inspect DATABASE_URL
 envctl status
-envctl doctor
 
 envctl add DATABASE_URL <value>
 envctl set PORT 4000
@@ -236,6 +235,14 @@ envctl vault show
 envctl vault encrypt
 envctl vault decrypt
 ```
+
+For diagnosis, the main path is now:
+
+- `envctl check` for a short pass/fail view
+- `envctl inspect` for the full report
+- `envctl inspect KEY` for one variable in depth
+
+`envctl doctor` and `envctl explain KEY` still work for compatibility, but they are deprecated aliases.
 
 ---
 

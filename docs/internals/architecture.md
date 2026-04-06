@@ -1,163 +1,173 @@
 # Internal Architecture
 
-This document explains how `envctl` is organized internally.
+This document explains how `envctl` is organized internally today.
 
-It is mainly for contributors, maintainers, or anyone who wants to understand how the code is structured behind the CLI.
+It is written for maintainers and contributors. The goal is not to describe an ideal architecture in the abstract, but the actual structure of this repository and the responsibilities each layer is expected to keep.
 
-## The big picture
+## Product model first
 
-`envctl` is built in layers.
+`envctl` revolves around a small set of concepts:
 
-The goal of that structure is simple: keep command-line concerns separate from business logic, keep domain rules separate from file access, and avoid hiding important behavior in random helper functions.
+- **contract** — the shared project declaration in `.envctl.schema.yaml`
+- **profile values** — local persisted values stored in the vault
+- **project context** — the resolved project identity, binding source, and vault paths
+- **resolution** — the deterministic runtime view built from contract + profile values
+- **inspection** — human or JSON diagnostics over resolved state
+- **projection** — safe export of resolved values to subprocesses or generated files
 
-The main layers are:
+The code should reinforce that model.
 
-- CLI
-- Services
-- Domain
-- Repository
-- Config
-- Adapters
-- Utils
+## Layering
 
-## Dependency flow
-
-The dependency direction looks like this:
+The repository is intentionally split into these layers:
 
 ```text
-CLI -> Services -> Domain/Repository/Config/Adapters/Utils
+CLI -> Services -> Domain / Repository / Config / Adapters / Utils
 ```
 
-That means the CLI talks to services, and services orchestrate the rest. The deeper layers should not depend on the CLI.
-
-## Key principles
-
-A few principles shape the architecture:
-
-* explicit behavior
-* flows that stay consistent and easy to trace
-* no hidden mutation
-* CLI kept separate from application logic
-
-Those principles matter because `envctl` is a tool about visibility and trust. If the code hides behavior in the wrong places, the product starts to feel more magical than it should.
+The CLI talks to services. Services orchestrate workflows. The deeper layers should not depend on Typer or presentation concerns.
 
 ## CLI
 
-The CLI layer is responsible for things like:
+The CLI layer owns:
 
-* Typer command definitions
-* argument parsing
-* output formatting
+- Typer commands
+- argument and selector validation
+- command-specific output choices
+- alias and deprecation messaging
 
-The CLI should focus on interaction, not on business rules.
+Examples in this repo:
+
+- `check` is a compact validation command
+- `inspect` is the detailed diagnostic command
+- `inspect KEY` is the focused single-variable view
+- `doctor` and `explain` are deprecated aliases that delegate to `inspect` and `inspect KEY`
+
+The CLI should stay thin. If a command starts accumulating diagnostic-building logic, that logic probably belongs in a service helper instead.
 
 ## Services
 
-Services coordinate workflows.
+Services coordinate workflows and return structured results to the CLI.
 
-They are responsible for things like:
+Important examples in this repo:
 
-* command orchestration
-* combining domain rules with repository access
-* returning structured results to the CLI
+- `resolution_service` builds the resolved runtime state
+- `check_service` returns a compact `CheckResult`
+- `inspect_service` returns `InspectResult` or `InspectKeyResult`
+- `resolution_diagnostics.py` converts a `ResolutionReport` into reusable problems and summaries
+- projection-related services enforce that invalid or unsafe state does not leak into `run`, `sync`, or `export`
 
-A service should not depend on Typer or other CLI-specific details.
+A service should not know how the terminal output is formatted.
 
 ## Domain
 
-The domain layer holds the core concepts of the tool.
+The domain layer defines the core concepts and stable result models.
 
-That includes things like:
+Examples:
 
-* dataclasses
-* result models
-* contract semantics
-* resolution rules
+- `Contract`, `VariableSpec`, and `SetSpec`
+- `ProjectContext`
+- `ResolutionReport` and `ResolvedValue`
+- `CheckResult`, `InspectResult`, `InspectKeyResult`, `DiagnosticProblem`, and `DiagnosticSummary`
 
-If you want to understand what `envctl` means by “contract”, “profile”, or “resolved state”, this is the layer where those ideas should live.
+This is the layer where semantics should live. If a concept matters to users or to the product model, it probably deserves a domain model instead of an ad-hoc dictionary.
 
 ## Repository
 
-The repository layer is responsible for reading and reconstructing project-related state.
+The repository layer reconstructs persisted project state and contract state.
 
-Typical responsibilities include:
+Examples:
 
-* loading contracts
-* resolving project context
-* reconstructing persisted local state
+- loading and validating the contract
+- resolving vault profile paths
+- reconstructing project binding and recovery state
+- reading and writing persisted local state
 
-This layer should answer questions like “what data exists?” rather than “what should the CLI print?”
+This layer answers questions like “what exists on disk?” and “what project does this repo belong to?”
 
 ## Config
 
-The config layer handles user-level configuration and defaults.
+The config layer deals with user-level tool configuration:
 
-Typical responsibilities include:
+- runtime mode
+- default profile
+- encryption settings
+- config file validation
 
-* loading user config
-* applying defaults
-* validating config structure
-
-This is local tool configuration, not project contract state.
+This is not project contract state. It is local tool configuration.
 
 ## Adapters
 
-Adapters are the integration points with external systems or formats.
+Adapters isolate external integrations and file-format specifics.
 
-Examples include:
+Examples:
 
-* dotenv handling
-* Git access
-* editor launching
+- dotenv parsing and rendering
+- git access
+- editor launching
+- interactive input helpers
 
-They keep those integrations from leaking all over the rest of the codebase.
+Adapters should keep those concerns from leaking into services or domain code.
 
 ## Utils
 
-Utils support the rest of the system with small reusable helpers.
+Utilities exist for narrow, reusable helpers such as:
 
-Examples include:
+- atomic writes
+- masking
+- filesystem helpers
+- path normalization
+- projection rendering
 
-* filesystem helpers
-* atomic writes
-* masking
-* path handling
+`utils` should stay small and boring. If meaningful business logic starts to accumulate there, the code is probably hiding a missing domain or service concept.
 
-Utilities should stay focused. If business logic starts piling up here, that is usually a sign something belongs in a more explicit layer.
+## Error and diagnostics model
 
-## Core model
+`envctl` does not only return success values. It also exposes structured diagnostics.
 
-Even inside the architecture, the same conceptual model still matters:
+There are two important families:
 
-* contract
-* values
-* profiles
-* resolution
-* projection
+- **structured errors** — config, contract, repository, state, and projection failures surfaced through diagnostics objects
+- **command diagnostics** — summaries and actionable problems returned by `check` and `inspect`
 
-The code structure should reinforce that model, not blur it.
+That separation matters:
 
-## Anti-patterns
+- structured errors explain why a command could not proceed
+- command diagnostics explain the state that was inspected successfully but needs action
 
-Some patterns are especially worth avoiding:
+## Current transition state
 
-* oversized utils modules
-* business logic in the CLI layer
-* hidden state changes
-* mixing contract definitions with local values
+The repo is in a controlled transition around diagnostics commands.
 
-Those patterns make the code harder to trust and harder to maintain.
+The intended model is:
 
-## Summary
+- `check` = short validation
+- `inspect` = full diagnostics
+- `inspect KEY` = one variable in detail
+- `doctor` = deprecated alias of `inspect`
+- `explain` = deprecated alias of `inspect KEY`
 
-A simple way to read the architecture is:
+Compatibility shims still exist in a few places, especially for legacy JSON fields and alias behavior. Those should be treated as transitional, not as the target architecture.
 
-* CLI talks
-* services orchestrate
-* domain defines
-* repository loads
-* config configures
-* adapters integrate
-* utils support
+## What to avoid
 
-That separation keeps the system easier to extend without turning it into a tangle.
+The main anti-patterns in this repo are:
+
+- business logic inside CLI commands
+- new command behavior implemented by reviving legacy presenters
+- growing compatibility payloads without explicit removal plans
+- hiding reusable diagnostic logic inside one command service instead of shared builders
+
+## Practical summary
+
+A good way to read the current architecture is:
+
+- CLI chooses the interaction shape
+- services orchestrate workflows
+- domain defines stable semantics
+- repository reconstructs persisted project state
+- config manages local tool settings
+- adapters isolate external systems
+- utils support, but should not lead
+
+That is the structure that should guide future work on `envctl`.

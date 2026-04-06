@@ -32,7 +32,7 @@ Contract scope selectors:
 
 These selectors are mutually exclusive. When none is provided, envctl uses the full contract.
 
-Legacy `group` is still accepted in contract files for compatibility, but it is deprecated and treated as `groups: [value]`. Legacy `required` is also accepted, but ignored functionally.
+Legacy `group` is still accepted in contract files for compatibility, but it is deprecated and treated as `groups: [value]`. Legacy `required` is also accepted, but ignored functionally. Both legacy keys should be removed before v2.6.0.
 
 ## Command groups
 
@@ -59,7 +59,8 @@ These commands inspect or validate resolved state:
 
 - `check`
 - `inspect`
-- `explain`
+- `doctor` (deprecated alias of `inspect`)
+- `explain` (deprecated alias of `inspect KEY`)
 
 ### Projection
 
@@ -179,32 +180,59 @@ envctl check
 
 Behavior:
 
-* validates the resolved environment
-* validates placeholder expansion and reference errors
+* validates the resolved environment for the active scope
+* keeps the output short and focused on problems
+* reports missing required values, invalid values, expansion reference errors, and unknown keys
+* prints one suggested action for each problem
 * placeholder expansion is contract-only: unknown `${VAR}` references are invalid
 * validates semantic string formats when declared in the contract (`format`)
 * `--group LABEL`, `--set NAME`, and `--var KEY` validate only the active contract scope
 * exits non-zero on failure
 * fails fast if the selected explicit profile does not exist
 
-Use `check` when you want a clear pass/fail answer for contract satisfaction.
+Use `check` when you want a fast pass/fail answer plus the next likely action.
 
 ### `inspect`
 
 ```bash
 envctl inspect
+envctl inspect KEY
 ```
 
 Behavior:
 
-* shows resolved state
+* `envctl inspect` shows the detailed runtime view for the active scope
+* includes project context, runtime paths, summary, variables, and problems
 * shows the effective expanded values
 * indicates expansion state when relevant
 * masks sensitive values
 * `--group LABEL`, `--set NAME`, and `--var KEY` show only the active contract scope
+* `envctl inspect KEY` shows one variable in detail and cannot be combined with `--group`, `--set`, or `--var`
 * fails fast if the selected explicit profile does not exist
 
-Use `inspect` when you want to understand what the runtime view looks like.
+Use `inspect` when you want the full diagnostic picture, and `inspect KEY` when one variable is the real problem.
+
+### `doctor`
+
+```bash
+envctl doctor
+```
+
+Behavior:
+
+* deprecated alias of `envctl inspect`
+* scheduled for removal in `v2.6.0`
+* keeps working during the transition period
+* emits a deprecation warning before the normal inspect output
+
+Use `doctor` only for backward compatibility while you migrate scripts and habits. Prefer `inspect`, and plan to remove `doctor` usage before v2.6.0.
+
+Behavior:
+
+* deprecated alias of `envctl inspect`
+* scheduled for removal in `v2.6.0`
+* still works during the transition period
+* shows a deprecation warning before the report
 
 ### `explain`
 
@@ -214,11 +242,12 @@ envctl explain KEY
 
 Behavior:
 
-* explains how one key was resolved
-* includes expansion metadata for the resolved key
-* fails fast if the selected explicit profile does not exist
+* deprecated alias of `envctl inspect KEY`
+* scheduled for removal in `v2.6.0`
+* still works during the transition period
+* shows a deprecation warning before the report
 
-Use `explain` when one variable is confusing, missing, or coming from a different source than expected.
+Use `explain` only for backward compatibility while you migrate scripts and habits. Prefer `inspect KEY`, and plan to remove `explain` usage before v2.6.0.
 
 ### `run`
 
@@ -239,7 +268,7 @@ Behavior:
 
 Use `run` when the target tool can receive environment variables directly and you do not want to create `.env.local`.
 
-If `run` cannot project the environment safely, prefer `envctl check` for the full report and `envctl explain KEY` for one confusing key.
+If `run` cannot project the environment safely, prefer `envctl check` for the full report and `envctl inspect KEY` for one confusing key.
 
 For `docker run` and `docker compose run`, Docker does not inherit the full host process environment into the container automatically. Forward required variables explicitly with `-e`, `--env`, or `--env-file`. For container workflows, prefer an explicit env-file handoff such as `docker run --env-file <(envctl export --format dotenv) my-image`.
 
@@ -298,18 +327,6 @@ Behavior:
 Use `status` when you want a quick view of what is ready and what still needs attention.
 
 Across commands, when `envctl` can classify a failure it now preserves a stable machine-readable JSON envelope and adds structured `error.details` only for supported error families such as projection validation, contract loading, config loading, persisted state, and project binding or repository discovery.
-
-### `doctor`
-
-```bash
-envctl doctor
-```
-
-Behavior:
-
-* runs diagnostics
-
-Use `doctor` when you want to check config, storage, and general local readiness.
 
 ## Profile commands
 

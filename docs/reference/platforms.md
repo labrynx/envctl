@@ -131,7 +131,7 @@ The same idea applies to profile vault files. They are plain text local artifact
 
 ## Diagnostics
 
-`envctl doctor` is meant to help identify local readiness issues such as:
+`envctl inspect` is now the main command for local readiness and detailed state inspection. The deprecated `envctl doctor` alias still helps identify issues such as:
 
 - invalid config
 - missing contract

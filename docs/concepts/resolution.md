@@ -116,7 +116,7 @@ These commands rely on the resolution step:
 
 * `check`
 * `inspect`
-* `explain`
+* `inspect KEY` — and `explain KEY` remains as a deprecated alias during transition
 * `run`
 * `sync`
 * `export`

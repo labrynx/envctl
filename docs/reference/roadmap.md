@@ -149,9 +149,9 @@ The key idea is simple: multiple local value sets should be supported cleanly, w
 
 ### Profile-aware resolution
 
-* `check`, `inspect`, `explain`, and `status` resolve against the active profile
+* `check`, `inspect`, and `status` resolve against the active profile, and `explain` is transitioning into `inspect KEY`
 * `sync`, `export`, and `run` project the active profile
-* `doctor` reports the active profile and the physical profile vault path
+* `inspect` now absorbs the detailed diagnostic role that previously lived in `doctor`
 * `vault` commands operate on profile-specific files
 
 ### Profile-aware value mutation

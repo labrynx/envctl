@@ -123,7 +123,7 @@ Use this when the contract stays the same, but you want a different value in you
 ### Debug one key
 
 ```bash
-envctl explain DATABASE_URL
+envctl inspect DATABASE_URL
 ```
 
 Use this when a single variable is confusing or behaving differently than expected.
