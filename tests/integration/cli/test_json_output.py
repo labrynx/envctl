@@ -70,7 +70,12 @@ def test_sync_json_outputs_structured_projection_validation_error(
     details = cast(dict[str, Any], payload["error"]["details"])
     assert details["operation"] == "sync"
     assert details["active_profile"] == "local"
-    assert details["selected_group"] is None
+    assert details["selection"] == {
+        "mode": "full",
+        "group": None,
+        "set": None,
+        "var": None,
+    }
     assert details["suggested_actions"] == ["envctl fill", "envctl set KEY VALUE"]
     report = cast(dict[str, Any], details["report"])
     assert report["is_valid"] is False

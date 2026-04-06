@@ -179,7 +179,7 @@ def test_run_failure_explains_group_filtered_projection_problem(
 
     assert result.exit_code == 1
     assert "Error: Cannot run because the environment contract is not satisfied." in result.output
-    assert "group: Application" in result.output
+    assert "scope: group=Application" in result.output
     assert "Invalid keys" in result.output
     assert "APP_URL" in result.output
     assert "Expansion reference error" in result.output

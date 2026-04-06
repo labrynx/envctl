@@ -16,23 +16,11 @@ def test_doctor_command_exits_with_code_1_when_failures_exist(
     monkeypatch.setattr(
         doctor_command_module,
         "run_doctor",
-        lambda profile: ("staging", ["dummy-check"]),
+        lambda profile: ("staging", ["dummy-check"], ()),
     )
-    monkeypatch.setattr(
-        doctor_command_module,
-        "get_active_profile",
-        lambda: "staging",
-    )
-    monkeypatch.setattr(
-        doctor_command_module,
-        "render_doctor_checks",
-        lambda checks: True,
-    )
-    monkeypatch.setattr(
-        doctor_command_module,
-        "is_json_output",
-        lambda: False,
-    )
+    monkeypatch.setattr(doctor_command_module, "get_active_profile", lambda: "staging")
+    monkeypatch.setattr(doctor_command_module, "render_doctor_checks", lambda checks: True)
+    monkeypatch.setattr(doctor_command_module, "is_json_output", lambda: False)
 
     with pytest.raises(typer.Exit) as exc_info:
         doctor_command()
@@ -46,23 +34,11 @@ def test_doctor_command_returns_normally_when_no_failures_exist(
     monkeypatch.setattr(
         doctor_command_module,
         "run_doctor",
-        lambda profile: ("local", ["dummy-check"]),
+        lambda profile: ("local", ["dummy-check"], ()),
     )
-    monkeypatch.setattr(
-        doctor_command_module,
-        "get_active_profile",
-        lambda: "local",
-    )
-    monkeypatch.setattr(
-        doctor_command_module,
-        "render_doctor_checks",
-        lambda checks: False,
-    )
-    monkeypatch.setattr(
-        doctor_command_module,
-        "is_json_output",
-        lambda: False,
-    )
+    monkeypatch.setattr(doctor_command_module, "get_active_profile", lambda: "local")
+    monkeypatch.setattr(doctor_command_module, "render_doctor_checks", lambda checks: False)
+    monkeypatch.setattr(doctor_command_module, "is_json_output", lambda: False)
 
     assert doctor_command() is None
 
@@ -71,28 +47,18 @@ def test_doctor_command_emits_json_when_requested(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, Any] = {}
+    checks = [
+        DoctorCheck("config", "ok", "config ok"),
+        DoctorCheck("vault_profile", "warn", "profile missing"),
+    ]
 
     monkeypatch.setattr(
         doctor_command_module,
         "run_doctor",
-        lambda profile: (
-            "staging",
-            [
-                DoctorCheck("config", "ok", "config ok"),
-                DoctorCheck("vault_profile", "warn", "profile missing"),
-            ],
-        ),
+        lambda profile: ("staging", checks, ()),
     )
-    monkeypatch.setattr(
-        doctor_command_module,
-        "get_active_profile",
-        lambda: "staging",
-    )
-    monkeypatch.setattr(
-        doctor_command_module,
-        "is_json_output",
-        lambda: True,
-    )
+    monkeypatch.setattr(doctor_command_module, "get_active_profile", lambda: "staging")
+    monkeypatch.setattr(doctor_command_module, "is_json_output", lambda: True)
     monkeypatch.setattr(
         doctor_command_module,
         "emit_json",
@@ -117,23 +83,10 @@ def test_doctor_command_emits_json_and_exits_when_failures_exist(
     monkeypatch.setattr(
         doctor_command_module,
         "run_doctor",
-        lambda profile: (
-            "dev",
-            [
-                DoctorCheck("git", "fail", "git fail"),
-            ],
-        ),
+        lambda profile: ("dev", [DoctorCheck("git", "fail", "git fail")], ()),
     )
-    monkeypatch.setattr(
-        doctor_command_module,
-        "get_active_profile",
-        lambda: "dev",
-    )
-    monkeypatch.setattr(
-        doctor_command_module,
-        "is_json_output",
-        lambda: True,
-    )
+    monkeypatch.setattr(doctor_command_module, "get_active_profile", lambda: "dev")
+    monkeypatch.setattr(doctor_command_module, "is_json_output", lambda: True)
     monkeypatch.setattr(
         doctor_command_module,
         "emit_json",

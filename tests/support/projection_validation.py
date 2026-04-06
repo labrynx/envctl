@@ -1,18 +1,16 @@
 from __future__ import annotations
 
 from envctl.domain.resolution import ResolutionReport
+from envctl.domain.selection import ContractSelection
 from envctl.errors import ValidationError
-from envctl.services.projection_validation import (
-    ProjectionOperation,
-    ProjectionValidationDiagnostics,
-)
+from envctl.services.error_diagnostics import ProjectionOperation, ProjectionValidationDiagnostics
 
 
 def raise_projection_error(
     *,
     operation: ProjectionOperation,
     profile: str,
-    group: str | None,
+    selection: ContractSelection | None,
     report: ResolutionReport,
     suggested_actions: tuple[str, ...],
 ) -> tuple[object, object]:
@@ -21,7 +19,7 @@ def raise_projection_error(
         diagnostics=ProjectionValidationDiagnostics(
             operation=operation,
             active_profile=profile,
-            selected_group=group,
+            selection=selection or ContractSelection(),
             report=report,
             suggested_actions=suggested_actions,
         ),

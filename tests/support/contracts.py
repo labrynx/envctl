@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from envctl.domain.contract import Contract, VariableFormat, VariableSpec, VariableType
+from envctl.domain.contract_sets import SetSpec
 
 
 def make_variable_spec(
@@ -14,6 +15,7 @@ def make_variable_spec(
     provider: str | None = None,
     example: str | None = None,
     group: str | None = None,
+    groups: tuple[str, ...] = (),
     format: VariableFormat | None = None,
     pattern: str | None = None,
     choices: tuple[str, ...] = (),
@@ -29,21 +31,42 @@ def make_variable_spec(
         provider=provider,
         example=example,
         group=group,
+        groups=groups,
         format=format,
         pattern=pattern,
         choices=choices,
     )
 
 
+def make_set_spec(
+    *,
+    name: str,
+    description: str | None = None,
+    sets: tuple[str, ...] = (),
+    groups: tuple[str, ...] = (),
+    variables: tuple[str, ...] = (),
+) -> SetSpec:
+    """Build a set spec with normalized values."""
+    return SetSpec(
+        name=name,
+        description=description,
+        sets=sets,
+        groups=groups,
+        variables=variables,
+    )
+
+
 def make_contract(
     variables: dict[str, VariableSpec] | None = None,
     *,
+    sets: dict[str, SetSpec] | None = None,
     version: int = 1,
 ) -> Contract:
-    """Build a contract with optional variables."""
+    """Build a contract with optional variables and sets."""
     return Contract(
         version=version,
         variables=variables or {},
+        sets=sets or {},
     )
 
 

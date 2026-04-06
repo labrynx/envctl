@@ -138,7 +138,7 @@ def test_run_repair_returns_needs_action_when_bound_vault_is_missing_and_not_rec
     assert repaired_context is None
     assert result.status == "needs_action"
     assert result.project_id == "prj_bbbbbbbbbbbbbbbb"
-    assert "recreate-bound-vault" in result.detail
+    assert "envctl project rebind" in result.detail
 
 
 def test_run_repair_recreates_bound_vault_when_requested(

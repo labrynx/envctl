@@ -1,32 +1,58 @@
 from __future__ import annotations
 
+import pytest
+
+from envctl.domain.selection import group_selection, set_selection, var_selection
+from envctl.errors import ContractError
 from envctl.services.group_selection_service import (
     build_variable_groups,
     filter_projection_values,
     filter_resolution_report,
-    get_group_target_keys,
+    resolve_selected_variable_names,
 )
 from tests.support.builders import make_resolution_report, make_resolved_value
-from tests.support.contracts import make_contract, make_variable_spec
+from tests.support.contracts import make_contract, make_set_spec, make_variable_spec
 
 
-def test_get_group_target_keys_matches_exact_label() -> None:
+def test_resolve_selected_variable_names_matches_group() -> None:
     contract = make_contract(
         {
-            "API_HOST": make_variable_spec(name="API_HOST", group="Network"),
-            "API_PORT": make_variable_spec(name="API_PORT", group="Runtime"),
-            "API_URL": make_variable_spec(name="API_URL", group="Application"),
+            "API_HOST": make_variable_spec(name="API_HOST", groups=("Network",)),
+            "API_PORT": make_variable_spec(name="API_PORT", groups=("Runtime",)),
+            "API_URL": make_variable_spec(name="API_URL", groups=("Application",)),
         }
     )
 
-    assert get_group_target_keys(contract, group="Application") == frozenset({"API_URL"})
+    assert resolve_selected_variable_names(contract, group_selection("Application")) == ("API_URL",)
 
 
-def test_filter_projection_values_returns_only_targeted_group() -> None:
+def test_resolve_selected_variable_names_supports_sets() -> None:
     contract = make_contract(
         {
-            "API_HOST": make_variable_spec(name="API_HOST", group="Network"),
-            "API_URL": make_variable_spec(name="API_URL", group="Application"),
+            "API_HOST": make_variable_spec(name="API_HOST", groups=("Network",)),
+            "API_URL": make_variable_spec(name="API_URL", groups=("Application",)),
+            "DATABASE_URL": make_variable_spec(name="DATABASE_URL"),
+        },
+        sets={
+            "runtime": make_set_spec(
+                name="runtime",
+                groups=("Application",),
+                variables=("DATABASE_URL",),
+            )
+        },
+    )
+
+    assert resolve_selected_variable_names(contract, set_selection("runtime")) == (
+        "API_URL",
+        "DATABASE_URL",
+    )
+
+
+def test_filter_projection_values_returns_only_targeted_selection() -> None:
+    contract = make_contract(
+        {
+            "API_HOST": make_variable_spec(name="API_HOST", groups=("Network",)),
+            "API_URL": make_variable_spec(name="API_URL", groups=("Application",)),
         }
     )
 
@@ -35,16 +61,16 @@ def test_filter_projection_values_returns_only_targeted_group() -> None:
         "API_URL": "http://host",
     }
 
-    assert filter_projection_values(values, contract, group="Application") == {
+    assert filter_projection_values(values, contract, selection=group_selection("Application")) == {
         "API_URL": "http://host",
     }
 
 
-def test_filter_resolution_report_ignores_unknown_keys_for_grouped_view() -> None:
+def test_filter_resolution_report_ignores_unknown_keys_for_scoped_view() -> None:
     contract = make_contract(
         {
-            "API_URL": make_variable_spec(name="API_URL", group="Application"),
-            "API_HOST": make_variable_spec(name="API_HOST", group="Network"),
+            "API_URL": make_variable_spec(name="API_URL", groups=("Application",)),
+            "API_HOST": make_variable_spec(name="API_HOST", groups=("Network",)),
         }
     )
     report = make_resolution_report(
@@ -57,7 +83,7 @@ def test_filter_resolution_report_ignores_unknown_keys_for_grouped_view() -> Non
         invalid_keys=("API_HOST",),
     )
 
-    filtered = filter_resolution_report(report, contract, group="Application")
+    filtered = filter_resolution_report(report, contract, selection=group_selection("Application"))
 
     assert tuple(filtered.values) == ("API_URL",)
     assert filtered.missing_required == ()
@@ -65,11 +91,14 @@ def test_filter_resolution_report_ignores_unknown_keys_for_grouped_view() -> Non
     assert filtered.unknown_keys == ()
 
 
-def test_build_variable_groups_returns_declared_labels_for_projection_keys() -> None:
+def test_build_variable_groups_returns_first_alphabetical_group_for_projection_keys() -> None:
     contract = make_contract(
         {
             "APP_NAME": make_variable_spec(name="APP_NAME"),
-            "DATABASE_URL": make_variable_spec(name="DATABASE_URL", group="Database"),
+            "DATABASE_URL": make_variable_spec(
+                name="DATABASE_URL",
+                groups=("Secrets", "Database"),
+            ),
         }
     )
 
@@ -83,3 +112,10 @@ def test_build_variable_groups_returns_declared_labels_for_projection_keys() -> 
         "APP_NAME": None,
         "DATABASE_URL": "Database",
     }
+
+
+def test_resolve_selected_variable_names_rejects_unknown_var() -> None:
+    contract = make_contract({"APP_NAME": make_variable_spec(name="APP_NAME")})
+
+    with pytest.raises(ContractError, match="Unknown contract variable"):
+        resolve_selected_variable_names(contract, var_selection("MISSING"))

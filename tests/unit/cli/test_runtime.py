@@ -8,8 +8,11 @@ from envctl.cli.runtime import (
     CliState,
     get_active_profile,
     get_cli_state,
+    get_contract_selection,
     get_output_format,
     get_selected_group,
+    get_selected_set,
+    get_selected_var,
     is_json_output,
     set_cli_state,
 )
@@ -24,7 +27,7 @@ def test_get_cli_state_returns_default_when_no_context_exists() -> None:
     assert state.profile == "local"
 
 
-def test_set_cli_state_persists_profile_and_output_format() -> None:
+def test_set_cli_state_persists_profile_output_and_selection() -> None:
     ctx = click.Context(click.Command("envctl"))
 
     with ctx:
@@ -33,6 +36,8 @@ def test_set_cli_state_persists_profile_and_output_format() -> None:
             output_format=OutputFormat.JSON,
             profile="staging",
             group="Application",
+            set_name=None,
+            variable=None,
         )
 
         state = get_cli_state()
@@ -44,6 +49,9 @@ def test_set_cli_state_persists_profile_and_output_format() -> None:
         assert is_json_output() is True
         assert get_active_profile() == "staging"
         assert get_selected_group() == "Application"
+        assert get_selected_set() is None
+        assert get_selected_var() is None
+        assert get_contract_selection().describe() == "group=Application"
 
 
 def test_get_cli_state_ignores_non_clistate_context_obj() -> None:

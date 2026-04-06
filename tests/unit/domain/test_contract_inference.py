@@ -163,4 +163,4 @@ def test_infer_spec_builds_complete_spec() -> None:
     assert spec.description == "Runtime environment"
     assert spec.default is None
     assert spec.example == "development"
-    assert spec.choices == ("development", "test", "staging", "production")
+    assert spec.choices == ("development", "production", "staging", "test")

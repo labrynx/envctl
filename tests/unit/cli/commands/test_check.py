@@ -7,6 +7,7 @@ import typer
 
 import envctl.cli.commands.check.command as check_command_module
 from envctl.cli.commands.check import check_command
+from envctl.domain.selection import group_selection
 from tests.support.builders import make_resolution_report
 from tests.support.contexts import make_project_context
 
@@ -26,12 +27,12 @@ def test_check_command_exits_when_report_is_valid_but_unknown_keys_exist(
     monkeypatch.setattr(
         check_command_module,
         "run_check",
-        lambda profile, *, group=None: (context, "staging", report),
+        lambda profile, *, selection=None: (context, "staging", report, ()),
     )
     monkeypatch.setattr(
         check_command_module,
         "render_resolution_view",
-        lambda *, profile, group, report: None,
+        lambda *, profile, selection, report: None,
     )
     monkeypatch.setattr(
         check_command_module,
@@ -45,14 +46,10 @@ def test_check_command_exits_when_report_is_valid_but_unknown_keys_exist(
     )
     monkeypatch.setattr(
         check_command_module,
-        "get_selected_group",
-        lambda: "Application",
+        "get_contract_selection",
+        lambda: group_selection("Application"),
     )
-    monkeypatch.setattr(
-        check_command_module,
-        "is_json_output",
-        lambda: False,
-    )
+    monkeypatch.setattr(check_command_module, "is_json_output", lambda: False)
 
     with pytest.raises(typer.Exit) as exc_info:
         check_command()
@@ -75,28 +72,20 @@ def test_check_command_exits_when_report_is_invalid(
     monkeypatch.setattr(
         check_command_module,
         "run_check",
-        lambda profile, *, group=None: (context, "local", report),
+        lambda profile, *, selection=None: (context, "local", report, ()),
     )
     monkeypatch.setattr(
         check_command_module,
         "render_resolution_view",
-        lambda *, profile, group, report: None,
+        lambda *, profile, selection, report: None,
     )
+    monkeypatch.setattr(check_command_module, "get_active_profile", lambda: "local")
     monkeypatch.setattr(
         check_command_module,
-        "get_active_profile",
-        lambda: "local",
+        "get_contract_selection",
+        lambda: group_selection("Application"),
     )
-    monkeypatch.setattr(
-        check_command_module,
-        "get_selected_group",
-        lambda: None,
-    )
-    monkeypatch.setattr(
-        check_command_module,
-        "is_json_output",
-        lambda: False,
-    )
+    monkeypatch.setattr(check_command_module, "is_json_output", lambda: False)
 
     with pytest.raises(typer.Exit) as exc_info:
         check_command()
@@ -119,7 +108,7 @@ def test_check_command_emits_json_when_requested(
     monkeypatch.setattr(
         check_command_module,
         "run_check",
-        lambda profile, *, group=None: (context, "staging", report),
+        lambda profile, *, selection=None: (context, "staging", report, ()),
     )
     monkeypatch.setattr(
         check_command_module,
@@ -128,14 +117,10 @@ def test_check_command_emits_json_when_requested(
     )
     monkeypatch.setattr(
         check_command_module,
-        "get_selected_group",
-        lambda: "Application",
+        "get_contract_selection",
+        lambda: group_selection("Application"),
     )
-    monkeypatch.setattr(
-        check_command_module,
-        "is_json_output",
-        lambda: True,
-    )
+    monkeypatch.setattr(check_command_module, "is_json_output", lambda: True)
     monkeypatch.setattr(
         check_command_module,
         "emit_json",
@@ -148,7 +133,12 @@ def test_check_command_emits_json_when_requested(
     assert payload["ok"] is True
     assert payload["command"] == "check"
     assert payload["data"]["active_profile"] == "staging"
-    assert payload["data"]["selected_group"] == "Application"
+    assert payload["data"]["selection"] == {
+        "mode": "group",
+        "group": "Application",
+        "set": None,
+        "var": None,
+    }
     assert payload["data"]["context"]["project_slug"] == "demo"
     assert payload["data"]["report"]["is_valid"] is True
 
@@ -168,23 +158,15 @@ def test_check_command_emits_json_and_exits_when_invalid(
     monkeypatch.setattr(
         check_command_module,
         "run_check",
-        lambda profile, *, group=None: (context, "local", report),
+        lambda profile, *, selection=None: (context, "local", report, ()),
     )
+    monkeypatch.setattr(check_command_module, "get_active_profile", lambda: "local")
     monkeypatch.setattr(
         check_command_module,
-        "get_active_profile",
-        lambda: "local",
+        "get_contract_selection",
+        lambda: group_selection("Application"),
     )
-    monkeypatch.setattr(
-        check_command_module,
-        "get_selected_group",
-        lambda: None,
-    )
-    monkeypatch.setattr(
-        check_command_module,
-        "is_json_output",
-        lambda: True,
-    )
+    monkeypatch.setattr(check_command_module, "is_json_output", lambda: True)
     monkeypatch.setattr(
         check_command_module,
         "emit_json",

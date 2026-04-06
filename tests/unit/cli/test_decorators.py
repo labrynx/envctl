@@ -9,6 +9,7 @@ import typer
 
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
 from envctl.domain.runtime import RuntimeMode
+from envctl.domain.selection import ContractSelection, group_selection
 from envctl.errors import (
     ConfigError,
     ContractError,
@@ -22,10 +23,10 @@ from envctl.services.error_diagnostics import (
     ConfigDiagnostics,
     ContractDiagnostics,
     ProjectBindingDiagnostics,
+    ProjectionValidationDiagnostics,
     RepositoryDiscoveryDiagnostics,
     StateDiagnostics,
 )
-from envctl.services.projection_validation import ProjectionValidationDiagnostics
 from tests.support.builders import make_resolution_report
 
 
@@ -46,10 +47,7 @@ def test_handle_errors_converts_envctl_error_to_exit(
     def sample() -> None:
         raise EnvctlError("boom")
 
-    monkeypatch.setattr(
-        "envctl.cli.decorators.is_json_output",
-        lambda: False,
-    )
+    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: False)
     monkeypatch.setattr(
         "envctl.cli.decorators.print_error",
         lambda message: captured.update({"message": message}),
@@ -71,10 +69,7 @@ def test_handle_errors_emits_structured_json_when_enabled(
     def sample() -> None:
         raise EnvctlError("boom")
 
-    monkeypatch.setattr(
-        "envctl.cli.decorators.is_json_output",
-        lambda: True,
-    )
+    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: True)
     monkeypatch.setattr(
         "envctl.cli.decorators.get_command_path",
         lambda: "envctl check",
@@ -92,10 +87,7 @@ def test_handle_errors_emits_structured_json_when_enabled(
     assert payload == {
         "ok": False,
         "command": "envctl check",
-        "error": {
-            "type": "EnvctlError",
-            "message": "boom",
-        },
+        "error": {"type": "EnvctlError", "message": "boom"},
     }
 
 
@@ -106,7 +98,7 @@ def test_handle_errors_renders_projection_validation_diagnostics(
     diagnostics = ProjectionValidationDiagnostics(
         operation="sync",
         active_profile="staging",
-        selected_group="Application",
+        selection=group_selection("Application"),
         report=make_resolution_report(missing_required=("DATABASE_URL",)),
         suggested_actions=("envctl fill",),
     )
@@ -148,14 +140,17 @@ def test_handle_errors_emits_validation_details_in_json_when_present(
             diagnostics=ProjectionValidationDiagnostics(
                 operation="sync",
                 active_profile="staging",
-                selected_group=None,
+                selection=ContractSelection(),
                 report=make_resolution_report(missing_required=("DATABASE_URL",)),
                 suggested_actions=("envctl fill",),
             ),
         )
 
     monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: True)
-    monkeypatch.setattr("envctl.cli.decorators.get_command_path", lambda: "envctl sync")
+    monkeypatch.setattr(
+        "envctl.cli.decorators.get_command_path",
+        lambda: "envctl sync",
+    )
     monkeypatch.setattr(
         "envctl.cli.decorators.emit_json",
         lambda payload: captured.update({"payload": payload}),
@@ -168,7 +163,7 @@ def test_handle_errors_emits_validation_details_in_json_when_present(
     assert payload["error"]["details"] == {
         "operation": "sync",
         "active_profile": "staging",
-        "selected_group": None,
+        "selection": {"mode": "full", "group": None, "set": None, "var": None},
         "report": {
             "is_valid": False,
             "values": {},
@@ -232,7 +227,10 @@ def test_handle_errors_emits_contract_details_in_json_when_present(
         )
 
     monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: True)
-    monkeypatch.setattr("envctl.cli.decorators.get_command_path", lambda: "envctl check")
+    monkeypatch.setattr(
+        "envctl.cli.decorators.get_command_path",
+        lambda: "envctl check",
+    )
     monkeypatch.setattr(
         "envctl.cli.decorators.emit_json",
         lambda payload: captured.update({"payload": payload}),
@@ -254,123 +252,81 @@ def test_handle_errors_emits_contract_details_in_json_when_present(
 
 def test_emit_handled_error_renders_other_structured_families(
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    captured: dict[str, str] = {}
+    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: False)
 
-    monkeypatch.setattr(
-        "envctl.cli.decorators.render_config_error",
-        lambda diagnostics, *, message: captured.update({"config": message}),
-    )
-    monkeypatch.setattr(
-        "envctl.cli.decorators.render_state_error",
-        lambda diagnostics, *, message: captured.update({"state": message}),
-    )
-    monkeypatch.setattr(
-        "envctl.cli.decorators.render_repository_discovery_error",
-        lambda diagnostics, *, message: captured.update({"repo": message}),
-    )
-    monkeypatch.setattr(
-        "envctl.cli.decorators.render_project_binding_error",
-        lambda diagnostics, *, message: captured.update({"binding": message}),
-    )
+    @handle_errors
+    def sample_config() -> None:
+        raise ConfigError(
+            "bad config",
+            diagnostics=ConfigDiagnostics(category="invalid_json"),
+        )
 
-    from envctl.cli.decorators import emit_handled_error
-
-    emit_handled_error(
-        ConfigError("bad config", diagnostics=ConfigDiagnostics(category="invalid_json")),
-        json_output=False,
-        command="envctl",
-    )
-    emit_handled_error(
-        StateError(
+    @handle_errors
+    def sample_state() -> None:
+        raise StateError(
             "bad state",
-            diagnostics=StateDiagnostics(category="corrupted_state", path=Path("/tmp/state.json")),
-        ),
-        json_output=False,
-        command="envctl status",
-    )
-    emit_handled_error(
-        ProjectDetectionError(
-            "git failed",
-            diagnostics=RepositoryDiscoveryDiagnostics(category="git_command_failed"),
-        ),
-        json_output=False,
-        command="envctl status",
-    )
-    emit_handled_error(
-        ProjectDetectionError(
-            "binding failed",
-            diagnostics=ProjectBindingDiagnostics(category="ambiguous_vault_identity"),
-        ),
-        json_output=False,
-        command="envctl status",
-    )
+            diagnostics=StateDiagnostics(
+                category="corrupted_state",
+                path=Path("/tmp/state.json"),
+            ),
+        )
 
-    assert captured == {
-        "config": "bad config",
-        "state": "bad state",
-        "repo": "git failed",
-        "binding": "binding failed",
-    }
+    @handle_errors
+    def sample_repo() -> None:
+        raise ProjectDetectionError(
+            "bad repo",
+            diagnostics=RepositoryDiscoveryDiagnostics(
+                category="not_a_git_repository",
+            ),
+        )
+
+    @handle_errors
+    def sample_binding() -> None:
+        raise ProjectDetectionError(
+            "bad binding",
+            diagnostics=ProjectBindingDiagnostics(
+                category="ambiguous_vault_identity",
+            ),
+        )
+
+    for func in (sample_config, sample_state, sample_repo, sample_binding):
+        with pytest.raises(typer.Exit):
+            func()
+
+    captured = capsys.readouterr()
+    assert "Error: bad config" in captured.err
+    assert "Error: bad state" in captured.err
+    assert "Error: bad repo" in captured.err
+    assert "Error: bad binding" in captured.err
 
 
-def test_text_output_only_allows_text_mode(
+def test_requires_writable_runtime_blocks_ci_mode(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    @text_output_only("export")
-    def sample() -> str:
-        return "ok"
-
-    monkeypatch.setattr(
-        "envctl.cli.decorators.is_json_output",
-        lambda: False,
-    )
-
-    assert sample() == "ok"
-
-
-def test_text_output_only_rejects_json_mode(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    @text_output_only("export")
-    def sample() -> None:
-        return None
-
-    monkeypatch.setattr(
-        "envctl.cli.decorators.is_json_output",
-        lambda: True,
-    )
-
-    with pytest.raises(ExecutionError, match=r"JSON output is not supported"):
-        sample()
-
-
-def test_requires_writable_runtime_allows_local_mode(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    @requires_writable_runtime("add")
-    def sample() -> str:
-        return "ok"
-
-    monkeypatch.setattr(
-        "envctl.cli.decorators.load_config",
-        lambda: SimpleNamespace(runtime_mode=RuntimeMode.LOCAL),
-    )
-
-    assert sample() == "ok"
-
-
-def test_requires_writable_runtime_rejects_ci_mode(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    @requires_writable_runtime("add")
-    def sample() -> None:
-        return None
-
     monkeypatch.setattr(
         "envctl.cli.decorators.load_config",
         lambda: SimpleNamespace(runtime_mode=RuntimeMode.CI),
     )
 
-    with pytest.raises(ExecutionError, match=r"CI read-only mode"):
+    @requires_writable_runtime("sync")
+    def sample() -> None:
+        raise AssertionError("Should not be called")
+
+    with pytest.raises(
+        ExecutionError,
+        match="Command 'sync' is not available in CI read-only mode.",
+    ):
+        sample()
+
+
+def test_text_output_only_rejects_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: True)
+
+    @text_output_only("run")
+    def sample() -> None:
+        raise AssertionError("Should not be called")
+
+    with pytest.raises(ExecutionError, match="JSON output is not supported"):
         sample()

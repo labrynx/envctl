@@ -47,9 +47,10 @@ def test_run_doctor_reports_active_profile_and_profile_path(
         lambda path: False,
     )
 
-    active_profile, checks = doctor_service.run_doctor("staging")
+    active_profile, checks, warnings = doctor_service.run_doctor("staging")
 
     assert active_profile == "staging"
+    assert warnings == ()
     details = [check.detail for check in checks]
     assert any(detail == "Active profile: staging" for detail in details)
     assert any("Profile vault path:" in detail for detail in details)
@@ -93,5 +94,8 @@ def test_run_doctor_fails_when_profile_file_does_not_exist(
         lambda path: False,
     )
 
-    with pytest.raises(ExecutionError, match=r"Create it with 'envctl profile create staging'"):
+    with pytest.raises(
+        ExecutionError,
+        match=r"Create it with 'envctl profile create staging'",
+    ):
         doctor_service.run_doctor("staging")

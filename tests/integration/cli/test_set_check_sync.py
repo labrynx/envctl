@@ -51,7 +51,7 @@ def test_sync_with_output_writes_custom_path_and_matches_dotenv_export(
     runner.invoke(app, ["set", "PORT", "3000"], catch_exceptions=False)
     runner.invoke(app, ["set", "DATABASE_URL", "https://db.example.com"], catch_exceptions=False)
 
-    sync = runner.invoke(app, ["sync", "--output", str(custom_path)], catch_exceptions=False)
+    sync = runner.invoke(app, ["sync", "--output-path", str(custom_path)], catch_exceptions=False)
     export = runner.invoke(app, ["export", "--format", "dotenv"], catch_exceptions=False)
 
     assert sync.exit_code == 0
@@ -249,7 +249,7 @@ def test_grouped_check_ignores_unrelated_missing_keys(
     )
 
     assert result.exit_code == 0
-    assert "group: Application" in result.stdout
+    assert "scope: group=Application" in result.stdout
     assert "Environment contract satisfied" in result.stdout
 
 

@@ -19,17 +19,27 @@ def test_root_callback_uses_explicit_profile_over_default(
         "load_config",
         lambda: type("Config", (), {"default_profile": "local"})(),
     )
-    monkeypatch.setattr(
-        app_module,
-        "set_cli_state",
-        lambda ctx, *, output_format, profile, group=None: captured.update(
+
+    def fake_set_cli_state(
+        ctx: object,
+        *,
+        output_format: OutputFormat,
+        profile: str,
+        group: str | None = None,
+        set_name: str | None = None,
+        variable: str | None = None,
+    ) -> None:
+        captured.update(
             {
                 "output_format": output_format,
                 "profile": profile,
                 "group": group,
+                "set_name": set_name,
+                "variable": variable,
             }
-        ),
-    )
+        )
+
+    monkeypatch.setattr(app_module, "set_cli_state", fake_set_cli_state)
 
     original_len = len(app.registered_commands)
 
@@ -46,3 +56,34 @@ def test_root_callback_uses_explicit_profile_over_default(
     assert captured["output_format"] == OutputFormat.TEXT
     assert captured["profile"] == "dev"
     assert captured["group"] is None
+    assert captured["set_name"] is None
+    assert captured["variable"] is None
+
+
+def test_root_callback_rejects_multiple_scope_selectors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = CliRunner()
+
+    monkeypatch.setattr(
+        app_module,
+        "load_config",
+        lambda: type("Config", (), {"default_profile": "local"})(),
+    )
+
+    original_len = len(app.registered_commands)
+
+    @app.command("scope-probe")
+    def _scope_probe() -> None:
+        return None
+
+    try:
+        result = runner.invoke(
+            app,
+            ["--group", "Application", "--set", "runtime", "scope-probe"],
+        )
+    finally:
+        del app.registered_commands[original_len:]
+
+    assert result.exit_code != 0
+    assert "mutually exclusive" in result.output

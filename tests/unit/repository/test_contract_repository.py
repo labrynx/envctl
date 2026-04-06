@@ -79,8 +79,13 @@ def test_load_contract_reads_valid_yaml_contract(tmp_path: Path) -> None:
 
     assert contract.version == 1
     assert "APP_NAME" in contract.variables
-    assert contract.variables["APP_NAME"].group == "Application"
-    assert contract.variables["APP_NAME"].format == "json"
+
+    spec = contract.variables["APP_NAME"]
+
+    assert spec.group is None
+    assert spec.groups == ("Application",)
+    assert spec.normalized_groups == ("Application",)
+    assert spec.format == "json"
 
 
 def test_load_contract_optional_returns_none_when_missing(tmp_path: Path) -> None:
@@ -109,7 +114,8 @@ def test_write_contract_serializes_contract(tmp_path: Path) -> None:
     written = yaml.safe_load(path.read_text(encoding="utf-8"))
     assert written["version"] == 1
     assert "APP_NAME" in written["variables"]
-    assert written["variables"]["APP_NAME"]["group"] == "Application"
+    assert written["variables"]["APP_NAME"]["groups"] == ["Application"]
+    assert "group" not in written["variables"]["APP_NAME"]
     assert written["variables"]["APP_NAME"]["format"] == "csv"
 
 

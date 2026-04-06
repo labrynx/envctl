@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from envctl.errors import ValidationError
 from envctl.services.error_diagnostics import (
     ConfigDiagnostics,
     ContractDiagnostics,
@@ -40,5 +41,11 @@ def require_project_binding_diagnostics(value: object) -> ProjectBindingDiagnost
 def require_projection_validation_diagnostics(
     value: object,
 ) -> ProjectionValidationDiagnostics:
-    assert isinstance(value, ProjectionValidationDiagnostics)
-    return value
+    if isinstance(value, ProjectionValidationDiagnostics):
+        return value
+    if isinstance(value, ValidationError) and isinstance(
+        value.diagnostics,
+        ProjectionValidationDiagnostics,
+    ):
+        return value.diagnostics
+    raise AssertionError(f"Expected ProjectionValidationDiagnostics, got {type(value).__name__}")

@@ -200,9 +200,9 @@ def test_run_init_creates_contract_from_env_example(
 
     assert cast(dict[str, Any], variables["NODE_ENV"])["choices"] == [
         "development",
-        "test",
-        "staging",
         "production",
+        "staging",
+        "test",
     ]
 
     assert cast(dict[str, Any], variables["PUBLIC_URL"])["type"] == "url"
