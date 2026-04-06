@@ -112,8 +112,8 @@ test-cov: ## Run test suite with coverage
 test-ci: ## Run CI-oriented test suite with coverage threshold
 	$(PYTEST) $(PYTEST_BASE_ARGS) $(PYTEST_DEBUG_ARGS) $(PYTEST_COV_ARGS) --cov-fail-under=$(COV_MIN)
 
-test-fast: ## Run tests quietly without coverage
-	$(PYTEST) -q
+test-fast: ## Run tests quickly without coverage
+	$(PYTEST) -q --maxfail=1
 
 test-debug: ## Run tests with maximum failure detail
 	$(PYTEST) -vv -ra --tb=long --showlocals --maxfail=1 --color=yes

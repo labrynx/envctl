@@ -26,17 +26,17 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e .[dev]
 
-      - name: Ruff check
-        run: ruff check .
-
-      - name: Ruff format check
-        run: ruff format --check .
+      - name: Run lint checks
+        run: |
+          make lint
+          make format-check
 
   bandit:
     name: Security scan
@@ -51,6 +51,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: Install dependencies
         run: |
@@ -58,7 +59,7 @@ jobs:
           pip install -e .[dev]
 
       - name: Run Bandit
-        run: bandit -c pyproject.toml -r src
+        run: make security
 
   typecheck:
     name: Type check
@@ -73,6 +74,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: Install dependencies
         run: |
@@ -80,7 +82,7 @@ jobs:
           pip install -e .[dev]
 
       - name: Run mypy
-        run: mypy
+        run: make typecheck
 
   tests:
     name: Tests (Python ${{ matrix.python-version }})
@@ -104,14 +106,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e .[dev]
 
-      - name: Run pytest
-        run: pytest
+      - name: Run tests
+        run: make test-fast
 
   coverage:
     name: Test coverage
@@ -130,14 +133,23 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e .[dev]
 
-      - name: Run pytest with coverage threshold
-        run: pytest --cov=src/envctl --cov-report=term-missing --cov-fail-under=85
+      - name: Run coverage with threshold
+        run: make test-ci
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v6
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          fail_ci_if_error: true
+          verbose: true
 
   build:
     name: Build and validate package
@@ -160,11 +172,11 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install build twine
           pip install -e .[dev]
 
       - name: Verify tag matches package version
