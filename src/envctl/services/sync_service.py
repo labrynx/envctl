@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from envctl.adapters.projection_rendering import render_dotenv
 from envctl.domain.deprecations import ContractDeprecationWarning
 from envctl.domain.project import ProjectContext
 from envctl.domain.selection import ContractSelection
@@ -16,7 +17,6 @@ from envctl.services.contract_selection_service import (
 from envctl.services.projection_validation import resolve_projectable_environment
 from envctl.utils.atomic import write_text_atomic
 from envctl.utils.project_paths import build_repo_sync_env_path, normalize_profile_name
-from envctl.utils.projection_rendering import render_dotenv
 
 
 def run_sync(

@@ -1,0 +1,55 @@
+[importlinter]
+root_package = envctl
+exclude_type_checking_imports = True
+
+[importlinter:contract:no_cli_outside_cli]
+name = Only CLI may import CLI
+type = forbidden
+source_modules =
+    envctl.adapters
+    envctl.config
+    envctl.domain
+    envctl.repository
+    envctl.services
+    envctl.utils
+forbidden_modules =
+    envctl.cli
+
+[importlinter:contract:domain_isolation]
+name = Domain must not depend on outer layers
+type = forbidden
+source_modules =
+    envctl.domain
+forbidden_modules =
+    envctl.cli
+    envctl.services
+    envctl.repository
+    envctl.config
+
+[importlinter:contract:services_do_not_import_cli]
+name = Services must not import CLI
+type = forbidden
+source_modules =
+    envctl.services
+forbidden_modules =
+    envctl.cli
+
+[importlinter:contract:repository_do_not_import_cli]
+name = Repository must not import CLI
+type = forbidden
+source_modules =
+    envctl.repository
+forbidden_modules =
+    envctl.cli
+
+[importlinter:contract:utils_do_not_import_high_layers]
+name = Utils must not depend on higher-level packages
+type = forbidden
+source_modules =
+    envctl.utils
+forbidden_modules =
+    envctl.cli
+    envctl.services
+    envctl.repository
+    envctl.config
+    envctl.adapters
