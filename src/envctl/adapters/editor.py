@@ -31,7 +31,8 @@ def open_file(path: str) -> None:
     command = [*resolve_editor(), path]
 
     try:
-        completed = subprocess.run(command, check=False)
+        # Intentional: launches the user-configured editor command.
+        completed = subprocess.run(command, check=False)  # noqa: S603
     except OSError as exc:
         raise ExecutionError(f"Failed to launch editor: {command[0]}") from exc
 

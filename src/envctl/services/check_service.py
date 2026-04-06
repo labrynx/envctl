@@ -7,7 +7,7 @@ from envctl.domain.diagnostics import CheckResult
 from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport
 from envctl.domain.selection import ContractSelection
-from envctl.repository.contract_repository import load_contract_with_warnings
+from envctl.repository.contract_composition import load_resolved_contract_bundle
 from envctl.services.context_service import load_project_context
 from envctl.services.contract_selection_service import filter_resolution_report
 from envctl.services.resolution_diagnostics import (
@@ -40,12 +40,13 @@ def run_check(
     """Validate the current project environment against the contract."""
     _config, context = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
-    contract, warnings = load_contract_with_warnings(context.repo_contract_path)
+    bundle = load_resolved_contract_bundle(context.repo_root)
+    contract = bundle.contract
     report = resolve_environment(context, contract, active_profile=resolved_profile)
     active_selection = selection or ContractSelection()
     filtered_report = filter_resolution_report(report, contract, selection=active_selection)
     return (
         context,
         _build_check_result(resolved_profile, active_selection, filtered_report),
-        warnings,
+        bundle.warnings,
     )

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Literal
 
 from envctl.domain.project import ProjectContext
@@ -63,6 +64,22 @@ class CheckResult:
 
 
 @dataclass(frozen=True)
+class InspectContractGraph:
+    """Composed contract graph summary for inspect output."""
+
+    root_path: Path = Path(".")
+    contract_paths: tuple[Path, ...] = ()
+    contracts_total: int = 0
+    variables_total: int = 0
+    sets_total: int = 0
+    groups_total: int = 0
+    import_graph: dict[Path, tuple[Path, ...]] = field(default_factory=dict)
+    declared_in: dict[str, Path] = field(default_factory=dict)
+    sets_index: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    groups_index: dict[str, tuple[str, ...]] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class InspectResult:
     """Structured result for ``envctl inspect``."""
 
@@ -74,6 +91,7 @@ class InspectResult:
     summary: DiagnosticSummary
     variables: tuple[ResolvedValue, ...]
     problems: tuple[DiagnosticProblem, ...]
+    contract_graph: InspectContractGraph = field(default_factory=InspectContractGraph)
     warnings: tuple[CommandWarning, ...] = ()
 
 
@@ -86,7 +104,9 @@ class InspectKeyResult:
     item: ResolvedValue
     contract_type: str
     contract_format: str | None
-    groups: tuple[str, ...]
-    default: str | int | bool | None
-    sensitive: bool
+    declared_in: Path = Path(".")
+    sets: tuple[str, ...] = ()
+    groups: tuple[str, ...] = ()
+    default: str | int | bool | None = None
+    sensitive: bool = False
     warnings: tuple[CommandWarning, ...] = ()

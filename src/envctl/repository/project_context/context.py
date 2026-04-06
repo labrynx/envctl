@@ -8,7 +8,8 @@ from envctl.adapters.git import get_local_git_config, get_repo_remote, resolve_r
 from envctl.constants import DEFAULT_STATE_FILENAME, GIT_CONFIG_PROJECT_ID_KEY
 from envctl.domain.app_config import AppConfig
 from envctl.domain.project import ProjectContext
-from envctl.errors import ProjectDetectionError
+from envctl.errors import ContractError, ProjectDetectionError
+from envctl.repository.contract_discovery import discover_root_contract_path
 from envctl.repository.contract_repository import load_contract_optional
 from envctl.repository.project_context.builders import build_context
 from envctl.repository.project_context.discovery import find_vault_dir_by_project_id
@@ -18,6 +19,14 @@ from envctl.repository.state_repository import read_state
 from envctl.services.error_diagnostics import ProjectBindingDiagnostics
 from envctl.utils.project_ids import is_valid_project_id
 from envctl.utils.project_names import resolve_project_name
+
+
+def _discover_or_fallback_repo_contract_path(repo_root: Path, config: AppConfig) -> Path:
+    """Discover the root contract when present, otherwise keep the configured default path."""
+    try:
+        return discover_root_contract_path(repo_root).path
+    except ContractError:
+        return repo_root / config.schema_filename
 
 
 def _resolve_project_key(repo_contract_path: Path, project_slug: str) -> str:
@@ -39,7 +48,7 @@ def build_context_for_project_id(
     """Build a context for one explicit project id."""
     repo_remote = get_repo_remote(repo_root)
     project_slug = resolve_project_name(repo_root, project_name)
-    repo_contract_path = repo_root / config.schema_filename
+    repo_contract_path = _discover_or_fallback_repo_contract_path(repo_root, config)
     project_key = _resolve_project_key(repo_contract_path, project_slug)
 
     vault_dir = find_vault_dir_by_project_id(config.projects_dir, project_id)
@@ -69,7 +78,7 @@ def build_project_context(
     """Build the project context for the current repository."""
     repo_root = resolve_repo_root()
     project_slug = resolve_project_name(repo_root, project_name)
-    repo_contract_path = repo_root / config.schema_filename
+    repo_contract_path = _discover_or_fallback_repo_contract_path(repo_root, config)
     project_key = _resolve_project_key(repo_contract_path, project_slug)
     repo_remote = get_repo_remote(repo_root)
 

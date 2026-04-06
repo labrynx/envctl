@@ -18,6 +18,11 @@ ContractDiagnosticCategory = Literal[
     "invalid_top_level_shape",
     "invalid_variable_shape",
     "validation_failed",
+    "root_contract_not_found",
+    "invalid_import_path",
+    "forbidden_root_contract_import",
+    "contract_import_cycle",
+    "duplicate_variable_definition",
 ]
 ConfigDiagnosticCategory = Literal[
     "invalid_json",

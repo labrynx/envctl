@@ -20,8 +20,9 @@ def _run_git(
 ) -> str:
     """Run a git command and return stripped stdout."""
     try:
-        completed = subprocess.run(
-            ["git", *args],
+        # Intentional: git is resolved from PATH for portability across environments.
+        completed = subprocess.run(  # noqa: S603
+            ["git", *args],  # noqa: S607
             cwd=str(cwd) if cwd else None,
             check=check,
             capture_output=True,

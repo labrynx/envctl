@@ -170,11 +170,11 @@ def _normalize_contract_payload_with_path(
     raw: object,
     path: Path,
 ) -> tuple[dict[str, object], tuple[ContractDeprecationWarning, ...]]:
-    """Normalize raw YAML into the shape expected by the Pydantic models."""
     raw_mapping = _normalize_contract_root(raw, path)
 
     version = raw_mapping.get("version", CONTRACT_VERSION)
     meta_raw = _normalize_meta_payload(raw_mapping.get("meta"), path)
+    imports = _normalize_imports_payload(raw_mapping.get("imports", ()), path=path)
     variables_raw = _require_mapping(
         raw_mapping.get("variables", {}),
         path=path,
@@ -198,9 +198,48 @@ def _normalize_contract_payload_with_path(
     return {
         "version": version,
         "meta": meta_raw,
+        "imports": imports,
         "variables": variables,
         "sets": sets,
     }, tuple(warnings)
+
+
+def _normalize_imports_payload(
+    value: object,
+    *,
+    path: Path,
+) -> tuple[str, ...]:
+    if value is None:
+        return ()
+
+    if not isinstance(value, list | tuple):
+        _raise_contract_error(
+            "'imports' must be a list of strings",
+            category="invalid_top_level_shape",
+            path=path,
+            field="imports",
+        )
+
+    imports: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            _raise_contract_error(
+                "'imports' must contain only strings",
+                category="invalid_top_level_shape",
+                path=path,
+                field="imports",
+            )
+        normalized = item.strip()
+        if not normalized:
+            _raise_contract_error(
+                "'imports' cannot contain empty values",
+                category="invalid_top_level_shape",
+                path=path,
+                field="imports",
+            )
+        imports.append(normalized)
+
+    return tuple(imports)
 
 
 def _normalize_contract_root(raw: object, path: Path) -> dict[str, Any]:

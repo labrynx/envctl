@@ -8,7 +8,7 @@ from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport
 from envctl.domain.selection import ContractSelection
 from envctl.errors import ValidationError
-from envctl.repository.contract_repository import load_contract_with_warnings
+from envctl.repository.contract_composition import load_resolved_contract_bundle
 from envctl.services.contract_selection_service import filter_resolution_report
 from envctl.services.error_diagnostics import (
     ProjectionOperation,
@@ -25,12 +25,13 @@ def resolve_projectable_environment(
     operation: ProjectionOperation,
 ) -> tuple[Contract, ResolutionReport, tuple[ContractDeprecationWarning, ...]]:
     """Resolve and validate one projectable environment."""
-    contract, warnings = load_contract_with_warnings(context.repo_contract_path)
+    bundle = load_resolved_contract_bundle(context.repo_root)
+    contract = bundle.contract
     report = resolve_environment(context, contract, active_profile=active_profile)
     filtered_report = filter_resolution_report(report, contract, selection=selection)
 
     if filtered_report.is_valid and not filtered_report.unknown_keys:
-        return contract, report, warnings
+        return contract, report, bundle.warnings
 
     raise ValidationError(
         _build_projection_blocked_message(operation),

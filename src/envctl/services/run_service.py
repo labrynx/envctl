@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import subprocess
 
+from envctl.domain.deprecations import ContractDeprecationWarning
 from envctl.domain.operations import RunCommandResult
 from envctl.domain.project import ProjectContext
 from envctl.domain.selection import ContractSelection
@@ -38,14 +39,14 @@ def _docker_run_args(command: list[str]) -> list[str] | None:
 
 def _has_explicit_docker_env_forwarding(args: list[str]) -> bool:
     """Return whether docker run explicitly forwards env vars to the container."""
-    for token in args:
-        if token == "--env-file":
+    for arg in args:
+        if arg == "--env-file":
             return True
-        if token.startswith("--env-file="):
+        if arg.startswith("--env-file="):
             return True
-        if token in ("-e", "--env"):
+        if arg in ("-e", "--env"):
             return True
-        if token.startswith("--env="):
+        if arg.startswith("--env="):
             return True
 
     return False
@@ -82,7 +83,7 @@ def run_command(
     active_profile: str | None = None,
     *,
     selection: ContractSelection | None = None,
-) -> tuple[ProjectContext, RunCommandResult, tuple[object, ...]]:
+) -> tuple[ProjectContext, RunCommandResult, tuple[ContractDeprecationWarning, ...]]:
     """Run one command with the resolved environment injected."""
     if not command:
         raise ExecutionError("No command provided")
@@ -104,7 +105,8 @@ def run_command(
     )
 
     try:
-        completed = subprocess.run(
+        # Intentional: envctl run executes a user-requested command.
+        completed = subprocess.run(  # noqa: S603
             command,
             check=False,
             env=_build_child_env(resolved_values),

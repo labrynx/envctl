@@ -5,7 +5,7 @@ from __future__ import annotations
 from envctl.domain.contract import Contract
 from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport, ResolvedValue
-from envctl.repository.contract_repository import load_contract
+from envctl.repository.contract_composition import load_resolved_contract_bundle
 from envctl.repository.profile_repository import load_profile_values
 from envctl.services.resolution_service.builders import build_resolved_value
 from envctl.services.resolution_service.expansion import expand_selected_values
@@ -15,7 +15,7 @@ from envctl.utils.project_paths import is_local_profile, normalize_profile_name
 
 def load_contract_for_context(context: ProjectContext) -> Contract:
     """Load the contract for the current project."""
-    return load_contract(context.repo_contract_path)
+    return load_resolved_contract_bundle(context.repo_root).contract
 
 
 def resolve_environment(

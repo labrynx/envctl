@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -211,6 +213,7 @@ class Contract(BaseModel):
 
     version: int = CONTRACT_VERSION
     meta: ContractMeta | None = None
+    imports: tuple[str, ...] = Field(default_factory=tuple)
     variables: dict[str, VariableSpec] = Field(default_factory=dict)
     sets: dict[str, SetSpec] = Field(default_factory=dict)
 
@@ -286,6 +289,9 @@ class Contract(BaseModel):
             },
         }
 
+        if self.imports:
+            payload["imports"] = list(self.imports)
+
         if self.meta is not None:
             payload["meta"] = self.meta.model_dump(
                 mode="python",
@@ -298,3 +304,16 @@ class Contract(BaseModel):
             }
 
         return payload
+
+
+@dataclass(frozen=True)
+class ResolvedContractGraph:
+    """Composed contract graph metadata for inspection output."""
+
+    root_path: Path = Path(".")
+    contract_paths: tuple[Path, ...] = ()
+    import_graph: dict[Path, tuple[Path, ...]] = field(default_factory=dict)
+    variables: dict[str, VariableSpec] = field(default_factory=dict)
+    declared_in: dict[str, Path] = field(default_factory=dict)
+    sets_index: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    groups_index: dict[str, tuple[str, ...]] = field(default_factory=dict)

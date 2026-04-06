@@ -92,7 +92,7 @@ format-check: ## Check code formatting with Ruff
 	$(RUFF) format --check .
 
 typecheck: ## Run static type checking with mypy
-	$(MYPY) $(SRC) $(TESTS)
+	$(MYPY)
 
 # -----------------------------------------
 # Test suite
