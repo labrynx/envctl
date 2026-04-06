@@ -179,23 +179,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .[dev]
 
-      - name: Verify tag matches package version
+      - name: Show derived package version
         if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          PACKAGE_VERSION="$(python - <<'PY'
-          import tomllib
-          from pathlib import Path
-
-          data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
-          print(data["project"]["version"])
-          PY
-          )"
-
-          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
-            echo "Tag version ($TAG_VERSION) does not match package version ($PACKAGE_VERSION)"
-            exit 1
-          fi
+        run: python -m setuptools_scm
 
       - name: Build package
         run: make build-package
