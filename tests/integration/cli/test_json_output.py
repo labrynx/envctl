@@ -120,8 +120,8 @@ def test_check_json_outputs_structured_contract_error(
     runner: CliRunner,
     workspace: Path,
 ) -> None:
-    schema_path = workspace / ".envctl.schema.yaml"
-    schema_path.write_text(":\n- bad", encoding="utf-8")
+    contract_path = workspace / ".envctl.yaml"
+    contract_path.write_text(":\n- bad", encoding="utf-8")
 
     result = runner.invoke(app, ["--json", "check"])
 
@@ -131,14 +131,14 @@ def test_check_json_outputs_structured_contract_error(
     assert payload["ok"] is False
     assert payload["command"] == "envctl check"
     assert payload["error"]["type"] == "ContractError"
-    assert payload["error"]["message"] == f"Invalid YAML contract: {schema_path}"
+    assert payload["error"]["message"] == f"Invalid YAML contract: {contract_path}"
     assert payload["error"]["details"] == {
         "category": "invalid_yaml",
-        "path": str(schema_path),
+        "path": str(contract_path),
         "key": None,
         "field": None,
         "issues": [],
-        "suggested_actions": ["envctl check", "fix .envctl.schema.yaml"],
+        "suggested_actions": ["envctl check", "fix .envctl.yaml"],
     }
 
 
@@ -327,13 +327,13 @@ def test_doctor_json_outputs_structured_checks(
     assert result.exit_code == 0
 
     payload = parse_json_output(result.output)
-    assert payload["ok"] is True
     assert payload["command"] == "doctor"
+    assert payload["ok"] is True
 
-    data = cast(dict[str, Any], payload["data"])
-    assert "checks" in data
-    assert isinstance(data["checks"], list)
-    assert data["has_failures"] is False
+    data = payload["data"]
+    assert "context" in data
+    assert "project" in data
+    assert "problems" in data
 
 
 def test_json_is_rejected_for_unsupported_text_only_command(

@@ -24,7 +24,7 @@ def test_render_status_view_with_issues_and_next_step(capsys: pytest.CaptureFixt
         resolved_valid=False,
         summary="The project contract is not satisfied yet.",
         issues=["Contract file is missing", "Missing required keys: DATABASE_URL"],
-        suggested_action="Run 'envctl init' or create .envctl.schema.yaml",
+        suggested_action="Run 'envctl init' or create .envctl.yaml",
     )
 
     render_status_view(profile="local", report=report)
@@ -41,7 +41,7 @@ def test_render_status_view_with_issues_and_next_step(capsys: pytest.CaptureFixt
     assert "Issues" in captured
     assert "Contract file is missing" in captured
     assert "Next step" in captured
-    assert "Run 'envctl init' or create .envctl.schema.yaml" in captured
+    assert "Run 'envctl init' or create .envctl.yaml" in captured
 
 
 def test_render_status_without_issues(capsys: pytest.CaptureFixture[str]) -> None:

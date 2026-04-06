@@ -38,7 +38,7 @@ def test_explain_command_emits_json_when_requested(
 
     monkeypatch.setattr(
         explain_command_module,
-        "run_explain",
+        "run_inspect_key",
         lambda key, profile: (result.project, result, ()),
     )
     monkeypatch.setattr(explain_command_module, "get_active_profile", lambda: "staging")
@@ -64,7 +64,7 @@ def test_explain_command_renders_alias_warning(
     result = make_result()
     monkeypatch.setattr(
         explain_command_module,
-        "run_explain",
+        "run_inspect_key",
         lambda key, profile: (result.project, result, ()),
     )
     monkeypatch.setattr(explain_command_module, "get_active_profile", lambda: "staging")
@@ -86,7 +86,7 @@ def test_explain_command_json_warns_about_deprecation(
 
     monkeypatch.setattr(
         explain_command_module,
-        "run_explain",
+        "run_inspect_key",
         lambda key, profile: (result.project, result, ()),
     )
     monkeypatch.setattr(explain_command_module, "get_active_profile", lambda: "staging")
@@ -114,7 +114,7 @@ def test_explain_command_keeps_same_core_payload_as_inspect_key(
 
     monkeypatch.setattr(
         explain_command_module,
-        "run_explain",
+        "run_inspect_key",
         lambda key, profile: (result.project, result, ()),
     )
     monkeypatch.setattr(explain_command_module, "get_active_profile", lambda: "staging")

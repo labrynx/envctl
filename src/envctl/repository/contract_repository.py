@@ -97,7 +97,7 @@ def _build_contract_suggested_actions(
         "invalid_top_level_shape",
         "invalid_variable_shape",
     }:
-        actions.append("fix .envctl.schema.yaml")
+        actions.append("fix .envctl.yaml")
 
     if category == "missing_contract_file":
         actions.append("envctl init --contract starter")

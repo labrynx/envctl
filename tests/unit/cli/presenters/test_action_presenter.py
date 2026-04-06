@@ -9,12 +9,12 @@ import pytest
 from envctl.cli.presenters.action_presenter import (
     render_add_result,
     render_config_init_result,
-    render_explain_value,
     render_export_output,
     render_fill_no_changes,
     render_fill_result,
     render_inferred_spec,
     render_init_result,
+    render_inspect_value,
     render_remove_result,
     render_set_result,
     render_sync_result,
@@ -38,7 +38,7 @@ def test_render_add_result(capsys: pytest.CaptureFixture[str]) -> None:
         key="DATABASE_URL",
         profile="prod",
         profile_path=Path("/tmp/vault/prod.env"),
-        contract_path=Path("/workspace/.envctl.schema.yaml"),
+        contract_path=Path("/workspace/.envctl.yaml"),
         contract_created=True,
         contract_updated=True,
         contract_entry_created=True,
@@ -48,7 +48,7 @@ def test_render_add_result(capsys: pytest.CaptureFixture[str]) -> None:
     assert "[OK] Added 'DATABASE_URL' to contract and profile 'prod'" in captured
     assert "profile: prod" in captured
     assert "vault_values: /tmp/vault/prod.env" in captured
-    assert "contract: /workspace/.envctl.schema.yaml" in captured
+    assert "contract: /workspace/.envctl.yaml" in captured
     assert "contract_created: yes" in captured
     assert "contract_updated: yes" in captured
     assert "contract_entry_created: yes" in captured
@@ -71,7 +71,7 @@ def test_render_inferred_spec_when_present(capsys: pytest.CaptureFixture[str]) -
     assert "required: yes" in captured
     assert "sensitive: yes" in captured
     assert "description: Primary database connection URL" in captured
-    assert "[WARN] Review .envctl.schema.yaml to confirm the inferred metadata." in captured
+    assert "[WARN] Review .envctl.yaml to confirm the inferred metadata." in captured
 
 
 def test_render_inferred_spec_when_none(capsys: pytest.CaptureFixture[str]) -> None:
@@ -82,9 +82,9 @@ def test_render_inferred_spec_when_none(capsys: pytest.CaptureFixture[str]) -> N
     assert captured == ""
 
 
-def test_render_explain_value_masks_when_needed(capsys: pytest.CaptureFixture[str]) -> None:
+def test_render_inspect_value_masks_when_needed(capsys: pytest.CaptureFixture[str]) -> None:
     """It should mask sensitive values in explain output."""
-    render_explain_value(
+    render_inspect_value(
         profile="prod",
         key="TOKEN",
         source="vault",
@@ -106,9 +106,9 @@ def test_render_explain_value_masks_when_needed(capsys: pytest.CaptureFixture[st
     assert "valid: yes" in captured
 
 
-def test_render_explain_value_with_detail(capsys: pytest.CaptureFixture[str]) -> None:
+def test_render_inspect_value_with_detail(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render validation detail when present."""
-    render_explain_value(
+    render_inspect_value(
         profile="local",
         key="PORT",
         source="vault",
@@ -216,7 +216,7 @@ def test_render_init_result_with_created_contract(capsys: pytest.CaptureFixture[
         project_key="demo-app",
         binding_source="local",
         repo_root=Path("/workspace/demo-app"),
-        contract_path=Path("/workspace/demo-app/.envctl.schema.yaml"),
+        contract_path=Path("/workspace/demo-app/.envctl.yaml"),
         vault_dir=Path("/tmp/vault/demo-app--prj_x"),
         vault_values_path=Path("/tmp/vault/demo-app--prj_x/values.env"),
         vault_state_path=Path("/tmp/vault/demo-app--prj_x/state.json"),
@@ -244,7 +244,7 @@ def test_render_init_result_with_skipped_contract(capsys: pytest.CaptureFixture[
         project_key="demo-app",
         binding_source="local",
         repo_root=Path("/workspace/demo-app"),
-        contract_path=Path("/workspace/demo-app/.envctl.schema.yaml"),
+        contract_path=Path("/workspace/demo-app/.envctl.yaml"),
         vault_dir=Path("/tmp/vault/demo-app--prj_x"),
         vault_values_path=Path("/tmp/vault/demo-app--prj_x/values.env"),
         vault_state_path=Path("/tmp/vault/demo-app--prj_x/state.json"),
@@ -260,7 +260,7 @@ def test_render_remove_result(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render remove output."""
     render_remove_result(
         key="TOKEN",
-        contract_path=Path("/workspace/.envctl.schema.yaml"),
+        contract_path=Path("/workspace/.envctl.yaml"),
         removed_from_contract=True,
         inspected_profiles=("local", "prod", "staging"),
         removed_from_profiles=("local", "prod"),

@@ -8,8 +8,8 @@ from pathlib import Path
 from envctl.constants import (
     DEFAULT_CONFIG_DIRNAME,
     DEFAULT_CONFIG_FILENAME,
+    DEFAULT_CONTRACT_FILENAME,
     DEFAULT_ENV_FILENAME,
-    DEFAULT_SCHEMA_FILENAME,
 )
 
 
@@ -41,6 +41,6 @@ def get_default_env_filename() -> str:
     return DEFAULT_ENV_FILENAME
 
 
-def get_default_schema_filename() -> str:
+def get_default_contract_filename() -> str:
     """Return the default contract file name."""
-    return DEFAULT_SCHEMA_FILENAME
+    return DEFAULT_CONTRACT_FILENAME

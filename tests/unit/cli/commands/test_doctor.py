@@ -34,7 +34,7 @@ def test_doctor_command_emits_json_when_requested(
 
     monkeypatch.setattr(
         doctor_command_module,
-        "run_doctor",
+        "run_inspect",
         lambda profile: (result.project, result, ()),
     )
     monkeypatch.setattr(doctor_command_module, "get_active_profile", lambda: "staging")
@@ -60,7 +60,7 @@ def test_doctor_command_renders_alias_warning(
     result = make_result()
     monkeypatch.setattr(
         doctor_command_module,
-        "run_doctor",
+        "run_inspect",
         lambda profile: (result.project, result, ()),
     )
     monkeypatch.setattr(doctor_command_module, "get_active_profile", lambda: "staging")
@@ -82,7 +82,7 @@ def test_doctor_command_json_warns_about_deprecation(
 
     monkeypatch.setattr(
         doctor_command_module,
-        "run_doctor",
+        "run_inspect",
         lambda profile: (result.project, result, ()),
     )
     monkeypatch.setattr(doctor_command_module, "get_active_profile", lambda: "staging")
@@ -110,7 +110,7 @@ def test_doctor_command_keeps_same_core_payload_as_inspect(
 
     monkeypatch.setattr(
         doctor_command_module,
-        "run_doctor",
+        "run_inspect",
         lambda profile: (result.project, result, ()),
     )
     monkeypatch.setattr(doctor_command_module, "get_active_profile", lambda: "staging")

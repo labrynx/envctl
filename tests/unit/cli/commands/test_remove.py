@@ -40,7 +40,7 @@ def test_remove_command_prints_profile_cleanup_summary(
                 "Result",
                 (),
                 {
-                    "repo_contract_path": "/tmp/repo/.envctl.schema.yaml",
+                    "repo_contract_path": "/tmp/repo/.envctl.yaml",
                     "removed_from_contract": True,
                     "inspected_profiles": ("local", "dev", "staging"),
                     "removed_from_profiles": ("local", "dev"),

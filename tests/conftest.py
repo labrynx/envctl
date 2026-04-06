@@ -35,7 +35,7 @@ def write_sample_contract(repo: Path) -> None:
         },
     }
 
-    (repo / ".envctl.schema.yaml").write_text(
+    (repo / ".envctl.yaml").write_text(
         yaml.safe_dump(schema, sort_keys=False),
         encoding="utf-8",
     )

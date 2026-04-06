@@ -121,7 +121,7 @@ def test_build_project_context_returns_bound_local_context_when_git_binding_exis
     assert context.project_key == "demo-app"
     assert context.binding_source == "local"
     assert context.repo_root == repo_root
-    assert context.repo_contract_path == repo_root / ".envctl.schema.yaml"
+    assert context.repo_contract_path == repo_root / ".envctl.yaml"
     assert context.repo_env_path == repo_root / ".env.local"
     assert context.vault_project_dir == vault_dir
     assert context.vault_state_path == vault_dir / "state.json"
@@ -483,7 +483,7 @@ def test_persist_project_binding_writes_state_and_returns_local_context(
         repo_remote="git@github.com:alessbarb/demo-app.git",
         binding_source="derived",
         repo_env_path=repo_root / ".env.local",
-        repo_contract_path=repo_root / ".envctl.schema.yaml",
+        repo_contract_path=repo_root / ".envctl.yaml",
         vault_project_dir=config.projects_dir / "placeholder",
         vault_values_path=config.projects_dir / "placeholder" / "values.env",
         vault_state_path=config.projects_dir / "placeholder" / "state.json",
@@ -531,7 +531,7 @@ def test_persist_project_binding_raises_for_non_canonical_project_id(
         repo_remote=None,
         binding_source="derived",
         repo_env_path=repo_root / ".env.local",
-        repo_contract_path=repo_root / ".envctl.schema.yaml",
+        repo_contract_path=repo_root / ".envctl.yaml",
         vault_project_dir=config.projects_dir / "placeholder",
         vault_values_path=config.projects_dir / "placeholder" / "values.env",
         vault_state_path=config.projects_dir / "placeholder" / "state.json",

@@ -42,7 +42,7 @@ def test_init_command_prints_contract_creation_details(
         project_key="demo",
         binding_source="local",
         repo_root="/tmp/demo",
-        repo_contract_path="/tmp/demo/.envctl.schema.yaml",
+        repo_contract_path="/tmp/demo/.envctl.yaml",
         vault_project_dir="/tmp/vault/demo--prj_aaaaaaaaaaaaaaaa",
         vault_values_path="/tmp/vault/demo--prj_aaaaaaaaaaaaaaaa/values.env",
         vault_state_path="/tmp/vault/demo--prj_aaaaaaaaaaaaaaaa/state.json",
@@ -66,7 +66,7 @@ def test_init_command_prints_contract_creation_details(
     assert "project_key: demo" in output
     assert "binding_source: local" in output
     assert "repo_root: /tmp/demo" in output
-    assert "contract: /tmp/demo/.envctl.schema.yaml" in output
+    assert "contract: /tmp/demo/.envctl.yaml" in output
     assert "vault_dir: /tmp/vault/demo--prj_aaaaaaaaaaaaaaaa" in output
     assert "vault_values: /tmp/vault/demo--prj_aaaaaaaaaaaaaaaa/values.env" in output
     assert "vault_state: /tmp/vault/demo--prj_aaaaaaaaaaaaaaaa/state.json" in output
@@ -83,7 +83,7 @@ def test_init_command_warns_when_contract_is_skipped(
         project_key="demo",
         binding_source="local",
         repo_root="/tmp/demo",
-        repo_contract_path="/tmp/demo/.envctl.schema.yaml",
+        repo_contract_path="/tmp/demo/.envctl.yaml",
         vault_project_dir="/tmp/vault/demo--prj_aaaaaaaaaaaaaaaa",
         vault_values_path="/tmp/vault/demo--prj_aaaaaaaaaaaaaaaa/values.env",
         vault_state_path="/tmp/vault/demo--prj_aaaaaaaaaaaaaaaa/state.json",

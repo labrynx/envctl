@@ -181,14 +181,14 @@ def test_handle_errors_renders_contract_diagnostics(
     captured: dict[str, tuple[ContractDiagnostics, str]] = {}
     diagnostics = ContractDiagnostics(
         category="missing_contract_file",
-        path=Path("/tmp/demo/.envctl.schema.yaml"),
+        path=Path("/tmp/demo/.envctl.yaml"),
         suggested_actions=("envctl check",),
     )
 
     @handle_errors
     def sample() -> None:
         raise ContractError(
-            "Contract file not found: /tmp/demo/.envctl.schema.yaml",
+            "Contract file not found: /tmp/demo/.envctl.yaml",
             diagnostics=diagnostics,
         )
 
@@ -206,7 +206,7 @@ def test_handle_errors_renders_contract_diagnostics(
     assert exc_info.value.exit_code == 1
     assert captured["value"] == (
         diagnostics,
-        "Contract file not found: /tmp/demo/.envctl.schema.yaml",
+        "Contract file not found: /tmp/demo/.envctl.yaml",
     )
 
 
@@ -218,11 +218,11 @@ def test_handle_errors_emits_contract_details_in_json_when_present(
     @handle_errors
     def sample() -> None:
         raise ContractError(
-            "Invalid YAML contract: /tmp/demo/.envctl.schema.yaml",
+            "Invalid YAML contract: /tmp/demo/.envctl.yaml",
             diagnostics=ContractDiagnostics(
                 category="invalid_yaml",
-                path=Path("/tmp/demo/.envctl.schema.yaml"),
-                suggested_actions=("envctl check", "fix .envctl.schema.yaml"),
+                path=Path("/tmp/demo/.envctl.yaml"),
+                suggested_actions=("envctl check", "fix .envctl.yaml"),
             ),
         )
 
@@ -242,11 +242,11 @@ def test_handle_errors_emits_contract_details_in_json_when_present(
     payload = cast(dict[str, Any], captured["payload"])
     assert payload["error"]["details"] == {
         "category": "invalid_yaml",
-        "path": "/tmp/demo/.envctl.schema.yaml",
+        "path": "/tmp/demo/.envctl.yaml",
         "key": None,
         "field": None,
         "issues": [],
-        "suggested_actions": ["envctl check", "fix .envctl.schema.yaml"],
+        "suggested_actions": ["envctl check", "fix .envctl.yaml"],
     }
 
 

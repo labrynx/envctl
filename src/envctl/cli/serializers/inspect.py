@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from envctl.cli.compat.legacy_json import serialize_legacy_inspect_report
 from envctl.cli.serializers.context import serialize_project_context
 from envctl.cli.serializers.resolution import serialize_resolved_value
 from envctl.domain.diagnostics import (
@@ -15,6 +16,7 @@ from envctl.domain.diagnostics import (
 
 
 def _serialize_problem(problem: DiagnosticProblem) -> dict[str, Any]:
+    """Serialize one diagnostic problem."""
     return {
         "key": problem.key,
         "kind": problem.kind,
@@ -24,6 +26,7 @@ def _serialize_problem(problem: DiagnosticProblem) -> dict[str, Any]:
 
 
 def _serialize_contract_graph(graph: InspectContractGraph) -> dict[str, Any]:
+    """Serialize one inspect contract graph."""
     return {
         "root_path": str(graph.root_path),
         "contract_paths": [str(path) for path in graph.contract_paths],
@@ -41,26 +44,8 @@ def _serialize_contract_graph(graph: InspectContractGraph) -> dict[str, Any]:
     }
 
 
-def _serialize_legacy_report(result: InspectResult) -> dict[str, Any]:
-    missing_required = [
-        problem.key for problem in result.problems if problem.kind == "missing_required"
-    ]
-    invalid_keys = [
-        problem.key
-        for problem in result.problems
-        if problem.kind in {"invalid_value", "expansion_reference_error"}
-    ]
-    unknown_keys = [problem.key for problem in result.problems if problem.kind == "unknown_key"]
-    return {
-        "is_valid": result.summary.invalid == 0,
-        "values": {item.key: serialize_resolved_value(item) for item in result.variables},
-        "missing_required": missing_required,
-        "unknown_keys": unknown_keys,
-        "invalid_keys": invalid_keys,
-    }
-
-
 def serialize_inspect_result(result: InspectResult) -> dict[str, Any]:
+    """Serialize one inspect result."""
     return {
         "project": {
             "repo_root": str(result.project.repo_root),
@@ -90,11 +75,12 @@ def serialize_inspect_result(result: InspectResult) -> dict[str, Any]:
         "variables": {item.key: serialize_resolved_value(item) for item in result.variables},
         "problems": [_serialize_problem(problem) for problem in result.problems],
         "context": serialize_project_context(result.project),
-        "report": _serialize_legacy_report(result),
+        "report": serialize_legacy_inspect_report(result),  # legacy JSON compatibility
     }
 
 
 def serialize_inspect_key_result(result: InspectKeyResult) -> dict[str, Any]:
+    """Serialize one inspect-key result."""
     return {
         "active_profile": result.active_profile,
         "context": serialize_project_context(result.project),

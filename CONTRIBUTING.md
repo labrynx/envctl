@@ -30,7 +30,7 @@ This project follows a simple principle: be respectful, provide constructive fee
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/your-org/envctl.git
+   git clone https://github.com/labrynx/envctl.git
    cd envctl
    ```
 
@@ -116,7 +116,7 @@ This separation ensures that business logic remains testable and independent fro
 
 ## Special guidance for schema-based features
 
-Planned features such as `.envctl.schema.yaml`, `check`, and `fill` should follow these rules:
+Planned features such as `.envctl.yaml`, `check`, and `fill` should follow these rules:
 
 * the schema declares requirements, not values
 * the schema must never store secrets

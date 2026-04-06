@@ -19,7 +19,7 @@ from envctl.services.error_diagnostics import (
 def test_serialize_contract_diagnostics_returns_expected_shape() -> None:
     diagnostics = ContractDiagnostics(
         category="invalid_variable_shape",
-        path=Path("/tmp/demo/.envctl.schema.yaml"),
+        path=Path("/tmp/demo/.envctl.yaml"),
         key="PORT",
         field="variables",
         issues=(
@@ -28,12 +28,12 @@ def test_serialize_contract_diagnostics_returns_expected_shape() -> None:
                 detail="Variable must be a mapping",
             ),
         ),
-        suggested_actions=("envctl check", "fix .envctl.schema.yaml"),
+        suggested_actions=("envctl check", "fix .envctl.yaml"),
     )
 
     payload = serialize_contract_diagnostics(diagnostics)
     assert payload["category"] == "invalid_variable_shape"
-    assert payload["path"] == "/tmp/demo/.envctl.schema.yaml"
+    assert payload["path"] == "/tmp/demo/.envctl.yaml"
     assert payload["key"] == "PORT"
     assert payload["issues"] == [
         {

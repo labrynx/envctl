@@ -51,7 +51,7 @@ def test_add_command_calls_service_and_prints_full_inference(
 ) -> None:
     context = SimpleNamespace(
         vault_values_path="/tmp/vault/values.env",
-        repo_contract_path="/tmp/repo/.envctl.schema.yaml",
+        repo_contract_path="/tmp/repo/.envctl.yaml",
     )
     result = SimpleNamespace(
         active_profile="local",
@@ -141,7 +141,7 @@ def test_add_command_calls_service_and_prints_full_inference(
     assert "[OK] Added 'DATABASE_URL' to contract and profile 'local'" in output
     assert "profile: local" in output
     assert "vault_values: /tmp/vault/values.env" in output
-    assert "contract: /tmp/repo/.envctl.schema.yaml" in output
+    assert "contract: /tmp/repo/.envctl.yaml" in output
     assert "contract_created: yes" in output
     assert "contract_updated: yes" in output
     assert "contract_entry_created: yes" in output
@@ -149,7 +149,7 @@ def test_add_command_calls_service_and_prints_full_inference(
     assert "required: yes" in output
     assert "sensitive: yes" in output
     assert "description: Primary database connection URL" in output
-    assert "[WARN] Review .envctl.schema.yaml to confirm the inferred metadata." in output
+    assert "[WARN] Review .envctl.yaml to confirm the inferred metadata." in output
 
 
 def test_add_command_prints_minimal_output_when_inference_is_missing(
@@ -158,7 +158,7 @@ def test_add_command_prints_minimal_output_when_inference_is_missing(
 ) -> None:
     context = SimpleNamespace(
         vault_values_path="/tmp/vault/values.env",
-        repo_contract_path="/tmp/repo/.envctl.schema.yaml",
+        repo_contract_path="/tmp/repo/.envctl.yaml",
     )
     result = SimpleNamespace(
         active_profile="local",
@@ -210,7 +210,7 @@ def test_add_command_prints_minimal_output_when_inference_is_missing(
     assert "[OK] Added 'APP_NAME' to contract and profile 'local'" in output
     assert "profile: local" in output
     assert "vault_values: /tmp/vault/values.env" in output
-    assert "contract: /tmp/repo/.envctl.schema.yaml" in output
+    assert "contract: /tmp/repo/.envctl.yaml" in output
     assert "contract_created: yes" not in output
     assert "contract_updated: yes" not in output
     assert "contract_entry_created: yes" not in output
@@ -218,7 +218,7 @@ def test_add_command_prints_minimal_output_when_inference_is_missing(
     assert "required:" not in output
     assert "sensitive:" not in output
     assert "description:" not in output
-    assert "[WARN] Review .envctl.schema.yaml to confirm the inferred metadata." not in output
+    assert "[WARN] Review .envctl.yaml to confirm the inferred metadata." not in output
 
 
 def test_add_command_omits_optional_inferred_fields_when_not_present(
@@ -227,7 +227,7 @@ def test_add_command_omits_optional_inferred_fields_when_not_present(
 ) -> None:
     context = SimpleNamespace(
         vault_values_path="/tmp/vault/values.env",
-        repo_contract_path="/tmp/repo/.envctl.schema.yaml",
+        repo_contract_path="/tmp/repo/.envctl.yaml",
     )
     result = SimpleNamespace(
         active_profile="local",
@@ -269,7 +269,7 @@ def test_add_command_passes_format_override(
 ) -> None:
     context = SimpleNamespace(
         vault_values_path="/tmp/vault/values.env",
-        repo_contract_path="/tmp/repo/.envctl.schema.yaml",
+        repo_contract_path="/tmp/repo/.envctl.yaml",
     )
     result = SimpleNamespace(
         active_profile="local",

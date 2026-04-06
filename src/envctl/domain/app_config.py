@@ -16,7 +16,7 @@ class AppConfig:
     config_path: Path
     vault_dir: Path
     env_filename: str
-    schema_filename: str
+    contract_filename: str
     runtime_mode: RuntimeMode
     default_profile: str
     encryption_enabled: bool = False

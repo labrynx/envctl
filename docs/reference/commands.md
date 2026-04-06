@@ -3,6 +3,7 @@
 This page describes command behavior.
 
 If you want practical examples, see the workflow guides. If you want the model behind the commands, see the concepts section.
+For legacy behavior and migration notes, see the migration and compatibility guide.
 
 ## Global options
 
@@ -32,7 +33,7 @@ Contract scope selectors:
 
 These selectors are mutually exclusive. When none is provided, envctl uses the full contract.
 
-Legacy `group` is still accepted in contract files for compatibility, but it is deprecated and treated as `groups: [value]`. Legacy `required` is also accepted, but ignored functionally. Both legacy keys should be removed before v2.6.0.
+Scope selectors operate on the current contract model. For legacy field behavior such as `group`, `required`, or older root contract names, see the migration and compatibility guide.
 
 ## Command groups
 
@@ -40,7 +41,7 @@ Commands are grouped by responsibility.
 
 ### Contract mutation
 
-These commands change the shared project contract discovered at the repo root — `.envctl.yaml` first, `.envctl.schema.yaml` as legacy fallback. In examples, prefer `.envctl.yaml`, but the same command flow still applies to repositories that have not migrated yet:
+These commands change the shared project contract discovered at the repo root:
 
 - `add`
 - `remove`
@@ -59,8 +60,6 @@ These commands inspect or validate resolved state:
 
 - `check`
 - `inspect`
-- `doctor` (deprecated alias of `inspect`)
-- `explain` (deprecated alias of `inspect KEY`)
 
 ### Projection
 
@@ -216,42 +215,20 @@ Behavior:
 
 Use `inspect` when you want the full diagnostic picture, `inspect KEY` when one variable is the real problem, and the auxiliary inspect views when you want to understand contract composition itself.
 
-### `doctor`
+## Deprecated aliases
 
-```bash
-envctl doctor
-```
+The canonical diagnostic path is:
 
-Behavior:
+- `envctl check`
+- `envctl inspect`
+- `envctl inspect KEY`
 
-* deprecated alias of `envctl inspect`
-* scheduled for removal in `v2.6.0`
-* keeps working during the transition period
-* emits a deprecation warning before the normal inspect output
+For compatibility, the following aliases still work:
 
-Use `doctor` only for backward compatibility while you migrate scripts and habits. Prefer `inspect`, and plan to remove `doctor` usage before v2.6.0.
+- `envctl doctor` → `envctl inspect`
+- `envctl explain KEY` → `envctl inspect KEY`
 
-Behavior:
-
-* deprecated alias of `envctl inspect`
-* scheduled for removal in `v2.6.0`
-* still works during the transition period
-* shows a deprecation warning before the report
-
-### `explain`
-
-```bash
-envctl explain KEY
-```
-
-Behavior:
-
-* deprecated alias of `envctl inspect KEY`
-* scheduled for removal in `v2.6.0`
-* still works during the transition period
-* shows a deprecation warning before the report
-
-Use `explain` only for backward compatibility while you migrate scripts and habits. Prefer `inspect KEY`, and plan to remove `explain` usage before v2.6.0.
+They are deprecated and should not be used in new documentation or scripts. For the broader compatibility model, see the migration and compatibility guide.
 
 ### `run`
 

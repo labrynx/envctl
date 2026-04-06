@@ -9,8 +9,8 @@ from typing import Any
 
 from envctl.config.defaults import (
     get_default_config_path,
+    get_default_contract_filename,
     get_default_env_filename,
-    get_default_schema_filename,
     get_default_vault_dir,
 )
 from envctl.config.profile_resolution import resolve_active_profile, validate_profile_name
@@ -26,7 +26,7 @@ from envctl.services.error_diagnostics import ConfigDiagnostics
 SUPPORTED_KEYS = {
     "vault_dir",
     "env_filename",
-    "schema_filename",
+    "contract_filename",
     "runtime_mode",
     "default_profile",
     "encryption",
@@ -236,9 +236,9 @@ def load_config() -> AppConfig:
         path=config_path if config_path.exists() else None,
         source_label="config file",
     )
-    schema_filename = _validate_filename(
-        raw.get("schema_filename", get_default_schema_filename()),
-        "schema_filename",
+    contract_filename = _validate_filename(
+        raw.get("contract_filename", get_default_contract_filename()),
+        "contract_filename",
         path=config_path if config_path.exists() else None,
         source_label="config file",
     )
@@ -285,7 +285,7 @@ def load_config() -> AppConfig:
         config_path=config_path,
         vault_dir=vault_dir,
         env_filename=env_filename,
-        schema_filename=schema_filename,
+        contract_filename=contract_filename,
         runtime_mode=runtime_mode,
         default_profile=config_default_profile,
         encryption_enabled=encryption_enabled,

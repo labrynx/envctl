@@ -119,7 +119,7 @@ def load_local_profile_values_from_vault_dir(
         repo_remote=None,
         binding_source="local",
         repo_env_path=vault_project_dir / ".env.local",
-        repo_contract_path=vault_project_dir / ".envctl.schema.yaml",
+        repo_contract_path=vault_project_dir / ".envctl.yaml",
         vault_project_dir=vault_project_dir,
         vault_values_path=path,
         vault_state_path=vault_project_dir / "state.json",

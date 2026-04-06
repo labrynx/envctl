@@ -26,7 +26,7 @@ def _discover_or_fallback_repo_contract_path(repo_root: Path, config: AppConfig)
     try:
         return discover_root_contract_path(repo_root).path
     except ContractError:
-        return repo_root / config.schema_filename
+        return repo_root / config.contract_filename
 
 
 def _resolve_project_key(repo_contract_path: Path, project_slug: str) -> str:

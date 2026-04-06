@@ -19,7 +19,7 @@ def _make_config(
         config_path=Path("/home/user/.config/envctl/config.json"),
         vault_dir=Path(vault_dir),
         env_filename=".env.local",
-        schema_filename=".envctl.schema.yaml",
+        contract_filename=".envctl.yaml",
         runtime_mode=RuntimeMode.LOCAL,
         default_profile="local",
         encryption_enabled=encryption_enabled,

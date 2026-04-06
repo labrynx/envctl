@@ -37,7 +37,7 @@ def make_project_context(
     repo_root = Path(repo_root)
 
     resolved_project_key = project_key or project_slug
-    resolved_repo_contract_path = Path(repo_contract_path or (repo_root / ".envctl.schema.yaml"))
+    resolved_repo_contract_path = Path(repo_contract_path or (repo_root / ".envctl.yaml"))
     resolved_repo_env_path = Path(repo_env_path or (repo_root / ".env.local"))
 
     if vault_project_dir is not None:
@@ -89,7 +89,7 @@ def make_status_context(
 ) -> ProjectContext:
     """Build a filesystem-backed ProjectContext for status-service tests."""
     repo_root = tmp_path
-    repo_contract_path = repo_root / ".envctl.schema.yaml"
+    repo_contract_path = repo_root / ".envctl.yaml"
     vault_project_dir = tmp_path / "vault" / "projects" / f"{project_slug}--{project_id}"
     vault_values_path = vault_project_dir / "values.env"
 

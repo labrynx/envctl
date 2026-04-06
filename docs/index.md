@@ -55,6 +55,12 @@ If you want command or configuration reference, use:
 
 These pages are meant for precise lookup.
 
+## Compatibility and migration
+
+If you are updating older repositories, scripts, or habits, read:
+
+- [Migration and compatibility](internals/compatibility.md)
+
 ## Contribute or extend
 
 If you want to understand how `envctl` is built internally, read:

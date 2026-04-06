@@ -12,7 +12,7 @@ def test_vault_show_command_exits_when_file_does_not_exist(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    context = SimpleNamespace(repo_contract_path="/tmp/repo/.envctl.schema.yaml")
+    context = SimpleNamespace(repo_contract_path="/tmp/repo/.envctl.yaml")
     result = SimpleNamespace(
         exists=False,
         path="/tmp/vault/profiles/staging.env",
@@ -46,7 +46,7 @@ def test_vault_show_command_warns_when_file_is_empty(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    context = SimpleNamespace(repo_contract_path="/tmp/repo/.envctl.schema.yaml")
+    context = SimpleNamespace(repo_contract_path="/tmp/repo/.envctl.yaml")
     result = SimpleNamespace(
         exists=True,
         path="/tmp/vault/values.env",
@@ -83,7 +83,7 @@ def test_vault_show_command_masks_sensitive_contract_values_and_unknown_values(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    context = SimpleNamespace(repo_contract_path="/tmp/repo/.envctl.schema.yaml")
+    context = SimpleNamespace(repo_contract_path="/tmp/repo/.envctl.yaml")
     result = SimpleNamespace(
         exists=True,
         path="/tmp/vault/profiles/dev.env",

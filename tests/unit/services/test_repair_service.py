@@ -37,7 +37,7 @@ def make_context(
         repo_remote=repo_remote,
         binding_source=binding_source,
         repo_env_path=repo_root / ".env.local",
-        repo_contract_path=repo_root / ".envctl.schema.yaml",
+        repo_contract_path=repo_root / ".envctl.yaml",
         vault_project_dir=vault_project_dir,
         vault_values_path=vault_project_dir / "values.env",
         vault_state_path=vault_project_dir / "state.json",

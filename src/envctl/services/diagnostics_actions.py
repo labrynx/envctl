@@ -25,4 +25,4 @@ def actions_for_problem(
         return (f"envctl inspect {key}",)
     if kind == "unknown_key":
         return ("envctl vault prune", "remove manually from the active profile")
-    return ("envctl check", "fix .envctl.schema.yaml")
+    return ("envctl check", "fix .envctl.yaml")

@@ -60,7 +60,7 @@ def test_ensure_contract_metadata_updates_contract_when_metadata_differs() -> No
 
 
 def test_load_contract_reads_valid_yaml_contract(tmp_path: Path) -> None:
-    path = tmp_path / ".envctl.schema.yaml"
+    path = tmp_path / ".envctl.yaml"
     payload = {
         "version": 1,
         "variables": {
@@ -89,13 +89,13 @@ def test_load_contract_reads_valid_yaml_contract(tmp_path: Path) -> None:
 
 
 def test_load_contract_optional_returns_none_when_missing(tmp_path: Path) -> None:
-    path = tmp_path / ".envctl.schema.yaml"
+    path = tmp_path / ".envctl.yaml"
 
     assert load_contract_optional(path) is None
 
 
 def test_write_contract_serializes_contract(tmp_path: Path) -> None:
-    path = tmp_path / ".envctl.schema.yaml"
+    path = tmp_path / ".envctl.yaml"
     contract = make_contract(
         {
             "APP_NAME": make_variable_spec(
@@ -120,7 +120,7 @@ def test_write_contract_serializes_contract(tmp_path: Path) -> None:
 
 
 def test_load_contract_raises_when_file_is_missing(tmp_path: Path) -> None:
-    path = tmp_path / ".envctl.schema.yaml"
+    path = tmp_path / ".envctl.yaml"
 
     with pytest.raises(ContractError, match=r"Contract file not found") as exc_info:
         load_contract(path)
@@ -131,13 +131,13 @@ def test_load_contract_raises_when_file_is_missing(tmp_path: Path) -> None:
     assert diagnostics.path == path
     assert diagnostics.suggested_actions == (
         "envctl check",
-        "fix .envctl.schema.yaml",
+        "fix .envctl.yaml",
         "envctl init --contract starter",
     )
 
 
 def test_load_contract_raises_when_yaml_is_invalid(tmp_path: Path) -> None:
-    path = tmp_path / ".envctl.schema.yaml"
+    path = tmp_path / ".envctl.yaml"
     path.write_text(":\n- bad", encoding="utf-8")
 
     with pytest.raises(ContractError, match=r"Invalid YAML contract") as exc_info:
@@ -153,7 +153,7 @@ def test_load_contract_raises_when_file_cannot_be_read(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    path = tmp_path / ".envctl.schema.yaml"
+    path = tmp_path / ".envctl.yaml"
     path.write_text("version: 1\nvariables: {}\n", encoding="utf-8")
 
     def broken_read_text(self: Path, encoding: str = "utf-8") -> str:
@@ -173,7 +173,7 @@ def test_load_contract_raises_when_file_cannot_be_read(
 def test_load_contract_raises_for_invalid_variable_shape_with_structured_diagnostics(
     tmp_path: Path,
 ) -> None:
-    path = tmp_path / ".envctl.schema.yaml"
+    path = tmp_path / ".envctl.yaml"
     path.write_text("version: 1\nvariables:\n  PORT: nope\n", encoding="utf-8")
 
     with pytest.raises(ContractError, match=r"Variable 'PORT' must be a mapping") as exc_info:
@@ -190,7 +190,7 @@ def test_load_contract_raises_for_invalid_variable_shape_with_structured_diagnos
 def test_load_contract_raises_for_pydantic_validation_with_structured_issues(
     tmp_path: Path,
 ) -> None:
-    path = tmp_path / ".envctl.schema.yaml"
+    path = tmp_path / ".envctl.yaml"
     path.write_text(
         (
             "version: 1\n"

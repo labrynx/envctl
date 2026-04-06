@@ -27,7 +27,7 @@ def run_status(active_profile: str | None = None) -> tuple[str, StatusReport]:
 
     if not contract_exists:
         issues.append("Contract file is missing")
-        suggested_action = "Create .envctl.schema.yaml or run 'envctl add KEY VALUE'"
+        suggested_action = "Create .envctl.yaml or run 'envctl add KEY VALUE'"
         summary = "The project is not ready because no contract file was found."
         return (
             resolved_profile,

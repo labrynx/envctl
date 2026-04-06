@@ -9,8 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-This release makes contracts modular without sacrificing determinism.
+This release makes contracts modular without sacrificing determinism. 
 You can now split your contract across files, but envctl still resolves everything into a single, predictable result.
+The CLI is now more consistent across commands, making it easier to understand and reason about what envctl is doing.
 
 ### Added
 
@@ -56,6 +57,7 @@ You can now split your contract across files, but envctl still resolves everythi
 - Variables now use `groups` as the primary grouping field, with deterministic internal normalization
 - Validation and projection now follow one explicit contract scope: full contract, `--group`, `--set`, or `--var`
 - `doctor`, `check`, `inspect`, `export`, `run`, and `sync` surface scope-aware behavior more consistently
+- CLI commands now handle warnings, JSON payloads, and text-only behavior more consistently
 
 ### Deprecated
 
@@ -198,7 +200,7 @@ You can now split your contract across files, but envctl still resolves everythi
 
 ---
 
-[Full Changelog](https://github.com/labrynx/envctl/compare/v1.0.1...v1.0.2)
+## [1.0.2] – 2026-03-28
 
 ### Changed
 

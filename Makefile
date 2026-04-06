@@ -186,5 +186,5 @@ push: ## Push current branch to origin
 run: ## Run envctl CLI
 	envctl
 
-doctor: ## Run envctl doctor
-	envctl doctor
+inspect: ## Run envctl inspect
+	envctl inspect

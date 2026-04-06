@@ -21,8 +21,8 @@ def test_write_default_config_file_creates_expected_json(
     monkeypatch.setattr(writer_module, "get_default_env_filename", lambda: ".env.local")
     monkeypatch.setattr(
         writer_module,
-        "get_default_schema_filename",
-        lambda: ".envctl.schema.yaml",
+        "get_default_contract_filename",
+        lambda: ".envctl.yaml",
     )
 
     written: dict[str, object] = {}
@@ -42,7 +42,7 @@ def test_write_default_config_file_creates_expected_json(
     assert written["payload"] == {
         "vault_dir": to_tilde_path(tmp_path / "vault"),
         "env_filename": ".env.local",
-        "schema_filename": ".envctl.schema.yaml",
+        "contract_filename": ".envctl.yaml",
         "runtime_mode": "local",
         "default_profile": "local",
         "encryption": {"enabled": False, "strict": False},

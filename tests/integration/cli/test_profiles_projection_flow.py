@@ -90,12 +90,12 @@ def test_sync_and_run_apply_group_filter_to_projection_outputs(
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
     runner.invoke(app, ["init", "--contract", "starter"], catch_exceptions=False)
 
-    schema_path = workspace / ".envctl.schema.yaml"
-    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
-    schema["variables"]["APP_NAME"]["group"] = "Application"
-    schema["variables"]["PORT"]["group"] = "Runtime"
-    schema["variables"]["DATABASE_URL"]["group"] = "Database"
-    schema_path.write_text(yaml.safe_dump(schema, sort_keys=False), encoding="utf-8")
+    contract_path = workspace / ".envctl.yaml"
+    contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+    contract["variables"]["APP_NAME"]["group"] = "Application"
+    contract["variables"]["PORT"]["group"] = "Runtime"
+    contract["variables"]["DATABASE_URL"]["group"] = "Database"
+    contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
 
     runner.invoke(app, ["set", "APP_NAME", "demo"], catch_exceptions=False)
     runner.invoke(app, ["set", "PORT", "3000"], catch_exceptions=False)
@@ -148,25 +148,25 @@ def test_run_failure_explains_group_filtered_projection_problem(
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
     runner.invoke(app, ["init", "--contract", "starter"], catch_exceptions=False)
 
-    schema_path = workspace / ".envctl.schema.yaml"
-    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
-    schema["variables"]["APP_NAME"]["group"] = "Application"
-    schema["variables"]["PORT"]["group"] = "Runtime"
-    schema["variables"]["DATABASE_URL"]["group"] = "Database"
-    schema["variables"]["APP_URL"] = {
+    contract_path = workspace / ".envctl.yaml"
+    contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+    contract["variables"]["APP_NAME"]["group"] = "Application"
+    contract["variables"]["PORT"]["group"] = "Runtime"
+    contract["variables"]["DATABASE_URL"]["group"] = "Database"
+    contract["variables"]["APP_URL"] = {
         "type": "string",
         "required": True,
         "sensitive": False,
         "group": "Application",
         "default": "http://${API_HOST}:${PORT}",
     }
-    schema["variables"]["API_HOST"] = {
+    contract["variables"]["API_HOST"] = {
         "type": "string",
         "required": True,
         "sensitive": False,
         "group": "Network",
     }
-    schema_path.write_text(yaml.safe_dump(schema, sort_keys=False), encoding="utf-8")
+    contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
 
     runner.invoke(app, ["set", "APP_NAME", "demo"], catch_exceptions=False)
     runner.invoke(app, ["set", "DATABASE_URL", "https://db.example.com"], catch_exceptions=False)

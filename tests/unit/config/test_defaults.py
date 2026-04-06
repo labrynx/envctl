@@ -8,8 +8,8 @@ import envctl.config.defaults as defaults
 from envctl.constants import (
     DEFAULT_CONFIG_DIRNAME,
     DEFAULT_CONFIG_FILENAME,
+    DEFAULT_CONTRACT_FILENAME,
     DEFAULT_ENV_FILENAME,
-    DEFAULT_SCHEMA_FILENAME,
 )
 
 
@@ -67,4 +67,4 @@ def test_default_path_and_filenames_are_resolved_correctly(
     )
     assert defaults.get_default_vault_dir() == (home / ".envctl" / "vault").resolve()
     assert defaults.get_default_env_filename() == DEFAULT_ENV_FILENAME
-    assert defaults.get_default_schema_filename() == DEFAULT_SCHEMA_FILENAME
+    assert defaults.get_default_contract_filename() == DEFAULT_CONTRACT_FILENAME

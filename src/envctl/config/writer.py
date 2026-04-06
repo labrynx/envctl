@@ -6,8 +6,8 @@ from pathlib import Path
 
 from envctl.config.defaults import (
     get_default_config_path,
+    get_default_contract_filename,
     get_default_env_filename,
-    get_default_schema_filename,
     get_default_vault_dir,
 )
 from envctl.constants import DEFAULT_PROFILE
@@ -39,7 +39,7 @@ def write_default_config_file() -> Path:
         {
             "vault_dir": to_tilde_path(get_default_vault_dir()),
             "env_filename": get_default_env_filename(),
-            "schema_filename": get_default_schema_filename(),
+            "contract_filename": get_default_contract_filename(),
             "runtime_mode": RuntimeMode.LOCAL.value,
             "default_profile": DEFAULT_PROFILE,
             "encryption": {"enabled": False, "strict": False},

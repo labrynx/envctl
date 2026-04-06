@@ -12,7 +12,6 @@ from envctl.cli.serializers.diagnostics import (
     serialize_repository_discovery_diagnostics,
     serialize_state_diagnostics,
 )
-from envctl.cli.serializers.doctor import serialize_doctor_checks
 from envctl.cli.serializers.errors import serialize_error
 from envctl.cli.serializers.inspect import serialize_inspect_key_result, serialize_inspect_result
 from envctl.cli.serializers.status import serialize_status_report
@@ -25,7 +24,6 @@ __all__ = [
     "serialize_config_diagnostics",
     "serialize_contract_deprecation_warnings",
     "serialize_contract_diagnostics",
-    "serialize_doctor_checks",
     "serialize_error",
     "serialize_error_diagnostics",
     "serialize_inspect_key_result",

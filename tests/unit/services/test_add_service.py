@@ -24,7 +24,7 @@ def make_context(tmp_path: Path) -> ProjectContext:
         repo_root=repo_root,
         repo_remote=None,
         binding_source="local",
-        repo_contract_path=repo_root / ".envctl.schema.yaml",
+        repo_contract_path=repo_root / ".envctl.yaml",
         vault_project_dir=vault_dir,
         vault_values_path=vault_dir / "values.env",
         vault_state_path=vault_dir / "state.json",

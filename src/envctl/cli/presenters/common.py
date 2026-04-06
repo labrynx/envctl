@@ -50,7 +50,7 @@ def render_action_state(has_issues: bool) -> str:
 
 
 def render_check_prefix(status: str) -> str:
-    """Render a standard prefix for doctor-like statuses."""
+    """Render a standard prefix for inspection output."""
     mapping = {
         "ok": "[OK]",
         "warn": "[WARN]",

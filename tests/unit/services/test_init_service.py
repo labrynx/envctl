@@ -33,7 +33,7 @@ def make_context(tmp_path: Path) -> ProjectContext:
         repo_root=repo_root,
         repo_remote=None,
         binding_source="local",
-        repo_contract_path=repo_root / ".envctl.schema.yaml",
+        repo_contract_path=repo_root / ".envctl.yaml",
         vault_project_dir=tmp_path / "vault" / "projects" / "demo--prj_aaaaaaaaaaaaaaaa",
         repo_env_path=repo_root / ".env.local",
     )

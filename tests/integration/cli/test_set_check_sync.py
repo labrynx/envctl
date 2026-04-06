@@ -85,17 +85,17 @@ def test_check_failure_explains_invalid_contract_file(
     workspace: Path,
 ) -> None:
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
-    schema_path = workspace / ".envctl.schema.yaml"
-    schema_path.write_text(":\n- bad", encoding="utf-8")
+    contract_path = workspace / ".envctl.yaml"
+    contract_path.write_text(":\n- bad", encoding="utf-8")
 
     result = runner.invoke(app, ["check"], catch_exceptions=False)
 
     assert result.exit_code == 1
     assert "Error: Invalid YAML contract:" in result.output
-    assert f"path: {schema_path}" in result.output
+    assert f"path: {contract_path}" in result.output
     assert "Next steps" in result.output
     assert "Run `envctl check`" in result.output
-    assert "Run `fix .envctl.schema.yaml`" in result.output
+    assert "Run `fix .envctl.yaml`" in result.output
 
 
 def test_callback_failure_explains_invalid_config(
@@ -173,15 +173,15 @@ def test_check_fails_for_invalid_string_json_format(
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
     runner.invoke(app, ["init", "--contract", "starter"], catch_exceptions=False)
 
-    schema_path = workspace / ".envctl.schema.yaml"
-    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
-    schema["variables"]["TEST_JSON"] = {
+    contract_path = workspace / ".envctl.yaml"
+    contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+    contract["variables"]["TEST_JSON"] = {
         "type": "string",
         "format": "json",
         "required": True,
         "sensitive": False,
     }
-    schema_path.write_text(yaml.safe_dump(schema, sort_keys=False), encoding="utf-8")
+    contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
 
     runner.invoke(app, ["set", "APP_NAME", "demo"], catch_exceptions=False)
     runner.invoke(app, ["set", "PORT", "3000"], catch_exceptions=False)
@@ -210,8 +210,8 @@ def test_add_format_json_persists_and_is_used_by_check(
         catch_exceptions=False,
     )
 
-    schema = yaml.safe_load((workspace / ".envctl.schema.yaml").read_text(encoding="utf-8"))
-    assert schema["variables"]["TEST_JSON"]["format"] == "json"
+    contract = yaml.safe_load((workspace / ".envctl.yaml").read_text(encoding="utf-8"))
+    assert contract["variables"]["TEST_JSON"]["format"] == "json"
 
     runner.invoke(app, ["set", "TEST_JSON", '{\\"broken\\"}'], catch_exceptions=False)
     check = runner.invoke(app, ["check"], catch_exceptions=False)
@@ -226,19 +226,19 @@ def test_grouped_check_ignores_unrelated_missing_keys(
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
     runner.invoke(app, ["init", "--contract", "starter"], catch_exceptions=False)
 
-    schema_path = workspace / ".envctl.schema.yaml"
-    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
-    schema["variables"]["APP_NAME"]["group"] = "Application"
-    schema["variables"]["PORT"]["group"] = "Runtime"
-    schema["variables"]["DATABASE_URL"]["group"] = "Database"
-    schema["variables"]["APP_URL"] = {
+    contract_path = workspace / ".envctl.yaml"
+    contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+    contract["variables"]["APP_NAME"]["group"] = "Application"
+    contract["variables"]["PORT"]["group"] = "Runtime"
+    contract["variables"]["DATABASE_URL"]["group"] = "Database"
+    contract["variables"]["APP_URL"] = {
         "type": "string",
         "required": True,
         "sensitive": False,
         "group": "Application",
         "default": "http://${APP_NAME}:${PORT}",
     }
-    schema_path.write_text(yaml.safe_dump(schema, sort_keys=False), encoding="utf-8")
+    contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
 
     runner.invoke(app, ["set", "APP_NAME", "demo"], catch_exceptions=False)
 
@@ -260,25 +260,25 @@ def test_grouped_check_fails_when_targeted_variable_has_missing_cross_group_refe
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
     runner.invoke(app, ["init", "--contract", "starter"], catch_exceptions=False)
 
-    schema_path = workspace / ".envctl.schema.yaml"
-    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
-    schema["variables"]["APP_NAME"]["group"] = "Application"
-    schema["variables"]["PORT"]["group"] = "Runtime"
-    schema["variables"]["DATABASE_URL"]["group"] = "Database"
-    schema["variables"]["APP_URL"] = {
+    contract_path = workspace / ".envctl.yaml"
+    contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+    contract["variables"]["APP_NAME"]["group"] = "Application"
+    contract["variables"]["PORT"]["group"] = "Runtime"
+    contract["variables"]["DATABASE_URL"]["group"] = "Database"
+    contract["variables"]["APP_URL"] = {
         "type": "string",
         "required": True,
         "sensitive": False,
         "group": "Application",
         "default": "http://${API_HOST}:${PORT}",
     }
-    schema["variables"]["API_HOST"] = {
+    contract["variables"]["API_HOST"] = {
         "type": "string",
         "required": True,
         "sensitive": False,
         "group": "Network",
     }
-    schema_path.write_text(yaml.safe_dump(schema, sort_keys=False), encoding="utf-8")
+    contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
 
     runner.invoke(app, ["set", "APP_NAME", "demo"], catch_exceptions=False)
     runner.invoke(app, ["set", "DATABASE_URL", "https://db.example.com"], catch_exceptions=False)

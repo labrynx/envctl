@@ -10,7 +10,7 @@ def make_app_config(
     tmp_path: Path,
     *,
     env_filename: str = ".env.local",
-    schema_filename: str = ".envctl.schema.yaml",
+    contract_filename: str = ".envctl.yaml",
     runtime_mode: RuntimeMode = RuntimeMode.LOCAL,
     default_profile: str = "local",
 ) -> AppConfig:
@@ -22,7 +22,7 @@ def make_app_config(
         config_path=config_path,
         vault_dir=vault_dir,
         env_filename=env_filename,
-        schema_filename=schema_filename,
+        contract_filename=contract_filename,
         runtime_mode=runtime_mode,
         default_profile=default_profile,
     )

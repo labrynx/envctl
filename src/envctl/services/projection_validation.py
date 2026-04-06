@@ -58,7 +58,7 @@ def _build_suggested_actions(report: ResolutionReport) -> tuple[str, ...]:
         actions.extend(("envctl fill", "envctl set KEY VALUE"))
 
     if report.invalid_keys:
-        actions.extend(("envctl check", "envctl explain KEY"))
+        actions.extend(("envctl check", "envctl inspect KEY"))
 
     if report.unknown_keys:
         actions.extend(("envctl check", "envctl inspect"))

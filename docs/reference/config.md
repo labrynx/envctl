@@ -18,7 +18,7 @@ Typical location:
 {
   "vault_dir": "~/.envctl/vault",
   "env_filename": ".env.local",
-  "schema_filename": ".envctl.schema.yaml",
+  "contract_filename": ".envctl.yaml",
   "runtime_mode": "local",
   "default_profile": "local",
   "encryption": { "enabled": false }
@@ -39,7 +39,7 @@ The filename used for generated env files.
 
 In most projects this will remain `.env.local`.
 
-### `schema_filename`
+### `contract_filename`
 
 Legacy default filename for the project contract.
 

@@ -66,10 +66,10 @@ def render_inferred_spec(inferred_spec: dict[str, object] | None) -> None:
     if "description" in inferred_spec:
         print_kv("description", str(inferred_spec["description"]))
 
-    print_warning("Review .envctl.schema.yaml to confirm the inferred metadata.")
+    print_warning("Review .envctl.yaml to confirm the inferred metadata.")
 
 
-def render_explain_value(
+def render_inspect_value(
     *,
     profile: str,
     key: str,
@@ -83,7 +83,7 @@ def render_explain_value(
     valid: bool,
     detail: str | None,
 ) -> None:
-    """Render explain command output."""
+    """Render inspected variable output."""
     shown_value = mask_value(value) if masked else value
 
     print_kv("profile", profile)
