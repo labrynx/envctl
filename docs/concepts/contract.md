@@ -20,10 +20,11 @@ Because it lives with the project, it can be versioned, reviewed, and shared wit
 
 A contract can describe things like:
 
-* required and optional variables
+* declared variables
 * types
 * optional semantic string formats (`json`, `url`, `csv`)
 * optional human-facing groups
+* named reusable sets
 * descriptions
 * sensitivity flags
 * non-sensitive defaults
@@ -37,25 +38,36 @@ version: 1
 variables:
   DATABASE_URL:
     type: url
-    required: true
     sensitive: true
     description: Primary database connection
+    groups:
+      - Database
+      - Secrets
 
   PORT:
     type: int
-    required: true
     default: 3000
+    groups:
+      - Runtime
 
   TEST_JSON:
     type: string
     format: json
-    required: false
 
   APP_URL:
     type: string
-    required: true
-    group: Application
+    groups:
+      - Application
     default: http://${APP_NAME}:${PORT}
+
+sets:
+  docker_runtime:
+    description: Variables needed to run the app in a container
+    groups:
+      - Application
+      - Runtime
+    variables:
+      - DATABASE_URL
 ```
 
 This file tells the project what should exist and what shape those values should have. It does not provide the real secret values themselves.
@@ -82,24 +94,33 @@ That separation is one of the core ideas behind `envctl`.
 
 The contract is shared with the project. Values stay local to the machine.
 
-## Optional groups
+## Groups and sets
 
-Variables may declare an optional `group` string such as `Database`, `Observability`, or
-`Docker runtime`.
+Variables may declare optional `groups` such as `Database`, `Observability`, or `Docker runtime`. A variable may belong to more than one group.
 
-That label is:
+Groups are:
 
 * optional
 * human-facing
 * non-hierarchical
 * used only for selection and presentation
 
-It is not:
+They are not:
 
 * a namespace
 * a dependency boundary
 * a prefix or dotted matching system
 * a rule that changes resolution behavior
+
+Contracts may also define named `sets`. A set is a reusable subset built from:
+
+* other sets
+* one or more groups
+* explicit variables
+
+Set resolution is recursive, duplicates are removed, and the final variable list is normalized alphabetically. Cycles between sets are invalid.
+
+Legacy `group` is still accepted for compatibility, but it is deprecated and normalized to `groups: [value]`. Legacy `required` is also accepted for compatibility, but it no longer affects validation. Validation now follows the active contract scope: full contract, `--group`, `--set`, or `--var`.
 
 ## How the contract changes
 

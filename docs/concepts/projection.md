@@ -83,7 +83,7 @@ envctl sync
 ```
 
 ```bash
-envctl sync --output /tmp/env.env
+envctl sync --output-path /tmp/env.env
 ```
 
 ```bash
@@ -96,7 +96,7 @@ This creates `.env.local`.
 * it is a compatibility artifact
 * it is safe to delete and regenerate
 * it contains the final expanded values, not the original `${...}` expressions
-* `--output PATH` writes the same generated dotenv projection to an explicit file path
+* `--output-path PATH` writes the same generated dotenv projection to an explicit file path
 * when groups are present, dotenv projection output includes readable section headers
 * `--group LABEL` writes only variables declared with that exact contract group
 

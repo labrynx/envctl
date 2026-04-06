@@ -11,6 +11,8 @@ Available global options:
 - `--version`, `-V`
 - `--profile`, `-p`
 - `--group`, `-g`
+- `--set`
+- `--var`
 - `--json`
 
 Profile selection precedence is:
@@ -22,8 +24,15 @@ Profile selection precedence is:
 
 Named profiles must be created explicitly before use with `envctl profile create <name>`.
 
-`--group` targets only variables whose contract `group` matches the provided label exactly.
-It is a human-facing selection filter, not a namespace or hierarchy.
+Contract scope selectors:
+
+- `--group LABEL` targets variables whose normalized `groups` include `LABEL`
+- `--set NAME` targets one named contract set
+- `--var KEY` targets one explicit variable
+
+These selectors are mutually exclusive. When none is provided, envctl uses the full contract.
+
+Legacy `group` is still accepted in contract files for compatibility, but it is deprecated and treated as `groups: [value]`. Legacy `required` is also accepted, but ignored functionally.
 
 ## Command groups
 
@@ -174,7 +183,7 @@ Behavior:
 * validates placeholder expansion and reference errors
 * placeholder expansion is contract-only: unknown `${VAR}` references are invalid
 * validates semantic string formats when declared in the contract (`format`)
-* `--group LABEL` validates only targeted contract variables while still allowing their references to resolve through other declared variables when needed
+* `--group LABEL`, `--set NAME`, and `--var KEY` validate only the active contract scope
 * exits non-zero on failure
 * fails fast if the selected explicit profile does not exist
 
@@ -192,7 +201,7 @@ Behavior:
 * shows the effective expanded values
 * indicates expansion state when relevant
 * masks sensitive values
-* `--group LABEL` shows only targeted contract variables
+* `--group LABEL`, `--set NAME`, and `--var KEY` show only the active contract scope
 * fails fast if the selected explicit profile does not exist
 
 Use `inspect` when you want to understand what the runtime view looks like.
@@ -223,7 +232,7 @@ Behavior:
 * uses the final expanded values
 * affects the immediate subprocess only
 * only contract-declared keys are resolved and projected
-* `--group LABEL` injects only targeted contract variables
+* `--group LABEL`, `--set NAME`, and `--var KEY` inject only the active contract scope
 * placeholder expansion remains contract-only and does not read undeclared host variables
 * when projection is blocked, explains the filtered missing, invalid, or unknown keys and suggests next debugging steps
 * fails fast if the selected explicit profile does not exist
@@ -238,7 +247,7 @@ For `docker run` and `docker compose run`, Docker does not inherit the full host
 
 ```bash
 envctl sync
-envctl sync --output PATH
+envctl sync --output-path PATH
 ```
 
 Behavior:
@@ -246,7 +255,7 @@ Behavior:
 * writes `.env.local`
 * writes the final expanded values, not the original `${...}` expressions
 * writes `.env.<profile>` for named profiles
-* `--output PATH` writes the generated dotenv file to an explicit location instead
+* `--output-path PATH` writes the generated dotenv file to an explicit location instead
 * unknown contract-missing placeholder references block projection before any file is written
 * when projection is blocked, explains the filtered missing, invalid, or unknown keys and suggests next debugging steps
 * fails fast if the selected explicit profile does not exist

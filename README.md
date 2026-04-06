@@ -3,7 +3,7 @@
 **Your `.env.local` files drift between machines, hide missing variables, and break when you least expect it. envctl fixes that.**
 
 [![CI](https://github.com/labrynx/envctl/actions/workflows/ci.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/ci.yml)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/labrynx/envctl/blob/main/LICENSE)
 
 ---
@@ -135,6 +135,29 @@ Think of it like this:
 > the repository defines the rules, your machine provides the values, and envctl builds the environment you actually run.
 
 ---
+
+## Contract scopes
+
+By default, envctl works against the full contract. You can also target a narrower scope when you only want to validate, inspect, export, sync, or run part of it:
+
+```bash
+envctl check
+envctl --group Application check
+envctl --set docker_runtime check
+envctl --var DATABASE_URL inspect
+```
+
+Scope selectors are mutually exclusive: `--group`, `--set`, and `--var` cannot be used together.
+
+Variables now use `groups` as an array. Legacy `group` is still accepted for compatibility, but it is deprecated and normalized internally. Legacy `required` is also accepted, but ignored functionally.
+
+A named set can combine three things:
+
+- other sets
+- one or more groups
+- explicit variables
+
+That lets you define reusable slices of the contract without forcing authors to maintain a meaningful order in the YAML file. envctl normalizes ordering internally so output stays stable and reproducible.
 
 ## Profiles
 

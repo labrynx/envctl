@@ -7,7 +7,7 @@ name = "envctl"
 version = "2.4.1"
 description = "Local environment control plane for contract-driven development workflows"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [
   { name = "Alessandro Barbagallo", email = "alessbarb@gmail.com" }
 ]

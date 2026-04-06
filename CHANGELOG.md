@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support for contract `sets`, so you can define reusable subsets built from other sets, groups, and explicit variables
+- New `--set` and `--var` scope selectors across validation, inspection, projection, and execution commands
+- Aggregated deprecation warnings for legacy contract keys
+
+### Changed
+
+- Variables now use `groups` as the primary grouping field, with deterministic internal normalization
+- Validation and projection now follow one explicit contract scope: full contract, `--group`, `--set`, or `--var`
+- `doctor`, `check`, `inspect`, `export`, `run`, and `sync` surface scope-aware behavior more consistently
+
+### Deprecated
+
+- Legacy `group` is still accepted, but it is normalized to `groups: [value]` and should be migrated
+- Legacy `required` is still accepted for compatibility, but it no longer has functional meaning
+
 ---
 
 ## [2.4.1] – 2026-04-05

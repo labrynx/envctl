@@ -240,7 +240,7 @@ envctl sync
 ```
 
 ```bash
-envctl sync --output /tmp/env.env
+envctl sync --output-path /tmp/env.env
 docker run --env-file /tmp/env.env my-image
 ```
 

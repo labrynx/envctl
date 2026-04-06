@@ -223,7 +223,7 @@ Projection commands should remain explicit.
 * should validate before writing
 * makes it visible that the file is generated
 * should follow safe overwrite rules
-* `--output PATH` can write resolved secrets to arbitrary filesystem locations
+* `--output-path PATH` can write resolved secrets to arbitrary filesystem locations
 * the generated file is **not** encrypted — it is a plaintext artifact
 
 ### `envctl export`
