@@ -12,6 +12,7 @@ PIP ?= pip
 RUFF ?= ruff
 MYPY ?= mypy
 BANDIT ?= bandit
+IMPORT_LINTER ?= lint-imports
 COV_MIN ?= 85
 PYTEST ?= pytest
 PRE_COMMIT ?= pre-commit
@@ -49,9 +50,10 @@ PYTEST_COV_ARGS ?= --cov=$(COV_TARGET) --cov-report=term-missing:skip-covered --
 	check check-clean fix \
 	clean clean-hard \
 	build-package check-package publish-test publish-package \
-	run doctor \
+	run inspect \
 	status commit push \
-	pre-commit-install pre-commit-run pre-push-run
+	pre-commit-install pre-commit-run pre-push-run \
+	imports
 
 # -----------------------------------------
 # Help
@@ -101,6 +103,9 @@ typecheck: ## Run static type checking with mypy
 security: ## Run security checks with bandit
 	$(BANDIT) -c pyproject.toml -r $(SRC)
 
+imports: ## Check architectural import contracts
+	$(IMPORT_LINTER)
+
 # -----------------------------------------
 # Test suite
 # -----------------------------------------
@@ -124,7 +129,7 @@ test-debug: ## Run tests with maximum failure detail
 # Composite workflows
 # -----------------------------------------
 
-validate: lint format-check typecheck security test-ci ## Validate code quality
+validate: lint format-check typecheck security test-ci imports ## Validate code quality
 
 check: validate build-package check-package ## Full validation including build
 
