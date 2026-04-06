@@ -10,6 +10,11 @@ from pydantic import ValidationError as PydanticValidationError
 
 from envctl.constants import CONTRACT_VERSION
 from envctl.domain.contract import Contract
+from envctl.domain.deprecations import (
+    ContractDeprecationWarning,
+    make_group_deprecation_warning,
+    make_required_deprecation_warning,
+)
 from envctl.errors import ContractError
 from envctl.services.error_diagnostics import (
     ContractDiagnosticCategory,
@@ -111,7 +116,15 @@ def _build_contract_suggested_actions(
 
 
 def load_contract(path: Path) -> Contract:
-    """Load a contract from disk."""
+    """Load a contract from disk without surfacing deprecation warnings."""
+    contract, _warnings = load_contract_with_warnings(path)
+    return contract
+
+
+def load_contract_with_warnings(
+    path: Path,
+) -> tuple[Contract, tuple[ContractDeprecationWarning, ...]]:
+    """Load a contract from disk and collect normalized deprecation warnings."""
     if not path.exists():
         _raise_contract_error(
             f"Contract file not found: {path}",
@@ -134,10 +147,10 @@ def load_contract(path: Path) -> Contract:
             path=path,
         )
 
-    normalized = _normalize_contract_payload_with_path(raw, path)
+    normalized, warnings = _normalize_contract_payload_with_path(raw, path)
 
     try:
-        return Contract.model_validate(normalized)
+        return Contract.model_validate(normalized), warnings
     except PydanticValidationError as exc:
         _raise_contract_error(
             f"Invalid contract: {exc}",
@@ -156,8 +169,41 @@ def load_contract(path: Path) -> Contract:
 def _normalize_contract_payload_with_path(
     raw: object,
     path: Path,
-) -> dict[str, object]:
+) -> tuple[dict[str, object], tuple[ContractDeprecationWarning, ...]]:
     """Normalize raw YAML into the shape expected by the Pydantic models."""
+    raw_mapping = _normalize_contract_root(raw, path)
+
+    version = raw_mapping.get("version", CONTRACT_VERSION)
+    meta_raw = _normalize_meta_payload(raw_mapping.get("meta"), path)
+    variables_raw = _require_mapping(
+        raw_mapping.get("variables", {}),
+        path=path,
+        field="variables",
+    )
+    sets_raw = _require_mapping(
+        raw_mapping.get("sets", {}),
+        path=path,
+        field="sets",
+    )
+
+    warnings: list[ContractDeprecationWarning] = []
+    variables = _normalize_variables_payload(variables_raw, path=path, warnings=warnings)
+    sets = _normalize_sets_payload(sets_raw, path=path)
+
+    warnings = sorted(
+        _dedupe_warnings(warnings),
+        key=lambda item: (item.key, item.deprecated_field),
+    )
+
+    return {
+        "version": version,
+        "meta": meta_raw,
+        "variables": variables,
+        "sets": sets,
+    }, tuple(warnings)
+
+
+def _normalize_contract_root(raw: object, path: Path) -> dict[str, Any]:
     if raw is None:
         raw = {}
 
@@ -169,28 +215,44 @@ def _normalize_contract_payload_with_path(
             field="root",
         )
 
-    raw_mapping = cast(dict[str, Any], raw)
+    return cast(dict[str, Any], raw)
 
-    version = raw_mapping.get("version", CONTRACT_VERSION)
-    meta_raw = raw_mapping.get("meta")
-    variables_raw = raw_mapping.get("variables", {})
 
-    if meta_raw is not None and not isinstance(meta_raw, dict):
+def _normalize_meta_payload(meta_raw: object, path: Path) -> dict[str, Any] | None:
+    if meta_raw is None:
+        return None
+    if not isinstance(meta_raw, dict):
         _raise_contract_error(
             "'meta' must be a mapping",
             category="invalid_top_level_shape",
             path=path,
             field="meta",
         )
+    return cast(dict[str, Any], meta_raw)
 
-    if not isinstance(variables_raw, dict):
+
+def _require_mapping(
+    value: object,
+    *,
+    path: Path,
+    field: str,
+) -> dict[str, Any]:
+    if not isinstance(value, dict):
         _raise_contract_error(
-            "'variables' must be a mapping",
+            f"'{field}' must be a mapping",
             category="invalid_top_level_shape",
             path=path,
-            field="variables",
+            field=field,
         )
+    return cast(dict[str, Any], value)
 
+
+def _normalize_variables_payload(
+    variables_raw: dict[str, Any],
+    *,
+    path: Path,
+    warnings: list[ContractDeprecationWarning],
+) -> dict[str, object]:
     variables: dict[str, object] = {}
 
     for key, value in variables_raw.items():
@@ -202,16 +264,96 @@ def _normalize_contract_payload_with_path(
                 key=str(key),
                 field="variables",
             )
-        variables[str(key)] = {
-            "name": str(key),
-            **value,
-        }
 
-    return {
-        "version": version,
-        "meta": meta_raw,
-        "variables": variables,
-    }
+        variable_key = str(key)
+        variable_payload = dict(value)
+        _validate_deprecated_group_usage(
+            variable_key,
+            variable_payload=variable_payload,
+            path=path,
+        )
+        _apply_variable_deprecations(
+            variable_key,
+            variable_payload=variable_payload,
+            warnings=warnings,
+        )
+        variables[variable_key] = {"name": variable_key, **variable_payload}
+
+    return variables
+
+
+def _validate_deprecated_group_usage(
+    variable_key: str,
+    *,
+    variable_payload: dict[str, Any],
+    path: Path,
+) -> None:
+    if "group" not in variable_payload or "groups" not in variable_payload:
+        return
+
+    _raise_contract_error(
+        f"Variable '{variable_key}' cannot define both 'group' and 'groups'",
+        category="validation_failed",
+        path=path,
+        key=variable_key,
+        field="variables",
+        issues=(
+            ContractDiagnosticIssue(
+                field=f"variables.{variable_key}",
+                detail="'group' and 'groups' cannot be used together",
+            ),
+        ),
+    )
+
+
+def _apply_variable_deprecations(
+    variable_key: str,
+    *,
+    variable_payload: dict[str, Any],
+    warnings: list[ContractDeprecationWarning],
+) -> None:
+    if "group" in variable_payload:
+        group_value = str(variable_payload["group"]).strip()
+        warnings.append(make_group_deprecation_warning(variable_key, group_value))
+        variable_payload["groups"] = [group_value]
+        variable_payload.pop("group", None)
+
+    if "required" in variable_payload:
+        warnings.append(make_required_deprecation_warning(variable_key))
+        variable_payload.pop("required", None)
+
+
+def _normalize_sets_payload(
+    sets_raw: dict[str, Any],
+    *,
+    path: Path,
+) -> dict[str, object]:
+    sets: dict[str, object] = {}
+    for key, value in sets_raw.items():
+        if not isinstance(value, dict):
+            _raise_contract_error(
+                f"Set '{key}' must be a mapping",
+                category="invalid_variable_shape",
+                path=path,
+                key=str(key),
+                field="sets",
+            )
+        sets[str(key)] = {"name": str(key), **value}
+    return sets
+
+
+def _dedupe_warnings(
+    warnings: list[ContractDeprecationWarning],
+) -> list[ContractDeprecationWarning]:
+    seen: set[tuple[str, str]] = set()
+    unique: list[ContractDeprecationWarning] = []
+    for warning in warnings:
+        key = (warning.key, warning.deprecated_field)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(warning)
+    return unique
 
 
 def load_contract_optional(path: Path) -> Contract | None:

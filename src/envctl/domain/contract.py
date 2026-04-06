@@ -8,6 +8,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from envctl.constants import CONTRACT_VERSION
+from envctl.domain.contract_sets import SetSpec
 
 VariableType = Literal["string", "int", "bool", "url"]
 VariableFormat = Literal["json", "url", "csv"]
@@ -19,6 +20,29 @@ _KEY_RE = re.compile(VARIABLE_NAME_PATTERN)
 def is_valid_variable_name(value: str) -> bool:
     """Return whether one environment variable name follows the contract rules."""
     return _KEY_RE.fullmatch(value) is not None
+
+
+def _normalize_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if value is None:
+        return ()
+
+    if isinstance(value, tuple):
+        raw_items = list(value)
+    elif isinstance(value, list):
+        raw_items = value
+    else:
+        raise ValueError(f"'{field_name}' must be a list or tuple of strings")
+
+    items: set[str] = set()
+    for item in raw_items:
+        if not isinstance(item, str):
+            raise ValueError(f"'{field_name}' must contain only strings")
+        normalized = item.strip()
+        if not normalized:
+            raise ValueError(f"'{field_name}' cannot contain empty values")
+        items.add(normalized)
+
+    return tuple(sorted(items))
 
 
 class ContractMeta(BaseModel):
@@ -70,6 +94,7 @@ class VariableSpec(BaseModel):
     provider: str | None = None
     example: str | None = None
     group: str | None = None
+    groups: tuple[str, ...] = Field(default_factory=tuple)
     format: VariableFormat | None = None
     pattern: str | None = None
     choices: tuple[str, ...] = Field(default_factory=tuple)
@@ -97,38 +122,24 @@ class VariableSpec(BaseModel):
         normalized = str(value).strip()
         return normalized or None
 
+    @field_validator("groups", mode="before")
+    @classmethod
+    def normalize_groups(cls, value: object) -> tuple[str, ...]:
+        """Normalize multi-group membership."""
+        return _normalize_string_sequence(value, field_name="groups")
+
     @field_validator("choices", mode="before")
     @classmethod
     def normalize_choices(cls, value: object) -> tuple[str, ...]:
         """Normalize and validate choices."""
-        if value is None:
-            return ()
-
-        if isinstance(value, tuple):
-            raw_items = list(value)
-        elif isinstance(value, list):
-            raw_items = value
-        else:
-            raise ValueError("'choices' must be a list or tuple of strings")
-
-        items: list[str] = []
-        seen: set[str] = set()
-
-        for item in raw_items:
-            if not isinstance(item, str):
-                raise ValueError("'choices' must contain only strings")
-            normalized = item.strip()
-            if not normalized:
-                raise ValueError("'choices' cannot contain empty values")
-            if normalized not in seen:
-                seen.add(normalized)
-                items.append(normalized)
-
-        return tuple(items)
+        return _normalize_string_sequence(value, field_name="choices")
 
     @model_validator(mode="after")
     def validate_consistency(self) -> VariableSpec:
         """Validate cross-field consistency."""
+        if self.group is not None and self.groups:
+            raise ValueError(f"Variable '{self.name}' cannot define both 'group' and 'groups'")
+
         if self.format is not None and self.type != "string":
             raise ValueError(f"'format' can only be used with type 'string' for '{self.name}'")
 
@@ -149,11 +160,19 @@ class VariableSpec(BaseModel):
 
         return self
 
+    @property
+    def normalized_groups(self) -> tuple[str, ...]:
+        """Return normalized groups, including legacy `group` compatibility."""
+        if self.groups:
+            return self.groups
+        if self.group is not None:
+            return (self.group,)
+        return ()
+
     def to_contract_payload(self) -> dict[str, object]:
         """Convert the spec into a YAML-friendly payload."""
         payload: dict[str, object] = {
             "type": self.type,
-            "required": self.required,
             "sensitive": self.sensitive,
             "description": self.description,
         }
@@ -167,8 +186,8 @@ class VariableSpec(BaseModel):
         if self.example is not None:
             payload["example"] = self.example
 
-        if self.group is not None:
-            payload["group"] = self.group
+        if self.normalized_groups:
+            payload["groups"] = list(self.normalized_groups)
 
         if self.format is not None:
             payload["format"] = self.format
@@ -193,6 +212,7 @@ class Contract(BaseModel):
     version: int = CONTRACT_VERSION
     meta: ContractMeta | None = None
     variables: dict[str, VariableSpec] = Field(default_factory=dict)
+    sets: dict[str, SetSpec] = Field(default_factory=dict)
 
     @field_validator("version")
     @classmethod
@@ -203,11 +223,30 @@ class Contract(BaseModel):
         return value
 
     @model_validator(mode="after")
-    def validate_variables(self) -> Contract:
-        """Ensure mapping keys and embedded spec names match."""
-        for key, spec in self.variables.items():
-            if key != spec.name:
-                raise ValueError(f"Variable key '{key}' does not match embedded name '{spec.name}'")
+    def validate_contract(self) -> Contract:
+        """Ensure mapping keys, embedded names, and set references match."""
+        for key, variable_spec in self.variables.items():
+            if key != variable_spec.name:
+                raise ValueError(
+                    f"Variable key '{key}' does not match embedded name '{variable_spec.name}'"
+                )
+
+        for key, set_spec in self.sets.items():
+            if key != set_spec.name:
+                raise ValueError(f"Set key '{key}' does not match embedded name '{set_spec.name}'")
+
+            for referenced_set in set_spec.sets:
+                if referenced_set not in self.sets:
+                    raise ValueError(
+                        f"Set '{set_spec.name}' references unknown set '{referenced_set}'"
+                    )
+
+            for referenced_variable in set_spec.variables:
+                if referenced_variable not in self.variables:
+                    raise ValueError(
+                        f"Set '{set_spec.name}' references unknown variable '{referenced_variable}'"
+                    )
+
         return self
 
     def with_variable(self, spec: VariableSpec) -> Contract:
@@ -248,6 +287,14 @@ class Contract(BaseModel):
         }
 
         if self.meta is not None:
-            payload["meta"] = self.meta.model_dump(mode="python", exclude_none=True)
+            payload["meta"] = self.meta.model_dump(
+                mode="python",
+                exclude_none=True,
+            )
+
+        if self.sets:
+            payload["sets"] = {
+                key: self.sets[key].to_contract_payload() for key in sorted(self.sets)
+            }
 
         return payload
