@@ -19,7 +19,6 @@ classifiers = [
   "Environment :: Console",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Topic :: Software Development :: Build Tools",
@@ -95,6 +94,7 @@ select = [
   "PT",
   "BLE",
   "C90",
+  "S",
 ]
 ignore = []
 
@@ -104,6 +104,7 @@ max-complexity = 10
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [
   "S101",
+  "S108"
 ]
 
 [tool.ruff.format]
@@ -113,7 +114,10 @@ indent-style = "space"
 [tool.mypy]
 python_version = "3.12"
 mypy_path = "src"
-packages = ["envctl"]
+files = ["src", "tests"]
+namespace_packages = true
+explicit_package_bases = true
+
 warn_return_any = true
 warn_unused_configs = true
 warn_redundant_casts = true
@@ -127,6 +131,11 @@ disallow_incomplete_defs = true
 disallow_any_generics = true
 show_error_codes = true
 pretty = true
+
+[[tool.mypy.overrides]]
+module = ["tests", "tests.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
 
 [[tool.mypy.overrides]]
 module = ["yaml"]
