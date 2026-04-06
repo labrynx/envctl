@@ -90,7 +90,7 @@ def test_load_encrypted_file_when_encryption_disabled_raises(tmp_path: Path) -> 
 
     plain_context = _make_context(tmp_path, crypto=None)
 
-    with pytest.raises(ExecutionError, match="Vault file is encrypted"):
+    with pytest.raises(ExecutionError, match=r"Vault file is encrypted"):
         repo.load_profile_values(plain_context, "local")
 
 

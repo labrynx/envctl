@@ -38,5 +38,5 @@ def test_variable_spec_normalizes_blank_group_to_none() -> None:
 
 
 def test_variable_spec_rejects_group_and_groups_together() -> None:
-    with pytest.raises(ValueError, match="cannot define both 'group' and 'groups'"):
+    with pytest.raises(ValueError, match=r"cannot define both 'group' and 'groups'"):
         VariableSpec(name="DATABASE_URL", group="Database", groups=("Database",))

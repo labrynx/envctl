@@ -53,7 +53,7 @@ def test_build_resolved_contract_graph_raises_for_duplicate_variables() -> None:
         make_contract({"APP_NAME": make_variable_spec(name="APP_NAME")}),
     )
 
-    with pytest.raises(ContractError, match="Duplicate variable definition: APP_NAME"):
+    with pytest.raises(ContractError, match=r"Duplicate variable definition: APP_NAME"):
         build_resolved_contract_graph(
             root_path=Path("/repo/.envctl.yaml"),
             contracts=contracts,

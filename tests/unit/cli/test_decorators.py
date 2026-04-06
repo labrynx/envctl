@@ -316,7 +316,7 @@ def test_requires_writable_runtime_blocks_ci_mode(
 
     with pytest.raises(
         ExecutionError,
-        match="Command 'sync' is not available in CI read-only mode.",
+        match=r"Command 'sync' is not available in CI read-only mode.",
     ):
         sample()
 
@@ -328,5 +328,5 @@ def test_text_output_only_rejects_json(monkeypatch: pytest.MonkeyPatch) -> None:
     def sample() -> None:
         raise AssertionError("Should not be called")
 
-    with pytest.raises(ExecutionError, match="JSON output is not supported"):
+    with pytest.raises(ExecutionError, match=r"JSON output is not supported"):
         sample()

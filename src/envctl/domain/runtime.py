@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class RuntimeMode(str, Enum):
+class RuntimeMode(StrEnum):
     """Supported runtime modes."""
 
     LOCAL = "local"
     CI = "ci"
 
 
-class OutputFormat(str, Enum):
+class OutputFormat(StrEnum):
     """Supported CLI output formats."""
 
     TEXT = "text"
