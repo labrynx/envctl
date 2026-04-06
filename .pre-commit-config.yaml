@@ -31,21 +31,21 @@ repos:
     hooks:
       - id: mypy
         name: mypy
-        entry: mypy
+        entry: .venv/bin/python -m mypy
         language: system
         pass_filenames: false
         stages: [pre-push]
 
       - id: bandit
         name: bandit
-        entry: bandit -c pyproject.toml -r src
+        entry: .venv/bin/python -m bandit -c pyproject.toml -r src
         language: system
         pass_filenames: false
         stages: [pre-push]
 
       - id: pytest-fast
         name: pytest-fast
-        entry: pytest -q --maxfail=1
+        entry: .venv/bin/python -m pytest -q --maxfail=1
         language: system
         pass_filenames: false
         stages: [pre-push]
