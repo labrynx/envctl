@@ -17,8 +17,7 @@ def render_projection_validation_failure(
     typer.echo(f"Error: {message}", err=True)
     typer.echo(err=True)
     typer.echo(f"profile: {diagnostics.active_profile}", err=True)
-    if diagnostics.selected_group is not None:
-        typer.echo(f"group: {diagnostics.selected_group}", err=True)
+    typer.echo(f"scope: {diagnostics.selection.describe()}", err=True)
 
     for line in build_resolution_problem_lines(
         diagnostics.report,

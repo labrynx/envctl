@@ -2,6 +2,7 @@
 
 from envctl.cli.serializers.common import emit_json
 from envctl.cli.serializers.context import serialize_project_context
+from envctl.cli.serializers.deprecations import serialize_contract_deprecation_warnings
 from envctl.cli.serializers.diagnostics import (
     serialize_config_diagnostics,
     serialize_contract_diagnostics,
@@ -14,6 +15,7 @@ from envctl.cli.serializers.diagnostics import (
 from envctl.cli.serializers.doctor import serialize_doctor_checks
 from envctl.cli.serializers.errors import serialize_error
 from envctl.cli.serializers.resolution import (
+    serialize_contract_selection,
     serialize_resolution_report,
     serialize_resolved_value,
 )
@@ -22,7 +24,9 @@ from envctl.cli.serializers.status import serialize_status_report
 __all__ = [
     "emit_json",
     "serialize_config_diagnostics",
+    "serialize_contract_deprecation_warnings",
     "serialize_contract_diagnostics",
+    "serialize_contract_selection",
     "serialize_doctor_checks",
     "serialize_error",
     "serialize_error_diagnostics",

@@ -6,6 +6,7 @@ import typer
 
 from envctl.cli.presenters.common import print_section
 from envctl.domain.resolution import ResolutionReport
+from envctl.domain.selection import ContractSelection
 from envctl.utils.masking import mask_value
 from envctl.utils.output import print_kv
 
@@ -84,11 +85,10 @@ def render_resolution(report: ResolutionReport) -> None:
 def render_resolution_view(
     *,
     profile: str,
-    group: str | None,
+    selection: ContractSelection,
     report: ResolutionReport,
 ) -> None:
     """Render one resolved environment view including the active profile."""
     print_kv("profile", profile)
-    if group is not None:
-        print_kv("group", group)
+    print_kv("scope", selection.describe())
     render_resolution(report)

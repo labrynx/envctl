@@ -5,7 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 from envctl.cli.serializers.common import path_to_str
-from envctl.cli.serializers.resolution import serialize_resolution_report
+from envctl.cli.serializers.resolution import (
+    serialize_contract_selection,
+    serialize_resolution_report,
+)
 from envctl.services.error_diagnostics import (
     ConfigDiagnostics,
     ContractDiagnostics,
@@ -24,7 +27,7 @@ def serialize_projection_validation_diagnostics(
     return {
         "operation": diagnostics.operation,
         "active_profile": diagnostics.active_profile,
-        "selected_group": diagnostics.selected_group,
+        "selection": serialize_contract_selection(diagnostics.selection),
         "report": serialize_resolution_report(diagnostics.report),
         "suggested_actions": list(diagnostics.suggested_actions),
     }

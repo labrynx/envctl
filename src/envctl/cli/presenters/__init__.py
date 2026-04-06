@@ -20,6 +20,7 @@ from envctl.cli.presenters.config_error_presenter import (
 from envctl.cli.presenters.contract_error_presenter import (
     render_contract_error,
 )
+from envctl.cli.presenters.deprecation_presenter import render_contract_deprecation_warnings
 from envctl.cli.presenters.doctor_presenter import render_doctor_checks
 from envctl.cli.presenters.profile_presenter import (
     render_profile_copy_result,
@@ -74,6 +75,7 @@ __all__ = [
     "render_add_result",
     "render_config_error",
     "render_config_init_result",
+    "render_contract_deprecation_warnings",
     "render_contract_error",
     "render_doctor_checks",
     "render_explain_value",

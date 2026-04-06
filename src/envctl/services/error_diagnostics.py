@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 from envctl.domain.resolution import ResolutionReport
+from envctl.domain.selection import ContractSelection
 
 ProjectionOperation = Literal["run", "sync", "export"]
 ContractDiagnosticCategory = Literal[
@@ -64,7 +65,7 @@ class ProjectionValidationDiagnostics:
 
     operation: ProjectionOperation
     active_profile: str
-    selected_group: str | None
+    selection: ContractSelection
     report: ResolutionReport
     suggested_actions: tuple[str, ...]
 
