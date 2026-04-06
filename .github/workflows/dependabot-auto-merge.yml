@@ -1,0 +1,61 @@
+name: Dependabot auto-merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    runs-on: ubuntu-latest
+
+    if: github.actor == 'dependabot[bot]'
+
+    steps:
+      - name: Extract versions from PR title
+        id: version
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+
+          echo "PR title: $TITLE"
+
+          # Extract versions like 1.2.3
+          FROM=$(echo "$TITLE" | grep -oP 'from \K[0-9]+\.[0-9]+\.[0-9]+')
+          TO=$(echo "$TITLE" | grep -oP 'to \K[0-9]+\.[0-9]+\.[0-9]+')
+
+          echo "from=$FROM" >> $GITHUB_OUTPUT
+          echo "to=$TO" >> $GITHUB_OUTPUT
+
+      - name: Decide update type
+        id: decision
+        run: |
+          FROM="${{ steps.version.outputs.from }}"
+          TO="${{ steps.version.outputs.to }}"
+
+          FROM_MAJOR=$(echo $FROM | cut -d. -f1)
+          FROM_MINOR=$(echo $FROM | cut -d. -f2)
+
+          TO_MAJOR=$(echo $TO | cut -d. -f1)
+          TO_MINOR=$(echo $TO | cut -d. -f2)
+
+          if [ "$FROM_MAJOR" != "$TO_MAJOR" ]; then
+            echo "type=major" >> $GITHUB_OUTPUT
+          elif [ "$FROM_MINOR" != "$TO_MINOR" ]; then
+            echo "type=minor" >> $GITHUB_OUTPUT
+          else
+            echo "type=patch" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Enable auto-merge (only patch/minor)
+        if: steps.decision.outputs.type != 'major'
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+            pull-request-number: ${{ github.event.pull_request.number }}
+            merge-method: squash
+
+      - name: Skip major updates
+        if: steps.decision.outputs.type == 'major'
+        run: echo "Major update detected → manual review required"
