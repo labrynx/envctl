@@ -90,16 +90,13 @@ def build_project_context(
         if vault_dir is None:
             raise ProjectDetectionError(
                 f"Bound project id '{bound_project_id}' was found in local git config, "
-                "but no matching vault exists. Run 'envctl repair --recreate-bound-vault' "
+                "but no matching vault exists. Run 'envctl project rebind' "
                 "or rebind the repository.",
                 diagnostics=ProjectBindingDiagnostics(
                     category="bound_project_missing_vault",
                     repo_root=repo_root,
                     project_id=bound_project_id,
-                    suggested_actions=(
-                        "envctl repair --recreate-bound-vault",
-                        "envctl project rebind",
-                    ),
+                    suggested_actions=("envctl project rebind",),
                 ),
             )
 

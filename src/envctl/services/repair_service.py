@@ -72,8 +72,7 @@ def run_repair(
             status="needs_action",
             detail=(
                 "A local git binding exists, but its vault is missing. "
-                "Run 'envctl repair --recreate-bound-vault' to recreate it, "
-                "or use 'envctl rebind --new-project' to separate this checkout."
+                "Run 'envctl project rebind' to recreate it."
             ),
             project_id=bound_project_id,
         )
