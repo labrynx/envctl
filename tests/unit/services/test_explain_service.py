@@ -2,65 +2,34 @@ from __future__ import annotations
 
 import pytest
 
-from envctl.errors import ValidationError
+from envctl.domain.diagnostics import InspectKeyResult
 from envctl.services.explain_service import run_explain
-from tests.support.builders import make_resolution_report, make_resolved_value
+from tests.support.builders import make_resolved_value
 from tests.support.contexts import make_project_context
 
 
-def test_run_explain_returns_resolved_value(monkeypatch: pytest.MonkeyPatch) -> None:
-    context = make_project_context(repo_root="/tmp/demo")
-    contract = object()
-    resolved = make_resolved_value(
-        key="APP_NAME",
-        value="demo-app",
-        source="vault",
-        valid=True,
-    )
-    report = make_resolution_report(values={"APP_NAME": resolved})
-
-    monkeypatch.setattr(
-        "envctl.services.explain_service.load_project_context",
-        lambda project_name=None, persist_binding=False: (object(), context),
-    )
-    monkeypatch.setattr(
-        "envctl.services.explain_service.load_contract_for_context",
-        lambda _context: contract,
-    )
-    monkeypatch.setattr(
-        "envctl.services.explain_service.resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
-    )
-
-    result_context, active_profile, value = run_explain("APP_NAME")
-
-    assert result_context == context
-    assert active_profile == "local"
-    assert value is resolved
-    assert value.key == "APP_NAME"
-    assert value.value == "demo-app"
-    assert value.source == "vault"
-
-
-def test_run_explain_raises_when_key_is_not_resolved(
+def test_run_explain_delegates_to_inspect_key(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     context = make_project_context(repo_root="/tmp/demo")
-    contract = object()
-    report = make_resolution_report(missing_required=("APP_NAME",))
-
-    monkeypatch.setattr(
-        "envctl.services.explain_service.load_project_context",
-        lambda project_name=None, persist_binding=False: (object(), context),
-    )
-    monkeypatch.setattr(
-        "envctl.services.explain_service.load_contract_for_context",
-        lambda _context: contract,
-    )
-    monkeypatch.setattr(
-        "envctl.services.explain_service.resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
+    result = InspectKeyResult(
+        project=context,
+        active_profile="local",
+        item=make_resolved_value(key="APP_NAME", value="demo-app", source="vault"),
+        contract_type="string",
+        contract_format=None,
+        groups=(),
+        default=None,
+        sensitive=False,
     )
 
-    with pytest.raises(ValidationError, match=r"Key is not resolved: APP_NAME"):
-        run_explain("APP_NAME")
+    monkeypatch.setattr(
+        "envctl.services.explain_service.run_inspect_key",
+        lambda key, active_profile=None: (context, result, ()),
+    )
+
+    result_context, value, warnings = run_explain("APP_NAME")
+
+    assert result_context == context
+    assert value is result
+    assert warnings == ()

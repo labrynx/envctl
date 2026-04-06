@@ -7,78 +7,48 @@ import typer
 
 import envctl.cli.commands.check.command as check_command_module
 from envctl.cli.commands.check import check_command
+from envctl.domain.diagnostics import CheckResult, DiagnosticProblem, DiagnosticSummary
 from envctl.domain.selection import group_selection
-from tests.support.builders import make_resolution_report
 from tests.support.contexts import make_project_context
 
 
-def test_check_command_exits_when_report_is_valid_but_unknown_keys_exist(
+def make_check_result(*, ok: bool, profile: str = "local") -> CheckResult:
+    summary = DiagnosticSummary(
+        total=3,
+        valid=3 if ok else 1,
+        invalid=0 if ok else 1,
+        unknown=0,
+    )
+    problems: tuple[DiagnosticProblem, ...] = ()
+    if not ok:
+        problems = (
+            DiagnosticProblem(
+                key="DATABASE_URL",
+                kind="missing_required",
+                message="missing required value",
+                actions=("envctl fill", "envctl set DATABASE_URL <value>"),
+            ),
+        )
+    return CheckResult(
+        active_profile=profile,
+        selection=group_selection("Application"),
+        summary=summary,
+        problems=problems,
+    )
+
+
+def test_check_command_exits_when_result_is_not_ok(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     context = make_project_context(repo_root="/tmp/demo")
-    report = make_resolution_report(
-        values={},
-        missing_required=(),
-        unknown_keys=("OLD_KEY",),
-        invalid_keys=(),
-    )
-    captured: dict[str, str] = {}
+    result = make_check_result(ok=False)
 
     monkeypatch.setattr(
         check_command_module,
         "run_check",
-        lambda profile, *, selection=None: (context, "staging", report, ()),
+        lambda profile, *, selection=None: (context, result, ()),
     )
-    monkeypatch.setattr(
-        check_command_module,
-        "render_resolution_view",
-        lambda *, profile, selection, report: None,
-    )
-    monkeypatch.setattr(
-        check_command_module,
-        "print_warning",
-        lambda message: captured.update({"warning": message}),
-    )
-    monkeypatch.setattr(
-        check_command_module,
-        "get_active_profile",
-        lambda: "staging",
-    )
-    monkeypatch.setattr(
-        check_command_module,
-        "get_contract_selection",
-        lambda: group_selection("Application"),
-    )
-    monkeypatch.setattr(check_command_module, "is_json_output", lambda: False)
-
-    with pytest.raises(typer.Exit) as exc_info:
-        check_command()
-
-    assert exc_info.value.exit_code == 1
-    assert captured["warning"] == "Environment is valid, but the vault contains unknown keys"
-
-
-def test_check_command_exits_when_report_is_invalid(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    context = make_project_context(repo_root="/tmp/demo")
-    report = make_resolution_report(
-        values={},
-        missing_required=("APP_NAME",),
-        unknown_keys=(),
-        invalid_keys=(),
-    )
-
-    monkeypatch.setattr(
-        check_command_module,
-        "run_check",
-        lambda profile, *, selection=None: (context, "local", report, ()),
-    )
-    monkeypatch.setattr(
-        check_command_module,
-        "render_resolution_view",
-        lambda *, profile, selection, report: None,
-    )
+    monkeypatch.setattr(check_command_module, "render_check_result", lambda result: None)
     monkeypatch.setattr(check_command_module, "get_active_profile", lambda: "local")
     monkeypatch.setattr(
         check_command_module,
@@ -97,24 +67,15 @@ def test_check_command_emits_json_when_requested(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     context = make_project_context(repo_root="/tmp/demo")
-    report = make_resolution_report(
-        values={},
-        missing_required=(),
-        unknown_keys=(),
-        invalid_keys=(),
-    )
+    result = make_check_result(ok=True, profile="staging")
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
         check_command_module,
         "run_check",
-        lambda profile, *, selection=None: (context, "staging", report, ()),
+        lambda profile, *, selection=None: (context, result, ()),
     )
-    monkeypatch.setattr(
-        check_command_module,
-        "get_active_profile",
-        lambda: "staging",
-    )
+    monkeypatch.setattr(check_command_module, "get_active_profile", lambda: "staging")
     monkeypatch.setattr(
         check_command_module,
         "get_contract_selection",
@@ -139,26 +100,20 @@ def test_check_command_emits_json_when_requested(
         "set": None,
         "var": None,
     }
-    assert payload["data"]["context"]["project_slug"] == "demo"
-    assert payload["data"]["report"]["is_valid"] is True
+    assert payload["data"]["summary"]["valid"] == 3
 
 
 def test_check_command_emits_json_and_exits_when_invalid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     context = make_project_context(repo_root="/tmp/demo")
-    report = make_resolution_report(
-        values={},
-        missing_required=("DATABASE_URL",),
-        unknown_keys=(),
-        invalid_keys=(),
-    )
+    result = make_check_result(ok=False)
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
         check_command_module,
         "run_check",
-        lambda profile, *, selection=None: (context, "local", report, ()),
+        lambda profile, *, selection=None: (context, result, ()),
     )
     monkeypatch.setattr(check_command_module, "get_active_profile", lambda: "local")
     monkeypatch.setattr(
@@ -179,5 +134,4 @@ def test_check_command_emits_json_and_exits_when_invalid(
     assert exc_info.value.exit_code == 1
     payload = cast(dict[str, Any], captured["payload"])
     assert payload["ok"] is False
-    assert payload["data"]["active_profile"] == "local"
-    assert payload["data"]["report"]["missing_required"] == ["DATABASE_URL"]
+    assert payload["data"]["problems"][0]["key"] == "DATABASE_URL"
