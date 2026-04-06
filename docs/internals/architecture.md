@@ -8,7 +8,7 @@ It is written for maintainers and contributors. The goal is not to describe an i
 
 `envctl` revolves around a small set of concepts:
 
-- **contract** — the shared project declaration in `.envctl.schema.yaml`
+- **contract** — the shared project declaration discovered from `.envctl.yaml` first, then `.envctl.schema.yaml` as legacy fallback
 - **profile values** — local persisted values stored in the vault
 - **project context** — the resolved project identity, binding source, and vault paths
 - **resolution** — the deterministic runtime view built from contract + profile values
@@ -45,6 +45,45 @@ Examples in this repo:
 
 The CLI should stay thin. If a command starts accumulating diagnostic-building logic, that logic probably belongs in a service helper instead.
 
+## Canonical CLI command shape
+
+The CLI is being normalized around one canonical command pattern.
+
+A command should usually do only four things:
+
+1. read Typer arguments and options
+2. normalize or validate CLI-only combinations
+3. call one service workflow
+4. choose JSON or terminal output
+
+That means command modules should prefer a structure like this:
+
+- `_normalize_*` helpers for Typer-specific booleans or option cleanup
+- `_validate_*` helpers for mutually exclusive CLI arguments
+- one or more `_handle_*` helpers for command modes
+- shared helpers from `envctl.cli.command_support` for warning rendering and JSON payload construction
+
+The important boundary is this:
+
+- **CLI** owns interaction rules, routing, and presentation choice
+- **Services** own workflow orchestration and compatibility data that is not tied to Typer itself
+- **Presenters / serializers** own formatting
+
+Examples of logic that should move out of command modules:
+
+- compatibility warning construction for deprecated alias commands
+- compatibility doctor check building
+- reusable JSON payload assembly
+- reusable command warning aggregation
+
+Examples of logic that should stay in command modules:
+
+- deciding that `inspect KEY` cannot be combined with `--group`
+- deciding whether a command is in JSON or text mode
+- choosing which presenter to call for one view
+
+This keeps commands thin without introducing an over-engineered command framework.
+
 ## Services
 
 Services coordinate workflows and return structured results to the CLI.
@@ -65,7 +104,7 @@ The domain layer defines the core concepts and stable result models.
 
 Examples:
 
-- `Contract`, `VariableSpec`, and `SetSpec`
+- `Contract`, `VariableSpec`, `SetSpec`, and the resolved contract graph model used by inspect
 - `ProjectContext`
 - `ResolutionReport` and `ResolvedValue`
 - `CheckResult`, `InspectResult`, `InspectKeyResult`, `DiagnosticProblem`, and `DiagnosticSummary`
@@ -78,7 +117,9 @@ The repository layer reconstructs persisted project state and contract state.
 
 Examples:
 
-- loading and validating the contract
+- discovering the root contract at the repository root
+- loading and validating individual contract files
+- resolving imported contract graphs and composing one resolved contract view
 - resolving vault profile paths
 - reconstructing project binding and recovery state
 - reading and writing persisted local state

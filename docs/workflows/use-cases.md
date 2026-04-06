@@ -452,7 +452,7 @@ envctl add API_KEY placeholder
 Then commit the contract change:
 
 ```bash
-git add .envctl.schema.yaml
+git add .envctl.yaml
 git commit
 ```
 

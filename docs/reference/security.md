@@ -35,7 +35,7 @@ A lot of `envctl`'s security story comes from the way it separates concerns:
 
 In practice, that means:
 
-* `.envctl.schema.yaml` describes requirements only
+* the discovered root contract describes requirements only
 * local provider state stores real values
 * profiles organize stored values explicitly
 * `check` validates but does not invent values
@@ -126,7 +126,7 @@ The contract describes what exists. Profiles store what is currently set.
 The `add` command changes the repository contract:
 
 ```text
-.envctl.schema.yaml
+.envctl.yaml
 ```
 
 That has real consequences:

@@ -12,11 +12,11 @@ If the project itself now needs a new variable, add it to the contract:
 
 ```bash
 envctl add API_KEY
-git add .envctl.schema.yaml
+git add .envctl.yaml  # or .envctl.schema.yaml in legacy repositories
 git commit
 ```
 
-This is a shared change. It affects the repository and may affect other developers, so it should be reviewed like any other project change.
+This is a shared change. It affects the repository and may affect other developers, so it should be reviewed like any other project change. New repositories should commit `.envctl.yaml`; older ones may still commit `.envctl.schema.yaml` until they migrate.
 
 ## What other developers do
 

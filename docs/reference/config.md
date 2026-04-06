@@ -41,9 +41,9 @@ In most projects this will remain `.env.local`.
 
 ### `schema_filename`
 
-The filename used for the project contract.
+Legacy default filename for the project contract.
 
-In most projects this will remain `.envctl.schema.yaml`.
+Current root contract discovery prefers `.envctl.yaml` at the repository root and falls back to `.envctl.schema.yaml`. This config field still exists for compatibility and fallback paths, but it is no longer the primary source of truth for locating the root contract.
 
 ### `runtime_mode`
 

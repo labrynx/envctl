@@ -40,7 +40,7 @@ Commands are grouped by responsibility.
 
 ### Contract mutation
 
-These commands change the shared project contract `.envctl.schema.yaml`:
+These commands change the shared project contract discovered at the repo root — `.envctl.yaml` first, `.envctl.schema.yaml` as legacy fallback. In examples, prefer `.envctl.yaml`, but the same command flow still applies to repositories that have not migrated yet:
 
 - `add`
 - `remove`
@@ -202,15 +202,19 @@ envctl inspect KEY
 Behavior:
 
 * `envctl inspect` shows the detailed runtime view for the active scope
-* includes project context, runtime paths, summary, variables, and problems
+* includes project context, contract composition, runtime paths, summary, variables, and problems
+* contract composition includes the discovered root contract, resolved contract count, and the resolved contract list
 * shows the effective expanded values
 * indicates expansion state when relevant
 * masks sensitive values
 * `--group LABEL`, `--set NAME`, and `--var KEY` show only the active contract scope
-* `envctl inspect KEY` shows one variable in detail and cannot be combined with `--group`, `--set`, or `--var`
+* `envctl inspect KEY` shows one variable in detail and cannot be combined with `--group`, `--set`, `--var`, `--contracts`, `--sets`, or `--groups`
+* `envctl inspect --contracts` shows only the resolved contract graph
+* `envctl inspect --sets` and `envctl inspect --groups` show global summaries
+* `envctl inspect --set NAME` and `envctl inspect --group NAME` show one resolved set or group
 * fails fast if the selected explicit profile does not exist
 
-Use `inspect` when you want the full diagnostic picture, and `inspect KEY` when one variable is the real problem.
+Use `inspect` when you want the full diagnostic picture, `inspect KEY` when one variable is the real problem, and the auxiliary inspect views when you want to understand contract composition itself.
 
 ### `doctor`
 

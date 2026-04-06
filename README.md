@@ -30,7 +30,7 @@ It works — until it breaks.
 
 It separates three things that usually get mixed together:
 
-- **what the project needs** → defined in `.envctl.schema.yaml` and committed to the repository
+- **what the project needs** → defined in the repository contract, discovered as `.envctl.yaml` first and `.envctl.schema.yaml` as legacy fallback
 - **what you have locally** → stored in a private local vault, outside git
 - **what actually runs** → a validated environment resolved when needed
 
@@ -105,7 +105,7 @@ It is a way to make environment handling explicit, predictable, and local-first.
 ```bash
 # one developer adds a new requirement
 envctl add API_KEY sk-example
-git add .envctl.schema.yaml
+git add .envctl.yaml  # or .envctl.schema.yaml if the repo still uses the legacy root
 git commit -m "require API_KEY"
 
 # another developer pulls the change
@@ -121,6 +121,18 @@ The runtime environment is rebuilt consistently when needed.
 ---
 
 ## How it works
+
+### Root contract discovery
+
+`envctl` looks for the main repository contract at the repo root in this order:
+
+1. `.envctl.yaml`
+2. `.envctl.schema.yaml`
+
+If both exist, `envctl` uses `.envctl.yaml` and warns that `.envctl.schema.yaml` is now treated as a legacy root contract. For migration examples, prefer `.envctl.yaml`, but older repositories may still commit `.envctl.schema.yaml` until they switch.
+
+The root contract may import other contract files. The final result is still one composed contract with one global variable namespace, one vault per project, and no implicit override between imported files.
+
 
 At a high level:
 
@@ -217,6 +229,11 @@ That keeps automation predictable and avoids accidental local-style writes in CI
 envctl check
 envctl inspect
 envctl inspect DATABASE_URL
+envctl inspect --contracts
+envctl inspect --sets
+envctl inspect --set docker_runtime
+envctl inspect --groups
+envctl inspect --group Runtime
 envctl status
 
 envctl add DATABASE_URL <value>
@@ -239,8 +256,11 @@ envctl vault decrypt
 For diagnosis, the main path is now:
 
 - `envctl check` for a short pass/fail view
-- `envctl inspect` for the full report
+- `envctl inspect` for the full report, including contract composition
 - `envctl inspect KEY` for one variable in depth
+- `envctl inspect --contracts` for the resolved contract graph
+- `envctl inspect --sets` or `--set NAME` for global set views
+- `envctl inspect --groups` or `--group NAME` for global group views
 
 `envctl doctor` and `envctl explain KEY` still work for compatibility, but they are deprecated aliases.
 

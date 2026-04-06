@@ -9,14 +9,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+This release makes contracts modular without sacrificing determinism.
+You can now split your contract across files, but envctl still resolves everything into a single, predictable result.
+
 ### Added
 
+- Support for contract composition via `imports`, allowing contracts to be split into multiple files and resolved as a single, deterministic contract
+- New root contract format `.envctl.yaml`, with automatic fallback to legacy `.envctl.schema.yaml`
+- Global contract graph built at runtime, including:
+  - resolved contract files
+  - import relationships
+  - variable origin tracking (`declared_in`)
+  - global indexes for `sets` and `groups`
+- Contract graph included in JSON output under `contract_graph`
+- Strict validation for contract imports:
+  - cycle detection
+  - invalid paths
+  - forbidden imports of reserved root contracts
+- Global uniqueness enforcement for variables across all imported contracts
 - Support for contract `sets`, so you can define reusable subsets built from other sets, groups, and explicit variables
 - New `--set` and `--var` scope selectors across validation, inspection, projection, and execution commands
 - Aggregated deprecation warnings for legacy contract keys
 
 ### Changed
 
+- Contract loading is now repo-aware:
+  - `.envctl.yaml` is the new standard root contract
+  - `.envctl.schema.yaml` is treated as legacy and used only as fallback
+- Contracts can now be modular, but are always resolved into a single composed contract with a global namespace
+- `sets` and `groups` are now global across all imported contracts and merged deterministically
+- Contract validation is stricter:
+  - duplicate variables across imports are rejected
+  - importing root contracts is not allowed
+- `inspect` now exposes both:
+  - the resolved runtime environment
+  - the underlying contract composition
+- `inspect` now supports structural views:
+  - `envctl inspect --contracts`
+  - `envctl inspect --sets`
+  - `envctl inspect --set NAME`
+  - `envctl inspect --groups`
+  - `envctl inspect --group NAME`
+- `ProjectContext.repo_contract_path` now reflects the discovered root contract instead of relying on config
 - `check` now behaves like a compact diagnostic command, focused on problems, actions, and a short summary instead of dumping every resolved value
 - `inspect` is now the main detailed diagnostic command and can also inspect one variable directly with `envctl inspect KEY`
 - Variables now use `groups` as the primary grouping field, with deterministic internal normalization
@@ -25,6 +59,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 
+- `.envctl.schema.yaml` is now considered a legacy root contract format
+  It is still supported, but `.envctl.yaml` is the recommended standard going forward
 - `envctl doctor` is now a deprecated alias of `envctl inspect` and is scheduled for removal in `v2.6.0`
 - `envctl explain KEY` is now a deprecated alias of `envctl inspect KEY` and is scheduled for removal in `v2.6.0`
 - Legacy `group` is still accepted, but it is normalized to `groups: [value]` and should be migrated
@@ -201,7 +237,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Limited configuration formats
 * No machine-readable output
 
-[Unreleased]: https://github.com/labrynx/envctl/compare/v2.4.0...HEAD
+[Unreleased]: https://github.com/labrynx/envctl/compare/v2.4.1...HEAD
 [2.4.1]: https://github.com/labrynx/envctl/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/labrynx/envctl/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/labrynx/envctl/compare/v2.2.0...v2.3.0

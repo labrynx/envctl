@@ -8,13 +8,39 @@ That is the most important thing to understand on this page.
 
 ## Where the contract lives
 
-The contract lives in the repository:
+The root contract lives at the repository root and is discovered in this order:
 
 ```text
-<repo-root>/.envctl.schema.yaml
+<repo-root>/.envctl.yaml
+<repo-root>/.envctl.schema.yaml  # legacy fallback
 ```
 
-Because it lives with the project, it can be versioned, reviewed, and shared with the rest of the team.
+If both files exist, `envctl` uses `.envctl.yaml` and warns that `.envctl.schema.yaml` should be migrated or removed.
+
+Because the root contract lives with the project, it can be versioned, reviewed, and shared with the rest of the team.
+
+
+## Contract composition and imports
+
+A root contract may import other contract files:
+
+```yaml
+imports:
+  - ./contracts/shared.yaml
+  - ./contracts/backend.yaml
+```
+
+Imports are resolved relative to the file that declares them. `envctl` loads them recursively and builds one composed contract.
+
+A few rules are strict on purpose:
+
+* imported contracts do not create separate namespaces
+* one variable key may be declared only once across the full resolved graph
+* imported contracts do not override one another
+* the final result is one contract, one global variable namespace, and one project vault
+* the root contracts `.envctl.yaml` and `.envctl.schema.yaml` are reserved and cannot be imported by child contracts
+
+This keeps composition explicit and deterministic. Modular files are allowed. Implicit precedence is not.
 
 ## What the contract describes
 
@@ -95,6 +121,9 @@ That separation is one of the core ideas behind `envctl`.
 The contract is shared with the project. Values stay local to the machine.
 
 ## Groups and sets
+
+Groups and sets are global across the resolved contract graph. If different imported files contribute variables to the same set or group name, `envctl` merges the membership by union and keeps the result stable and deduplicated.
+
 
 Variables may declare optional `groups` such as `Database`, `Observability`, or `Docker runtime`. A variable may belong to more than one group.
 

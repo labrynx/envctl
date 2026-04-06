@@ -20,10 +20,13 @@ Each one has a different job. Keeping them separate is one of the reasons the to
 
 The contract defines what the project needs.
 
+The main contract is discovered at the repo root. It prefers `.envctl.yaml` and still accepts `.envctl.schema.yaml` as a legacy fallback. That root contract may import other contract files, but the result is still one composed project contract. New repositories should treat `.envctl.yaml` as the standard shape, while legacy repositories can continue to work with `.envctl.schema.yaml` during migration.
+
 It lives in the repository:
 
 ```text
-<repo-root>/.envctl.schema.yaml
+<repo-root>/.envctl.yaml
+<repo-root>/.envctl.schema.yaml  # legacy fallback
 ```
 
 It may describe things like:

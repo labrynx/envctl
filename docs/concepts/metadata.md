@@ -133,7 +133,8 @@ That way, helper files stay helpers. They do not quietly become part of the mode
 The repository owns the shared contract:
 
 ```text
-<repo-root>/.envctl.schema.yaml
+<repo-root>/.envctl.yaml
+<repo-root>/.envctl.schema.yaml  # legacy fallback
 ```
 
 That file may describe:

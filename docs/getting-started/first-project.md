@@ -43,6 +43,9 @@ So think of `init` as “prepare this repository for `envctl`”, not as “magi
 
 ## Step 3: inspect where you are
 
+When `envctl` inspects the repository, it now discovers the root contract at the repo root. It prefers `.envctl.yaml` and still accepts `.envctl.schema.yaml` as a legacy fallback. If the root contract imports other files, `inspect` shows the composed contract view as well as the runtime state. In practice, new projects should standardize on `.envctl.yaml`, while existing projects can keep using `.envctl.schema.yaml` until they are ready to migrate.
+
+
 ```bash
 envctl status
 ```
@@ -127,6 +130,14 @@ envctl inspect DATABASE_URL
 ```
 
 Use this when a single variable is confusing or behaving differently than expected.
+
+You can also inspect contract composition directly:
+
+```bash
+envctl inspect --contracts
+envctl inspect --sets
+envctl inspect --groups
+```
 
 ### Inspect physical stored values
 
