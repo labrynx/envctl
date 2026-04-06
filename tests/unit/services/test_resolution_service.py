@@ -5,55 +5,44 @@ from pathlib import Path
 import pytest
 
 import envctl.services.resolution_service.resolution as resolution_service_module
-from envctl.domain.contract import Contract
-from envctl.domain.project import ProjectContext
+from envctl.domain.contract import ResolvedContractGraph
+from envctl.repository.contract_composition import ResolvedContractBundle
 from envctl.services.resolution_service import load_contract_for_context, resolve_environment
 from tests.support.contexts import make_project_context
 from tests.support.contracts import make_contract, make_standard_contract, make_variable_spec
+from tests.support.profile_values import patch_loaded_profile_values
 
 
-def patch_loaded_profile_values(
-    monkeypatch: pytest.MonkeyPatch,
-    *,
-    context: ProjectContext,
-    values: dict[str, str],
-    profile: str = "local",
-) -> Path:
-    """Patch profile loading through the repository-backed service hook."""
-    path = (
-        context.vault_values_path
-        if profile == "local"
-        else context.vault_project_dir / "profiles" / f"{profile}.env"
-    )
-    monkeypatch.setattr(
-        resolution_service_module,
-        "load_profile_values",
-        lambda _context, _profile, require_existing_explicit=False: (
-            _profile,
-            path,
-            values,
-        ),
-    )
-    return path
-
-
-def test_load_contract_for_context_uses_repo_contract_path(
+def test_load_contract_for_context_uses_resolved_contract_bundle(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    fake_context = make_project_context(repo_contract_path="/tmp/project/.envctl.schema.yaml")
-    captured: dict[str, Path] = {}
+    fake_context = make_project_context(repo_contract_path="/tmp/project/.envctl.yaml")
     contract = make_contract()
 
-    def fake_load_contract(path: Path) -> Contract:
-        captured["path"] = path
-        return contract
+    bundle = ResolvedContractBundle(
+        contract=contract,
+        graph=ResolvedContractGraph(
+            root_path=Path("/tmp/project/.envctl.yaml"),
+            contract_paths=(Path("/tmp/project/.envctl.yaml"),),
+            import_graph={Path("/tmp/project/.envctl.yaml"): ()},
+            variables={},
+            declared_in={},
+            sets_index={},
+            groups_index={},
+        ),
+        warnings=(),
+        command_warnings=(),
+    )
 
-    monkeypatch.setattr(resolution_service_module, "load_contract", fake_load_contract)
+    monkeypatch.setattr(
+        resolution_service_module,
+        "load_resolved_contract_bundle",
+        lambda _repo_root: bundle,
+    )
 
     result = load_contract_for_context(fake_context)
 
     assert result is contract
-    assert captured["path"] == fake_context.repo_contract_path
 
 
 def test_resolve_environment_prefers_profile_over_default_and_ignores_system(
@@ -64,7 +53,6 @@ def test_resolve_environment_prefers_profile_over_default_and_ignores_system(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         profile="staging",
         values={
             "APP_NAME": "from-profile",
@@ -101,7 +89,6 @@ def test_resolve_environment_uses_local_values_env_for_local_profile(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={
             "APP_NAME": "from-vault",
             "DATABASE_URL": "https://vault.example.com",
@@ -129,7 +116,6 @@ def test_resolve_environment_does_not_fallback_to_values_env_for_explicit_profil
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         profile="staging",
         values={},
     )
@@ -155,7 +141,6 @@ def test_resolve_environment_marks_invalid_int_bool_url_choice_and_pattern(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={
             "APP_NAME": "demo",
             "PORT": "abc",
@@ -207,7 +192,6 @@ def test_resolve_environment_supports_custom_contract_types(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={
             "RETRY_COUNT": "3",
             "ENABLE_CACHE": "true",
@@ -245,7 +229,6 @@ def test_resolve_environment_validates_string_format_json(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={"TEST_JSON": '{"ok": true}'},
     )
     monkeypatch.delenv("TEST_JSON", raising=False)
@@ -257,7 +240,6 @@ def test_resolve_environment_validates_string_format_json(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={"TEST_JSON": '{\\"broken\\"}'},
     )
 
@@ -290,7 +272,6 @@ def test_resolve_environment_validates_string_format_url_and_csv(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={
             "PUBLIC_ENDPOINT": "not-a-url",
             "TAGS": " , ",
@@ -325,7 +306,6 @@ def test_resolve_environment_expands_contract_references(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={
             "USER": "neo4j",
             "PASSWORD": "super-secret",
@@ -358,7 +338,6 @@ def test_resolve_environment_rejects_unknown_placeholder_references(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={"CACHE_DIR": "${HOME}/.cache/demo"},
     )
     monkeypatch.setenv("HOME", "/tmp/example-home")
@@ -390,7 +369,6 @@ def test_resolve_environment_uses_contract_values_for_expansion(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={"HOME": "/contract-home", "TARGET": "${HOME}/work"},
     )
     monkeypatch.setenv("HOME", "/process-home")
@@ -418,7 +396,6 @@ def test_resolve_environment_supports_recursive_expansion(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={"A": "${B}", "B": "${C}", "C": "value"},
     )
 
@@ -442,7 +419,6 @@ def test_resolve_environment_allows_empty_references(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={"EMPTY": "", "TARGET": "x${EMPTY}y"},
     )
 
@@ -465,7 +441,6 @@ def test_resolve_environment_marks_missing_references_invalid(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={"TARGET": "${OPTIONAL}"},
     )
 
@@ -488,7 +463,6 @@ def test_resolve_environment_marks_cycles_invalid(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={"A": "${B}", "B": "${A}"},
     )
 
@@ -517,7 +491,6 @@ def test_resolve_environment_reports_full_cycle_path_for_longer_cycles(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={"A": "${B}", "B": "${C}", "C": "${A}"},
     )
 
@@ -547,7 +520,6 @@ def test_resolve_environment_reports_syntax_errors(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={"TARGET": "prefix-${VAR"},
     )
 
@@ -569,7 +541,6 @@ def test_resolve_environment_leaves_dollar_literals_untouched(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={"TARGET": "$HOME"},
     )
 
@@ -593,7 +564,6 @@ def test_resolve_environment_validates_types_after_expansion(
 
     patch_loaded_profile_values(
         monkeypatch,
-        context=context,
         values={"BASE_PORT": "3000", "PORT": "${BASE_PORT}"},
     )
 

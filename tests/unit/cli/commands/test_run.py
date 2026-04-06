@@ -33,8 +33,6 @@ def test_run_command_exits_with_child_return_code(
             (),
         ),
     )
-    monkeypatch.setattr(run_command_module, "is_json_output", lambda: False)
-
     with pytest.raises(typer.Exit) as exc_info:
         run_command_cli(SimpleNamespace(args=["python", "-V"]))
 
@@ -42,7 +40,7 @@ def test_run_command_exits_with_child_return_code(
 
 
 def test_run_command_rejects_json_mode(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(run_command_module, "is_json_output", lambda: True)
+    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: True)
 
     with pytest.raises(typer.Exit) as exc_info:
         run_command_cli(SimpleNamespace(args=["python", "-V"]))

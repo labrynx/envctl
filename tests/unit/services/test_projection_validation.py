@@ -1,14 +1,35 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 import envctl.services.projection_validation as projection_validation
+from envctl.domain.contract import Contract, ResolvedContractGraph
 from envctl.domain.selection import group_selection
 from envctl.errors import ValidationError
+from envctl.repository.contract_composition import ResolvedContractBundle
 from tests.support.assertions import require_projection_validation_diagnostics
 from tests.support.builders import make_resolution_report, make_resolved_value
 from tests.support.contexts import make_project_context
 from tests.support.contracts import make_contract, make_variable_spec
+
+
+def _bundle_for(contract: Contract) -> ResolvedContractBundle:
+    return ResolvedContractBundle(
+        contract=contract,
+        graph=ResolvedContractGraph(
+            root_path=Path("/tmp/project/.envctl.yaml"),
+            contract_paths=(Path("/tmp/project/.envctl.yaml"),),
+            import_graph={Path("/tmp/project/.envctl.yaml"): ()},
+            variables={},
+            declared_in={},
+            sets_index={},
+            groups_index={},
+        ),
+        warnings=(),
+        command_warnings=(),
+    )
 
 
 def test_resolve_projectable_environment_returns_contract_and_report_when_valid(
@@ -28,8 +49,8 @@ def test_resolve_projectable_environment_returns_contract_and_report_when_valid(
 
     monkeypatch.setattr(
         projection_validation,
-        "load_contract_with_warnings",
-        lambda _path: (contract, ()),
+        "load_resolved_contract_bundle",
+        lambda _repo_root: _bundle_for(contract),
     )
     monkeypatch.setattr(
         projection_validation,
@@ -79,8 +100,8 @@ def test_resolve_projectable_environment_raises_validation_error_with_selection(
 
     monkeypatch.setattr(
         projection_validation,
-        "load_contract_with_warnings",
-        lambda _path: (contract, ()),
+        "load_resolved_contract_bundle",
+        lambda _repo_root: _bundle_for(contract),
     )
     monkeypatch.setattr(
         projection_validation,

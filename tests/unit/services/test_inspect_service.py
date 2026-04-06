@@ -3,7 +3,9 @@ from __future__ import annotations
 import pytest
 
 import envctl.services.inspect_service as inspect_service
+from envctl.domain.contract import ResolvedContractGraph
 from envctl.domain.selection import group_selection
+from envctl.repository.contract_composition import ResolvedContractBundle
 from envctl.services.inspect_service import run_inspect, run_inspect_key
 from tests.support.builders import make_resolution_report, make_resolved_value
 from tests.support.contexts import make_project_context
@@ -27,8 +29,12 @@ def test_run_inspect_returns_context_and_result(
     monkeypatch.setattr(inspect_service, "load_project_context", lambda: (object(), context))
     monkeypatch.setattr(
         inspect_service,
-        "load_contract_with_warnings",
-        lambda _path: (contract, ()),
+        "load_resolved_contract_bundle",
+        lambda _repo_root: ResolvedContractBundle(
+            contract=contract,
+            graph=ResolvedContractGraph(),
+            warnings=(),
+        ),
     )
     monkeypatch.setattr(
         inspect_service,
@@ -70,8 +76,12 @@ def test_run_inspect_filters_report_by_group_selection(
     monkeypatch.setattr(inspect_service, "load_project_context", lambda: (object(), context))
     monkeypatch.setattr(
         inspect_service,
-        "load_contract_with_warnings",
-        lambda _path: (contract, ()),
+        "load_resolved_contract_bundle",
+        lambda _repo_root: ResolvedContractBundle(
+            contract=contract,
+            graph=ResolvedContractGraph(),
+            warnings=(),
+        ),
     )
     monkeypatch.setattr(
         inspect_service,
@@ -111,8 +121,12 @@ def test_run_inspect_key_returns_detailed_item(
     monkeypatch.setattr(inspect_service, "load_project_context", lambda: (object(), context))
     monkeypatch.setattr(
         inspect_service,
-        "load_contract_with_warnings",
-        lambda _path: (contract, ()),
+        "load_resolved_contract_bundle",
+        lambda _repo_root: ResolvedContractBundle(
+            contract=contract,
+            graph=ResolvedContractGraph(),
+            warnings=(),
+        ),
     )
     monkeypatch.setattr(
         inspect_service,

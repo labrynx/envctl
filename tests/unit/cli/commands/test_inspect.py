@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, cast
 
 import pytest
@@ -7,7 +8,12 @@ import typer
 
 import envctl.cli.commands.inspect.command as inspect_command_module
 from envctl.cli.commands.inspect import inspect_command
-from envctl.domain.diagnostics import DiagnosticSummary, InspectKeyResult, InspectResult
+from envctl.domain.diagnostics import (
+    DiagnosticSummary,
+    InspectContractGraph,
+    InspectKeyResult,
+    InspectResult,
+)
 from envctl.domain.selection import ContractSelection, group_selection
 from tests.support.builders import make_resolved_value
 from tests.support.contexts import make_project_context
@@ -30,6 +36,18 @@ def make_inspect_result() -> InspectResult:
             ),
         ),
         problems=(),
+        contract_graph=InspectContractGraph(
+            root_path=Path(context.repo_contract_path),
+            contract_paths=(Path(context.repo_contract_path),),
+            contracts_total=1,
+            variables_total=1,
+            sets_total=0,
+            groups_total=1,
+            import_graph={Path(context.repo_contract_path): ()},
+            declared_in={"APP_NAME": Path(context.repo_contract_path)},
+            sets_index={},
+            groups_index={"Application": ("APP_NAME",)},
+        ),
     )
 
 
@@ -41,6 +59,8 @@ def make_key_result() -> InspectKeyResult:
         item=make_resolved_value(key="APP_NAME", value="demo", source="vault"),
         contract_type="string",
         contract_format=None,
+        declared_in=Path(context.repo_contract_path),
+        sets=(),
         groups=("Application",),
         default=None,
         sensitive=False,
@@ -61,7 +81,7 @@ def test_inspect_command_renders_report(monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setattr(
         inspect_command_module,
         "get_contract_selection",
-        lambda: group_selection("Application"),
+        lambda: ContractSelection(),
     )
     monkeypatch.setattr(
         inspect_command_module,

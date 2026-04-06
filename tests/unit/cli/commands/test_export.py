@@ -34,7 +34,6 @@ def test_export_command_uses_presenter(monkeypatch: pytest.MonkeyPatch) -> None:
         return _export_result(selection)
 
     monkeypatch.setattr(export_command_module, "run_export", fake_run_export)
-    monkeypatch.setattr(export_command_module, "is_json_output", lambda: False)
     monkeypatch.setattr(
         export_command_module,
         "render_export_output",
@@ -52,7 +51,7 @@ def test_export_command_uses_presenter(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_export_command_rejects_json_mode(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(export_command_module, "is_json_output", lambda: True)
+    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: True)
 
     with pytest.raises(typer.Exit) as exc_info:
         export_command_module.export_command()
