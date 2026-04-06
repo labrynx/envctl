@@ -11,6 +11,8 @@ PIP ?= pip
 
 RUFF ?= ruff
 MYPY ?= mypy
+BANDIT ?= bandit
+COV_MIN ?= 85
 PYTEST ?= pytest
 BUILD ?= python -m build
 TWINE ?= python -m twine
@@ -94,6 +96,9 @@ format-check: ## Check code formatting with Ruff
 typecheck: ## Run static type checking with mypy
 	$(MYPY)
 
+security: ## Run security checks with bandit
+	$(BANDIT) -c pyproject.toml -r $(SRC)
+
 # -----------------------------------------
 # Test suite
 # -----------------------------------------
@@ -104,8 +109,8 @@ test: ## Run test suite with readable output
 test-cov: ## Run test suite with coverage
 	$(PYTEST) $(PYTEST_BASE_ARGS) $(PYTEST_DEBUG_ARGS) $(PYTEST_COV_ARGS)
 
-test-ci: ## Run CI-oriented test suite with coverage
-	$(PYTEST) $(PYTEST_BASE_ARGS) $(PYTEST_DEBUG_ARGS) $(PYTEST_COV_ARGS)
+test-ci: ## Run CI-oriented test suite with coverage threshold
+	$(PYTEST) $(PYTEST_BASE_ARGS) $(PYTEST_DEBUG_ARGS) $(PYTEST_COV_ARGS) --cov-fail-under=$(COV_MIN)
 
 test-fast: ## Run tests quietly without coverage
 	$(PYTEST) -q
@@ -117,7 +122,9 @@ test-debug: ## Run tests with maximum failure detail
 # Composite workflows
 # -----------------------------------------
 
-check: lint format-check typecheck test-ci build-package check-package ## Run full CI-like validation suite
+validate: lint format-check typecheck security test-ci ## Validate code quality
+
+check: validate build-package check-package ## Full validation including build
 
 check-clean: clean check ## Run full validation suite from a clean workspace
 

@@ -106,7 +106,7 @@ def run_command(
 
     try:
         # Intentional: envctl run executes a user-requested command.
-        completed = subprocess.run(  # noqa: S603
+        completed = subprocess.run(  # nosec  # noqa: S603
             command,
             check=False,
             env=_build_child_env(resolved_values),

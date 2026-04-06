@@ -21,7 +21,7 @@ def _run_git(
     """Run a git command and return stripped stdout."""
     try:
         # Intentional: git is resolved from PATH for portability across environments.
-        completed = subprocess.run(  # noqa: S603
+        completed = subprocess.run(  # nosec  # noqa: S603
             ["git", *args],  # noqa: S607
             cwd=str(cwd) if cwd else None,
             check=check,
