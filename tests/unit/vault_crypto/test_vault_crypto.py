@@ -38,7 +38,7 @@ def test_load_or_create_refuses_to_replace_missing_key_when_encrypted_data_exist
 
     key_path.unlink()
 
-    with pytest.raises(ExecutionError, match="encrypted vault data already exists"):
+    with pytest.raises(ExecutionError, match=r"encrypted vault data already exists"):
         VaultCrypto.load_or_create(key_path, protected_paths=(encrypted_file,))
 
 
@@ -90,7 +90,7 @@ def test_decrypt_raises_on_wrong_key(tmp_path: Path) -> None:
 
     token = crypto1.encrypt("APP_NAME=demo\n")
 
-    with pytest.raises(VaultDecryptionError, match="different project key"):
+    with pytest.raises(VaultDecryptionError, match=r"different project key"):
         crypto2.decrypt(token)
 
 

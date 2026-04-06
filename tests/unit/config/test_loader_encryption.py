@@ -33,22 +33,22 @@ def test_parse_enabled_and_strict_true_returns_both_true() -> None:
 
 
 def test_parse_non_dict_raises() -> None:
-    with pytest.raises(ConfigError, match="encryption must be a JSON object"):
+    with pytest.raises(ConfigError, match=r"encryption must be a JSON object"):
         _parse_encryption_config("yes")
 
 
 def test_parse_non_bool_enabled_raises() -> None:
-    with pytest.raises(ConfigError, match="encryption.enabled must be a boolean"):
+    with pytest.raises(ConfigError, match=r"encryption.enabled must be a boolean"):
         _parse_encryption_config({"enabled": "true"})
 
 
 def test_parse_non_bool_strict_raises() -> None:
-    with pytest.raises(ConfigError, match="encryption.strict must be a boolean"):
+    with pytest.raises(ConfigError, match=r"encryption.strict must be a boolean"):
         _parse_encryption_config({"enabled": True, "strict": "true"})
 
 
 def test_parse_unknown_key_raises() -> None:
-    with pytest.raises(ConfigError, match="Unsupported encryption config key"):
+    with pytest.raises(ConfigError, match=r"Unsupported encryption config key"):
         _parse_encryption_config({"enabled": True, "algorithm": "AES"})
 
 
@@ -135,5 +135,5 @@ def test_load_config_encryption_invalid_block_raises(
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
 
-    with pytest.raises(ConfigError, match="encryption must be a JSON object"):
+    with pytest.raises(ConfigError, match=r"encryption must be a JSON object"):
         load_config()

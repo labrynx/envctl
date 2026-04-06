@@ -22,7 +22,7 @@ def test_encrypt_raises_when_crypto_not_configured(
         lambda: (object(), context),
     )
 
-    with pytest.raises(ExecutionError, match="Encryption is not enabled"):
+    with pytest.raises(ExecutionError, match=r"Encryption is not enabled"):
         vault_service_module.run_vault_encrypt_project()
 
 
@@ -115,7 +115,7 @@ def test_encrypt_raises_on_wrong_key(
         lambda: (object(), context),
     )
 
-    with pytest.raises(ExecutionError, match="different project key"):
+    with pytest.raises(ExecutionError, match=r"different project key"):
         vault_service_module.run_vault_encrypt_project()
 
 
@@ -130,7 +130,7 @@ def test_decrypt_raises_when_crypto_not_configured(
         lambda: (object(), context),
     )
 
-    with pytest.raises(ExecutionError, match="Enable encryption"):
+    with pytest.raises(ExecutionError, match=r"Enable encryption"):
         vault_service_module.run_vault_decrypt_project()
 
 
