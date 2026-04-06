@@ -63,7 +63,7 @@ def test_resolve_contract_graph_detects_cycles(tmp_path: Path) -> None:
         },
     )
 
-    with pytest.raises(ContractError, match="Reserved root contract import is not allowed"):
+    with pytest.raises(ContractError, match=r"Reserved root contract import is not allowed"):
         resolve_contract_graph(root, repo_root=tmp_path)
 
 
@@ -78,5 +78,5 @@ def test_resolve_contract_graph_raises_for_invalid_import_path(tmp_path: Path) -
         },
     )
 
-    with pytest.raises(ContractError, match="Invalid contract import"):
+    with pytest.raises(ContractError, match=r"Invalid contract import"):
         resolve_contract_graph(root, repo_root=tmp_path)

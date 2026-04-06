@@ -29,7 +29,7 @@ def test_discover_root_contract_falls_back_to_legacy_file(tmp_path: Path) -> Non
 
 
 def test_discover_root_contract_raises_when_missing(tmp_path: Path) -> None:
-    with pytest.raises(ContractError, match="Main envctl contract not found") as exc_info:
+    with pytest.raises(ContractError, match=r"Main envctl contract not found") as exc_info:
         discover_root_contract_path(tmp_path)
 
     assert exc_info.value.diagnostics is not None

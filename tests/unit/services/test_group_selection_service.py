@@ -117,5 +117,5 @@ def test_build_variable_groups_returns_first_alphabetical_group_for_projection_k
 def test_resolve_selected_variable_names_rejects_unknown_var() -> None:
     contract = make_contract({"APP_NAME": make_variable_spec(name="APP_NAME")})
 
-    with pytest.raises(ContractError, match="Unknown contract variable"):
+    with pytest.raises(ContractError, match=r"Unknown contract variable"):
         resolve_selected_variable_names(contract, var_selection("MISSING"))
