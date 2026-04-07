@@ -10,7 +10,7 @@ on:
       - main
 
 concurrency:
-  group: ci-coverage-${{ github.workflow }}-${{ github.ref }}
+  group: ci-coverage-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .[dev]
+          python -m pip install -e ".[dev]"
 
       - name: Run coverage with threshold
         run: make test-ci
