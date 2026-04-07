@@ -10,6 +10,7 @@ from envctl.domain.project import ProjectContext
 from envctl.errors import ExecutionError
 from envctl.utils.atomic import write_text_atomic
 from envctl.utils.filesystem import ensure_dir
+from envctl.utils.logging import get_logger, summarize_keys
 from envctl.utils.project_paths import (
     build_profile_env_path,
     build_profiles_dir,
@@ -18,30 +19,49 @@ from envctl.utils.project_paths import (
 )
 from envctl.vault_crypto import VaultCrypto
 
+logger = get_logger(__name__)
 
-def _load_env_text(path: Path, *, context: ProjectContext, allow_plaintext: bool = True) -> str:
+
+def _load_env_text(
+    path: Path,
+    *,
+    context: ProjectContext,
+    allow_plaintext: bool = True,
+) -> str:
     """Read vault file content, decrypting when the context is encrypted."""
     if not path.exists():
+        logger.debug("Vault profile file does not exist yet", extra={"path": path})
         return ""
 
     if context.vault_crypto is not None:
+        logger.debug(
+            "Reading encrypted vault profile file",
+            extra={"path": path, "allow_plaintext": allow_plaintext},
+        )
         return context.vault_crypto.read_file(path, allow_plaintext=allow_plaintext)
 
     raw = path.read_bytes()
     if VaultCrypto.looks_encrypted(raw):
+        logger.error(
+            "Encrypted vault file cannot be read with encryption disabled",
+            extra={"path": path},
+        )
         raise ExecutionError(
             "Vault file is encrypted, but encryption is disabled. Enable encryption in config "
             "or run 'envctl vault decrypt' with the correct key first."
         )
 
+    logger.debug("Reading plaintext vault profile file", extra={"path": path})
     return raw.decode("utf-8")
 
 
 def _write_env_text(path: Path, content: str, *, context: ProjectContext) -> None:
     """Write vault file content, encrypting when the context is encrypted."""
     if context.vault_crypto is not None:
+        logger.debug("Writing encrypted vault profile file", extra={"path": path})
         context.vault_crypto.write_encrypted_file(path, content)
     else:
+        logger.debug("Writing plaintext vault profile file", extra={"path": path})
         write_text_atomic(path, content)
 
 
@@ -71,6 +91,10 @@ def require_persisted_profile(
         return resolved_profile, path
 
     if not path.exists():
+        logger.error(
+            "Requested explicit profile does not exist",
+            extra={"profile": resolved_profile, "path": path},
+        )
         raise ExecutionError(
             f"Profile does not exist: {resolved_profile}. "
             f"Create it with 'envctl profile create {resolved_profile}'."
@@ -142,11 +166,17 @@ def load_profile_values(
     else:
         resolved_profile, path = resolve_profile_path(context, profile)
 
-    return (
-        resolved_profile,
-        path,
-        parse_env_text(_load_env_text(path, context=context, allow_plaintext=allow_plaintext)),
+    values = parse_env_text(_load_env_text(path, context=context, allow_plaintext=allow_plaintext))
+    logger.debug(
+        "Loaded profile values",
+        extra={
+            "profile": resolved_profile,
+            "path": path,
+            "key_count": len(values),
+            "keys": summarize_keys(sorted(values)),
+        },
     )
+    return resolved_profile, path, values
 
 
 def write_profile_values(
@@ -163,6 +193,15 @@ def write_profile_values(
         resolved_profile, path = resolve_profile_path(context, profile)
 
     ensure_dir(path.parent)
+    logger.debug(
+        "Writing profile values",
+        extra={
+            "profile": resolved_profile,
+            "path": path,
+            "key_count": len(values),
+            "keys": summarize_keys(sorted(values)),
+        },
+    )
     _write_env_text(path, dump_env(values), context=context)
     return resolved_profile, path
 
@@ -181,8 +220,16 @@ def remove_key_from_profile(
         require_existing_explicit=require_existing_explicit,
     )
     if key not in values:
+        logger.debug(
+            "Profile key not present; nothing to remove",
+            extra={"profile": resolved_profile, "key": key, "path": path},
+        )
         return resolved_profile, path, False
 
+    logger.debug(
+        "Removing key from profile",
+        extra={"profile": resolved_profile, "key": key, "path": path},
+    )
     values.pop(key, None)
     write_profile_values(
         context,

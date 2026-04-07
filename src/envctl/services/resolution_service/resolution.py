@@ -10,7 +10,10 @@ from envctl.repository.profile_repository import load_profile_values
 from envctl.services.resolution_service.builders import build_resolved_value
 from envctl.services.resolution_service.expansion import expand_selected_values
 from envctl.services.resolution_service.selection import select_contract_values
+from envctl.utils.logging import get_logger, summarize_keys
 from envctl.utils.project_paths import is_local_profile, normalize_profile_name
+
+logger = get_logger(__name__)
 
 
 def load_contract_for_context(context: ProjectContext) -> Contract:
@@ -26,11 +29,27 @@ def resolve_environment(
 ) -> ResolutionReport:
     """Resolve environment values from the selected profile and contract defaults."""
     resolved_profile = normalize_profile_name(active_profile)
+    logger.debug(
+        "Resolving environment",
+        extra={
+            "project_id": context.project_id,
+            "active_profile": resolved_profile,
+        },
+    )
 
     _loaded_profile, _profile_env_path, profile_values = load_profile_values(
         context,
         resolved_profile,
         require_existing_explicit=True,
+    )
+
+    logger.debug(
+        "Loaded profile values",
+        extra={
+            "active_profile": resolved_profile,
+            "profile_key_count": len(profile_values),
+            "profile_keys": summarize_keys(sorted(profile_values)),
+        },
     )
 
     profile_source = (
@@ -41,6 +60,15 @@ def resolve_environment(
         contract,
         profile_values=profile_values,
         profile_source=profile_source,
+    )
+
+    logger.debug(
+        "Selected contract values",
+        extra={
+            "selected_key_count": len(selected_values),
+            "missing_required_count": len(missing_required),
+            "missing_required": summarize_keys(sorted(missing_required)),
+        },
     )
 
     expansion_results, derived_sensitive = expand_selected_values(
@@ -65,6 +93,17 @@ def resolve_environment(
             invalid_keys.append(key)
 
     unknown_keys = sorted(set(profile_values) - set(contract.variables))
+
+    logger.debug(
+        "Resolved environment report",
+        extra={
+            "resolved_key_count": len(values),
+            "invalid_key_count": len(invalid_keys),
+            "unknown_key_count": len(unknown_keys),
+            "invalid_keys": summarize_keys(sorted(invalid_keys)),
+            "unknown_keys": summarize_keys(unknown_keys),
+        },
+    )
 
     return ResolutionReport.from_parts(
         values=values,

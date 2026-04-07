@@ -15,6 +15,9 @@ from envctl.errors import ValidationError
 from envctl.repository.contract_composition import load_resolved_contract_bundle
 from envctl.services.contract_selection_service import filter_resolution_report
 from envctl.services.resolution_service import resolve_environment
+from envctl.utils.logging import get_logger, summarize_keys
+
+logger = get_logger(__name__)
 
 
 def resolve_projectable_environment(
@@ -25,13 +28,42 @@ def resolve_projectable_environment(
     operation: ProjectionOperation,
 ) -> tuple[Contract, ResolutionReport, tuple[ContractDeprecationWarning, ...]]:
     """Resolve and validate one projectable environment."""
+    logger.debug(
+        "Resolving projectable environment",
+        extra={
+            "operation": operation,
+            "active_profile": active_profile,
+            "selection": selection.describe() if selection is not None else "full contract",
+            "repo_root": context.repo_root,
+        },
+    )
+
     bundle = load_resolved_contract_bundle(context.repo_root)
     contract = bundle.contract
     report = resolve_environment(context, contract, active_profile=active_profile)
     filtered_report = filter_resolution_report(report, contract, selection=selection)
 
     if filtered_report.is_valid and not filtered_report.unknown_keys:
+        logger.debug(
+            "Projection validation passed",
+            extra={
+                "operation": operation,
+                "active_profile": active_profile,
+                "resolved_key_count": len(report.values),
+            },
+        )
         return contract, report, bundle.warnings
+
+    logger.error(
+        "Projection validation failed",
+        extra={
+            "operation": operation,
+            "active_profile": active_profile,
+            "missing_required": summarize_keys(filtered_report.missing_required),
+            "invalid_keys": summarize_keys(filtered_report.invalid_keys),
+            "unknown_keys": summarize_keys(filtered_report.unknown_keys),
+        },
+    )
 
     raise ValidationError(
         _build_projection_blocked_message(operation),

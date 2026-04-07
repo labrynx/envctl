@@ -16,6 +16,7 @@ The CLI is now more consistent across commands, making it easier to understand a
 ### Added
 
 - Support for contract composition via `imports`, allowing contracts to be split into multiple files and resolved as a single, deterministic contract
+- Internal debug logging controlled through `ENVCTL_LOG_LEVEL` with safe masking for sensitive values
 - New `envctl guard secrets` command to block staged envctl vault payloads and master keys before commit
 - `envctl init` now installs a local managed Git pre-commit hook when the repository can safely use `.githooks`
 - New root contract format `.envctl.yaml`, with automatic fallback to legacy `.envctl.schema.yaml`
@@ -62,6 +63,7 @@ The CLI is now more consistent across commands, making it easier to understand a
 - Validation and projection now follow one explicit contract scope: full contract, `--group`, `--set`, or `--var`
 - `doctor`, `check`, `inspect`, `export`, `run`, and `sync` surface scope-aware behavior more consistently
 - CLI commands now handle warnings, JSON payloads, and text-only behavior more consistently
+- Internal tracing now covers config loading, project-context resolution, contract loading, profile persistence, projection validation, environment resolution, and command execution
 
 ### Deprecated
 
