@@ -11,9 +11,9 @@ from envctl.domain.error_diagnostics import (
 from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport
 from envctl.domain.selection import ContractSelection
+from envctl.domain.selection_resolution import filter_resolution_report
 from envctl.errors import ValidationError
 from envctl.repository.contract_composition import load_resolved_contract_bundle
-from envctl.services.contract_selection_service import filter_resolution_report
 from envctl.services.resolution_service import resolve_environment
 from envctl.utils.logging import get_logger, summarize_keys
 

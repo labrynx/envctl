@@ -216,14 +216,9 @@ def load_config() -> AppConfig:
     config_path = get_default_config_path()
     raw: dict[str, Any] = {}
     logger.debug("Loading application config", extra={"config_path": config_path})
-    logger.debug("Loading application config", extra={"config_path": config_path})
 
     if config_path.exists():
         raw = _read_json(config_path)
-        logger.debug(
-            "Loaded config file",
-            extra={"config_path": config_path, "configured_keys": sorted(raw)},
-        )
         logger.debug(
             "Loaded config file", extra={"config_path": config_path, "configured_keys": sorted(raw)}
         )
@@ -291,18 +286,6 @@ def load_config() -> AppConfig:
     encryption_enabled, encryption_strict = _parse_encryption_config(
         raw.get("encryption"),
         path=config_path if config_path.exists() else None,
-    )
-
-    logger.debug(
-        "Resolved application config",
-        extra={
-            "config_path": config_path,
-            "vault_dir": vault_dir,
-            "runtime_mode": runtime_mode.value,
-            "default_profile": config_default_profile,
-            "encryption_enabled": encryption_enabled,
-            "encryption_strict": encryption_strict,
-        },
     )
 
     logger.debug(

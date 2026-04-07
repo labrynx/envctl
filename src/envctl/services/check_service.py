@@ -7,9 +7,9 @@ from envctl.domain.diagnostics import CheckResult
 from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport
 from envctl.domain.selection import ContractSelection
+from envctl.domain.selection_resolution import filter_resolution_report
 from envctl.repository.contract_composition import load_resolved_contract_bundle
 from envctl.services.context_service import load_project_context
-from envctl.services.contract_selection_service import filter_resolution_report
 from envctl.services.resolution_diagnostics import (
     build_diagnostic_problems,
     build_diagnostic_summary,
