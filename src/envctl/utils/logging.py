@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from collections.abc import Sequence
+from collections.abc import Sequence, Sized
 
 from envctl.utils.masking import mask_value
 
@@ -98,6 +98,16 @@ def summarize_keys(keys: Sequence[str], *, limit: int = 8) -> str:
     if len(ordered) <= limit:
         return preview
     return f"{preview}, … (+{len(ordered) - limit} more)"
+
+
+def summarize_key_count(keys: Sized) -> str:
+    """Return a count-only summary for potentially sensitive key sets."""
+    count = len(keys)
+    if count == 0:
+        return "0"
+    if count == 1:
+        return "1 key"
+    return f"{count} keys"
 
 
 def sanitize_command_for_log(command: Sequence[str]) -> tuple[str, ...]:

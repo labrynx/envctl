@@ -10,7 +10,7 @@ from envctl.domain.project import ProjectContext
 from envctl.errors import ExecutionError
 from envctl.utils.atomic import write_text_atomic
 from envctl.utils.filesystem import ensure_dir
-from envctl.utils.logging import get_logger, summarize_keys
+from envctl.utils.logging import get_logger, summarize_key_count
 from envctl.utils.project_paths import (
     build_profile_env_path,
     build_profiles_dir,
@@ -173,7 +173,7 @@ def load_profile_values(
             "profile": resolved_profile,
             "path": path,
             "key_count": len(values),
-            "keys": summarize_keys(sorted(values)),
+            "key_summary": summarize_key_count(values),
         },
     )
     return resolved_profile, path, values
@@ -199,7 +199,7 @@ def write_profile_values(
             "profile": resolved_profile,
             "path": path,
             "key_count": len(values),
-            "keys": summarize_keys(sorted(values)),
+            "key_summary": summarize_key_count(values),
         },
     )
     _write_env_text(path, dump_env(values), context=context)
