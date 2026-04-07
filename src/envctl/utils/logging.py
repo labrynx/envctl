@@ -11,7 +11,11 @@ from envctl.utils.masking import mask_value
 ENVCTL_LOG_LEVEL_ENVVAR = "ENVCTL_LOG_LEVEL"
 _ALLOWED_LOG_LEVELS = {"DEBUG", "WARNING", "ERROR"}
 _DEFAULT_LOG_LEVEL = "WARNING"
-_RESERVED_LOG_RECORD_KEYS = set(logging.makeLogRecord({}).__dict__.keys())
+_ENVCTL_LOGGER_NAME = "envctl"
+_RESERVED_LOG_RECORD_KEYS = set(logging.makeLogRecord({}).__dict__.keys()) | {
+    "asctime",
+    "message",
+}
 
 
 class _EnvctlDebugFormatter(logging.Formatter):
@@ -47,12 +51,16 @@ def _resolve_log_level() -> int:
     return getattr(logging, _resolve_log_level_name(), logging.WARNING)
 
 
+def _get_envctl_logger() -> logging.Logger:
+    return logging.getLogger(_ENVCTL_LOGGER_NAME)
+
+
 def ensure_logging_configured() -> None:
-    """Ensure the root logger is configured once for envctl internal logs."""
-    root = logging.getLogger()
+    """Ensure the envctl logger tree is configured once for internal tracing."""
+    envctl_logger = _get_envctl_logger()
     target_level = _resolve_log_level()
 
-    if not any(getattr(handler, "_envctl_handler", False) for handler in root.handlers):
+    if not any(getattr(handler, "_envctl_handler", False) for handler in envctl_logger.handlers):
         handler = logging.StreamHandler()
         handler._envctl_handler = True  # type: ignore[attr-defined]
         handler.setFormatter(
@@ -61,9 +69,10 @@ def ensure_logging_configured() -> None:
                 datefmt="%Y-%m-%d %H:%M:%S",
             )
         )
-        root.addHandler(handler)
+        envctl_logger.addHandler(handler)
 
-    root.setLevel(target_level)
+    envctl_logger.setLevel(target_level)
+    envctl_logger.propagate = False
 
 
 def get_logger(name: str) -> logging.Logger:

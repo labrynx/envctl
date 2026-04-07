@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -155,15 +156,20 @@ def test_resolve_projectable_environment_logs_failure_summary(
         lambda _context, _contract, *, active_profile=None: report,
     )
 
+    logger = logging.getLogger("envctl")
+    logger.addHandler(caplog.handler)
     caplog.set_level("ERROR")
 
-    with pytest.raises(ValidationError):
-        projection_validation.resolve_projectable_environment(
-            context,
-            active_profile="staging",
-            selection=None,
-            operation="run",
-        )
+    try:
+        with pytest.raises(ValidationError):
+            projection_validation.resolve_projectable_environment(
+                context,
+                active_profile="staging",
+                selection=None,
+                operation="run",
+            )
+    finally:
+        logger.removeHandler(caplog.handler)
 
     matching = [
         record
