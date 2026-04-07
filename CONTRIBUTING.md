@@ -138,6 +138,26 @@ If not, it probably needs redesign.
 * Prefer explicit control flow over hidden convenience
 * Docstrings should describe behavior, side effects, and failure conditions when useful
 
+## Internal logging guidance
+
+`envctl` uses internal logging for debugging implementation details. It is not a second user-facing output channel.
+
+Rules to keep that boundary clean:
+
+* Use `src/envctl/utils/logging.py` for logger creation and safe helpers
+* Keep user-facing messaging in presenters and serializers
+* Prefer `DEBUG` for normal execution tracing
+* Use `WARNING` only for unusual but recoverable situations
+* Use `ERROR` when the command is about to fail or has failed
+* Never log secret values, raw vault payloads, or unredacted sensitive command arguments
+* Prefer summaries and counts over full dumps of resolved environments
+
+You can enable tracing locally with:
+
+```bash
+ENVCTL_LOG_LEVEL=DEBUG envctl check
+```
+
 ## Running tests
 
 * Run the full suite:
