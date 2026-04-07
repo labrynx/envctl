@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from envctl.services.init_service import InitResult
+from envctl.domain.operations import InitResult
 from envctl.utils.masking import mask_value
 from envctl.utils.output import (
     print_kv,

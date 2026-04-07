@@ -5,11 +5,11 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from envctl.errors import ExecutionError, ProjectDetectionError
-from envctl.services.error_diagnostics import (
+from envctl.domain.error_diagnostics import (
     RepositoryDiscoveryDiagnosticCategory,
     RepositoryDiscoveryDiagnostics,
 )
+from envctl.errors import ExecutionError, ProjectDetectionError
 
 
 def _run_git(

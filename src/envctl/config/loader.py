@@ -19,9 +19,9 @@ from envctl.constants import (
     ENVCTL_RUNTIME_MODE_ENVVAR,
 )
 from envctl.domain.app_config import AppConfig
+from envctl.domain.error_diagnostics import ConfigDiagnostics
 from envctl.domain.runtime import RuntimeMode
 from envctl.errors import ConfigError
-from envctl.services.error_diagnostics import ConfigDiagnostics
 
 SUPPORTED_KEYS = {
     "vault_dir",

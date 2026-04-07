@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from envctl.services.error_diagnostics import ErrorDiagnostics
+    from envctl.domain.error_diagnostics import ErrorDiagnostics
 
 
 class EnvctlError(Exception):

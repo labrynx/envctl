@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typer
 
-from envctl.services.error_diagnostics import ContractDiagnostics
+from envctl.domain.error_diagnostics import ContractDiagnostics
 
 
 def render_contract_error(

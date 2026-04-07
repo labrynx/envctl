@@ -8,6 +8,14 @@ import pytest
 import typer
 
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
+from envctl.domain.error_diagnostics import (
+    ConfigDiagnostics,
+    ContractDiagnostics,
+    ProjectBindingDiagnostics,
+    ProjectionValidationDiagnostics,
+    RepositoryDiscoveryDiagnostics,
+    StateDiagnostics,
+)
 from envctl.domain.runtime import RuntimeMode
 from envctl.domain.selection import ContractSelection, group_selection
 from envctl.errors import (
@@ -18,14 +26,6 @@ from envctl.errors import (
     ProjectDetectionError,
     StateError,
     ValidationError,
-)
-from envctl.services.error_diagnostics import (
-    ConfigDiagnostics,
-    ContractDiagnostics,
-    ProjectBindingDiagnostics,
-    ProjectionValidationDiagnostics,
-    RepositoryDiscoveryDiagnostics,
-    StateDiagnostics,
 )
 from tests.support.builders import make_resolution_report
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typer
 
-from envctl.services.error_diagnostics import StateDiagnostics
+from envctl.domain.error_diagnostics import StateDiagnostics
 
 
 def render_state_error(

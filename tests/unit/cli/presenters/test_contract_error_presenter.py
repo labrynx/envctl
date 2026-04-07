@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from envctl.cli.presenters.contract_error_presenter import render_contract_error
-from envctl.services.error_diagnostics import ContractDiagnosticIssue, ContractDiagnostics
+from envctl.domain.error_diagnostics import ContractDiagnosticIssue, ContractDiagnostics
 
 
 def test_render_contract_error_renders_summary_facts_and_next_steps(

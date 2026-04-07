@@ -7,6 +7,7 @@ from pathlib import Path
 from envctl.adapters.git import get_local_git_config, get_repo_remote, resolve_repo_root
 from envctl.constants import DEFAULT_STATE_FILENAME, GIT_CONFIG_PROJECT_ID_KEY
 from envctl.domain.app_config import AppConfig
+from envctl.domain.error_diagnostics import ProjectBindingDiagnostics
 from envctl.domain.project import ProjectContext
 from envctl.errors import ContractError, ProjectDetectionError
 from envctl.repository.contract_discovery import discover_root_contract_path
@@ -16,7 +17,6 @@ from envctl.repository.project_context.discovery import find_vault_dir_by_projec
 from envctl.repository.project_context.identity import build_provisional_project_id
 from envctl.repository.project_context.recovery import recover_context
 from envctl.repository.state_repository import read_state
-from envctl.services.error_diagnostics import ProjectBindingDiagnostics
 from envctl.utils.project_ids import is_valid_project_id
 from envctl.utils.project_names import resolve_project_name
 

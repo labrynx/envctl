@@ -7,8 +7,8 @@ from pathlib import Path
 
 from envctl.constants import LEGACY_CONTRACT_FILENAME, PRIMARY_CONTRACT_FILENAME
 from envctl.domain.diagnostics import CommandWarning
+from envctl.domain.error_diagnostics import ContractDiagnostics
 from envctl.errors import ContractError
-from envctl.services.error_diagnostics import ContractDiagnostics
 
 
 @dataclass(frozen=True)

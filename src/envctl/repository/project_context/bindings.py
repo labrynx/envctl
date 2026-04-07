@@ -10,10 +10,10 @@ from envctl.constants import (
     GIT_CONFIG_PROJECT_ID_KEY,
 )
 from envctl.domain.app_config import AppConfig
+from envctl.domain.error_diagnostics import StateDiagnostics
 from envctl.domain.project import ProjectContext
 from envctl.errors import StateError
 from envctl.repository.state_repository import upsert_state
-from envctl.services.error_diagnostics import StateDiagnostics
 from envctl.utils.filesystem import ensure_dir
 from envctl.utils.project_ids import is_valid_project_id
 from envctl.utils.project_paths import build_vault_project_dir
