@@ -10,7 +10,7 @@ on:
       - main
 
 concurrency:
-  group: ci-coverage-${{ github.ref }}
+  group: ci-coverage-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -38,10 +38,20 @@ jobs:
       - name: Run coverage with threshold
         run: make test-ci
 
+      - name: Verify coverage report exists
+        run: test -f coverage.xml
+
+      - name: Upload coverage XML artifact
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          if-no-files-found: ignore
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
           fail_ci_if_error: true
-          verbose: true
