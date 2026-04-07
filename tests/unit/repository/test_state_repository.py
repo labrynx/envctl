@@ -7,27 +7,26 @@ import pytest
 
 import envctl.repository.state_repository as state_repository
 from envctl.errors import StateError
-from envctl.repository.state_repository import read_state, upsert_state, write_state
 from tests.support.assertions import require_state_diagnostics
 
 
 def test_read_state_returns_none_when_file_is_missing(tmp_path: Path) -> None:
     path = tmp_path / "state.json"
 
-    assert read_state(path) is None
+    assert state_repository.read_state(path) is None
 
 
 def test_write_state_creates_valid_minimal_state(tmp_path: Path) -> None:
     path = tmp_path / "state.json"
 
-    write_state(
+    state_repository.write_state(
         path,
         project_slug="demo",
         project_id="prj_aaaaaaaaaaaaaaaa",
         repo_root="/tmp/demo",
     )
 
-    payload = read_state(path)
+    payload = state_repository.read_state(path)
     assert payload is not None
     assert payload["project_slug"] == "demo"
     assert payload["project_key"] == "demo"
@@ -39,16 +38,16 @@ def test_write_state_creates_valid_minimal_state(tmp_path: Path) -> None:
 def test_upsert_state_preserves_created_at_and_updates_last_seen(tmp_path: Path) -> None:
     path = tmp_path / "state.json"
 
-    write_state(
+    state_repository.write_state(
         path,
         project_slug="demo",
         project_id="prj_aaaaaaaaaaaaaaaa",
         repo_root="/tmp/demo",
     )
-    previous = read_state(path)
+    previous = state_repository.read_state(path)
     assert previous is not None
 
-    upsert_state(
+    state_repository.upsert_state(
         path,
         project_slug="demo",
         project_key="demo",
@@ -57,7 +56,7 @@ def test_upsert_state_preserves_created_at_and_updates_last_seen(tmp_path: Path)
         git_remote="git@github.com:labrynx/envctl.git",
     )
 
-    updated = read_state(path)
+    updated = state_repository.read_state(path)
     assert updated is not None
     assert updated["created_at"] == previous["created_at"]
     assert updated["git_remote"] == "git@github.com:labrynx/envctl.git"
@@ -69,7 +68,7 @@ def test_read_state_raises_on_invalid_json(tmp_path: Path) -> None:
     path.write_text("{not-json", encoding="utf-8")
 
     with pytest.raises(StateError, match=r"State file is corrupted") as exc_info:
-        read_state(path)
+        state_repository.read_state(path)
 
     diagnostics = require_state_diagnostics(exc_info.value.diagnostics)
     assert diagnostics is not None
@@ -82,7 +81,7 @@ def test_read_state_raises_on_invalid_shape(tmp_path: Path) -> None:
     path.write_text("[]", encoding="utf-8")
 
     with pytest.raises(StateError, match=r"State file must contain a JSON object") as exc_info:
-        read_state(path)
+        state_repository.read_state(path)
 
     diagnostics = require_state_diagnostics(exc_info.value.diagnostics)
     assert diagnostics is not None
@@ -103,7 +102,7 @@ def test_read_state_raises_when_file_cannot_be_read(
     monkeypatch.setattr(state_repository.Path, "read_text", broken_read_text)
 
     with pytest.raises(StateError, match=r"Unable to read state file") as exc_info:
-        read_state(path)
+        state_repository.read_state(path)
 
     diagnostics = require_state_diagnostics(exc_info.value.diagnostics)
     assert diagnostics is not None
@@ -117,7 +116,7 @@ def test_read_state_raises_on_unsupported_state_version_with_structured_diagnost
     path.write_text('{"version": 999}', encoding="utf-8")
 
     with pytest.raises(StateError, match=r"Unsupported state version") as exc_info:
-        read_state(path)
+        state_repository.read_state(path)
 
     diagnostics = require_state_diagnostics(exc_info.value.diagnostics)
     assert diagnostics is not None
@@ -133,7 +132,7 @@ def test_read_state_raises_when_required_field_is_missing(tmp_path: Path) -> Non
     )
 
     with pytest.raises(StateError, match=r"missing a valid project_id") as exc_info:
-        read_state(path)
+        state_repository.read_state(path)
 
     diagnostics = require_state_diagnostics(exc_info.value.diagnostics)
     assert diagnostics is not None
@@ -153,7 +152,7 @@ def test_read_state_raises_on_invalid_known_paths(tmp_path: Path) -> None:
     )
 
     with pytest.raises(StateError, match=r"invalid known_paths") as exc_info:
-        read_state(path)
+        state_repository.read_state(path)
 
     diagnostics = require_state_diagnostics(exc_info.value.diagnostics)
     assert diagnostics is not None

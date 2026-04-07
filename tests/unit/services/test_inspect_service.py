@@ -6,7 +6,6 @@ import envctl.services.inspect_service as inspect_service
 from envctl.domain.contract import ResolvedContractGraph
 from envctl.domain.selection import group_selection
 from envctl.repository.contract_composition import ResolvedContractBundle
-from envctl.services.inspect_service import run_inspect, run_inspect_key
 from tests.support.builders import make_resolution_report, make_resolved_value
 from tests.support.contexts import make_project_context
 from tests.support.contracts import make_contract, make_variable_spec
@@ -42,7 +41,7 @@ def test_run_inspect_returns_context_and_result(
         lambda _context, _contract, *, active_profile=None: report,
     )
 
-    resolved_context, result, warnings = run_inspect("staging")
+    resolved_context, result, warnings = inspect_service.run_inspect("staging")
 
     assert resolved_context is context
     assert result.active_profile == "staging"
@@ -89,7 +88,7 @@ def test_run_inspect_filters_report_by_group_selection(
         lambda _context, _contract, *, active_profile=None: report,
     )
 
-    _context, result, _warnings = run_inspect(
+    _context, result, _warnings = inspect_service.run_inspect(
         "staging",
         selection=group_selection("Application"),
     )
@@ -134,7 +133,7 @@ def test_run_inspect_key_returns_detailed_item(
         lambda _context, _contract, *, active_profile=None: report,
     )
 
-    _context, result, _warnings = run_inspect_key("APP_NAME", "staging")
+    _context, result, _warnings = inspect_service.run_inspect_key("APP_NAME", "staging")
 
     assert result.item.key == "APP_NAME"
     assert result.groups == ("Application",)

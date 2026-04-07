@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import importlib.metadata
 import sys
 from collections.abc import Callable
-from importlib.metadata import PackageNotFoundError
 from types import ModuleType
 
 import pytest
@@ -12,8 +12,6 @@ def reload_envctl_init(
     monkeypatch: pytest.MonkeyPatch,
     fake_version: Callable[[str], str],
 ) -> ModuleType:
-    import importlib.metadata
-
     monkeypatch.setattr(importlib.metadata, "version", fake_version)
 
     sys.modules.pop("envctl", None)
@@ -32,7 +30,7 @@ def test_package_init_uses_installed_version(monkeypatch: pytest.MonkeyPatch) ->
 
 def test_package_init_falls_back_to_dev_version(monkeypatch: pytest.MonkeyPatch) -> None:
     def raise_error(name: str) -> str:
-        raise PackageNotFoundError("version lookup failed")
+        raise importlib.metadata.PackageNotFoundError("version lookup failed")
 
     module = reload_envctl_init(monkeypatch, raise_error)
 

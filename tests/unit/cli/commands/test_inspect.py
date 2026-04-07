@@ -81,7 +81,7 @@ def test_inspect_command_renders_report(monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setattr(
         inspect_command_module,
         "get_contract_selection",
-        lambda: ContractSelection(),
+        ContractSelection,
     )
     monkeypatch.setattr(
         inspect_command_module,
@@ -142,7 +142,7 @@ def test_inspect_key_command_emits_json(monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setattr(
         inspect_command_module,
         "get_contract_selection",
-        lambda: ContractSelection(),
+        ContractSelection,
     )
     monkeypatch.setattr(inspect_command_module, "is_json_output", lambda: True)
     monkeypatch.setattr(
@@ -205,7 +205,7 @@ def test_inspect_key_json_includes_combined_warnings(
     monkeypatch.setattr(
         inspect_command_module,
         "get_contract_selection",
-        lambda: ContractSelection(),
+        ContractSelection,
     )
     monkeypatch.setattr(inspect_command_module, "is_json_output", lambda: True)
     monkeypatch.setattr(
