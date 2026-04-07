@@ -15,12 +15,12 @@ from envctl.domain.deprecations import (
     make_group_deprecation_warning,
     make_required_deprecation_warning,
 )
-from envctl.errors import ContractError
-from envctl.services.error_diagnostics import (
+from envctl.domain.error_diagnostics import (
     ContractDiagnosticCategory,
     ContractDiagnosticIssue,
     ContractDiagnostics,
 )
+from envctl.errors import ContractError
 from envctl.utils.atomic import write_text_atomic
 
 

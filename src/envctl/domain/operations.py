@@ -4,9 +4,20 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from envctl.vault_crypto import VaultFileState
+
+InitContractTemplate = Literal["example", "starter"] | None
+
+
+@dataclass(frozen=True)
+class InitResult:
+    """Outcome of project initialization."""
+
+    contract_created: bool
+    contract_template: InitContractTemplate = None
+    contract_skipped: bool = False
 
 
 @dataclass(frozen=True)

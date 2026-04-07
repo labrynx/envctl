@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from envctl.domain.contract import Contract
 from envctl.domain.deprecations import ContractDeprecationWarning
+from envctl.domain.error_diagnostics import (
+    ProjectionOperation,
+    ProjectionValidationDiagnostics,
+)
 from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport
 from envctl.domain.selection import ContractSelection
 from envctl.errors import ValidationError
 from envctl.repository.contract_composition import load_resolved_contract_bundle
 from envctl.services.contract_selection_service import filter_resolution_report
-from envctl.services.error_diagnostics import (
-    ProjectionOperation,
-    ProjectionValidationDiagnostics,
-)
 from envctl.services.resolution_service import resolve_environment
 
 

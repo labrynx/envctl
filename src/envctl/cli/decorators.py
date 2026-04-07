@@ -23,9 +23,7 @@ from envctl.cli.serializers import (
     serialize_error_diagnostics,
 )
 from envctl.config.loader import load_config
-from envctl.domain.runtime import RuntimeMode
-from envctl.errors import EnvctlError, ExecutionError
-from envctl.services.error_diagnostics import (
+from envctl.domain.error_diagnostics import (
     ConfigDiagnostics,
     ContractDiagnostics,
     ProjectBindingDiagnostics,
@@ -33,6 +31,8 @@ from envctl.services.error_diagnostics import (
     RepositoryDiscoveryDiagnostics,
     StateDiagnostics,
 )
+from envctl.domain.runtime import RuntimeMode
+from envctl.errors import EnvctlError, ExecutionError
 from envctl.utils.output import print_error
 
 

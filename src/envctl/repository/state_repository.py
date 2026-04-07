@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import Any
 
 from envctl.constants import STATE_VERSION
+from envctl.domain.error_diagnostics import StateDiagnostics
 from envctl.errors import StateError
-from envctl.services.error_diagnostics import StateDiagnostics
 from envctl.utils.atomic import write_json_atomic
 
 

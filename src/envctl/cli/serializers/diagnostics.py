@@ -9,7 +9,7 @@ from envctl.cli.serializers.resolution import (
     serialize_contract_selection,
     serialize_resolution_report,
 )
-from envctl.services.error_diagnostics import (
+from envctl.domain.error_diagnostics import (
     ConfigDiagnostics,
     ContractDiagnostics,
     ErrorDiagnostics,

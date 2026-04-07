@@ -11,9 +11,9 @@ from envctl.config.defaults import (
     get_default_vault_dir,
 )
 from envctl.constants import DEFAULT_PROFILE
+from envctl.domain.error_diagnostics import ConfigDiagnostics
 from envctl.domain.runtime import RuntimeMode
 from envctl.errors import ConfigError
-from envctl.services.error_diagnostics import ConfigDiagnostics
 from envctl.utils.atomic import write_json_atomic
 from envctl.utils.filesystem import ensure_dir
 from envctl.utils.tilde import to_tilde_path

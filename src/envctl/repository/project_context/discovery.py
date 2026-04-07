@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from envctl.domain.error_diagnostics import ProjectBindingDiagnostics
 from envctl.errors import ProjectDetectionError
-from envctl.services.error_diagnostics import ProjectBindingDiagnostics
 
 
 def find_vault_dir_by_project_id(projects_dir: Path, project_id: str) -> Path | None:

@@ -4,11 +4,11 @@ from pathlib import Path
 
 from envctl.constants import DEFAULT_STATE_FILENAME, GIT_CONFIG_PROJECT_ID_KEY
 from envctl.domain.app_config import AppConfig
+from envctl.domain.error_diagnostics import ProjectBindingDiagnostics
 from envctl.domain.project import ProjectContext
 from envctl.errors import ProjectDetectionError
 from envctl.repository.project_context.builders import build_context
 from envctl.repository.state_repository import read_state
-from envctl.services.error_diagnostics import ProjectBindingDiagnostics
 
 
 def iter_state_records(projects_dir: Path) -> list[tuple[Path, dict[str, object]]]:

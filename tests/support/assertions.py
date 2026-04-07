@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from envctl.errors import ValidationError
-from envctl.services.error_diagnostics import (
+from envctl.domain.error_diagnostics import (
     ConfigDiagnostics,
     ContractDiagnostics,
     ProjectBindingDiagnostics,
@@ -9,6 +8,7 @@ from envctl.services.error_diagnostics import (
     RepositoryDiscoveryDiagnostics,
     StateDiagnostics,
 )
+from envctl.errors import ValidationError
 
 
 def require_config_diagnostics(value: object) -> ConfigDiagnostics:

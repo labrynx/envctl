@@ -8,9 +8,9 @@ from pathlib import Path
 from envctl.constants import LEGACY_CONTRACT_FILENAME, PRIMARY_CONTRACT_FILENAME
 from envctl.domain.contract import Contract
 from envctl.domain.deprecations import ContractDeprecationWarning
+from envctl.domain.error_diagnostics import ContractDiagnosticIssue, ContractDiagnostics
 from envctl.errors import ContractError
 from envctl.repository.contract_repository import load_contract_with_warnings
-from envctl.services.error_diagnostics import ContractDiagnosticIssue, ContractDiagnostics
 
 
 @dataclass(frozen=True)

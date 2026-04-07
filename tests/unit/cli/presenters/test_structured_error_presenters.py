@@ -10,7 +10,7 @@ from envctl.cli.presenters.repository_error_presenter import (
     render_repository_discovery_error,
 )
 from envctl.cli.presenters.state_error_presenter import render_state_error
-from envctl.services.error_diagnostics import (
+from envctl.domain.error_diagnostics import (
     ConfigDiagnostics,
     ProjectBindingDiagnostics,
     RepositoryDiscoveryDiagnostics,

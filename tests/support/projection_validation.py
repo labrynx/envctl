@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from envctl.domain.error_diagnostics import ProjectionOperation, ProjectionValidationDiagnostics
 from envctl.domain.resolution import ResolutionReport
 from envctl.domain.selection import ContractSelection
 from envctl.errors import ValidationError
-from envctl.services.error_diagnostics import ProjectionOperation, ProjectionValidationDiagnostics
 
 
 def raise_projection_error(

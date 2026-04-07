@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Literal
 
 import yaml
@@ -11,6 +10,7 @@ from pydantic import ValidationError as PydanticValidationError
 from envctl.adapters.dotenv import load_env_file
 from envctl.constants import CONTRACT_VERSION, DEFAULT_ENV_EXAMPLE_FILENAME
 from envctl.domain.contract_inference import infer_spec
+from envctl.domain.operations import InitResult
 from envctl.domain.project import ConfirmFn, ProjectContext
 from envctl.repository.contract_repository import ensure_contract_metadata, load_contract_optional
 from envctl.services.context_service import load_project_context
@@ -19,16 +19,6 @@ from envctl.utils.filesystem import ensure_dir, ensure_file
 
 InitContractMode = Literal["ask", "example", "starter", "skip"]
 ResolvedInitContractMode = Literal["example", "starter", "skip"]
-InitContractTemplate = Literal["example", "starter"] | None
-
-
-@dataclass(frozen=True)
-class InitResult:
-    """Outcome of project initialization."""
-
-    contract_created: bool
-    contract_template: InitContractTemplate = None
-    contract_skipped: bool = False
 
 
 def run_init(

@@ -10,11 +10,11 @@ from envctl.domain.contract import Contract, ResolvedContractGraph, VariableSpec
 from envctl.domain.contract_sets import SetSpec
 from envctl.domain.deprecations import ContractDeprecationWarning
 from envctl.domain.diagnostics import CommandWarning
+from envctl.domain.error_diagnostics import ContractDiagnosticIssue, ContractDiagnostics
 from envctl.errors import ContractError
 from envctl.repository.contract_discovery import discover_root_contract_path
 from envctl.repository.contract_graph import resolve_contract_graph
 from envctl.services.contract_selection_service import resolve_variable_names_for_set
-from envctl.services.error_diagnostics import ContractDiagnosticIssue, ContractDiagnostics
 
 
 @dataclass(frozen=True)

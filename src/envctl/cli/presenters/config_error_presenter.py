@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typer
 
-from envctl.services.error_diagnostics import ConfigDiagnostics
+from envctl.domain.error_diagnostics import ConfigDiagnostics
 
 
 def render_config_error(

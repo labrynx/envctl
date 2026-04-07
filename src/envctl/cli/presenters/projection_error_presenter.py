@@ -5,7 +5,7 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.presenters.resolution_presenter import build_resolution_problem_lines
-from envctl.services.error_diagnostics import ProjectionValidationDiagnostics
+from envctl.domain.error_diagnostics import ProjectionValidationDiagnostics
 
 
 def render_projection_validation_failure(
