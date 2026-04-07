@@ -2,8 +2,12 @@
 root_package = envctl
 exclude_type_checking_imports = True
 
+# ==============================================================
+# Core architecture boundaries
+# ==============================================================
+
 [importlinter:contract:no_cli_outside_cli]
-name = Only CLI may import CLI
+name = Only CLI packages may import CLI
 type = forbidden
 source_modules =
     envctl.adapters
@@ -15,7 +19,7 @@ source_modules =
 forbidden_modules =
     envctl.cli
 
-[importlinter:contract:domain_isolation]
+[importlinter:contract:domain_must_be_pure]
 name = Domain must not depend on outer layers
 type = forbidden
 source_modules =
@@ -24,7 +28,7 @@ forbidden_modules =
     envctl.cli
     envctl.services
     envctl.repository
-    envctl.config
+    envctl.adapters
 
 [importlinter:contract:services_do_not_import_cli]
 name = Services must not import CLI
@@ -42,14 +46,58 @@ source_modules =
 forbidden_modules =
     envctl.cli
 
-[importlinter:contract:utils_do_not_import_high_layers]
-name = Utils must not depend on higher-level packages
+[importlinter:contract:adapters_do_not_import_cli]
+name = Adapters must not import CLI
+type = forbidden
+source_modules =
+    envctl.adapters
+forbidden_modules =
+    envctl.cli
+
+# ==============================================================
+# Low-level utility discipline
+# ==============================================================
+
+[importlinter:contract:utils_do_not_import_cli]
+name = Utils must not depend on CLI
 type = forbidden
 source_modules =
     envctl.utils
 forbidden_modules =
     envctl.cli
+
+[importlinter:contract:utils_do_not_import_services]
+name = Utils must not depend on services
+type = forbidden
+source_modules =
+    envctl.utils
+forbidden_modules =
     envctl.services
+
+[importlinter:contract:utils_do_not_import_repository]
+name = Utils must not depend on repository
+type = forbidden
+source_modules =
+    envctl.utils
+forbidden_modules =
     envctl.repository
-    envctl.config
-    envctl.adapters
+
+# ==============================================================
+# CLI internal structure
+# ==============================================================
+
+[importlinter:contract:presenters_do_not_import_services]
+name = Presenters must not import services
+type = forbidden
+source_modules =
+    envctl.cli.presenters
+forbidden_modules =
+    envctl.services
+
+[importlinter:contract:serializers_do_not_import_services]
+name = Serializers must not import services
+type = forbidden
+source_modules =
+    envctl.cli.serializers
+forbidden_modules =
+    envctl.services

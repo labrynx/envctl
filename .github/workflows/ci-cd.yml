@@ -90,6 +90,29 @@ jobs:
       - name: Run mypy
         run: make typecheck
 
+  imports:
+    name: Architecture contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+
+      - name: Run imports check
+        run: make imports
+
   tests:
     name: Tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
@@ -98,6 +121,7 @@ jobs:
       - lint
       - bandit
       - typecheck
+      - imports
 
     strategy:
       fail-fast: true
@@ -131,6 +155,7 @@ jobs:
       - lint
       - bandit
       - typecheck
+      - imports
 
     steps:
       - name: Checkout code
