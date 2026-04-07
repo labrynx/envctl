@@ -13,7 +13,10 @@ from envctl.errors import ExecutionError
 from envctl.services.context_service import load_project_context
 from envctl.services.contract_selection_service import filter_projection_values
 from envctl.services.projection_validation import resolve_projectable_environment
+from envctl.utils.logging import get_logger, sanitize_command_for_log, summarize_keys
 from envctl.utils.project_paths import normalize_profile_name
+
+logger = get_logger(__name__)
 
 
 def _build_child_env(resolved_values: dict[str, str]) -> dict[str, str]:
@@ -93,7 +96,16 @@ def run_command(
 ) -> tuple[ProjectContext, RunCommandResult, tuple[ContractDeprecationWarning, ...]]:
     """Run one command with the resolved environment injected."""
     if not command:
+        logger.error("Refusing to run an empty command")
         raise ExecutionError("No command provided")
+
+    logger.debug(
+        "Starting run command",
+        extra={
+            "command": sanitize_command_for_log(command),
+            "selection": selection.describe() if selection is not None else "full contract",
+        },
+    )
 
     _config, context = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
@@ -111,6 +123,15 @@ def run_command(
         selection=selection,
     )
 
+    logger.debug(
+        "Resolved environment for child process",
+        extra={
+            "active_profile": resolved_profile,
+            "resolved_key_count": len(resolved_values),
+            "resolved_keys": summarize_keys(sorted(resolved_values)),
+        },
+    )
+
     try:
         # Intentional: envctl run executes a user-requested command.
         completed = subprocess.run(  # nosec  # noqa: S603
@@ -119,14 +140,41 @@ def run_command(
             env=_build_child_env(resolved_values),
         )
     except OSError as exc:
+        logger.error(
+            "Failed to launch child process",
+            extra={
+                "command": sanitize_command_for_log(command),
+                "active_profile": resolved_profile,
+                "error": str(exc),
+            },
+        )
         raise ExecutionError(f"Failed to launch child process: {command[0]}") from exc
+
+    docker_warnings = _build_docker_warning(command)
+    if docker_warnings:
+        logger.warning(
+            "Run command produced docker environment handoff warning",
+            extra={
+                "command": sanitize_command_for_log(command),
+                "warning_count": len(docker_warnings),
+            },
+        )
+
+    logger.debug(
+        "Child process finished",
+        extra={
+            "command": sanitize_command_for_log(command),
+            "active_profile": resolved_profile,
+            "exit_code": completed.returncode,
+        },
+    )
 
     return (
         context,
         RunCommandResult(
             active_profile=resolved_profile,
             exit_code=completed.returncode,
-            warnings=_build_docker_warning(command),
+            warnings=docker_warnings,
         ),
         warnings,
     )

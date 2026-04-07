@@ -326,6 +326,72 @@ def test_run_command_skips_warning_for_explicit_env_file_handoff(
     assert result.warnings == ()
 
 
+def test_run_command_logs_warning_for_docker_handoff(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    _patch_valid_run_dependencies(monkeypatch)
+
+    monkeypatch.setattr(
+        "envctl.services.run_service.subprocess.run",
+        lambda command, check=False, env=None: CompletedProcess(
+            args=command,
+            returncode=0,
+        ),
+    )
+
+    caplog.set_level("WARNING")
+
+    run_service.run_command(["docker", "run", "aria-eventd:dev"], "dev")
+
+    assert any(
+        record.name == "envctl.services.run_service"
+        and record.levelname == "WARNING"
+        and record.message == "Run command produced docker environment handoff warning"
+        and getattr(record, "warning_count", None) == 1
+        for record in caplog.records
+    )
+
+
+def test_run_command_logs_sanitized_error_context(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    _patch_valid_run_dependencies(monkeypatch)
+
+    def fake_run(
+        command: list[str],
+        check: bool = False,
+        env: dict[str, str] | None = None,
+    ) -> CompletedProcess[str]:
+        raise OSError("boom")
+
+    monkeypatch.setattr("envctl.services.run_service.subprocess.run", fake_run)
+    caplog.set_level("ERROR")
+
+    with pytest.raises(ExecutionError, match=r"Failed to launch child process: docker"):
+        run_service.run_command(
+            ["docker", "run", "API_KEY=supersecret", "aria-eventd:dev"],
+            "dev",
+        )
+
+    matching = [
+        record
+        for record in caplog.records
+        if record.name == "envctl.services.run_service"
+        and record.levelname == "ERROR"
+        and record.message == "Failed to launch child process"
+    ]
+    assert matching
+    logged_command = getattr(matching[0], "command", ())
+    assert logged_command == (
+        "docker",
+        "run",
+        "API_KEY=su*********",
+        "aria-eventd:dev",
+    )
+
+
 def test_run_command_does_not_emit_warning_for_non_docker_command(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

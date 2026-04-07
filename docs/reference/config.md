@@ -102,3 +102,19 @@ The config does **not**:
 * define local values
 
 Those concerns live elsewhere in the model.
+
+## Debug logging
+
+`envctl` also supports one runtime-only environment variable for internal tracing:
+
+```bash
+ENVCTL_LOG_LEVEL=DEBUG envctl check
+```
+
+Supported values:
+
+* `DEBUG`
+* `WARNING`
+* `ERROR`
+
+This is not a config-file key. It is intentionally runtime-only, so you can enable tracing for one command without changing your normal machine defaults.

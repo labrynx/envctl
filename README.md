@@ -117,6 +117,28 @@ envctl profile list
 envctl profile create staging
 ```
 
+## Debugging internal behavior
+
+`envctl` keeps user-facing output separate from internal debug tracing.
+
+When you need to understand how config, profiles, resolution, or `run` behaved internally, enable debug logs explicitly:
+
+```bash
+ENVCTL_LOG_LEVEL=DEBUG envctl check
+ENVCTL_LOG_LEVEL=DEBUG envctl inspect DATABASE_URL
+ENVCTL_LOG_LEVEL=DEBUG envctl run -- python app.py
+```
+
+Supported values are:
+
+- `DEBUG`
+- `WARNING`
+- `ERROR`
+
+If the variable is unset or invalid, `envctl` falls back to `WARNING`.
+
+Sensitive values stay masked in logs.
+
 ---
 
 ## When envctl is a good fit

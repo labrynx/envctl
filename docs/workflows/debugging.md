@@ -106,3 +106,26 @@ A good mental shortcut is:
 * `vault show` → stored values
 
 If you keep that distinction in mind, debugging gets much easier.
+
+## Internal debug logs
+
+When command output is not enough and you need to see what `envctl` is doing internally, enable debug logging explicitly:
+
+```bash
+ENVCTL_LOG_LEVEL=DEBUG envctl check
+ENVCTL_LOG_LEVEL=DEBUG envctl inspect KEY
+ENVCTL_LOG_LEVEL=DEBUG envctl run -- python app.py
+```
+
+Supported levels are `DEBUG`, `WARNING`, and `ERROR`. If the variable is missing or invalid, `envctl` falls back to `WARNING`.
+
+These logs are meant for implementation tracing such as:
+
+* config loading
+* project-context construction
+* contract discovery and composition
+* profile reads and writes
+* environment resolution and projection validation
+* child-process execution for `run`
+
+Sensitive values stay masked, so the logs are useful for debugging without dumping secrets in clear text.
