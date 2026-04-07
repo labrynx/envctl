@@ -10,6 +10,11 @@ from envctl.cli.commands.status import status_command
 from envctl.domain.status import StatusReport
 
 
+def normalize_path_str(value: str) -> str:
+    """Normalize serialized path values for cross-platform assertions."""
+    return value.replace("\\", "/")
+
+
 def test_status_command_renders_status_report(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -98,7 +103,7 @@ def test_status_command_emits_json_when_requested(
     assert payload["data"]["active_profile"] == "staging"
     assert payload["data"]["project_slug"] == "demo"
     assert payload["data"]["project_id"] == "prj_aaaaaaaaaaaaaaaa"
-    assert payload["data"]["repo_root"] == "/tmp/demo"
+    assert normalize_path_str(payload["data"]["repo_root"]) == "/tmp/demo"
     assert payload["data"]["contract_exists"] is True
     assert payload["data"]["vault_exists"] is False
     assert payload["data"]["resolved_valid"] is False
