@@ -171,6 +171,12 @@ def render_init_result(
     elif init_result.contract_skipped:
         print_warning("No contract file was created")
 
+    print_kv("git_guard_installed", "yes" if init_result.git_guard_installed else "no")
+    if init_result.git_guard_reason:
+        print_warning(init_result.git_guard_reason)
+    for warning in init_result.runtime_warnings:
+        print_warning(warning)
+
 
 def render_remove_result(
     *,
