@@ -9,7 +9,7 @@ on:
       - "v*"
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -44,6 +44,12 @@ jobs:
 
       - name: Build package
         run: python -m build
+
+      - name: Verify distribution contents
+        run: |
+          ls -la dist
+          test -n "$(find dist -maxdepth 1 -type f -name '*.whl')"
+          test -n "$(find dist -maxdepth 1 -type f -name '*.tar.gz')"
 
       - name: Check package metadata
         run: python -m twine check dist/*
@@ -88,6 +94,7 @@ jobs:
           ./.release-venv/bin/python -m pip install --upgrade pip
           ./.release-venv/bin/python -m pip install dist/*.whl
           ./.release-venv/bin/envctl --version
+          ./.release-venv/bin/python -m envctl --version
 
       - name: Install wheel and verify CLI (Windows)
         if: runner.os == 'Windows'
@@ -96,6 +103,7 @@ jobs:
           .\.release-venv\Scripts\python.exe -m pip install --upgrade pip
           .\.release-venv\Scripts\python.exe -m pip install dist\*.whl
           .\.release-venv\Scripts\envctl.exe --version
+          .\.release-venv\Scripts\python.exe -m envctl --version
 
   publish:
     name: Publish to PyPI
@@ -108,6 +116,9 @@ jobs:
       id-token: write
       contents: read
 
+    environment: 
+      name: pypi
+
     steps:
       - name: Download distribution artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
@@ -118,7 +129,7 @@ jobs:
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e
 
-  github_release:
+  github-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     timeout-minutes: 15
