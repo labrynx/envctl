@@ -37,18 +37,25 @@ def _docker_run_args(command: list[str]) -> list[str] | None:
     return None
 
 
-def _has_explicit_docker_env_forwarding(args: list[str]) -> bool:
-    """Return whether docker run explicitly forwards env vars to the container."""
+def _has_docker_env_file_handoff(args: list[str]) -> bool:
+    """Return whether docker run uses an explicit env-file handoff."""
     for arg in args:
         if arg == "--env-file":
             return True
         if arg.startswith("--env-file="):
             return True
-        if arg in ("-e", "--env"):
+    return False
+
+
+def _has_explicit_docker_env_forwarding(args: list[str]) -> bool:
+    """Return whether docker run explicitly forwards env vars to the container."""
+    for arg in args:
+        if arg in ("-e", "--env", "--env-file"):
             return True
         if arg.startswith("--env="):
             return True
-
+        if arg.startswith("--env-file="):
+            return True
     return False
 
 
@@ -58,7 +65,7 @@ def _build_docker_warning(command: list[str]) -> tuple[str, ...]:
     if docker_args is None:
         return ()
 
-    if "--env-file" in docker_args or any(token.startswith("--env-file=") for token in docker_args):
+    if _has_docker_env_file_handoff(docker_args):
         return ()
 
     if _has_explicit_docker_env_forwarding(docker_args):
