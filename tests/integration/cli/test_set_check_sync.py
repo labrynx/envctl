@@ -192,17 +192,35 @@ def test_status_failure_explains_ambiguous_vault_identity(
     second = vault_projects_dir / "demo-b--prj_2222222222222222"
     first.mkdir(parents=True, exist_ok=True)
     second.mkdir(parents=True, exist_ok=True)
-    payload = (
-        '{"version":2,"project_slug":"demo","project_key":"demo","project_id":"%s",'
-        '"repo_root":"%s","git_remote":"git@github.com:labrynx/envctl.git",'
-        '"known_paths":[],"created_at":"2026-03-30T00:00:00Z","last_seen_at":"2026-03-30T00:00:00Z"}'
-    )
+    first_payload = {
+        "version": 2,
+        "project_slug": "demo",
+        "project_key": "demo",
+        "project_id": "prj_1111111111111111",
+        "repo_root": str(workspace),
+        "git_remote": "git@github.com:labrynx/envctl.git",
+        "known_paths": [],
+        "created_at": "2026-03-30T00:00:00Z",
+        "last_seen_at": "2026-03-30T00:00:00Z",
+    }
+    second_payload = {
+        "version": 2,
+        "project_slug": "demo",
+        "project_key": "demo",
+        "project_id": "prj_2222222222222222",
+        "repo_root": str(workspace),
+        "git_remote": "git@github.com:labrynx/envctl.git",
+        "known_paths": [],
+        "created_at": "2026-03-30T00:00:00Z",
+        "last_seen_at": "2026-03-30T00:00:00Z",
+    }
+
     (first / "state.json").write_text(
-        payload % ("prj_1111111111111111", str(workspace)),
+        json.dumps(first_payload),
         encoding="utf-8",
     )
     (second / "state.json").write_text(
-        payload % ("prj_2222222222222222", str(workspace)),
+        json.dumps(second_payload),
         encoding="utf-8",
     )
 
