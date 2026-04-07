@@ -7,7 +7,7 @@ import pytest
 
 import envctl.services.run_service as run_service
 from envctl.domain.selection import group_selection
-from envctl.errors import ValidationError
+from envctl.errors import ExecutionError, ValidationError
 from tests.support.builders import make_resolution_report, make_resolved_value
 from tests.support.contexts import make_project_context
 from tests.support.contracts import make_contract, make_variable_spec
@@ -201,3 +201,148 @@ def test_run_command_injects_only_selected_group_values(
     assert isinstance(env, dict)
     assert env["APP_NAME"] == "demo"
     assert "DATABASE_URL" not in env or env["DATABASE_URL"] != "https://db.example.com"
+
+
+def _patch_valid_run_dependencies(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[Any, Any]:
+    context = make_project_context()
+    contract = make_contract({"APP_NAME": make_variable_spec(name="APP_NAME")})
+    report = make_resolution_report(
+        values={
+            "APP_NAME": make_resolved_value(
+                key="APP_NAME",
+                value="demo",
+                source="profile",
+            )
+        }
+    )
+
+    monkeypatch.setattr(run_service, "load_project_context", lambda: (object(), context))
+    monkeypatch.setattr(
+        run_service,
+        "resolve_projectable_environment",
+        lambda _context, *, active_profile, selection, operation: (
+            contract,
+            report,
+            (),
+        ),
+    )
+
+    return context, contract
+
+
+def test_run_command_rejects_empty_command() -> None:
+    with pytest.raises(ExecutionError, match="No command provided"):
+        run_service.run_command([])
+
+
+def test_run_command_wraps_os_error_from_subprocess(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_valid_run_dependencies(monkeypatch)
+
+    def fake_run(
+        command: list[str],
+        check: bool = False,
+        env: dict[str, str] | None = None,
+    ) -> CompletedProcess[str]:
+        raise OSError("boom")
+
+    monkeypatch.setattr(run_service.subprocess, "run", fake_run)
+
+    with pytest.raises(ExecutionError, match=r"Failed to launch child process: python3"):
+        run_service.run_command(["python3", "-V"], "dev")
+
+
+@pytest.mark.parametrize(
+    ("command", "expected_fragment"),
+    [
+        (
+            ["docker", "run", "-e", "APP_NAME=demo", "aria-eventd:dev"],
+            "Docker only injects variables into the container when they are forwarded explicitly",
+        ),
+        (
+            ["docker", "run", "--env", "APP_NAME=demo", "aria-eventd:dev"],
+            "Docker only injects variables into the container when they are forwarded explicitly",
+        ),
+        (
+            ["docker", "run", "--env=APP_NAME=demo", "aria-eventd:dev"],
+            "Docker only injects variables into the container when they are forwarded explicitly",
+        ),
+        (
+            ["docker", "compose", "run", "app"],
+            "envctl injected the resolved environment into the host-side docker process",
+        ),
+        (
+            ["docker", "container", "run", "app"],
+            "envctl injected the resolved environment into the host-side docker process",
+        ),
+    ],
+)
+def test_run_command_emits_expected_docker_warning_shapes(
+    monkeypatch: pytest.MonkeyPatch,
+    command: list[str],
+    expected_fragment: str,
+) -> None:
+    _patch_valid_run_dependencies(monkeypatch)
+
+    monkeypatch.setattr(
+        run_service.subprocess,
+        "run",
+        lambda command, check=False, env=None: CompletedProcess(
+            args=command,
+            returncode=0,
+        ),
+    )
+
+    _context, result, _warnings = run_service.run_command(command, "dev")
+
+    assert result.warnings
+    assert expected_fragment in result.warnings[0]
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        ["docker", "run", "--env-file", ".env", "aria-eventd:dev"],
+        ["docker", "run", "--env-file=.env", "aria-eventd:dev"],
+    ],
+)
+def test_run_command_skips_warning_for_explicit_env_file_handoff(
+    monkeypatch: pytest.MonkeyPatch,
+    command: list[str],
+) -> None:
+    _patch_valid_run_dependencies(monkeypatch)
+
+    monkeypatch.setattr(
+        run_service.subprocess,
+        "run",
+        lambda command, check=False, env=None: CompletedProcess(
+            args=command,
+            returncode=0,
+        ),
+    )
+
+    _context, result, _warnings = run_service.run_command(command, "dev")
+
+    assert result.warnings == ()
+
+
+def test_run_command_does_not_emit_warning_for_non_docker_command(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_valid_run_dependencies(monkeypatch)
+
+    monkeypatch.setattr(
+        run_service.subprocess,
+        "run",
+        lambda command, check=False, env=None: CompletedProcess(
+            args=command,
+            returncode=0,
+        ),
+    )
+
+    _context, result, _warnings = run_service.run_command(["python3", "-V"], "dev")
+
+    assert result.warnings == ()
