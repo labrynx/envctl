@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import NoReturn
 
@@ -38,6 +39,10 @@ def test_ensure_file_does_not_overwrite_existing_file(tmp_path: Path) -> None:
     assert target.read_text(encoding="utf-8") == "original"
 
 
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="POSIX permission bits are not reliable on Windows",
+)
 def test_is_world_writable_returns_true_when_other_write_bit_is_set(tmp_path: Path) -> None:
     target = tmp_path / "file.txt"
     target.write_text("x", encoding="utf-8")
@@ -46,6 +51,10 @@ def test_is_world_writable_returns_true_when_other_write_bit_is_set(tmp_path: Pa
     assert filesystem_utils.is_world_writable(target) is True
 
 
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="POSIX permission bits are not reliable on Windows",
+)
 def test_is_world_writable_returns_false_when_other_write_bit_is_not_set(tmp_path: Path) -> None:
     target = tmp_path / "file.txt"
     target.write_text("x", encoding="utf-8")

@@ -9,6 +9,11 @@ from tests.support.contexts import make_project_context
 from tests.support.contracts import make_standard_contract
 
 
+def normalize_path_str(value: object) -> str:
+    """Normalize path-like values for cross-platform assertions."""
+    return str(value).replace("\\", "/")
+
+
 def test_run_vault_path_returns_explicit_profile_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -207,5 +212,5 @@ def test_run_vault_edit_uses_active_profile_path(
     _context, result = vault_service.run_vault_edit("staging")
 
     assert result.profile == "staging"
-    assert str(result.path).endswith("/profiles/staging.env")
+    assert normalize_path_str(result.path).endswith("/profiles/staging.env")
     assert opened["path"] == str(result.path)

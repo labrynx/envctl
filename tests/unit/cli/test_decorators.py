@@ -30,6 +30,11 @@ from envctl.errors import (
 from tests.support.builders import make_resolution_report
 
 
+def normalize_path_str(value: str) -> str:
+    """Normalize path separators in serialized output."""
+    return value.replace("\\", "/")
+
+
 def test_handle_errors_returns_wrapped_result() -> None:
     @handle_errors
     def sample(value: int) -> int:
@@ -240,14 +245,13 @@ def test_handle_errors_emits_contract_details_in_json_when_present(
         sample()
 
     payload = cast(dict[str, Any], captured["payload"])
-    assert payload["error"]["details"] == {
-        "category": "invalid_yaml",
-        "path": "/tmp/demo/.envctl.yaml",
-        "key": None,
-        "field": None,
-        "issues": [],
-        "suggested_actions": ["envctl check", "fix .envctl.yaml"],
-    }
+    details = cast(dict[str, Any], payload["error"]["details"])
+    assert details["category"] == "invalid_yaml"
+    assert normalize_path_str(details["path"]) == "/tmp/demo/.envctl.yaml"
+    assert details["key"] is None
+    assert details["field"] is None
+    assert details["issues"] == []
+    assert details["suggested_actions"] == ["envctl check", "fix .envctl.yaml"]
 
 
 def test_emit_handled_error_renders_other_structured_families(

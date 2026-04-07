@@ -7,6 +7,11 @@ from envctl.errors import ExecutionError, ValidationError
 from tests.support.contexts import make_project_context
 
 
+def normalize_path_str(value: object) -> str:
+    """Normalize path-like values for cross-platform assertions."""
+    return str(value).replace("\\", "/")
+
+
 def test_run_profile_list_includes_local_and_explicit_profiles(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -64,7 +69,7 @@ def test_run_profile_create_creates_missing_profile(
 
     assert result.profile == "dev"
     assert result.created is True
-    assert str(written["path"]).endswith("/profiles/dev.env")
+    assert normalize_path_str(written["path"]).endswith("/profiles/dev.env")
     assert written["values"] == {}
 
 

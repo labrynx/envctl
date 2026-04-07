@@ -22,8 +22,12 @@ def _git(repo_root: Path, *args: str) -> None:
 
 def _write_sample_contract(repo_root: Path) -> None:
     (repo_root / ".envctl.yaml").write_text(
-        "version: 1\nvariables:\n  APP_NAME:\n    type: string\n"
-        "    required: true\n    sensitive: false\n",
+        "version: 1\n"
+        "variables:\n"
+        "  APP_NAME:\n"
+        "    type: string\n"
+        "    required: true\n"
+        "    sensitive: false\n",
         encoding="utf-8",
     )
 
@@ -33,16 +37,23 @@ def test_guard_secrets_fails_for_staged_master_key(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
+
     home = tmp_path / "home"
-    home.mkdir()
+    home.mkdir(parents=True, exist_ok=True)
+
+    config_home = home / ".config"
+    config_home.mkdir(parents=True, exist_ok=True)
+
     monkeypatch.setenv("HOME", str(home))
-    monkeypatch.setenv("XDG_CONFIG_HOME", str(home / ".config"))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(config_home))
 
     repo = tmp_path / "repo"
-    repo.mkdir()
+    repo.mkdir(parents=True, exist_ok=True)
+
     _git(repo, "init")
     _git(repo, "config", "user.email", "test@example.com")
     _git(repo, "config", "user.name", "Test User")
+
     _write_sample_contract(repo)
 
     monkeypatch.chdir(repo)
@@ -55,11 +66,13 @@ def test_guard_secrets_fails_for_staged_master_key(
 
     leaked_path = repo / "renamed-secret.txt"
     leaked_path.write_bytes(serialize_master_key_v1(Fernet.generate_key()))
+
     _git(repo, "add", leaked_path.name)
 
     guard_result = runner.invoke(app, ["guard", "secrets"], catch_exceptions=False)
 
     assert guard_result.exit_code == 1
+
     combined_output = guard_result.stdout + guard_result.stderr
 
     assert "contains an envctl master key" in combined_output

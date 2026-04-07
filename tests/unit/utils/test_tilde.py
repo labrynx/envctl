@@ -7,6 +7,11 @@ import pytest
 import envctl.utils.tilde as tilde_utils
 
 
+def normalize_path_str(value: str) -> str:
+    """Normalize path separators for assertions."""
+    return value.replace("\\", "/")
+
+
 def test_to_tilde_path_uses_home_prefix(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -17,7 +22,7 @@ def test_to_tilde_path_uses_home_prefix(
 
     monkeypatch.setattr(Path, "home", lambda: home)
 
-    assert tilde_utils.to_tilde_path(target) == "~/.envctl/vault"
+    assert normalize_path_str(tilde_utils.to_tilde_path(target)) == "~/.envctl/vault"
 
 
 def test_to_tilde_path_returns_absolute_path_when_outside_home(
@@ -30,4 +35,6 @@ def test_to_tilde_path_returns_absolute_path_when_outside_home(
 
     monkeypatch.setattr(Path, "home", lambda: home)
 
-    assert tilde_utils.to_tilde_path(outside) == str(outside.resolve())
+    assert normalize_path_str(tilde_utils.to_tilde_path(outside)) == normalize_path_str(
+        str(outside.resolve())
+    )

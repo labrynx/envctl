@@ -1,19 +1,16 @@
-"""Detect staged envctl secrets before they reach Git history."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
 
 from envctl.adapters.git import is_git_repository, list_staged_paths, read_staged_file
-from envctl.constants import MASTER_KEY_FORMAT_VERSION, VAULT_ENCRYPTION_FORMAT_VERSION
+from envctl.constants import VAULT_ENCRYPTION_FORMAT_VERSION
 from envctl.domain.project import ProjectContext
 from envctl.errors import ExecutionError
 from envctl.vault_crypto import MasterKeyMaterial, parse_master_key_material
 
 _MAX_INSPECTED_BYTES = 512 * 1024
 _VAULT_PREFIX = f"{VAULT_ENCRYPTION_FORMAT_VERSION}:".encode()
-_MASTER_KEY_PREFIX = f"{MASTER_KEY_FORMAT_VERSION}:".encode()
 
 
 @dataclass(frozen=True)
@@ -50,7 +47,11 @@ def run_git_secret_guard(context: ProjectContext) -> GitSecretGuardResult:
     for path in staged_paths:
         payload = read_staged_file(context.repo_root, path)
         findings.extend(
-            _scan_staged_payload(path, payload, legacy_key_material=legacy_key_material)
+            _scan_staged_payload(
+                path,
+                payload,
+                legacy_key_material=legacy_key_material,
+            )
         )
 
     return GitSecretGuardResult(scanned_paths=staged_paths, findings=tuple(findings))
@@ -76,6 +77,7 @@ def _scan_staged_payload(
 ) -> list[GitSecretFinding]:
     findings: list[GitSecretFinding] = []
     sample = payload[:_MAX_INSPECTED_BYTES]
+    stripped_sample = sample.strip()
 
     if sample.startswith(_VAULT_PREFIX):
         findings.append(
@@ -87,27 +89,53 @@ def _scan_staged_payload(
             )
         )
 
-    if sample.startswith(_MASTER_KEY_PREFIX):
-        findings.append(
-            GitSecretFinding(
-                path=path,
-                kind="master_key",
-                message="Staged content contains an envctl master key in canonical format.",
-                actions=_build_actions(path, rotate_hint=True),
-            )
-        )
-
-    if legacy_key_material is not None and sample.strip() == legacy_key_material.key_bytes:
-        findings.append(
-            GitSecretFinding(
-                path=path,
-                kind="legacy_master_key",
-                message="Staged content matches the current project's legacy envctl master key.",
-                actions=_build_actions(path, rotate_hint=True),
-            )
-        )
+    master_key_finding = _detect_master_key_finding(
+        path=path,
+        sample=stripped_sample,
+        legacy_key_material=legacy_key_material,
+    )
+    if master_key_finding is not None:
+        findings.append(master_key_finding)
 
     return findings
+
+
+def _detect_master_key_finding(
+    *,
+    path: Path,
+    sample: bytes,
+    legacy_key_material: MasterKeyMaterial | None,
+) -> GitSecretFinding | None:
+    try:
+        material = parse_master_key_material(sample)
+    except ExecutionError:
+        material = None
+
+    if material is not None:
+        if material.is_legacy:
+            return GitSecretFinding(
+                path=path,
+                kind="legacy_master_key",
+                message="Staged content contains an envctl legacy master key.",
+                actions=_build_actions(path, rotate_hint=True),
+            )
+
+        return GitSecretFinding(
+            path=path,
+            kind="master_key",
+            message="Staged content contains an envctl master key.",
+            actions=_build_actions(path, rotate_hint=True),
+        )
+
+    if legacy_key_material is not None and sample == legacy_key_material.key_bytes:
+        return GitSecretFinding(
+            path=path,
+            kind="legacy_master_key",
+            message="Staged content matches the current project's legacy envctl master key.",
+            actions=_build_actions(path, rotate_hint=True),
+        )
+
+    return None
 
 
 def _build_actions(path: Path, *, rotate_hint: bool = False) -> tuple[str, ...]:

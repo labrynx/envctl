@@ -1,6 +1,7 @@
 # tests/unit/vault_crypto/test_vault_crypto.py
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,11 @@ from envctl.vault_crypto import (
 )
 
 
+def normalize_newlines(value: str) -> str:
+    """Normalize line endings for cross-platform assertions."""
+    return value.replace("\r\n", "\n")
+
+
 def test_load_or_create_generates_key_on_first_call(tmp_path: Path) -> None:
     key_path = tmp_path / "master.key"
 
@@ -26,6 +32,10 @@ def test_load_or_create_generates_key_on_first_call(tmp_path: Path) -> None:
     assert key_path.exists()
 
 
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="Windows does not preserve POSIX permission bits",
+)
 def test_load_or_create_key_has_restrictive_permissions(tmp_path: Path) -> None:
     key_path = tmp_path / "master.key"
 
@@ -35,6 +45,10 @@ def test_load_or_create_key_has_restrictive_permissions(tmp_path: Path) -> None:
     assert mode == 0o400
 
 
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="Windows file replacement semantics differ for protected files",
+)
 def test_load_or_create_refuses_to_replace_missing_key_when_encrypted_data_exists(
     tmp_path: Path,
 ) -> None:
@@ -126,7 +140,9 @@ def test_read_file_accepts_plaintext_during_migration(tmp_path: Path) -> None:
     values_path = tmp_path / "values.env"
     values_path.write_text("APP_NAME=demo\n", encoding="utf-8")
 
-    assert crypto.read_file(values_path, allow_plaintext=True) == "APP_NAME=demo\n"
+    assert (
+        normalize_newlines(crypto.read_file(values_path, allow_plaintext=True)) == "APP_NAME=demo\n"
+    )
 
 
 def test_write_encrypted_file_and_read_file_round_trip(tmp_path: Path) -> None:
@@ -140,6 +156,10 @@ def test_write_encrypted_file_and_read_file_round_trip(tmp_path: Path) -> None:
     assert crypto.read_file(values_path) == "APP_NAME=demo\nDEBUG=true\n"
 
 
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="Windows does not preserve POSIX permission bits",
+)
 def test_write_encrypted_file_permissions(tmp_path: Path) -> None:
     key_path = tmp_path / "master.key"
     crypto = VaultCrypto.load_or_create(key_path, protected_paths=())
