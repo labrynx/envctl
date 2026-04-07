@@ -42,4 +42,4 @@ jobs:
           python -m pip install -e ".[dev]"
 
       - name: Run tests
-        run: python -m pytest -q --maxfail=1
+        run: python -m pytest -q #--maxfail=1
