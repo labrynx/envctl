@@ -20,6 +20,11 @@ from envctl.cli.presenters.vault_presenter import (
 )
 
 
+def normalize_output(value: str) -> str:
+    """Normalize path separators in presenter output."""
+    return value.replace("\\", "/")
+
+
 def test_render_vault_check_result_when_file_is_missing(capsys: pytest.CaptureFixture[str]) -> None:
     render_vault_check_result(
         profile="local",
@@ -31,7 +36,7 @@ def test_render_vault_check_result_when_file_is_missing(capsys: pytest.CaptureFi
         state="missing",
         detail="Vault file does not exist.",
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[WARN] Vault file does not exist" in captured
     assert "profile: local" in captured
@@ -51,9 +56,10 @@ def test_render_vault_check_result_when_file_is_plaintext(
         state="plaintext",
         detail="Run 'envctl vault encrypt' to migrate it.",
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[WARN] Vault file is plaintext" in captured
+    assert "vault_values: /tmp/demo/prod.env" in captured
     assert "state: plaintext" in captured
     assert "detail: Run 'envctl vault encrypt' to migrate it." in captured
 
@@ -69,9 +75,10 @@ def test_render_vault_check_result_when_file_is_valid(capsys: pytest.CaptureFixt
         state="encrypted",
         detail="Vault file is encrypted and readable.",
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[OK] Vault file is encrypted and readable" in captured
+    assert "vault_values: /tmp/demo/prod.env" in captured
     assert "private_permissions: yes" in captured
 
 
@@ -81,10 +88,11 @@ def test_render_vault_edit_result_created(capsys: pytest.CaptureFixture[str]) ->
         path=Path("/tmp/demo/staging.env"),
         created=True,
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[OK] Created and opened profile 'staging' vault file" in captured
     assert "profile: staging" in captured
+    assert "vault_values: /tmp/demo/staging.env" in captured
 
 
 def test_render_vault_edit_result_open_existing(capsys: pytest.CaptureFixture[str]) -> None:
@@ -93,9 +101,10 @@ def test_render_vault_edit_result_open_existing(capsys: pytest.CaptureFixture[st
         path=Path("/tmp/demo/staging.env"),
         created=False,
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[OK] Opened profile 'staging' vault file" in captured
+    assert "vault_values: /tmp/demo/staging.env" in captured
 
 
 def test_render_vault_path_result(capsys: pytest.CaptureFixture[str]) -> None:
@@ -103,7 +112,7 @@ def test_render_vault_path_result(capsys: pytest.CaptureFixture[str]) -> None:
         profile="local",
         path=Path("/tmp/demo/values.env"),
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "profile: local" in captured
     assert "vault_values: /tmp/demo/values.env" in captured
@@ -114,9 +123,10 @@ def test_render_vault_prune_no_changes(capsys: pytest.CaptureFixture[str]) -> No
         profile="prod",
         path=Path("/tmp/demo/prod.env"),
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "profile: prod" in captured
+    assert "vault_values: /tmp/demo/prod.env" in captured
     assert "[WARN] No unknown keys were removed" in captured
 
 
@@ -125,9 +135,10 @@ def test_render_vault_prune_cancelled(capsys: pytest.CaptureFixture[str]) -> Non
         profile="prod",
         path=Path("/tmp/demo/prod.env"),
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[WARN] No unknown keys were removed" in captured
+    assert "vault_values: /tmp/demo/prod.env" in captured
     assert "kept_keys: unchanged" in captured
 
 
@@ -138,9 +149,10 @@ def test_render_vault_prune_result(capsys: pytest.CaptureFixture[str]) -> None:
         removed_keys=("OLD_KEY", "LEGACY_FLAG"),
         kept_keys=4,
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[OK] Removed 2 unknown key(s) from profile 'prod'" in captured
+    assert "vault_values: /tmp/demo/prod.env" in captured
     assert "removed_keys: OLD_KEY, LEGACY_FLAG" in captured
     assert "kept_keys: 4" in captured
 
@@ -150,10 +162,11 @@ def test_render_vault_show_missing(capsys: pytest.CaptureFixture[str]) -> None:
         profile="local",
         path=Path("/tmp/demo/values.env"),
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[WARN] Vault file does not exist" in captured
     assert "profile: local" in captured
+    assert "vault_values: /tmp/demo/values.env" in captured
 
 
 def test_render_vault_show_empty(capsys: pytest.CaptureFixture[str]) -> None:
@@ -161,9 +174,10 @@ def test_render_vault_show_empty(capsys: pytest.CaptureFixture[str]) -> None:
         profile="local",
         path=Path("/tmp/demo/values.env"),
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[WARN] Vault file is empty" in captured
+    assert "vault_values: /tmp/demo/values.env" in captured
 
 
 def test_render_vault_show_cancelled(capsys: pytest.CaptureFixture[str]) -> None:
@@ -171,9 +185,10 @@ def test_render_vault_show_cancelled(capsys: pytest.CaptureFixture[str]) -> None
         profile="prod",
         path=Path("/tmp/demo/prod.env"),
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[WARN] Nothing was shown." in captured
+    assert "vault_values: /tmp/demo/prod.env" in captured
 
 
 def test_render_vault_show_values(capsys: pytest.CaptureFixture[str]) -> None:
@@ -187,7 +202,7 @@ def test_render_vault_show_values(capsys: pytest.CaptureFixture[str]) -> None:
         state="plaintext",
         detail="Run 'envctl vault encrypt' to migrate it.",
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "profile: prod" in captured
     assert "vault_values: /tmp/demo/prod.env" in captured

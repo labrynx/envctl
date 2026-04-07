@@ -23,10 +23,15 @@ from envctl.cli.presenters.action_presenter import (
 from envctl.domain.operations import InitResult
 
 
+def normalize_output(value: str) -> str:
+    """Normalize path separators in presenter output."""
+    return value.replace("\\", "/")
+
+
 def test_render_config_init_result(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render config init output."""
     render_config_init_result(Path("/tmp/envctl/config.json"))
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[OK] Created envctl config file" in captured
     assert "config: /tmp/envctl/config.json" in captured
@@ -43,7 +48,7 @@ def test_render_add_result(capsys: pytest.CaptureFixture[str]) -> None:
         contract_updated=True,
         contract_entry_created=True,
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[OK] Added 'DATABASE_URL' to contract and profile 'prod'" in captured
     assert "profile: prod" in captured
@@ -166,7 +171,7 @@ def test_render_fill_no_changes_with_profile_path(capsys: pytest.CaptureFixture[
         profile="prod",
         profile_path=Path("/tmp/vault/prod.env"),
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "profile: prod" in captured
     assert "vault_values: /tmp/vault/prod.env" in captured
@@ -180,7 +185,7 @@ def test_render_fill_result_with_changes(capsys: pytest.CaptureFixture[str]) -> 
         profile_path=Path("/tmp/vault/prod.env"),
         changed_keys=["DATABASE_URL", "TOKEN"],
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[OK] Filled 2 key(s) for demo-app" in captured
     assert "profile: prod" in captured
@@ -198,7 +203,7 @@ def test_render_fill_result_without_changes_delegates_to_no_changes(
         profile_path=Path("/tmp/vault/prod.env"),
         changed_keys=[],
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[WARN] No keys were changed" in captured
     assert "vault_values: /tmp/vault/prod.env" in captured
@@ -223,13 +228,18 @@ def test_render_init_result_with_created_contract(capsys: pytest.CaptureFixture[
         init_result=init_result,
         display_name="demo-app",
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[OK] Initialized demo-app" in captured
     assert "project_key: demo-app" in captured
     assert "binding_source: local" in captured
     assert "contract_created: yes" in captured
     assert "contract_template: starter" in captured
+    assert "repo_root: /workspace/demo-app" in captured
+    assert "contract: /workspace/demo-app/.envctl.yaml" in captured
+    assert "vault_dir: /tmp/vault/demo-app--prj_x" in captured
+    assert "vault_values: /tmp/vault/demo-app--prj_x/values.env" in captured
+    assert "vault_state: /tmp/vault/demo-app--prj_x/state.json" in captured
 
 
 def test_render_init_result_with_skipped_contract(capsys: pytest.CaptureFixture[str]) -> None:
@@ -271,7 +281,7 @@ def test_render_remove_result(capsys: pytest.CaptureFixture[str]) -> None:
         ),
         repo_root=Path("/workspace"),
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[OK] Removed 'TOKEN' from contract and persisted profiles" in captured
     assert "removed_from_contract: yes" in captured
@@ -280,6 +290,7 @@ def test_render_remove_result(capsys: pytest.CaptureFixture[str]) -> None:
     assert "missing_from_profiles: staging" in captured
     assert "affected_paths: /tmp/vault/values.env, /tmp/vault/profiles/prod.env" in captured
     assert "repo_root: /workspace" in captured
+    assert "contract: /workspace/.envctl.yaml" in captured
 
 
 def test_render_set_result(capsys: pytest.CaptureFixture[str]) -> None:
@@ -289,37 +300,39 @@ def test_render_set_result(capsys: pytest.CaptureFixture[str]) -> None:
         profile="local",
         profile_path=Path("/tmp/vault/values.env"),
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[OK] Set 'DEBUG' in profile 'local'" in captured
     assert "profile: local" in captured
     assert "vault_values: /tmp/vault/values.env" in captured
 
 
-def test_render_unset_result_removed(capsys: pytest.CaptureFixture[str]) -> None:
-    """It should render removed unset output."""
+def test_render_unset_result(capsys: pytest.CaptureFixture[str]) -> None:
+    """It should render unset output."""
     render_unset_result(
         key="DEBUG",
         profile="local",
         profile_path=Path("/tmp/vault/values.env"),
         removed=True,
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[OK] Unset 'DEBUG' in profile 'local'" in captured
+    assert "vault_values: /tmp/vault/values.env" in captured
 
 
-def test_render_unset_result_not_removed(capsys: pytest.CaptureFixture[str]) -> None:
-    """It should render warning unset output."""
+def test_render_unset_result_missing(capsys: pytest.CaptureFixture[str]) -> None:
+    """It should render warning when key was not present."""
     render_unset_result(
         key="DEBUG",
         profile="local",
         profile_path=Path("/tmp/vault/values.env"),
         removed=False,
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[WARN] 'DEBUG' was not set in profile 'local'" in captured
+    assert "vault_values: /tmp/vault/values.env" in captured
 
 
 def test_render_sync_result(capsys: pytest.CaptureFixture[str]) -> None:
@@ -328,7 +341,7 @@ def test_render_sync_result(capsys: pytest.CaptureFixture[str]) -> None:
         profile="prod",
         target_path=Path("/workspace/.env"),
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[OK] Synced generated environment" in captured
     assert "profile: prod" in captured

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import importlib
 import subprocess
 from pathlib import Path
 
 from cryptography.fernet import Fernet
 from typer.testing import CliRunner
 
+import envctl.adapters.git as git_adapters
 from envctl.cli.app import app
 from envctl.vault_crypto import serialize_master_key_v1
 
@@ -37,7 +39,6 @@ def test_guard_secrets_fails_for_staged_master_key(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-
     home = tmp_path / "home"
     home.mkdir(parents=True, exist_ok=True)
 
@@ -66,15 +67,18 @@ def test_guard_secrets_fails_for_staged_master_key(
 
     leaked_path = repo / "renamed-secret.txt"
     leaked_path.write_bytes(serialize_master_key_v1(Fernet.generate_key()))
-
     _git(repo, "add", leaked_path.name)
+
+    # The CLI integration autouse fixtures patch envctl.adapters.git._run_git
+    # for fake repositories. This test uses a real Git repository and must
+    # restore the real adapter implementation before invoking the CLI.
+    importlib.reload(git_adapters)
 
     guard_result = runner.invoke(app, ["guard", "secrets"], catch_exceptions=False)
 
     assert guard_result.exit_code == 1
 
     combined_output = guard_result.stdout + guard_result.stderr
-
     assert "contains an envctl master key" in combined_output
     assert "git restore --staged" in combined_output
     assert "git restore --staged" in guard_result.stdout

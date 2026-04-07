@@ -14,6 +14,11 @@ from envctl.cli.presenters.project_presenter import (
 )
 
 
+def normalize_output(value: str) -> str:
+    """Normalize path separators in presenter output."""
+    return value.replace("\\", "/")
+
+
 def test_render_project_bind_result_changed(capsys: pytest.CaptureFixture[str]) -> None:
     """It should render successful bind output."""
     render_project_bind_result(
@@ -26,12 +31,15 @@ def test_render_project_bind_result_changed(capsys: pytest.CaptureFixture[str]) 
         vault_dir=Path("/tmp/vault/demo-app--prj_1234567890ab"),
         vault_values_path=Path("/tmp/vault/demo-app--prj_1234567890ab/values.env"),
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[OK] Bound repository to demo-app" in captured
     assert "project_key: demo-app" in captured
     assert "project_id: prj_1234567890ab" in captured
     assert "binding_source: local" in captured
+    assert "repo_root: /workspace/demo-app" in captured
+    assert "vault_dir: /tmp/vault/demo-app--prj_1234567890ab" in captured
+    assert "vault_values: /tmp/vault/demo-app--prj_1234567890ab/values.env" in captured
 
 
 def test_render_project_bind_result_unchanged(capsys: pytest.CaptureFixture[str]) -> None:
@@ -62,12 +70,15 @@ def test_render_project_rebind_result_with_previous_id(capsys: pytest.CaptureFix
         vault_dir=Path("/tmp/vault/demo-app--prj_new12345678"),
         vault_values_path=Path("/tmp/vault/demo-app--prj_new12345678/values.env"),
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[OK] Rebound repository to demo-app" in captured
     assert "previous_project_id: prj_old12345678" in captured
     assert "new_project_id: prj_new12345678" in captured
     assert "copied_values: yes" in captured
+    assert "repo_root: /workspace/demo-app" in captured
+    assert "vault_dir: /tmp/vault/demo-app--prj_new12345678" in captured
+    assert "vault_values: /tmp/vault/demo-app--prj_new12345678/values.env" in captured
 
 
 def test_render_project_rebind_result_without_previous_id(
@@ -83,10 +94,11 @@ def test_render_project_rebind_result_without_previous_id(
         vault_dir=Path("/tmp/vault/demo-app--prj_new12345678"),
         vault_values_path=Path("/tmp/vault/demo-app--prj_new12345678/values.env"),
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "previous_project_id:" not in captured
     assert "copied_values: no" in captured
+    assert "repo_root: /workspace/demo-app" in captured
 
 
 def test_render_project_repair_result_successful(capsys: pytest.CaptureFixture[str]) -> None:
@@ -100,11 +112,12 @@ def test_render_project_repair_result_successful(capsys: pytest.CaptureFixture[s
         vault_dir=Path("/tmp/vault/demo-app--prj_1234567890ab"),
         vault_values_path=Path("/tmp/vault/demo-app--prj_1234567890ab/values.env"),
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[OK] Recovered a matching vault and persisted the local git binding." in captured
     assert "project_id: prj_1234567890ab" in captured
     assert "binding_source: local" in captured
+    assert "repo_root: /workspace/demo-app" in captured
 
 
 def test_render_project_repair_result_needs_action(capsys: pytest.CaptureFixture[str]) -> None:
@@ -132,7 +145,7 @@ def test_render_project_unbind_result_removed(capsys: pytest.CaptureFixture[str]
         repo_root=Path("/workspace/demo-app"),
         previous_project_id="prj_1234567890ab",
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[OK] Removed local repository binding" in captured
     assert "repo_root: /workspace/demo-app" in captured
@@ -146,7 +159,8 @@ def test_render_project_unbind_result_not_present(capsys: pytest.CaptureFixture[
         repo_root=Path("/workspace/demo-app"),
         previous_project_id=None,
     )
-    captured = capsys.readouterr().out
+    captured = normalize_output(capsys.readouterr().out)
 
     assert "[WARN] No local repository binding was present" in captured
+    assert "repo_root: /workspace/demo-app" in captured
     assert "previous_project_id:" not in captured

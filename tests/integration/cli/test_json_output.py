@@ -16,6 +16,45 @@ def parse_json_output(output: str) -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(output))
 
 
+def get_fake_home(workspace: Path) -> Path:
+    """Return the fake home directory used by CLI integration tests."""
+    return workspace.parent / "home"
+
+
+def get_vault_projects_dir(workspace: Path) -> Path:
+    """Return the test vault projects directory."""
+    return get_fake_home(workspace) / ".envctl" / "vault" / "projects"
+
+
+def get_config_path(workspace: Path) -> Path:
+    """Return the config file path inside the fake home directory."""
+    return get_fake_home(workspace) / ".config" / "envctl" / "config.json"
+
+
+def find_single_state_path(workspace: Path) -> Path:
+    """Locate the single generated state.json file for the test workspace."""
+    vault_projects_dir = get_vault_projects_dir(workspace)
+    candidates = sorted(vault_projects_dir.glob("*/state.json"))
+
+    matching = []
+    for candidate in candidates:
+        try:
+            contents = json.loads(candidate.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            matching.append(candidate)
+            continue
+
+        if contents.get("repo_root") == str(workspace):
+            matching.append(candidate)
+
+    assert matching, f"No state.json found for workspace {workspace} under {vault_projects_dir}"
+    assert len(matching) == 1, (
+        f"Expected exactly one state.json for workspace {workspace}, "
+        f"found {len(matching)}: {matching}"
+    )
+    return matching[0]
+
+
 def test_check_json_outputs_structured_payload_for_invalid_environment(
     runner: CliRunner,
     workspace: Path,
@@ -146,7 +185,7 @@ def test_callback_json_outputs_structured_config_error(
     runner: CliRunner,
     workspace: Path,
 ) -> None:
-    config_path = workspace.parent / "home" / ".config" / "envctl" / "config.json"
+    config_path = get_config_path(workspace)
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text('{"runtime_mode":"banana"}', encoding="utf-8")
 
@@ -167,8 +206,7 @@ def test_status_json_outputs_structured_state_error(
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
     runner.invoke(app, ["init", "--contract", "starter"], catch_exceptions=False)
 
-    vault_projects_dir = workspace.parent / "home" / ".envctl" / "vault" / "projects"
-    state_path = next(vault_projects_dir.glob("*/state.json"))
+    state_path = find_single_state_path(workspace)
     state_path.write_text("{not-json", encoding="utf-8")
 
     result = runner.invoke(app, ["--json", "status"])
@@ -185,22 +223,40 @@ def test_status_json_outputs_structured_project_binding_error(
 ) -> None:
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
 
-    vault_projects_dir = workspace.parent / "home" / ".envctl" / "vault" / "projects"
+    vault_projects_dir = get_vault_projects_dir(workspace)
     first = vault_projects_dir / "demo-a--prj_1111111111111111"
     second = vault_projects_dir / "demo-b--prj_2222222222222222"
     first.mkdir(parents=True, exist_ok=True)
     second.mkdir(parents=True, exist_ok=True)
-    payload = (
-        '{"version":2,"project_slug":"demo","project_key":"demo","project_id":"%s",'
-        '"repo_root":"%s","git_remote":"git@github.com:labrynx/envctl.git",'
-        '"known_paths":[],"created_at":"2026-03-30T00:00:00Z","last_seen_at":"2026-03-30T00:00:00Z"}'
-    )
+    first_payload = {
+        "version": 2,
+        "project_slug": "demo",
+        "project_key": "demo",
+        "project_id": "prj_1111111111111111",
+        "repo_root": str(workspace),
+        "git_remote": "git@github.com:labrynx/envctl.git",
+        "known_paths": [],
+        "created_at": "2026-03-30T00:00:00Z",
+        "last_seen_at": "2026-03-30T00:00:00Z",
+    }
+    second_payload = {
+        "version": 2,
+        "project_slug": "demo",
+        "project_key": "demo",
+        "project_id": "prj_2222222222222222",
+        "repo_root": str(workspace),
+        "git_remote": "git@github.com:labrynx/envctl.git",
+        "known_paths": [],
+        "created_at": "2026-03-30T00:00:00Z",
+        "last_seen_at": "2026-03-30T00:00:00Z",
+    }
+
     (first / "state.json").write_text(
-        payload % ("prj_1111111111111111", str(workspace)),
+        json.dumps(first_payload),
         encoding="utf-8",
     )
     (second / "state.json").write_text(
-        payload % ("prj_2222222222222222", str(workspace)),
+        json.dumps(second_payload),
         encoding="utf-8",
     )
 

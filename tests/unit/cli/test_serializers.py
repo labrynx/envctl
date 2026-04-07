@@ -16,6 +16,11 @@ from envctl.domain.error_diagnostics import (
 )
 
 
+def normalize_path_str(value: str) -> str:
+    """Normalize serialized path values for cross-platform assertions."""
+    return value.replace("\\", "/")
+
+
 def test_serialize_contract_diagnostics_returns_expected_shape() -> None:
     diagnostics = ContractDiagnostics(
         category="invalid_variable_shape",
@@ -33,7 +38,7 @@ def test_serialize_contract_diagnostics_returns_expected_shape() -> None:
 
     payload = serialize_contract_diagnostics(diagnostics)
     assert payload["category"] == "invalid_variable_shape"
-    assert payload["path"] == "/tmp/demo/.envctl.yaml"
+    assert normalize_path_str(payload["path"]) == "/tmp/demo/.envctl.yaml"
     assert payload["key"] == "PORT"
     assert payload["issues"] == [
         {
