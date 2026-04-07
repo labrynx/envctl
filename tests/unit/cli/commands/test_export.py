@@ -18,7 +18,7 @@ def _export_result(
 def test_export_command_uses_presenter(monkeypatch: pytest.MonkeyPatch) -> None:
     captured: dict[str, Any] = {}
 
-    monkeypatch.setattr(export_command_module, "get_active_profile", lambda: "prod")
+    monkeypatch.setattr("envctl.cli.commands.export.command.get_active_profile", lambda: "prod")
     monkeypatch.setattr(
         export_command_module,
         "get_contract_selection",
@@ -33,7 +33,7 @@ def test_export_command_uses_presenter(monkeypatch: pytest.MonkeyPatch) -> None:
         captured["selection"] = selection
         return _export_result(selection)
 
-    monkeypatch.setattr(export_command_module, "run_export", fake_run_export)
+    monkeypatch.setattr("envctl.cli.commands.export.command.run_export", fake_run_export)
     monkeypatch.setattr(
         export_command_module,
         "render_export_output",
