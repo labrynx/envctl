@@ -10,9 +10,7 @@ from envctl.cli.app import app
 from envctl.domain.selection import ContractSelection, group_selection
 
 
-def _export_result(
-    selection: ContractSelection | None,
-) -> tuple[object, str, str, tuple[object, ...]]:
+def _export_result() -> tuple[object, str, str, tuple[object, ...]]:
     return ("context", "prod", "export APP_NAME='demo'\n", ())
 
 
@@ -21,10 +19,9 @@ def test_export_command_uses_presenter(
 ) -> None:
     captured: dict[str, Any] = {}
 
-    monkeypatch.setattr(export_command_module, "get_active_profile", lambda: "prod")
+    monkeypatch.setattr("envctl.cli.commands.export.command.get_active_profile", lambda: "prod")
     monkeypatch.setattr(
-        export_command_module,
-        "get_contract_selection",
+        "envctl.cli.commands.export.command.get_contract_selection",
         lambda: group_selection("Application"),
     )
 
@@ -36,12 +33,11 @@ def test_export_command_uses_presenter(
         captured["active_profile"] = active_profile
         captured["format"] = format
         captured["selection"] = selection
-        return _export_result(selection)
+        return _export_result()
 
-    monkeypatch.setattr(export_command_module, "run_export", fake_run_export)
+    monkeypatch.setattr("envctl.cli.commands.export.command.run_export", fake_run_export)
     monkeypatch.setattr(
-        export_command_module,
-        "render_export_output",
+        "envctl.cli.commands.export.command.render_export_output",
         lambda *, profile, rendered: captured.update({"profile": profile, "rendered": rendered}),
     )
 

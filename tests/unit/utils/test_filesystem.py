@@ -64,6 +64,6 @@ def test_is_world_writable_returns_false_on_stat_error(
     def broken_stat(self: Path) -> NoReturn:
         raise OSError("boom")
 
-    monkeypatch.setattr(filesystem_utils.Path, "stat", broken_stat)
+    monkeypatch.setattr(Path, "stat", broken_stat)
 
     assert filesystem_utils.is_world_writable(target) is False

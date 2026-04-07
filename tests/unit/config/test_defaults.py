@@ -20,7 +20,7 @@ def test_get_home_dir_returns_path_home(
     home = tmp_path / "home"
     home.mkdir()
 
-    monkeypatch.setattr(defaults.Path, "home", lambda: home)
+    monkeypatch.setattr("envctl.config.defaults.Path.home", lambda: home)
 
     assert defaults.get_home_dir() == home
 
@@ -45,7 +45,7 @@ def test_get_xdg_config_home_falls_back_to_home_config(
     home.mkdir()
 
     monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
-    monkeypatch.setattr(defaults.Path, "home", lambda: home)
+    monkeypatch.setattr("envctl.config.defaults.Path.home", lambda: home)
 
     result = defaults.get_xdg_config_home()
 
@@ -60,7 +60,7 @@ def test_default_path_and_filenames_are_resolved_correctly(
     home.mkdir()
 
     monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
-    monkeypatch.setattr(defaults.Path, "home", lambda: home)
+    monkeypatch.setattr("envctl.config.defaults.Path.home", lambda: home)
 
     assert defaults.get_default_config_path() == (
         home / ".config" / DEFAULT_CONFIG_DIRNAME / DEFAULT_CONFIG_FILENAME

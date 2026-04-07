@@ -61,7 +61,7 @@ def test_run_command_executes_child_with_resolved_environment(
         captured["env"] = env
         return CompletedProcess(args=command, returncode=0)
 
-    monkeypatch.setattr(run_service.subprocess, "run", fake_run)
+    monkeypatch.setattr("envctl.services.run_service.subprocess.run", fake_run)
 
     _context, result, warnings = run_service.run_command(["python3", "-V"], "staging")
 
@@ -123,8 +123,7 @@ def test_run_command_emits_docker_forwarding_warning(
         ),
     )
     monkeypatch.setattr(
-        run_service.subprocess,
-        "run",
+        "envctl.services.run_service.subprocess.run",
         lambda command, check=False, env=None: CompletedProcess(
             args=command,
             returncode=0,
@@ -189,7 +188,7 @@ def test_run_command_injects_only_selected_group_values(
         captured["env"] = env
         return CompletedProcess(args=command, returncode=0)
 
-    monkeypatch.setattr(run_service.subprocess, "run", fake_run)
+    monkeypatch.setattr("envctl.services.run_service.subprocess.run", fake_run)
 
     run_service.run_command(
         ["python3", "-V"],
@@ -249,7 +248,7 @@ def test_run_command_wraps_os_error_from_subprocess(
     ) -> CompletedProcess[str]:
         raise OSError("boom")
 
-    monkeypatch.setattr(run_service.subprocess, "run", fake_run)
+    monkeypatch.setattr("envctl.services.run_service.subprocess.run", fake_run)
 
     with pytest.raises(ExecutionError, match=r"Failed to launch child process: python3"):
         run_service.run_command(["python3", "-V"], "dev")
@@ -288,8 +287,7 @@ def test_run_command_emits_expected_docker_warning_shapes(
     _patch_valid_run_dependencies(monkeypatch)
 
     monkeypatch.setattr(
-        run_service.subprocess,
-        "run",
+        "envctl.services.run_service.subprocess.run",
         lambda command, check=False, env=None: CompletedProcess(
             args=command,
             returncode=0,
@@ -316,8 +314,7 @@ def test_run_command_skips_warning_for_explicit_env_file_handoff(
     _patch_valid_run_dependencies(monkeypatch)
 
     monkeypatch.setattr(
-        run_service.subprocess,
-        "run",
+        "envctl.services.run_service.subprocess.run",
         lambda command, check=False, env=None: CompletedProcess(
             args=command,
             returncode=0,
@@ -335,8 +332,7 @@ def test_run_command_does_not_emit_warning_for_non_docker_command(
     _patch_valid_run_dependencies(monkeypatch)
 
     monkeypatch.setattr(
-        run_service.subprocess,
-        "run",
+        "envctl.services.run_service.subprocess.run",
         lambda command, check=False, env=None: CompletedProcess(
             args=command,
             returncode=0,

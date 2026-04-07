@@ -20,7 +20,7 @@ from envctl.cli.presenters.action_presenter import (
     render_sync_result,
     render_unset_result,
 )
-from envctl.services.init_service import InitResult
+from envctl.domain.operations import InitResult
 
 
 def test_render_config_init_result(capsys: pytest.CaptureFixture[str]) -> None:

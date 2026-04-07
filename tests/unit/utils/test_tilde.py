@@ -15,7 +15,7 @@ def test_to_tilde_path_uses_home_prefix(
     target = home / ".envctl" / "vault"
     target.mkdir(parents=True)
 
-    monkeypatch.setattr(tilde_utils.Path, "home", lambda: home)
+    monkeypatch.setattr(Path, "home", lambda: home)
 
     assert tilde_utils.to_tilde_path(target) == "~/.envctl/vault"
 
@@ -28,6 +28,6 @@ def test_to_tilde_path_returns_absolute_path_when_outside_home(
     outside = tmp_path / "outside"
     outside.mkdir()
 
-    monkeypatch.setattr(tilde_utils.Path, "home", lambda: home)
+    monkeypatch.setattr(Path, "home", lambda: home)
 
     assert tilde_utils.to_tilde_path(outside) == str(outside.resolve())

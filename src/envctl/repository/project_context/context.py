@@ -8,7 +8,7 @@ from envctl.adapters.git import get_local_git_config, get_repo_remote, resolve_r
 from envctl.constants import DEFAULT_STATE_FILENAME, GIT_CONFIG_PROJECT_ID_KEY
 from envctl.domain.app_config import AppConfig
 from envctl.domain.error_diagnostics import ProjectBindingDiagnostics
-from envctl.domain.project import ProjectContext
+from envctl.domain.project import BindingSource, ProjectContext
 from envctl.errors import ContractError, ProjectDetectionError
 from envctl.repository.contract_discovery import discover_root_contract_path
 from envctl.repository.contract_repository import load_contract_optional
@@ -43,7 +43,7 @@ def build_context_for_project_id(
     repo_root: Path,
     project_id: str,
     project_name: str | None = None,
-    binding_source: str = "local",
+    binding_source: BindingSource = "local",
 ) -> ProjectContext:
     """Build a context for one explicit project id."""
     repo_remote = get_repo_remote(repo_root)

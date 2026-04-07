@@ -4,7 +4,7 @@ from pathlib import Path
 
 from envctl.constants import DEFAULT_KEY_FILENAME, DEFAULT_STATE_FILENAME, DEFAULT_VALUES_FILENAME
 from envctl.domain.app_config import AppConfig
-from envctl.domain.project import ProjectContext
+from envctl.domain.project import BindingSource, ProjectContext
 from envctl.utils.project_paths import build_vault_project_dir
 
 
@@ -17,7 +17,7 @@ def build_context(
     project_slug: str,
     project_key: str,
     project_id: str,
-    binding_source: str,
+    binding_source: BindingSource,
     vault_project_dir: Path | None = None,
 ) -> ProjectContext:
     """Build a complete project context."""
@@ -33,7 +33,7 @@ def build_context(
         project_id=project_id,
         repo_root=repo_root,
         repo_remote=repo_remote,
-        binding_source=binding_source,  # type: ignore[arg-type]
+        binding_source=binding_source,
         repo_env_path=repo_root / config.env_filename,
         repo_contract_path=repo_contract_path,
         vault_project_dir=resolved_vault_project_dir,
