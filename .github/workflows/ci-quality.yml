@@ -10,14 +10,29 @@ on:
       - main
 
 concurrency:
-  group: ci-quality-${{ github.ref }}
+  group: ci-quality-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   quality:
-    name: Lint, format, typing, security, imports
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Ruff lint
+            command: python -m ruff check .
+          - name: Ruff format
+            command: python -m ruff format --check .
+          - name: Mypy
+            command: python -m mypy
+          - name: Bandit
+            command: python -m bandit -c pyproject.toml -r src
+          - name: Import Linter
+            command: lint-imports
 
     steps:
       - name: Checkout code
@@ -35,17 +50,5 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
 
-      - name: Run lint
-        run: python -m ruff check .
-
-      - name: Run format check
-        run: python -m ruff format --check .
-
-      - name: Run Bandit
-        run: python -m bandit -c pyproject.toml -r src
-
-      - name: Run mypy
-        run: python -m mypy
-
-      - name: Run import-linter
-        run: lint-imports
+      - name: Run ${{ matrix.name }}
+        run: ${{ matrix.command }}
