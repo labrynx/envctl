@@ -1,38 +1,91 @@
-# envctl
+![envctl](docs/assets/envctl_banner.png)
 
-**Your `.env.local` files drift between machines, hide missing variables, and break when you least expect it. envctl fixes that.**
+**Your `.env.local` works… until it doesn’t.**
 
-[![Tests](https://github.com/labrynx/envctl/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/ci-tests.yml)
-[![Quality](https://github.com/labrynx/envctl/actions/workflows/ci-quality.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/ci-quality.yml)
-[![Coverage](https://github.com/labrynx/envctl/actions/workflows/ci-coverage.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/ci-coverage.yml)
-[![codecov](https://codecov.io/gh/labrynx/envctl/branch/main/graph/badge.svg)](https://codecov.io/gh/labrynx/envctl)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/labrynx/envctl/blob/main/LICENSE)
+It drifts between machines.  
+It misses variables.  
+It breaks when you least expect it.
+
+envctl fixes that — and makes your environment boring again (which is exactly what you want).
+
+**envctl makes your environment behave.**
 
 ---
 
-## What is envctl?
+<div align="center">
+  
+[![Tests](https://github.com/labrynx/envctl/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/ci-tests.yml)
+[![Coverage](https://github.com/labrynx/envctl/actions/workflows/ci-coverage.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/ci-coverage.yml)
+
+[![PyPI version](https://img.shields.io/pypi/v/envctl.svg)](https://pypi.org/project/envctl/)
+[![Python versions](https://img.shields.io/pypi/pyversions/envctl.svg)](https://pypi.org/project/envctl/)
+[![License](https://img.shields.io/pypi/l/envctl.svg)](https://github.com/labrynx/envctl/blob/main/LICENSE)
+
+[![Code style: ruff](https://img.shields.io/badge/style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+[![Type checked: mypy](https://img.shields.io/badge/types-mypy-blue.svg)](https://mypy-lang.org/)
+[![Security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://bandit.readthedocs.io/)
+[![Imports: import-linter](https://img.shields.io/badge/imports-linter-purple.svg)](https://github.com/seddonym/import-linter)
+
+[![Release](https://github.com/labrynx/envctl/actions/workflows/release.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/release.yml)
+
+</div>
+
+---
+
+## What is this?
+
+Fair.
 
 `envctl` is a local-first environment control tool.
 
-It makes environment variables explicit, validated, and predictable — without introducing a cloud dependency.
+It takes your environment from:
 
-Instead of relying on ad-hoc `.env` files, envctl separates three concerns:
+> “I think this should work…”
 
-- **contract** → what the project requires (`.envctl.yaml`)
-- **vault** → your local values, stored outside git
-- **runtime** → the validated environment your app actually runs with
+to:
 
-That gives you:
+> “I know exactly what’s going on.”
 
-- documented variables
-- no secrets in git
-- consistent environments across machines
-- validation before execution
+No cloud. No magic. No hidden state.  
+Just something you can reason about.
+
+---
+
+## The problem (you’ve probably seen this)
+
+- It works on your machine… but not on your teammate’s  
+- CI fails because a variable is missing (again)  
+- You forgot to update `.env.local` somewhere  
+- Someone committed something they shouldn’t  
+- Nobody actually knows what variables are required  
+
+And somehow… it still “kind of works”
+
+Until it doesn’t.
+
+---
+
+## What envctl does differently
+
+Instead of a loose `.env` file, envctl splits things properly:
+
+- **contract** → what the project expects (`.envctl.yaml`)  
+- **vault** → your local values (never in git)  
+- **runtime** → the environment your app actually runs with  
+
+So:
+
+- the repo defines the rules  
+- your machine provides the values  
+- envctl builds the environment  
+
+No guessing.
 
 ---
 
 ## Quickstart
+
+From zero to running in seconds:
 
 ```bash
 envctl config init
@@ -40,21 +93,30 @@ envctl init
 envctl fill
 envctl check
 envctl run -- python app.py
-```
+````
 
-What this does:
+What’s happening here:
 
-- `config init` → sets up your local envctl config
-- `init` → connects the repository to envctl
-- `fill` → asks only for missing values
-- `check` → validates the environment
-- `run` → executes your command with a clean, resolved environment
+* `config init` → sets up envctl locally
+* `init` → links your repo to envctl
+* `fill` → asks only for what’s missing
+* `check` → validates everything before you run
+* `run` → executes with a clean, resolved environment
 
 ---
 
-## Why not just `.env.local`?
+## “But `.env.local` works for me”
 
-Because it does not scale cleanly.
+Yeah — it does.
+
+Until:
+
+* you switch machines
+* someone joins the project
+* you add a new variable
+* something silently goes missing
+
+Here’s the difference:
 
 |                                | `.env.local` | direnv       | Doppler / Infisical | **envctl** |
 | ------------------------------ | ------------ | ------------ | ------------------- | ---------- |
@@ -64,13 +126,15 @@ Because it does not scale cleanly.
 | Supports multiple environments | manual files | manual files | ✅                   | ✅ profiles |
 | Works without cloud            | ✅            | ✅            | ❌                   | ✅          |
 
-`envctl` is **not a cloud secrets manager**.
+`envctl` is not a secrets manager.
 
-It is a way to make environment handling explicit, predictable, and local-first.
+It’s the missing layer between your repo and your runtime.
 
 ---
 
 ## A typical workflow
+
+Here’s what this actually looks like:
 
 ```bash
 # add a new requirement
@@ -78,52 +142,31 @@ envctl add API_KEY sk-example
 git add .envctl.yaml
 git commit -m "require API_KEY"
 
-# another developer
+# someone else pulls
 envctl check
 envctl fill
 envctl run -- python app.py
 ```
 
-The contract is shared in git.
-The values stay local.
-The runtime environment is rebuilt consistently when needed.
+That’s it. No tricks.
+
+The contract lives in git.
+The values stay on your machine.
+The environment rebuilds itself when needed.
 
 ---
 
 ## Core concepts
 
-- **contract** → defines variables and constraints
-- **vault** → stores local values
-- **profile** → selects a value set (`local`, `dev`, `staging`, ...)
-- **resolution** → builds the final environment
-- **projection** → applies it (`run`, `sync`, `export`)
-
-Think of it like this:
-
-> the repository defines the rules, your machine provides the values, and envctl builds the environment you actually run.
+* **contract** → variables and constraints
+* **vault** → your local values
+* **profile** → environments (`local`, `dev`, `staging`, …)
+* **resolution** → builds the final environment
+* **projection** → applies it (`run`, `sync`, `export`)
 
 ---
 
-## Common commands
-
-```bash
-envctl check
-envctl inspect
-envctl inspect DATABASE_URL
-
-envctl run -- <command>
-envctl export
-envctl sync
-
-envctl profile list
-envctl profile create staging
-```
-
-## Debugging internal behavior
-
-`envctl` keeps user-facing output separate from internal debug tracing.
-
-When you need to understand how config, profiles, resolution, or `run` behaved internally, enable debug logs explicitly:
+## Debugging (when things go weird)
 
 ```bash
 ENVCTL_LOG_LEVEL=DEBUG envctl check
@@ -131,58 +174,53 @@ ENVCTL_LOG_LEVEL=DEBUG envctl inspect DATABASE_URL
 ENVCTL_LOG_LEVEL=DEBUG envctl run -- python app.py
 ```
 
-Supported values are:
-
-- `DEBUG`
-- `WARNING`
-- `ERROR`
-
-If the variable is unset or invalid, `envctl` falls back to `WARNING`.
-
-Sensitive values stay masked in logs.
+Values stay masked. You see what matters.
 
 ---
 
 ## When envctl is a good fit
 
-envctl is a strong fit if:
-
-- `.env.local` files drift between machines
-- onboarding is fragile
-- CI and local environments behave differently
-- you work with multiple environments
-- you want a local-first workflow without a hosted service
+* your `.env.local` keeps drifting
+* onboarding is fragile
+* CI behaves differently
+* you have multiple environments
+* you want to stay local-first
 
 ---
 
-## When envctl is not the right tool
+## When it’s probably overkill
 
-envctl may be unnecessary if:
-
-- you only have one static `.env` file
-- the project is very small
-- you already rely fully on a centralized secrets platform
+* you have one static `.env` file
+* the project is tiny
+* everything already lives in a cloud secrets manager
 
 ---
 
 ## Security
 
-- the contract contains no secrets
-- values stay on your machine
-- sensitive values are masked in output
-- optional encryption at rest is available
+* no secrets in the contract
+* values stay on your machine
+* sensitive output is masked
+* optional encryption at rest
 
-> envctl assumes a trusted machine.
-> If your machine is compromised, your secrets are compromised too.
+> envctl assumes your machine is trusted.
+> If it isn’t — nothing will save you anyway.
 
 ---
 
 ## Documentation
 
-- [Quickstart](docs/getting-started/quickstart.md)
-- [Mental model](docs/getting-started/mental-model.md)
-- [Commands reference](docs/reference/commands.md)
-- [Profiles](docs/reference/profiles.md)
-- [Vault](docs/reference/vault.md)
-- [Security](docs/reference/security.md)
-- [Migration and compatibility](docs/internals/compatibility.md)
+* [Quickstart](docs/getting-started/quickstart.md)
+* [Mental model](docs/getting-started/mental-model.md)
+* [Commands reference](docs/reference/commands.md)
+* [Profiles](docs/reference/profiles.md)
+* [Vault](docs/reference/vault.md)
+* [Security](docs/reference/security.md)
+* [Migration and compatibility](docs/internals/compatibility.md)
+
+---
+
+If you've ever said
+“it works on my machine”
+
+…you’ll probably like envctl.
