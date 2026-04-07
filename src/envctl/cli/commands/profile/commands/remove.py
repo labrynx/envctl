@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typer
 
-from envctl.adapters.input import confirm
 from envctl.cli.decorators import (
     handle_errors,
     requires_writable_runtime,
@@ -12,6 +11,7 @@ from envctl.cli.decorators import (
 )
 from envctl.cli.presenters import render_profile_remove_result
 from envctl.cli.prompts import build_profile_remove_confirmation_message
+from envctl.cli.prompts.input import confirm
 from envctl.services.profile_service import run_profile_remove
 from envctl.utils.output import print_cancelled
 

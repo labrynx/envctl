@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from envctl.adapters.input import prompt_secret, prompt_string
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
 from envctl.cli.presenters import render_fill_no_changes, render_fill_result
+from envctl.cli.prompts.input import prompt_secret, prompt_string
 from envctl.cli.runtime import get_active_profile
 from envctl.services.fill_service import apply_fill, build_fill_plan
 

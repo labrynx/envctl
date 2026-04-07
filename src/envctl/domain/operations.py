@@ -123,6 +123,7 @@ class VaultShowResult:
     path: Path
     exists: bool
     values: dict[str, str]
+    sensitive_keys: dict[str, bool]
     state: VaultFileState
     detail: str | None = None
 

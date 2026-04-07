@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import typer
 
-from envctl.adapters.input import confirm
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
 from envctl.cli.presenters import render_project_rebind_result
 from envctl.cli.prompts import build_project_rebind_confirmation_message
+from envctl.cli.prompts.input import confirm
 from envctl.services.rebind_service import run_rebind
 from envctl.utils.output import print_cancelled
 

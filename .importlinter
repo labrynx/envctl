@@ -3,59 +3,49 @@ root_package = envctl
 exclude_type_checking_imports = True
 
 # ==============================================================
-# Core architecture boundaries
+# Core layered architecture
 # ==============================================================
 
-[importlinter:contract:no_cli_outside_cli]
-name = Only CLI packages may import CLI
-type = forbidden
-source_modules =
+[importlinter:contract:architecture_layers]
+name = Core layered architecture
+type = layers
+layers =
+    envctl.cli
+    envctl.services
+    envctl.repository
     envctl.adapters
-    envctl.config
     envctl.domain
-    envctl.repository
-    envctl.services
-    envctl.utils
-forbidden_modules =
-    envctl.cli
-
-[importlinter:contract:domain_must_be_pure]
-name = Domain must not depend on outer layers
-type = forbidden
-source_modules =
-    envctl.domain
-forbidden_modules =
-    envctl.cli
-    envctl.services
-    envctl.repository
-    envctl.adapters
-
-[importlinter:contract:services_do_not_import_cli]
-name = Services must not import CLI
-type = forbidden
-source_modules =
-    envctl.services
-forbidden_modules =
-    envctl.cli
-
-[importlinter:contract:repository_do_not_import_cli]
-name = Repository must not import CLI
-type = forbidden
-source_modules =
-    envctl.repository
-forbidden_modules =
-    envctl.cli
-
-[importlinter:contract:adapters_do_not_import_cli]
-name = Adapters must not import CLI
-type = forbidden
-source_modules =
-    envctl.adapters
-forbidden_modules =
-    envctl.cli
 
 # ==============================================================
-# Low-level utility discipline
+# Explicit architectural guards
+# ==============================================================
+
+[importlinter:contract:adapters_do_not_import_services]
+name = Adapters must not import services
+type = forbidden
+source_modules =
+    envctl.adapters
+forbidden_modules =
+    envctl.services
+
+[importlinter:contract:adapters_do_not_import_repository]
+name = Adapters must not import repository
+type = forbidden
+source_modules =
+    envctl.adapters
+forbidden_modules =
+    envctl.repository
+
+[importlinter:contract:repository_do_not_import_services]
+name = Repository must not import services
+type = forbidden
+source_modules =
+    envctl.repository
+forbidden_modules =
+    envctl.services
+
+# ==============================================================
+# Config and utils discipline
 # ==============================================================
 
 [importlinter:contract:utils_do_not_import_cli]
@@ -79,6 +69,30 @@ name = Utils must not depend on repository
 type = forbidden
 source_modules =
     envctl.utils
+forbidden_modules =
+    envctl.repository
+
+[importlinter:contract:config_do_not_import_cli]
+name = Config must not depend on CLI
+type = forbidden
+source_modules =
+    envctl.config
+forbidden_modules =
+    envctl.cli
+
+[importlinter:contract:config_do_not_import_services]
+name = Config must not depend on services
+type = forbidden
+source_modules =
+    envctl.config
+forbidden_modules =
+    envctl.services
+
+[importlinter:contract:config_do_not_import_repository]
+name = Config must not depend on repository
+type = forbidden
+source_modules =
+    envctl.config
 forbidden_modules =
     envctl.repository
 
