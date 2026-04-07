@@ -11,7 +11,6 @@ from envctl.domain.diagnostics import (
 )
 from envctl.domain.project import ProjectContext
 from envctl.domain.selection import ContractSelection
-from envctl.domain.selection_resolution import filter_resolution_report
 from envctl.errors import ContractError, ValidationError
 from envctl.repository.contract_composition import (
     ResolvedContractBundle,
@@ -23,6 +22,7 @@ from envctl.services.resolution_diagnostics import (
     build_diagnostic_summary,
 )
 from envctl.services.resolution_service import resolve_environment
+from envctl.services.selection_filtering import filter_resolution_report
 from envctl.utils.project_paths import normalize_profile_name
 
 

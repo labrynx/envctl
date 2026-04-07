@@ -8,12 +8,12 @@ from envctl.adapters.projection_rendering import render_dotenv, render_shell_exp
 from envctl.domain.deprecations import ContractDeprecationWarning
 from envctl.domain.project import ProjectContext
 from envctl.domain.selection import ContractSelection
-from envctl.domain.selection_resolution import (
+from envctl.services.context_service import load_project_context
+from envctl.services.projection_validation import resolve_projectable_environment
+from envctl.services.selection_filtering import (
     build_variable_groups,
     filter_projection_values,
 )
-from envctl.services.context_service import load_project_context
-from envctl.services.projection_validation import resolve_projectable_environment
 from envctl.utils.project_paths import normalize_profile_name
 
 
