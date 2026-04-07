@@ -106,7 +106,7 @@ def list_persisted_profiles(context: ProjectContext) -> tuple[str, ...]:
 def load_local_profile_values_from_vault_dir(
     vault_project_dir: Path,
     *,
-    crypto: object | None = None,
+    crypto: VaultCrypto | None = None,
     key_path: Path | None = None,
 ) -> dict[str, str]:
     """Load the implicit local profile directly from one vault directory."""
@@ -124,7 +124,7 @@ def load_local_profile_values_from_vault_dir(
         vault_values_path=path,
         vault_state_path=vault_project_dir / "state.json",
         vault_key_path=key_path or (vault_project_dir / "master.key"),
-        vault_crypto=crypto,  # type: ignore[arg-type]
+        vault_crypto=crypto,
     )
     return parse_env_text(_load_env_text(path, context=context))
 
