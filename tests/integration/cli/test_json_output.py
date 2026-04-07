@@ -16,9 +16,25 @@ def parse_json_output(output: str) -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(output))
 
 
+def get_fake_home(workspace: Path) -> Path:
+    """Return the fake home directory used by CLI integration tests."""
+    return workspace.parent / "home"
+
+
+def get_vault_projects_dir(workspace: Path) -> Path:
+    """Return the test vault projects directory."""
+    return get_fake_home(workspace) / ".envctl" / "vault" / "projects"
+
+
+def get_config_path(workspace: Path) -> Path:
+    """Return the config file path inside the fake home directory."""
+    return get_fake_home(workspace) / ".config" / "envctl" / "config.json"
+
+
 def find_single_state_path(workspace: Path) -> Path:
     """Locate the single generated state.json file for the test workspace."""
-    candidates = sorted(workspace.parent.rglob("state.json"))
+    vault_projects_dir = get_vault_projects_dir(workspace)
+    candidates = sorted(vault_projects_dir.glob("*/state.json"))
 
     matching = []
     for candidate in candidates:
@@ -31,17 +47,12 @@ def find_single_state_path(workspace: Path) -> Path:
         if contents.get("repo_root") == str(workspace):
             matching.append(candidate)
 
-    assert matching, f"No state.json found for workspace {workspace} under {workspace.parent}"
+    assert matching, f"No state.json found for workspace {workspace} under {vault_projects_dir}"
     assert len(matching) == 1, (
         f"Expected exactly one state.json for workspace {workspace}, "
         f"found {len(matching)}: {matching}"
     )
     return matching[0]
-
-
-def get_vault_projects_dir(workspace: Path) -> Path:
-    """Return the test vault projects directory."""
-    return workspace.parent / "home" / ".envctl" / "vault" / "projects"
 
 
 def test_check_json_outputs_structured_payload_for_invalid_environment(
@@ -174,7 +185,7 @@ def test_callback_json_outputs_structured_config_error(
     runner: CliRunner,
     workspace: Path,
 ) -> None:
-    config_path = workspace.parent / "home" / ".config" / "envctl" / "config.json"
+    config_path = get_config_path(workspace)
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text('{"runtime_mode":"banana"}', encoding="utf-8")
 
