@@ -152,7 +152,7 @@ def test_load_contract_raises_when_file_cannot_be_read(
     def broken_read_text(self: Path, encoding: str = "utf-8") -> str:
         raise OSError("boom")
 
-    monkeypatch.setattr(contract_repository.Path, "read_text", broken_read_text)
+    monkeypatch.setattr("envctl.repository.contract_repository.Path.read_text", broken_read_text)
 
     with pytest.raises(ContractError, match=r"Unable to read contract") as exc_info:
         contract_repository.load_contract(path)

@@ -16,7 +16,7 @@ def test_run_git_returns_stripped_stdout(monkeypatch: pytest.MonkeyPatch) -> Non
     def fake_run(*args: Any, **_kwargs: Any) -> SimpleNamespace:
         return SimpleNamespace(stdout="/tmp/repo\n")
 
-    monkeypatch.setattr(git_adapters.subprocess, "run", fake_run)
+    monkeypatch.setattr("envctl.adapters.git.subprocess.run", fake_run)
 
     result = git_adapters._run_git(["rev-parse", "--show-toplevel"])
 
@@ -29,7 +29,7 @@ def test_run_git_raises_when_git_executable_is_missing(
     def fake_run(*args: Any, **_kwargs: Any) -> SimpleNamespace:
         raise FileNotFoundError("git not found")
 
-    monkeypatch.setattr(git_adapters.subprocess, "run", fake_run)
+    monkeypatch.setattr("envctl.adapters.git.subprocess.run", fake_run)
 
     with pytest.raises(ProjectDetectionError, match=r"git executable not found") as exc_info:
         git_adapters._run_git(["status"])
@@ -49,7 +49,7 @@ def test_run_git_raises_with_stderr_when_git_command_fails(
             stderr="fatal: not a git repository\n",
         )
 
-    monkeypatch.setattr(git_adapters.subprocess, "run", fake_run)
+    monkeypatch.setattr("envctl.adapters.git.subprocess.run", fake_run)
 
     with pytest.raises(ProjectDetectionError, match=r"fatal: not a git repository") as exc_info:
         git_adapters._run_git(["status"])
@@ -70,7 +70,7 @@ def test_run_git_raises_generic_message_when_stderr_is_empty(
             stderr="",
         )
 
-    monkeypatch.setattr(git_adapters.subprocess, "run", fake_run)
+    monkeypatch.setattr("envctl.adapters.git.subprocess.run", fake_run)
 
     with pytest.raises(ProjectDetectionError, match=r"git command failed") as exc_info:
         git_adapters._run_git(["status"])

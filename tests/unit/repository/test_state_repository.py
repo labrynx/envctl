@@ -99,7 +99,7 @@ def test_read_state_raises_when_file_cannot_be_read(
     def broken_read_text(*args: Any, **kwargs: Any) -> str:
         raise OSError("boom")
 
-    monkeypatch.setattr(state_repository.Path, "read_text", broken_read_text)
+    monkeypatch.setattr("envctl.repository.state_repository.Path.read_text", broken_read_text)
 
     with pytest.raises(StateError, match=r"Unable to read state file") as exc_info:
         state_repository.read_state(path)

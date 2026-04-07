@@ -183,8 +183,7 @@ def test_run_vault_edit_uses_active_profile_path(
         ),
     )
     monkeypatch.setattr(
-        vault_service.editor_adapter,
-        "open_file",
+        "envctl.services.vault_service.editor_adapter.open_file",
         lambda path: opened.update({"path": path}),
     )
     monkeypatch.setattr(

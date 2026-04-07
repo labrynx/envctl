@@ -9,7 +9,7 @@ import typer
 import envctl.cli.commands.init.command as init_command_module
 from envctl.cli.commands.init import init_command
 from envctl.domain.runtime import RuntimeMode
-from envctl.services.init_service import InitResult
+from envctl.domain.operations import InitResult
 
 
 def test_typer_confirm_bridges_to_typer(
@@ -22,7 +22,7 @@ def test_typer_confirm_bridges_to_typer(
         captured["default"] = default
         return True
 
-    monkeypatch.setattr(init_command_module.typer, "confirm", fake_confirm)
+    monkeypatch.setattr("envctl.cli.commands.init.command.typer.confirm", fake_confirm)
 
     result = init_command_module.typer_confirm("Proceed?", True)
 

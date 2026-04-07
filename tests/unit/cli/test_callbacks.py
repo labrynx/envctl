@@ -99,7 +99,7 @@ def test_typer_confirm_passes_correct_arguments(
         captured["show_default"] = show_default
         return True
 
-    monkeypatch.setattr(callbacks_module.typer, "confirm", fake_confirm)
+    monkeypatch.setattr("envctl.cli.callbacks.typer.confirm", fake_confirm)
 
     result = confirm(message="Are you sure?", default=True)
 
