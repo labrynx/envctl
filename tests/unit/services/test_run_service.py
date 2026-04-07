@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from subprocess import CompletedProcess
 from typing import Any
 
@@ -340,9 +341,14 @@ def test_run_command_logs_warning_for_docker_handoff(
         ),
     )
 
+    logger = logging.getLogger("envctl")
+    logger.addHandler(caplog.handler)
     caplog.set_level("WARNING")
 
-    run_service.run_command(["docker", "run", "aria-eventd:dev"], "dev")
+    try:
+        run_service.run_command(["docker", "run", "aria-eventd:dev"], "dev")
+    finally:
+        logger.removeHandler(caplog.handler)
 
     assert any(
         record.name == "envctl.services.run_service"
@@ -367,13 +373,18 @@ def test_run_command_logs_sanitized_error_context(
         raise OSError("boom")
 
     monkeypatch.setattr("envctl.services.run_service.subprocess.run", fake_run)
+    logger = logging.getLogger("envctl")
+    logger.addHandler(caplog.handler)
     caplog.set_level("ERROR")
 
-    with pytest.raises(ExecutionError, match=r"Failed to launch child process: docker"):
-        run_service.run_command(
-            ["docker", "run", "API_KEY=supersecret", "aria-eventd:dev"],
-            "dev",
-        )
+    try:
+        with pytest.raises(ExecutionError, match=r"Failed to launch child process: docker"):
+            run_service.run_command(
+                ["docker", "run", "API_KEY=supersecret", "aria-eventd:dev"],
+                "dev",
+            )
+    finally:
+        logger.removeHandler(caplog.handler)
 
     matching = [
         record
