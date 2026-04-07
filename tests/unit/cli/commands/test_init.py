@@ -10,7 +10,6 @@ import envctl.cli.commands.init.command as init_command_module
 from envctl.cli.commands.init import init_command
 from envctl.domain.operations import InitResult
 from envctl.domain.runtime import RuntimeMode
-from envctl.domain.operations import InitResult
 
 
 def test_typer_confirm_bridges_to_typer(
