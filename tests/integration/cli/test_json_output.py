@@ -16,6 +16,34 @@ def parse_json_output(output: str) -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(output))
 
 
+def find_single_state_path(workspace: Path) -> Path:
+    """Locate the single generated state.json file for the test workspace."""
+    candidates = sorted(workspace.parent.rglob("state.json"))
+
+    matching = []
+    for candidate in candidates:
+        try:
+            contents = json.loads(candidate.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            matching.append(candidate)
+            continue
+
+        if contents.get("repo_root") == str(workspace):
+            matching.append(candidate)
+
+    assert matching, f"No state.json found for workspace {workspace} under {workspace.parent}"
+    assert len(matching) == 1, (
+        f"Expected exactly one state.json for workspace {workspace}, "
+        f"found {len(matching)}: {matching}"
+    )
+    return matching[0]
+
+
+def get_vault_projects_dir(workspace: Path) -> Path:
+    """Return the test vault projects directory."""
+    return workspace.parent / "home" / ".envctl" / "vault" / "projects"
+
+
 def test_check_json_outputs_structured_payload_for_invalid_environment(
     runner: CliRunner,
     workspace: Path,
@@ -167,8 +195,7 @@ def test_status_json_outputs_structured_state_error(
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
     runner.invoke(app, ["init", "--contract", "starter"], catch_exceptions=False)
 
-    vault_projects_dir = workspace.parent / "home" / ".envctl" / "vault" / "projects"
-    state_path = next(vault_projects_dir.glob("*/state.json"))
+    state_path = find_single_state_path(workspace)
     state_path.write_text("{not-json", encoding="utf-8")
 
     result = runner.invoke(app, ["--json", "status"])
@@ -185,7 +212,7 @@ def test_status_json_outputs_structured_project_binding_error(
 ) -> None:
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
 
-    vault_projects_dir = workspace.parent / "home" / ".envctl" / "vault" / "projects"
+    vault_projects_dir = get_vault_projects_dir(workspace)
     first = vault_projects_dir / "demo-a--prj_1111111111111111"
     second = vault_projects_dir / "demo-b--prj_2222222222222222"
     first.mkdir(parents=True, exist_ok=True)
