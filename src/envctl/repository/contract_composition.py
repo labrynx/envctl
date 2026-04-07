@@ -11,10 +11,10 @@ from envctl.domain.contract_sets import SetSpec
 from envctl.domain.deprecations import ContractDeprecationWarning
 from envctl.domain.diagnostics import CommandWarning
 from envctl.domain.error_diagnostics import ContractDiagnosticIssue, ContractDiagnostics
+from envctl.domain.selection_resolution import resolve_variable_names_for_set
 from envctl.errors import ContractError
 from envctl.repository.contract_discovery import discover_root_contract_path
 from envctl.repository.contract_graph import resolve_contract_graph
-from envctl.services.contract_selection_service import resolve_variable_names_for_set
 from envctl.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -42,7 +42,6 @@ class _MergedSetBucket(TypedDict):
 def load_resolved_contract_bundle(repo_root: Path) -> ResolvedContractBundle:
     """Load the composed contract graph for one repository root."""
     logger.debug("Loading resolved contract bundle", extra={"repo_root": repo_root})
-    logger.debug("Loading resolved contract bundle", extra={"repo_root": repo_root})
     discovery = discover_root_contract_path(repo_root)
     load = resolve_contract_graph(discovery.path, repo_root=repo_root)
     graph = build_resolved_contract_graph(
@@ -52,16 +51,6 @@ def load_resolved_contract_bundle(repo_root: Path) -> ResolvedContractBundle:
         import_graph=load.import_graph,
     )
     contract = compose_contract_from_graph(load.contracts)
-    logger.debug(
-        "Resolved contract bundle loaded",
-        extra={
-            "root_path": graph.root_path,
-            "contract_path_count": len(graph.contract_paths),
-            "variable_count": len(contract.variables),
-            "set_count": len(contract.sets),
-            "warning_count": len(load.warnings) + len(discovery.warnings),
-        },
-    )
     logger.debug(
         "Resolved contract bundle loaded",
         extra={

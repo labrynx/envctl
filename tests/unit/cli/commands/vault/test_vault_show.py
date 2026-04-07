@@ -51,6 +51,7 @@ def test_vault_show_command_warns_when_file_is_empty(
         exists=True,
         path="/tmp/vault/values.env",
         values={},
+        sensitive_keys={},
         state="plaintext",
         detail="Run 'envctl vault encrypt' to migrate it.",
     )
@@ -64,11 +65,6 @@ def test_vault_show_command_warns_when_file_is_empty(
         vault_show_module,
         "get_active_profile",
         lambda: "local",
-    )
-    monkeypatch.setattr(
-        vault_show_module,
-        "load_contract_optional",
-        lambda path: None,
     )
 
     vault_show_module.vault_show_command(raw=False)
@@ -92,14 +88,13 @@ def test_vault_show_command_masks_sensitive_contract_values_and_unknown_values(
             "API_KEY": "super-secret",
             "UNKNOWN": "mystery-value",
         },
+        sensitive_keys={
+            "APP_NAME": False,
+            "API_KEY": True,
+            "UNKNOWN": True,
+        },
         state="plaintext",
         detail="Run 'envctl vault encrypt' to migrate it.",
-    )
-    contract = SimpleNamespace(
-        variables={
-            "APP_NAME": SimpleNamespace(sensitive=False),
-            "API_KEY": SimpleNamespace(sensitive=True),
-        }
     )
 
     monkeypatch.setattr(
@@ -111,11 +106,6 @@ def test_vault_show_command_masks_sensitive_contract_values_and_unknown_values(
         vault_show_module,
         "get_active_profile",
         lambda: "local",
-    )
-    monkeypatch.setattr(
-        vault_show_module,
-        "load_contract_optional",
-        lambda path: contract,
     )
     monkeypatch.setattr(
         vault_show_module,

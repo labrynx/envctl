@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typer
 
-from envctl.adapters.input import confirm
 from envctl.cli.decorators import handle_errors, text_output_only
 from envctl.cli.presenters import (
     render_vault_show_cancelled,
@@ -13,8 +12,8 @@ from envctl.cli.presenters import (
     render_vault_show_values,
 )
 from envctl.cli.prompts import build_vault_show_raw_confirmation_message
+from envctl.cli.prompts.input import confirm
 from envctl.cli.runtime import get_active_profile
-from envctl.repository.contract_repository import load_contract_optional
 from envctl.services.vault_service import run_vault_show
 from envctl.utils.masking import mask_value
 
@@ -49,7 +48,7 @@ def vault_show_command(
 ) -> None:
     """Show the current vault file contents, masked by default."""
     selected_profile = profile or get_active_profile()
-    context, active_profile, result = run_vault_show(selected_profile)
+    _context, active_profile, result = run_vault_show(selected_profile)
 
     if not result.exists:
         render_vault_show_missing(
@@ -77,17 +76,14 @@ def vault_show_command(
             )
             return
 
-    contract = load_contract_optional(context.repo_contract_path)
-    contract_variables = contract.variables if contract is not None else {}
-
     rendered_values: dict[str, str] = {}
     for key in sorted(result.values):
         value = result.values[key]
-        spec = contract_variables.get(key)
+        sensitive = result.sensitive_keys.get(key, True)
         rendered_values[key] = _render_vault_value(
             raw=raw,
             value=value,
-            sensitive=spec is None or spec.sensitive,
+            sensitive=sensitive,
         )
 
     render_vault_show_values(

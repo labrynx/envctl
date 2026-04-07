@@ -11,8 +11,8 @@ from envctl.domain.project import ProjectContext
 from envctl.domain.selection import ContractSelection
 from envctl.errors import ExecutionError
 from envctl.services.context_service import load_project_context
-from envctl.services.contract_selection_service import filter_projection_values
 from envctl.services.projection_validation import resolve_projectable_environment
+from envctl.services.selection_filtering import filter_projection_values
 from envctl.utils.logging import get_logger, sanitize_command_for_log, summarize_keys
 from envctl.utils.project_paths import normalize_profile_name
 
