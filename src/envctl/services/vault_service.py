@@ -85,6 +85,22 @@ def _classify_vault_file(
     return "plaintext", "Vault file is plaintext."
 
 
+def _resolve_sensitive_keys_for_values(
+    context: ProjectContext,
+    values: dict[str, str],
+) -> dict[str, bool]:
+    """Resolve whether each vault key should be treated as sensitive."""
+    contract = load_contract_optional(context.repo_contract_path)
+    contract_variables = contract.variables if contract is not None else {}
+
+    sensitive_keys: dict[str, bool] = {}
+    for key in values:
+        spec = contract_variables.get(key)
+        sensitive_keys[key] = True if spec is None else spec.sensitive
+
+    return sensitive_keys
+
+
 def _run_vault_edit_encrypted(profile_path: Path, *, context: ProjectContext) -> None:
     """Open a vault file through a decrypted temporary file and re-encrypt it."""
     crypto = context.vault_crypto
@@ -375,6 +391,7 @@ def run_vault_show(
         require_existing_explicit=True,
         allow_plaintext=not config.encryption_strict,
     )
+    sensitive_keys = _resolve_sensitive_keys_for_values(context, values)
 
     return (
         context,
@@ -383,6 +400,7 @@ def run_vault_show(
             path=profile_path,
             exists=exists,
             values=values,
+            sensitive_keys=sensitive_keys,
             state=state,
             detail=detail,
         ),

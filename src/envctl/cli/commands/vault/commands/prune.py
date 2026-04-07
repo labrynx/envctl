@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typer
 
-from envctl.adapters.input import confirm
 from envctl.cli.decorators import (
     handle_errors,
     requires_writable_runtime,
@@ -16,6 +15,7 @@ from envctl.cli.presenters import (
     render_vault_prune_result,
 )
 from envctl.cli.prompts import build_vault_prune_confirmation_message
+from envctl.cli.prompts.input import confirm
 from envctl.cli.runtime import get_active_profile
 from envctl.services.vault_service import get_unknown_vault_keys, run_vault_prune
 
