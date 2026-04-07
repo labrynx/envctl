@@ -33,3 +33,4 @@ tmp/
 .import_linter_cache
 # envctl
 master.key
+*.prof

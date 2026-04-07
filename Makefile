@@ -175,6 +175,7 @@ clean: ## Remove caches, coverage files, and build artifacts
 	find . -type d -name "*.egg-info" -prune -exec rm -rf {} +
 	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
 	find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete
+	find . -type d -name "*.prof" -prune -exec rm -rf {} +
 
 clean-hard: clean ## Remove additional local environment artifacts
 	rm -rf .tox .nox .cache
