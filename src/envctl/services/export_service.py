@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
+from envctl.adapters.projection_rendering import render_dotenv, render_shell_exports
 from envctl.domain.deprecations import ContractDeprecationWarning
 from envctl.domain.project import ProjectContext
 from envctl.domain.selection import ContractSelection
@@ -14,7 +15,6 @@ from envctl.services.contract_selection_service import (
 )
 from envctl.services.projection_validation import resolve_projectable_environment
 from envctl.utils.project_paths import normalize_profile_name
-from envctl.utils.projection_rendering import render_dotenv, render_shell_exports
 
 
 def run_export(

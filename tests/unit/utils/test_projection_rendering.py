@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from envctl.adapters.dotenv import dump_env
-from envctl.utils.projection_rendering import render_dotenv, render_shell_exports
+from envctl.adapters.projection_rendering import render_dotenv, render_shell_exports
 
 
 def test_render_shell_exports_includes_export_prefix() -> None:

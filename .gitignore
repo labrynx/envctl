@@ -30,3 +30,4 @@ codereview
 *.log
 
 tmp/
+.import_linter_cache
