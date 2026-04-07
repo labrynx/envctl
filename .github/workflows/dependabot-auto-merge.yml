@@ -5,57 +5,73 @@ on:
     types: [opened, synchronize, reopened]
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   automerge:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 10
     if: github.actor == 'dependabot[bot]'
+
+    permissions:
+      contents: write
+      pull-requests: write
 
     steps:
       - name: Extract versions from PR title
         id: version
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
         run: |
-          TITLE="${{ github.event.pull_request.title }}"
-
           echo "PR title: $TITLE"
 
-          # Extract versions like 1.2.3
-          FROM=$(echo "$TITLE" | grep -oP 'from \K[0-9]+\.[0-9]+\.[0-9]+')
-          TO=$(echo "$TITLE" | grep -oP 'to \K[0-9]+\.[0-9]+\.[0-9]+')
+          python - <<'PY'
+          import os
+          import re
 
-          echo "from=$FROM" >> $GITHUB_OUTPUT
-          echo "to=$TO" >> $GITHUB_OUTPUT
+          title = os.environ["TITLE"]
+          output_path = os.environ["GITHUB_OUTPUT"]
+
+          match = re.search(r'from (\d+\.\d+\.\d+).+ to (\d+\.\d+\.\d+)', title)
+
+          with open(output_path, "a", encoding="utf-8") as fh:
+              if match:
+                  fh.write(f"from={match.group(1)}\n")
+                  fh.write(f"to={match.group(2)}\n")
+              else:
+                  print("Could not extract semantic versions from PR title")
+                  fh.write("from=\n")
+                  fh.write("to=\n")
+          PY
 
       - name: Decide update type
         id: decision
+        if: steps.version.outputs.from != '' && steps.version.outputs.to != ''
+        env:
+          FROM: ${{ steps.version.outputs.from }}
+          TO: ${{ steps.version.outputs.to }}
         run: |
-          FROM="${{ steps.version.outputs.from }}"
-          TO="${{ steps.version.outputs.to }}"
+          FROM_MAJOR=$(echo "$FROM" | cut -d. -f1)
+          FROM_MINOR=$(echo "$FROM" | cut -d. -f2)
 
-          FROM_MAJOR=$(echo $FROM | cut -d. -f1)
-          FROM_MINOR=$(echo $FROM | cut -d. -f2)
-
-          TO_MAJOR=$(echo $TO | cut -d. -f1)
-          TO_MINOR=$(echo $TO | cut -d. -f2)
+          TO_MAJOR=$(echo "$TO" | cut -d. -f1)
+          TO_MINOR=$(echo "$TO" | cut -d. -f2)
 
           if [ "$FROM_MAJOR" != "$TO_MAJOR" ]; then
-            echo "type=major" >> $GITHUB_OUTPUT
+            echo "type=major" >> "$GITHUB_OUTPUT"
           elif [ "$FROM_MINOR" != "$TO_MINOR" ]; then
-            echo "type=minor" >> $GITHUB_OUTPUT
+            echo "type=minor" >> "$GITHUB_OUTPUT"
           else
-            echo "type=patch" >> $GITHUB_OUTPUT
+            echo "type=patch" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Enable auto-merge (only patch/minor)
-        if: steps.decision.outputs.type != 'major'
-        uses: peter-evans/enable-pull-request-automerge@v3
+        if: steps.decision.outputs.type == 'patch' || steps.decision.outputs.type == 'minor'
+        uses: peter-evans/enable-pull-request-automerge@a660677d5469627102a1c1e11409dd063606628d
         with:
-            pull-request-number: ${{ github.event.pull_request.number }}
-            merge-method: squash
+          pull-request-number: ${{ github.event.pull_request.number }}
+          merge-method: squash
 
       - name: Skip major updates
-        if: steps.decision.outputs.type == 'major'
-        run: echo "Major update detected → manual review required"
+        if: steps.version.outputs.from == '' || steps.version.outputs.to == '' || steps.decision.outputs.type == 'major'
+        run: echo "Major update or unsupported PR title format detected — manual review required"
