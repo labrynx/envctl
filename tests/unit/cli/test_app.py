@@ -4,7 +4,6 @@ import pytest
 from typer.testing import CliRunner
 
 import envctl.cli.app as app_module
-from envctl.cli.app import app
 from envctl.domain.runtime import OutputFormat
 
 
@@ -14,10 +13,13 @@ def test_root_callback_uses_explicit_profile_over_default(
     runner = CliRunner()
     captured: dict[str, object] = {}
 
+    def fake_load_config() -> object:
+        return type("Config", (), {"default_profile": "local"})()
+
     monkeypatch.setattr(
         app_module,
         "load_config",
-        lambda: type("Config", (), {"default_profile": "local"})(),
+        fake_load_config,
     )
 
     def fake_set_cli_state(
@@ -41,16 +43,16 @@ def test_root_callback_uses_explicit_profile_over_default(
 
     monkeypatch.setattr(app_module, "set_cli_state", fake_set_cli_state)
 
-    original_len = len(app.registered_commands)
+    original_len = len(app_module.app.registered_commands)
 
-    @app.command("profile-probe")
+    @app_module.app.command("profile-probe")
     def _profile_probe() -> None:
         return None
 
     try:
-        result = runner.invoke(app, ["--profile", "dev", "profile-probe"])
+        result = runner.invoke(app_module.app, ["--profile", "dev", "profile-probe"])
     finally:
-        del app.registered_commands[original_len:]
+        del app_module.app.registered_commands[original_len:]
 
     assert result.exit_code == 0
     assert captured["output_format"] == OutputFormat.TEXT
@@ -65,25 +67,28 @@ def test_root_callback_rejects_multiple_scope_selectors(
 ) -> None:
     runner = CliRunner()
 
+    def fake_load_config() -> object:
+        return type("Config", (), {"default_profile": "local"})()
+
     monkeypatch.setattr(
         app_module,
         "load_config",
-        lambda: type("Config", (), {"default_profile": "local"})(),
+        fake_load_config,
     )
 
-    original_len = len(app.registered_commands)
+    original_len = len(app_module.app.registered_commands)
 
-    @app.command("scope-probe")
+    @app_module.app.command("scope-probe")
     def _scope_probe() -> None:
         return None
 
     try:
         result = runner.invoke(
-            app,
+            app_module.app,
             ["--group", "Application", "--set", "runtime", "scope-probe"],
         )
     finally:
-        del app.registered_commands[original_len:]
+        del app_module.app.registered_commands[original_len:]
 
     assert result.exit_code != 0
     assert "mutually exclusive" in result.output

@@ -8,7 +8,6 @@ from typing import Any
 import pytest
 
 import envctl.adapters.git as git_adapters
-from envctl.adapters.git import _run_git, get_repo_remote, resolve_repo_root
 from envctl.errors import ProjectDetectionError
 from tests.support.assertions import require_repository_discovery_diagnostics
 
@@ -19,7 +18,7 @@ def test_run_git_returns_stripped_stdout(monkeypatch: pytest.MonkeyPatch) -> Non
 
     monkeypatch.setattr(git_adapters.subprocess, "run", fake_run)
 
-    result = _run_git(["rev-parse", "--show-toplevel"])
+    result = git_adapters._run_git(["rev-parse", "--show-toplevel"])
 
     assert result == "/tmp/repo"
 
@@ -33,7 +32,7 @@ def test_run_git_raises_when_git_executable_is_missing(
     monkeypatch.setattr(git_adapters.subprocess, "run", fake_run)
 
     with pytest.raises(ProjectDetectionError, match=r"git executable not found") as exc_info:
-        _run_git(["status"])
+        git_adapters._run_git(["status"])
 
     diagnostics = require_repository_discovery_diagnostics(exc_info.value.diagnostics)
     assert diagnostics is not None
@@ -53,7 +52,7 @@ def test_run_git_raises_with_stderr_when_git_command_fails(
     monkeypatch.setattr(git_adapters.subprocess, "run", fake_run)
 
     with pytest.raises(ProjectDetectionError, match=r"fatal: not a git repository") as exc_info:
-        _run_git(["status"])
+        git_adapters._run_git(["status"])
 
     diagnostics = require_repository_discovery_diagnostics(exc_info.value.diagnostics)
     assert diagnostics is not None
@@ -74,7 +73,7 @@ def test_run_git_raises_generic_message_when_stderr_is_empty(
     monkeypatch.setattr(git_adapters.subprocess, "run", fake_run)
 
     with pytest.raises(ProjectDetectionError, match=r"git command failed") as exc_info:
-        _run_git(["status"])
+        git_adapters._run_git(["status"])
 
     diagnostics = require_repository_discovery_diagnostics(exc_info.value.diagnostics)
     assert diagnostics is not None
@@ -94,7 +93,7 @@ def test_resolve_repo_root_returns_resolved_path(
         lambda args, cwd=None, check=True: str(repo_root),
     )
 
-    result = resolve_repo_root()
+    result = git_adapters.resolve_repo_root()
 
     assert result == repo_root.resolve()
 
@@ -112,7 +111,7 @@ def test_get_repo_remote_returns_value_when_available(
         lambda args, cwd=None, check=True: "git@github.com:labrynx/envctl.git",
     )
 
-    result = get_repo_remote(repo_root)
+    result = git_adapters.get_repo_remote(repo_root)
 
     assert result == "git@github.com:labrynx/envctl.git"
 
@@ -134,7 +133,7 @@ def test_get_repo_remote_returns_none_when_git_lookup_fails(
 
     monkeypatch.setattr(git_adapters, "_run_git", raise_detection_error)
 
-    result = get_repo_remote(repo_root)
+    result = git_adapters.get_repo_remote(repo_root)
 
     assert result is None
 
@@ -148,6 +147,6 @@ def test_get_repo_remote_returns_none_when_git_output_is_empty(
 
     monkeypatch.setattr(git_adapters, "_run_git", lambda args, cwd=None, check=True: "")
 
-    result = get_repo_remote(repo_root)
+    result = git_adapters.get_repo_remote(repo_root)
 
     assert result is None

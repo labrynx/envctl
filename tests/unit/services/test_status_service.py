@@ -6,7 +6,6 @@ import pytest
 
 import envctl.services.status_service as status_service
 from envctl.errors import ContractError, ExecutionError
-from envctl.services.status_service import run_status
 from tests.support.builders import make_resolution_report, make_resolved_value
 from tests.support.contexts import make_status_context
 
@@ -23,7 +22,7 @@ def test_run_status_reports_missing_contract(
         lambda project_name=None, persist_binding=False: (object(), context),
     )
 
-    active_profile, report = run_status("local")
+    active_profile, report = status_service.run_status("local")
 
     assert active_profile == "local"
     assert report.project_slug == "demo"
@@ -53,7 +52,7 @@ def test_run_status_reports_invalid_contract(
 
     monkeypatch.setattr(status_service, "load_contract_for_context", raise_contract_error)
 
-    active_profile, report = run_status("local")
+    active_profile, report = status_service.run_status("local")
 
     assert active_profile == "local"
     assert report.contract_exists is True
@@ -93,7 +92,7 @@ def test_run_status_reports_valid_environment(
         lambda _context, _contract, *, active_profile=None: resolution,
     )
 
-    active_profile, report = run_status("local")
+    active_profile, report = status_service.run_status("local")
 
     assert active_profile == "local"
     assert report.contract_exists is True
@@ -140,7 +139,7 @@ def test_run_status_reports_missing_invalid_and_unknown_values(
         lambda _context, _contract, *, active_profile=None: resolution,
     )
 
-    active_profile, report = run_status("local")
+    active_profile, report = status_service.run_status("local")
 
     assert active_profile == "local"
     assert report.resolved_valid is False
@@ -174,4 +173,4 @@ def test_run_status_fails_when_explicit_profile_file_is_missing(
     )
 
     with pytest.raises(ExecutionError, match=r"Create it with 'envctl profile create staging'"):
-        run_status("staging")
+        status_service.run_status("staging")

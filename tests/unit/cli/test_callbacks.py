@@ -7,11 +7,10 @@ import typer
 
 import envctl.cli.callbacks as callbacks_module
 from envctl.adapters.input import confirm, prompt_secret, prompt_string
-from envctl.cli.callbacks import version_callback
 
 
 def test_version_callback_does_nothing_when_flag_is_false() -> None:
-    version_callback(False)
+    callbacks_module.version_callback(False)
 
 
 def test_version_callback_prints_version_and_exits(
@@ -21,7 +20,7 @@ def test_version_callback_prints_version_and_exits(
     monkeypatch.setattr("envctl.cli.callbacks.__version__", "9.9.9")
 
     with pytest.raises(typer.Exit):
-        version_callback(True)
+        callbacks_module.version_callback(True)
 
     captured = capsys.readouterr()
     assert captured.out.strip() == "envctl 9.9.9"

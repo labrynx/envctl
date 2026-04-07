@@ -6,7 +6,6 @@ import pytest
 import typer
 
 import envctl.cli.commands.project.commands.rebind as rebind_command_module
-from envctl.cli.commands.project.commands.rebind import project_rebind_command
 from envctl.domain.operations import RebindResult
 from envctl.domain.runtime import RuntimeMode
 
@@ -29,7 +28,7 @@ def test_rebind_command_aborts_when_confirmation_is_rejected(
     monkeypatch.setattr(rebind_command_module, "confirm", fake_confirm)
     monkeypatch.setattr(rebind_command_module, "run_rebind", fake_run_rebind)
 
-    project_rebind_command(yes=False)
+    rebind_command_module.project_rebind_command(yes=False)
 
     output = capsys.readouterr().out
     assert "Nothing was changed." in output
@@ -68,7 +67,7 @@ def test_rebind_command_skips_confirmation_when_yes_is_true(
         lambda *, copy_values=True: (context, result),
     )
 
-    project_rebind_command(yes=True)
+    rebind_command_module.project_rebind_command(yes=True)
 
     output = capsys.readouterr().out
     assert "Rebound repository to demo (prj_bbbbbbbbbbbbbbbb)" in output
@@ -102,7 +101,7 @@ def test_rebind_command_prints_rebind_details_with_previous_project_id(
         lambda *, copy_values=True: (context, result),
     )
 
-    project_rebind_command(copy_values=True, yes=False)
+    rebind_command_module.project_rebind_command(copy_values=True, yes=False)
 
     output = capsys.readouterr().out
     assert "Rebound repository to demo (prj_bbbbbbbbbbbbbbbb)" in output
@@ -136,7 +135,7 @@ def test_rebind_command_prints_no_copy_when_values_are_not_copied(
         lambda *, copy_values=True: (context, result),
     )
 
-    project_rebind_command(copy_values=False, yes=True)
+    rebind_command_module.project_rebind_command(copy_values=False, yes=True)
 
     output = capsys.readouterr().out
     assert "new_project_id: prj_bbbbbbbbbbbbbbbb" in output
@@ -163,7 +162,7 @@ def test_rebind_command_rejects_ci_mode(
     )
 
     with pytest.raises(typer.Exit) as exc_info:
-        project_rebind_command(yes=True)
+        rebind_command_module.project_rebind_command(yes=True)
 
     assert exc_info.value.exit_code == 1
     assert "CI read-only mode" in captured["message"]

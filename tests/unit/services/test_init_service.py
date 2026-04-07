@@ -18,7 +18,6 @@ from envctl.domain.contract_inference import (
     looks_like_placeholder,
 )
 from envctl.domain.project import ProjectContext
-from envctl.services.init_service import InitResult, run_init
 from tests.support.contexts import make_project_context
 
 
@@ -59,10 +58,10 @@ def test_run_init_creates_vault_files_and_preserves_existing_contract(
         lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
-    result_context, result = run_init()
+    result_context, result = init_service.run_init()
 
     assert result_context == context
-    assert result == InitResult(contract_created=False)
+    assert result == init_service.InitResult(contract_created=False)
 
     assert context.vault_project_dir.exists()
     assert context.vault_values_path.exists()
@@ -81,10 +80,10 @@ def test_run_init_creates_starter_contract_when_requested(
         lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
-    result_context, result = run_init(contract_mode="starter")
+    result_context, result = init_service.run_init(contract_mode="starter")
 
     assert result_context == context
-    assert result == InitResult(
+    assert result == init_service.InitResult(
         contract_created=True,
         contract_template="starter",
         contract_skipped=False,
@@ -132,10 +131,10 @@ def test_run_init_skips_contract_when_requested(
         lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
-    result_context, result = run_init(contract_mode="skip")
+    result_context, result = init_service.run_init(contract_mode="skip")
 
     assert result_context == context
-    assert result == InitResult(
+    assert result == init_service.InitResult(
         contract_created=False,
         contract_template=None,
         contract_skipped=True,
@@ -171,9 +170,9 @@ def test_run_init_creates_contract_from_env_example(
         lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
-    _, result = run_init(contract_mode="example")
+    _, result = init_service.run_init(contract_mode="example")
 
-    assert result == InitResult(
+    assert result == init_service.InitResult(
         contract_created=True,
         contract_template="example",
         contract_skipped=False,
@@ -228,9 +227,9 @@ def test_run_init_example_mode_falls_back_to_starter_when_example_is_missing(
         lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
-    _, result = run_init(contract_mode="example")
+    _, result = init_service.run_init(contract_mode="example")
 
-    assert result == InitResult(
+    assert result == init_service.InitResult(
         contract_created=True,
         contract_template="example",
         contract_skipped=False,
@@ -267,9 +266,9 @@ def test_run_init_ask_mode_uses_example_when_confirm_accepts(
         lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
-    _, result = run_init(contract_mode="ask", confirm=fake_confirm)
+    _, result = init_service.run_init(contract_mode="ask", confirm=fake_confirm)
 
-    assert result == InitResult(
+    assert result == init_service.InitResult(
         contract_created=True,
         contract_template="example",
         contract_skipped=False,
@@ -301,9 +300,9 @@ def test_run_init_ask_mode_uses_starter_after_declining_example(
         lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
-    _, result = run_init(contract_mode="ask", confirm=fake_confirm)
+    _, result = init_service.run_init(contract_mode="ask", confirm=fake_confirm)
 
-    assert result == InitResult(
+    assert result == init_service.InitResult(
         contract_created=True,
         contract_template="starter",
         contract_skipped=False,
@@ -331,9 +330,9 @@ def test_run_init_ask_mode_skips_after_declining_all_prompts(
         lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
-    _, result = run_init(contract_mode="ask", confirm=fake_confirm)
+    _, result = init_service.run_init(contract_mode="ask", confirm=fake_confirm)
 
-    assert result == InitResult(
+    assert result == init_service.InitResult(
         contract_created=False,
         contract_template=None,
         contract_skipped=True,
@@ -359,9 +358,9 @@ def test_run_init_ask_mode_without_confirm_uses_example_when_available(
         lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
-    _, result = run_init(contract_mode="ask", confirm=None)
+    _, result = init_service.run_init(contract_mode="ask", confirm=None)
 
-    assert result == InitResult(
+    assert result == init_service.InitResult(
         contract_created=True,
         contract_template="example",
         contract_skipped=False,
@@ -380,9 +379,9 @@ def test_run_init_ask_mode_without_confirm_uses_starter_when_example_is_missing(
         lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
 
-    _, result = run_init(contract_mode="ask", confirm=None)
+    _, result = init_service.run_init(contract_mode="ask", confirm=None)
 
-    assert result == InitResult(
+    assert result == init_service.InitResult(
         contract_created=True,
         contract_template="starter",
         contract_skipped=False,

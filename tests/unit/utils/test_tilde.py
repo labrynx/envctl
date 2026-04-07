@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 
 import envctl.utils.tilde as tilde_utils
-from envctl.utils.tilde import to_tilde_path
 
 
 def test_to_tilde_path_uses_home_prefix(
@@ -18,7 +17,7 @@ def test_to_tilde_path_uses_home_prefix(
 
     monkeypatch.setattr(tilde_utils.Path, "home", lambda: home)
 
-    assert to_tilde_path(target) == "~/.envctl/vault"
+    assert tilde_utils.to_tilde_path(target) == "~/.envctl/vault"
 
 
 def test_to_tilde_path_returns_absolute_path_when_outside_home(
@@ -31,4 +30,4 @@ def test_to_tilde_path_returns_absolute_path_when_outside_home(
 
     monkeypatch.setattr(tilde_utils.Path, "home", lambda: home)
 
-    assert to_tilde_path(outside) == str(outside.resolve())
+    assert tilde_utils.to_tilde_path(outside) == str(outside.resolve())
