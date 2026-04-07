@@ -13,7 +13,11 @@ from envctl.errors import ExecutionError
 from envctl.services.context_service import load_project_context
 from envctl.services.projection_validation import resolve_projectable_environment
 from envctl.services.selection_filtering import filter_projection_values
-from envctl.utils.logging import get_logger, sanitize_command_for_log, summarize_keys
+from envctl.utils.logging import (
+    get_logger,
+    sanitize_command_for_log,
+    summarize_key_count,
+)
 from envctl.utils.project_paths import normalize_profile_name
 
 logger = get_logger(__name__)
@@ -128,7 +132,7 @@ def run_command(
         extra={
             "active_profile": resolved_profile,
             "resolved_key_count": len(resolved_values),
-            "resolved_keys": summarize_keys(sorted(resolved_values)),
+            "resolved_key_summary": summarize_key_count(resolved_values),
         },
     )
 

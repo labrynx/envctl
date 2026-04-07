@@ -10,7 +10,7 @@ from envctl.repository.profile_repository import load_profile_values
 from envctl.services.resolution_service.builders import build_resolved_value
 from envctl.services.resolution_service.expansion import expand_selected_values
 from envctl.services.resolution_service.selection import select_contract_values
-from envctl.utils.logging import get_logger, summarize_keys
+from envctl.utils.logging import get_logger, summarize_key_count, summarize_keys
 from envctl.utils.project_paths import is_local_profile, normalize_profile_name
 
 logger = get_logger(__name__)
@@ -48,7 +48,7 @@ def resolve_environment(
         extra={
             "active_profile": resolved_profile,
             "profile_key_count": len(profile_values),
-            "profile_keys": summarize_keys(sorted(profile_values)),
+            "profile_key_summary": summarize_key_count(profile_values),
         },
     )
 
