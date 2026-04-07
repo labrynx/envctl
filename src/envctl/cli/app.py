@@ -12,6 +12,7 @@ from envctl.cli.commands.doctor import doctor_command
 from envctl.cli.commands.explain import explain_command
 from envctl.cli.commands.export import export_command
 from envctl.cli.commands.fill import fill_command
+from envctl.cli.commands.guard import guard_app
 from envctl.cli.commands.init import init_command
 from envctl.cli.commands.inspect import inspect_command
 from envctl.cli.commands.profile import profile_app
@@ -72,6 +73,7 @@ app.add_typer(config_app, name="config")
 app.add_typer(vault_app, name="vault")
 app.add_typer(project_app, name="project")
 app.add_typer(profile_app, name="profile")
+app.add_typer(guard_app, name="guard")
 
 
 @app.callback()

@@ -16,6 +16,8 @@ The CLI is now more consistent across commands, making it easier to understand a
 ### Added
 
 - Support for contract composition via `imports`, allowing contracts to be split into multiple files and resolved as a single, deterministic contract
+- New `envctl guard secrets` command to block staged envctl vault payloads and master keys before commit
+- `envctl init` now installs a local managed Git pre-commit hook when the repository can safely use `.githooks`
 - New root contract format `.envctl.yaml`, with automatic fallback to legacy `.envctl.schema.yaml`
 - Global contract graph built at runtime, including:
   - resolved contract files
@@ -34,6 +36,8 @@ The CLI is now more consistent across commands, making it easier to understand a
 
 ### Changed
 
+- New master keys now use a canonical, self-identifying master-key format: `ENVCTL-MASTER-KEY-V1:<key-id>:<base64-key>`
+- Legacy raw master keys are migrated automatically when loaded from disk and writable
 - Contract loading is now repo-aware:
   - `.envctl.yaml` is the new standard root contract
   - `.envctl.schema.yaml` is treated as legacy and used only as fallback
@@ -61,6 +65,7 @@ The CLI is now more consistent across commands, making it easier to understand a
 
 ### Deprecated
 
+- Legacy raw master keys remain supported only as a transition path and are scheduled for removal in `v2.6.0`
 - `.envctl.schema.yaml` is now considered a legacy root contract format
   It is still supported, but `.envctl.yaml` is the recommended standard going forward
 - `envctl doctor` is now a deprecated alias of `envctl inspect` and is scheduled for removal in `v2.6.0`

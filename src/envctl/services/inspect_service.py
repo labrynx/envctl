@@ -67,7 +67,7 @@ def run_inspect(
         variables=tuple(filtered_report.values[key] for key in sorted(filtered_report.values)),
         problems=build_diagnostic_problems(filtered_report),
         contract_graph=_build_contract_graph_summary(bundle),
-        warnings=bundle.command_warnings,
+        warnings=tuple(bundle.command_warnings) + tuple(context.runtime_warnings),
     )
     return context, result, bundle.warnings
 
@@ -108,6 +108,7 @@ def run_inspect_key(
         default=spec.default,
         sensitive=spec.sensitive,
         warnings=tuple(bundle.command_warnings)
+        + tuple(context.runtime_warnings)
         + tuple(
             CommandWarning(kind="invalid_value", message=item.detail)
             for _ in [0]

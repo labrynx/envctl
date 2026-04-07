@@ -138,3 +138,20 @@ Encryption at rest protects vault files on disk.  It does **not** protect:
 `envctl` is a single-user local tool.  Encryption here defends against
 accidental disclosure (backup exposure, shared filesystem, shoulder surfing)
 rather than against a compromised local account.
+
+
+## Master key format
+
+`envctl` now stores new master keys in a canonical, self-identifying format:
+
+```text
+ENVCTL-MASTER-KEY-V1:<key-id>:<base64-key>
+```
+
+- `prefix` is the stable format marker and version
+- `key-id` is the public short identifier derived from the real key bytes
+- `base64-key` is the Fernet key material used to encrypt vault files
+
+Legacy raw Fernet keys are still accepted during the transition period, but they are deprecated and scheduled for removal in `v2.6.0`. When `envctl` loads a legacy key from disk and can safely rewrite the file, it migrates the file automatically to the canonical format without changing the real secret.
+
+`ENVCTL_VAULT_KEY` also accepts both formats during the transition period. Legacy values supplied only through the environment are not persisted automatically.

@@ -36,6 +36,15 @@ def load_configured_vault_crypto(
     )
 
 
+def _with_crypto(context: ProjectContext, crypto: VaultCrypto | None) -> ProjectContext:
+    """Attach vault crypto and runtime warnings to one project context."""
+    return replace(
+        context,
+        vault_crypto=crypto,
+        runtime_warnings=crypto.runtime_warnings if crypto is not None else (),
+    )
+
+
 def load_project_context(
     project_name: str | None = None,
     *,
@@ -44,13 +53,13 @@ def load_project_context(
     """Load config and build the current project context."""
     config = load_config()
     context = build_project_context(config, project_name=project_name)
-    context = replace(context, vault_crypto=load_configured_vault_crypto(config, context))
+    context = _with_crypto(context, load_configured_vault_crypto(config, context))
 
     if persist_binding:
         if context.binding_source == "derived":
             context = replace(context, project_id=new_project_id())
 
         context = persist_project_binding(config, context)
-        context = replace(context, vault_crypto=load_configured_vault_crypto(config, context))
+        context = _with_crypto(context, load_configured_vault_crypto(config, context))
 
     return config, context

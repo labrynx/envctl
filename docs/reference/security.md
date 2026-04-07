@@ -362,3 +362,28 @@ That separation is not just an architecture choice. It is also one of the main s
 
 Optional encryption at rest adds a layer of protection against accidental disclosure
 without changing the model or the workflow.
+
+
+## Git secret guard
+
+`envctl init` now tries to install a local Git pre-commit hook that runs:
+
+```bash
+envctl guard secrets
+```
+
+This guard is intentionally narrow. It only blocks **envctl-specific secrets** staged in the Git index:
+
+- encrypted vault payloads that start with `ENVCTL-VAULT-V1:`
+- canonical master keys that start with `ENVCTL-MASTER-KEY-V1:`
+- during the transition period, the current project's legacy raw master key when it is staged verbatim
+
+The guard does **not** replace a general repository secret scanner. It does not scan for arbitrary credentials, entropy, or third-party token formats. Use a separate tool such as your normal CI secret scanner for that broader problem.
+
+If a secret was already committed, remove it from the index and rotate it if needed. Typical first steps are:
+
+```bash
+git restore --staged -- <path>
+```
+
+and then moving the secret outside the repository. If a master key or exported secret was exposed, rotate it before trusting the repository again.

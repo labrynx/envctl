@@ -343,3 +343,16 @@ envctl project repair
 ```
 
 These commands manage repository identity and local binding continuity.
+
+
+## `envctl guard secrets`
+
+Scans the staged Git index for envctl-specific secret material and exits with a non-zero status when it finds something unsafe to commit.
+
+It currently detects:
+
+- encrypted vault payloads
+- canonical master keys
+- the current project's legacy raw master key during the compatibility window
+
+This is the command used by the Git hook that `envctl init` installs when the current repository can safely adopt `.githooks` as its local hooks path.

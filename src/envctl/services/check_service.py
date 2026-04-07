@@ -45,8 +45,14 @@ def run_check(
     report = resolve_environment(context, contract, active_profile=resolved_profile)
     active_selection = selection or ContractSelection()
     filtered_report = filter_resolution_report(report, contract, selection=active_selection)
-    return (
-        context,
-        _build_check_result(resolved_profile, active_selection, filtered_report),
-        bundle.warnings,
-    )
+    result = _build_check_result(resolved_profile, active_selection, filtered_report)
+    if context.runtime_warnings:
+        result = CheckResult(
+            active_profile=result.active_profile,
+            selection=result.selection,
+            summary=result.summary,
+            problems=result.problems,
+            values=result.values,
+            warnings=result.warnings + context.runtime_warnings,
+        )
+    return (context, result, bundle.warnings)

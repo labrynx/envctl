@@ -46,14 +46,25 @@ def patch_git_for_repo(monkeypatch: pytest.MonkeyPatch, repo: Path) -> None:
 
     git_config_store: dict[str, str] = {}
 
-    def fake_run_git(args: list[str], cwd: Path | None = None, check: bool = True) -> str:
+    def fake_run_git(
+        args: list[str],
+        cwd: Path | None = None,
+        check: bool = True,
+        text: bool = True,
+    ) -> str | bytes:
         del cwd, check
 
         if args == ["rev-parse", "--show-toplevel"]:
             return str(repo)
 
+        if args == ["rev-parse", "--is-inside-work-tree"]:
+            return "true"
+
         if args == ["remote", "get-url", "origin"]:
             return "git@github.com:labrynx/envctl.git"
+
+        if args == ["diff", "--cached", "--name-only", "--diff-filter=ACMR", "-z"]:
+            return b"" if not text else ""
 
         if args == ["config", "--local", "--get", "envctl.projectId"]:
             return git_config_store.get("envctl.projectId", "")
@@ -67,6 +78,14 @@ def patch_git_for_repo(monkeypatch: pytest.MonkeyPatch, repo: Path) -> None:
         raise RuntimeError(f"Unexpected git args: {args}")
 
     monkeypatch.setattr(git_adapters, "_run_git", fake_run_git)
+
+
+@pytest.fixture(autouse=True)
+def reset_vault_crypto_runtime_state() -> None:
+    """Reset VaultCrypto module-level runtime flags between tests."""
+    from envctl.vault_crypto import VaultCrypto
+
+    VaultCrypto._legacy_warning_emitted = False
 
 
 @pytest.fixture

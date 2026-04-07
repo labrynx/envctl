@@ -1,4 +1,3 @@
-# tests/support/contexts.py
 from __future__ import annotations
 
 from pathlib import Path
@@ -7,6 +6,7 @@ from typing import TYPE_CHECKING
 from envctl.domain.project import BindingSource, ProjectContext
 
 if TYPE_CHECKING:
+    from envctl.domain.diagnostics import CommandWarning
     from envctl.vault_crypto import VaultCrypto
 
 
@@ -32,6 +32,7 @@ def make_project_context(
     repo_env_path: Path | str | None = None,
     vault_key_path: Path | str | None = None,
     vault_crypto: VaultCrypto | None = None,
+    runtime_warnings: tuple[CommandWarning, ...] = (),
 ) -> ProjectContext:
     """Build a complete ProjectContext for tests."""
     repo_root = Path(repo_root)
@@ -73,6 +74,7 @@ def make_project_context(
         vault_state_path=resolved_vault_state_path,
         vault_key_path=resolved_vault_key_path,
         vault_crypto=vault_crypto,
+        runtime_warnings=runtime_warnings,
     )
 
 

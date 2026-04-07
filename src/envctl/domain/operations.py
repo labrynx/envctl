@@ -18,6 +18,9 @@ class InitResult:
     contract_created: bool
     contract_template: InitContractTemplate = None
     contract_skipped: bool = False
+    git_guard_installed: bool = False
+    git_guard_reason: str | None = None
+    runtime_warnings: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

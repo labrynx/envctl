@@ -4,9 +4,17 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from cryptography.fernet import Fernet
 
+from envctl.constants import MASTER_KEY_FORMAT_VERSION
 from envctl.errors import ExecutionError
-from envctl.vault_crypto import VaultCrypto, VaultDecryptionError
+from envctl.vault_crypto import (
+    VaultCrypto,
+    VaultDecryptionError,
+    derive_master_key_id,
+    parse_master_key_material,
+    serialize_master_key_v1,
+)
 
 
 def test_load_or_create_generates_key_on_first_call(tmp_path: Path) -> None:
@@ -155,3 +163,50 @@ def test_encrypt_different_tokens_for_same_plaintext(tmp_path: Path) -> None:
     assert token1 != token2
     assert crypto.decrypt(token1) == plaintext
     assert crypto.decrypt(token2) == plaintext
+
+
+def test_parse_master_key_material_accepts_canonical_format(tmp_path: Path) -> None:
+    key_path = tmp_path / "master.key"
+    crypto = VaultCrypto.load_or_create(key_path, protected_paths=())
+
+    material = parse_master_key_material(key_path.read_bytes())
+
+    assert material.format == "v1"
+    assert material.key_id == crypto.key_id
+    assert material.key_bytes == serialize_master_key_v1(material.key_bytes).split(b":", 2)[2]
+
+
+def test_parse_master_key_material_accepts_legacy_format(tmp_path: Path) -> None:
+    legacy_key = Fernet.generate_key()
+
+    material = parse_master_key_material(legacy_key)
+
+    assert material.format == "legacy"
+    assert material.key_id == derive_master_key_id(legacy_key)
+    assert material.key_bytes == legacy_key
+
+
+def test_parse_master_key_material_rejects_invalid_content() -> None:
+    with pytest.raises(ExecutionError, match="Invalid master key material"):
+        parse_master_key_material(b"not-a-key")
+
+
+def test_serialize_master_key_v1_is_canonical() -> None:
+    key_bytes = Fernet.generate_key()
+
+    serialized = serialize_master_key_v1(key_bytes)
+
+    assert serialized.startswith(f"{MASTER_KEY_FORMAT_VERSION}:".encode())
+    assert serialized.endswith(key_bytes)
+
+
+def test_load_or_create_migrates_legacy_key_file(tmp_path: Path) -> None:
+    key_path = tmp_path / "master.key"
+    legacy_key = Fernet.generate_key()
+    key_path.write_bytes(legacy_key)
+
+    crypto = VaultCrypto.load_or_create(key_path, protected_paths=())
+
+    assert crypto.key_id == derive_master_key_id(legacy_key)
+    assert key_path.read_bytes().startswith(f"{MASTER_KEY_FORMAT_VERSION}:".encode())
+    assert any(w.kind == "legacy_master_key_migrated" for w in crypto.runtime_warnings)

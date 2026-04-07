@@ -1,0 +1,67 @@
+from __future__ import annotations
+
+import subprocess
+from pathlib import Path
+
+from cryptography.fernet import Fernet
+from typer.testing import CliRunner
+
+from envctl.cli.app import app
+from envctl.vault_crypto import serialize_master_key_v1
+
+
+def _git(repo_root: Path, *args: str) -> None:
+    # Intentional in tests: use git from PATH against a temporary local repository.
+    subprocess.run(  # noqa: S603
+        ["git", *args],  # noqa: S607
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+    )
+
+
+def _write_sample_contract(repo_root: Path) -> None:
+    (repo_root / ".envctl.yaml").write_text(
+        "version: 1\nvariables:\n  APP_NAME:\n    type: string\n"
+        "    required: true\n    sensitive: false\n",
+        encoding="utf-8",
+    )
+
+
+def test_guard_secrets_fails_for_staged_master_key(
+    runner: CliRunner,
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(home / ".config"))
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "Test User")
+    _write_sample_contract(repo)
+
+    monkeypatch.chdir(repo)
+
+    config_result = runner.invoke(app, ["config", "init"], catch_exceptions=False)
+    assert config_result.exit_code == 0
+
+    init_result = runner.invoke(app, ["init", "--contract", "skip"], catch_exceptions=False)
+    assert init_result.exit_code == 0
+
+    leaked_path = repo / "renamed-secret.txt"
+    leaked_path.write_bytes(serialize_master_key_v1(Fernet.generate_key()))
+    _git(repo, "add", leaked_path.name)
+
+    guard_result = runner.invoke(app, ["guard", "secrets"], catch_exceptions=False)
+
+    assert guard_result.exit_code == 1
+    combined_output = guard_result.stdout + guard_result.stderr
+
+    assert "contains an envctl master key" in combined_output
+    assert "git restore --staged" in combined_output
+    assert "git restore --staged" in guard_result.stdout

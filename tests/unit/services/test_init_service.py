@@ -17,6 +17,7 @@ from envctl.domain.contract_inference import (
     infer_type,
     looks_like_placeholder,
 )
+from envctl.domain.operations import InitResult
 from envctl.domain.project import ProjectContext
 from tests.support.contexts import make_project_context
 
@@ -61,7 +62,7 @@ def test_run_init_creates_vault_files_and_preserves_existing_contract(
     result_context, result = init_service.run_init()
 
     assert result_context == context
-    assert result == init_service.InitResult(contract_created=False)
+    assert result == InitResult(contract_created=False)
 
     assert context.vault_project_dir.exists()
     assert context.vault_values_path.exists()
@@ -83,7 +84,7 @@ def test_run_init_creates_starter_contract_when_requested(
     result_context, result = init_service.run_init(contract_mode="starter")
 
     assert result_context == context
-    assert result == init_service.InitResult(
+    assert result == InitResult(
         contract_created=True,
         contract_template="starter",
         contract_skipped=False,
@@ -134,7 +135,7 @@ def test_run_init_skips_contract_when_requested(
     result_context, result = init_service.run_init(contract_mode="skip")
 
     assert result_context == context
-    assert result == init_service.InitResult(
+    assert result == InitResult(
         contract_created=False,
         contract_template=None,
         contract_skipped=True,
@@ -172,7 +173,7 @@ def test_run_init_creates_contract_from_env_example(
 
     _, result = init_service.run_init(contract_mode="example")
 
-    assert result == init_service.InitResult(
+    assert result == InitResult(
         contract_created=True,
         contract_template="example",
         contract_skipped=False,
@@ -229,7 +230,7 @@ def test_run_init_example_mode_falls_back_to_starter_when_example_is_missing(
 
     _, result = init_service.run_init(contract_mode="example")
 
-    assert result == init_service.InitResult(
+    assert result == InitResult(
         contract_created=True,
         contract_template="example",
         contract_skipped=False,
@@ -268,7 +269,7 @@ def test_run_init_ask_mode_uses_example_when_confirm_accepts(
 
     _, result = init_service.run_init(contract_mode="ask", confirm=fake_confirm)
 
-    assert result == init_service.InitResult(
+    assert result == InitResult(
         contract_created=True,
         contract_template="example",
         contract_skipped=False,
@@ -302,7 +303,7 @@ def test_run_init_ask_mode_uses_starter_after_declining_example(
 
     _, result = init_service.run_init(contract_mode="ask", confirm=fake_confirm)
 
-    assert result == init_service.InitResult(
+    assert result == InitResult(
         contract_created=True,
         contract_template="starter",
         contract_skipped=False,
@@ -332,7 +333,7 @@ def test_run_init_ask_mode_skips_after_declining_all_prompts(
 
     _, result = init_service.run_init(contract_mode="ask", confirm=fake_confirm)
 
-    assert result == init_service.InitResult(
+    assert result == InitResult(
         contract_created=False,
         contract_template=None,
         contract_skipped=True,
@@ -360,7 +361,7 @@ def test_run_init_ask_mode_without_confirm_uses_example_when_available(
 
     _, result = init_service.run_init(contract_mode="ask", confirm=None)
 
-    assert result == init_service.InitResult(
+    assert result == InitResult(
         contract_created=True,
         contract_template="example",
         contract_skipped=False,
@@ -381,7 +382,7 @@ def test_run_init_ask_mode_without_confirm_uses_starter_when_example_is_missing(
 
     _, result = init_service.run_init(contract_mode="ask", confirm=None)
 
-    assert result == init_service.InitResult(
+    assert result == InitResult(
         contract_created=True,
         contract_template="starter",
         contract_skipped=False,
@@ -537,3 +538,54 @@ def test_looks_like_placeholder_detects_your_prefix_variants() -> None:
 def test_looks_like_placeholder_detects_your_prefix_only() -> None:
     assert looks_like_placeholder("your-custom-value") is True
     assert looks_like_placeholder("your_custom_value") is True
+
+
+def test_run_init_installs_managed_git_hook_when_repo_is_git(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    context = make_context(tmp_path)
+
+    monkeypatch.setattr(
+        init_service,
+        "load_project_context",
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+    )
+    monkeypatch.setattr(init_service, "is_git_repository", lambda repo_root: True)
+    monkeypatch.setattr(init_service, "get_local_git_config", lambda repo_root, key: None)
+
+    captured: dict[str, str] = {}
+    monkeypatch.setattr(
+        init_service,
+        "set_local_git_config",
+        lambda repo_root, key, value: captured.update({"key": key, "value": value}),
+    )
+
+    _, result = init_service.run_init(contract_mode="skip")
+
+    hook_path = context.repo_root / ".githooks" / "pre-commit"
+    assert result.git_guard_installed is True
+    assert hook_path.exists()
+    assert "envctl guard secrets" in hook_path.read_text(encoding="utf-8")
+    assert captured == {"key": "core.hooksPath", "value": ".githooks"}
+
+
+def test_run_init_does_not_overwrite_foreign_hooks_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    context = make_context(tmp_path)
+
+    monkeypatch.setattr(
+        init_service,
+        "load_project_context",
+        lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
+    )
+    monkeypatch.setattr(init_service, "is_git_repository", lambda repo_root: True)
+    monkeypatch.setattr(init_service, "get_local_git_config", lambda repo_root, key: ".husky")
+
+    _, result = init_service.run_init(contract_mode="skip")
+
+    assert result.git_guard_installed is False
+    assert result.git_guard_reason is not None
+    assert "core.hooksPath=.husky" in result.git_guard_reason
