@@ -2,7 +2,9 @@
 
 **Your `.env.local` files drift between machines, hide missing variables, and break when you least expect it. envctl fixes that.**
 
-[![CI](https://github.com/labrynx/envctl/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/ci-cd.yml)
+[![Tests](https://github.com/labrynx/envctl/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/ci-tests.yml)
+[![Quality](https://github.com/labrynx/envctl/actions/workflows/ci-quality.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/ci-quality.yml)
+[![Coverage](https://github.com/labrynx/envctl/actions/workflows/ci-coverage.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/ci-coverage.yml)
 [![codecov](https://codecov.io/gh/labrynx/envctl/branch/main/graph/badge.svg)](https://codecov.io/gh/labrynx/envctl)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/labrynx/envctl/blob/main/LICENSE)
