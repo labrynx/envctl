@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pytest
 
-from envctl.errors import ValidationError
 import envctl.services.add_service as add_service
 from envctl.domain.contract import Contract, VariableSpec
 from envctl.domain.operations import AddVariableRequest
