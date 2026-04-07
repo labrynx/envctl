@@ -156,3 +156,19 @@ Create and manage profiles explicitly.
 Compatibility features remain supported for now, but they are transitional by nature.
 
 For concrete removal plans, refer to the changelog and release notes.
+
+
+## Master key compatibility
+
+Legacy raw master keys are still accepted for compatibility, but only as a transition path.
+
+### Behavior
+
+- new key files are written as `ENVCTL-MASTER-KEY-V1:<key-id>:<base64-key>`
+- legacy raw Fernet keys remain readable for now
+- when a legacy key is loaded from disk and the file is writable, envctl migrates it automatically to the canonical format
+- legacy support is deprecated and scheduled for removal in `v2.6.0`
+
+### Recommendation
+
+Do not create or distribute raw master keys anymore. Treat the canonical self-identifying format as the only supported format going forward.
