@@ -9,6 +9,7 @@ import envctl.services.add_service as add_service
 from envctl.domain.contract import Contract, VariableSpec
 from envctl.domain.operations import AddVariableRequest
 from envctl.domain.project import ProjectContext
+from envctl.errors import ValidationError
 from tests.support.contexts import make_project_context
 
 

@@ -16,6 +16,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect relevant changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      package: ${{ steps.filter.outputs.package }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+
+      - name: Detect package-related changes
+        id: filter
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "package=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+
+          if [[ -z "${BASE_SHA}" || "${BASE_SHA}" == "0000000000000000000000000000000000000000" ]]; then
+            echo "package=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git diff --name-only "$BASE_SHA" "${GITHUB_SHA}" | tee changed_files.txt
+
+          if grep -E '^(src/|pyproject\.toml|README\.md|LICENSE|MANIFEST\.in|setup\.cfg|setup\.py)$' changed_files.txt > /dev/null; then
+            echo "package=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "package=false" >> "$GITHUB_OUTPUT"
+          fi
+
   lint:
     name: Lint and format
     runs-on: ubuntu-latest
@@ -94,6 +136,7 @@ jobs:
     name: Architecture contracts
     runs-on: ubuntu-latest
     timeout-minutes: 10
+
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -189,8 +232,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs:
+      - changes
       - tests
       - coverage
+    if: startsWith(github.ref, 'refs/tags/v') || needs.changes.outputs.package == 'true'
 
     permissions:
       contents: read
@@ -224,6 +269,7 @@ jobs:
         run: make check-package
 
       - name: Verify built wheel installs correctly
+        if: startsWith(github.ref, 'refs/tags/v')
         run: |
           python -m venv .release-venv
           . .release-venv/bin/activate
@@ -232,6 +278,7 @@ jobs:
           envctl --version
 
       - name: Upload distribution artifacts
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
           name: python-dist
