@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from envctl.errors import ValidationError
 import envctl.services.add_service as add_service
 from envctl.domain.contract import Contract, VariableSpec
 from envctl.domain.operations import AddVariableRequest
@@ -212,7 +213,7 @@ def test_run_add_rejects_invalid_format_override(
     )
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: None)
 
-    with pytest.raises(add_service.ValidationError, match=r"Invalid variable format"):
+    with pytest.raises(ValidationError, match=r"Invalid variable format"):
         add_service.run_add(
             AddVariableRequest(
                 key="TEST_JSON",
@@ -235,7 +236,7 @@ def test_run_add_rejects_format_for_non_string_type(
     )
     monkeypatch.setattr(add_service, "load_contract_optional", lambda path: None)
 
-    with pytest.raises(add_service.ValidationError, match=r"only be used with type 'string'"):
+    with pytest.raises(ValidationError, match=r"only be used with type 'string'"):
         add_service.run_add(
             AddVariableRequest(
                 key="PORT",
