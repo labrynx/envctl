@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
+    from envctl.domain.diagnostics import CommandWarning
     from envctl.vault_crypto import VaultCrypto
 
 ConfirmFn = Callable[[str, bool], bool]
@@ -33,6 +34,7 @@ class ProjectContext:
     vault_state_path: Path
     vault_key_path: Path
     vault_crypto: VaultCrypto | None = None
+    runtime_warnings: tuple[CommandWarning, ...] = ()
 
     @property
     def display_name(self) -> str:
