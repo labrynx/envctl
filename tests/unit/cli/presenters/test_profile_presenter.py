@@ -13,11 +13,7 @@ from envctl.cli.presenters.profile_presenter import (
     render_profile_path_result,
     render_profile_remove_result,
 )
-
-
-def normalize_output(value: str) -> str:
-    """Normalize path separators in presenter output."""
-    return value.replace("\\", "/")
+from tests.support.paths import normalize_path_str
 
 
 def test_render_profile_list_result(capsys: pytest.CaptureFixture[str]) -> None:
@@ -39,7 +35,7 @@ def test_render_profile_create_result_created(capsys: pytest.CaptureFixture[str]
         path=Path("/tmp/vault/profiles/prod.env"),
         created=True,
     )
-    captured = normalize_output(capsys.readouterr().out)
+    captured = normalize_path_str(capsys.readouterr().out)
 
     assert "[OK] Created profile 'prod'" in captured
     assert "profile: prod" in captured
@@ -67,7 +63,7 @@ def test_render_profile_copy_result(capsys: pytest.CaptureFixture[str]) -> None:
         target_path=Path("/tmp/vault/profiles/prod.env"),
         copied_keys=5,
     )
-    captured = normalize_output(capsys.readouterr().out)
+    captured = normalize_path_str(capsys.readouterr().out)
 
     assert "[OK] Copied profile 'local' into 'prod'" in captured
     assert "source_profile: local" in captured
@@ -84,7 +80,7 @@ def test_render_profile_remove_result_removed(capsys: pytest.CaptureFixture[str]
         path=Path("/tmp/vault/profiles/prod.env"),
         removed=True,
     )
-    captured = normalize_output(capsys.readouterr().out)
+    captured = normalize_path_str(capsys.readouterr().out)
 
     assert "[OK] Removed profile 'prod'" in captured
     assert "path: /tmp/vault/profiles/prod.env" in captured
@@ -97,7 +93,7 @@ def test_render_profile_remove_result_missing(capsys: pytest.CaptureFixture[str]
         path=Path("/tmp/vault/profiles/prod.env"),
         removed=False,
     )
-    captured = normalize_output(capsys.readouterr().out)
+    captured = normalize_path_str(capsys.readouterr().out)
 
     assert "[WARN] Profile 'prod' does not exist" in captured
     assert "path: /tmp/vault/profiles/prod.env" in captured
@@ -109,7 +105,7 @@ def test_render_profile_path_result(capsys: pytest.CaptureFixture[str]) -> None:
         profile="staging",
         path=Path("/tmp/vault/profiles/staging.env"),
     )
-    captured = normalize_output(capsys.readouterr().out)
+    captured = normalize_path_str(capsys.readouterr().out)
 
     assert "profile: staging" in captured
     assert "path: /tmp/vault/profiles/staging.env" in captured

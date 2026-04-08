@@ -28,11 +28,7 @@ from envctl.errors import (
     ValidationError,
 )
 from tests.support.builders import make_resolution_report
-
-
-def normalize_path_str(value: str) -> str:
-    """Normalize path separators in serialized output."""
-    return value.replace("\\", "/")
+from tests.support.paths import normalize_path_str
 
 
 def test_handle_errors_returns_wrapped_result() -> None:

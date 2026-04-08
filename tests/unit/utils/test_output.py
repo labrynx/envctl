@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from _pytest.capture import CaptureFixture
 
-from envctl.utils.output import print_cancelled, print_error, print_kv, print_success, print_warning
+from envctl.utils.output import (
+    print_cancelled,
+    print_error,
+    print_failure,
+    print_kv,
+    print_success,
+    print_warning,
+)
 
 
 def test_print_success_outputs_ok_prefix(capsys: CaptureFixture[str]) -> None:
@@ -25,6 +32,14 @@ def test_print_error_outputs_to_stderr(capsys: CaptureFixture[str]) -> None:
     captured = capsys.readouterr()
     assert captured.err.strip() == "boom"
     assert captured.out == ""
+
+
+def test_print_failure_outputs_error_prefix(capsys: CaptureFixture[str]) -> None:
+    print_failure("broken")
+
+    captured = capsys.readouterr()
+    assert captured.out.strip() == "[ERROR] broken"
+    assert captured.err == ""
 
 
 def test_print_kv_outputs_key_value_pair(capsys: CaptureFixture[str]) -> None:

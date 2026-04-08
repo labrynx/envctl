@@ -16,11 +16,7 @@ from envctl.domain.error_diagnostics import (
     RepositoryDiscoveryDiagnostics,
     StateDiagnostics,
 )
-
-
-def normalize_output(value: str) -> str:
-    """Normalize path separators in presenter output."""
-    return value.replace("\\", "/")
+from tests.support.paths import normalize_path_str
 
 
 def test_render_config_error_renders_path_source_and_actions(
@@ -39,7 +35,7 @@ def test_render_config_error_renders_path_source_and_actions(
     captured = capsys.readouterr()
 
     assert captured.out == ""
-    err = normalize_output(captured.err)
+    err = normalize_path_str(captured.err)
     assert "Error: Invalid runtime mode in config file: 'banana'" in err
     assert "path: /tmp/config.json" in err
     assert "source: config file" in err
@@ -60,7 +56,7 @@ def test_render_state_error_renders_path_and_actions(
     )
     captured = capsys.readouterr()
 
-    err = normalize_output(captured.err)
+    err = normalize_path_str(captured.err)
     assert "Error: State file is corrupted: /tmp/state.json" in err
     assert "path: /tmp/state.json" in err
     assert "field: root" in err
@@ -90,10 +86,10 @@ def test_render_repository_error_presenters_render_facts(
     )
     captured = capsys.readouterr()
 
-    err = normalize_output(captured.err)
+    err = normalize_path_str(captured.err)
     assert "repo_root: /tmp/repo" in err
     assert "git_stderr: fatal: not a git repository" in err
     assert "matching_ids: prj_a, prj_b" in err
-    assert "matching_directories:" in err
+    assert "Matching directories" in err
     assert "  - /tmp/a" in err
     assert "  - /tmp/b" in err

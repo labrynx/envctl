@@ -14,11 +14,7 @@ from envctl.domain.error_diagnostics import (
     ContractDiagnostics,
     ProjectBindingDiagnostics,
 )
-
-
-def normalize_path_str(value: str) -> str:
-    """Normalize serialized path values for cross-platform assertions."""
-    return value.replace("\\", "/")
+from tests.support.paths import normalize_path_str
 
 
 def test_serialize_contract_diagnostics_returns_expected_shape() -> None:
