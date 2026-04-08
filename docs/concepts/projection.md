@@ -1,153 +1,190 @@
 # Projection
 
-Projection is the part of `envctl` that makes the resolved environment usable.
+Projection is how `envctl` exposes an already-resolved environment to other tools.
 
-By the time projection happens, the important work has already been done: the contract has been read, the active profile has been selected, values have been resolved, and validation has happened.
+By the time projection happens, the important decisions are already made:
 
-That also means any valid contract-declared `${VAR}` placeholders have already been expanded.
-Unknown or invalid placeholder references block projection earlier during resolution.
+* the contract has been loaded
+* the active profile has been selected
+* values have been resolved
+* placeholders have been expanded
+* validation has happened
 
-Projection is simply how that resolved state is exposed to another tool.
+Projection does not define state.
 
-It does not define state. It only makes existing state usable.
+It only makes existing resolved state usable.
 
-## Why projection exists
+!!! note "Projection outputs are artifacts, not the source of truth"
+    `run`, `sync`, and `export` expose already-resolved state. They do not replace the contract or the vault.
 
-Different tools expect environment data in different ways.
+## TL;DR
 
-Some are happy to receive environment variables directly in memory. Others still expect a file like `.env.local`. Some workflows need shell export lines.
+Projection is how resolved state leaves `envctl` and reaches the thing that needs it.
 
-Instead of treating those outputs as the main source of truth, `envctl` treats them as explicit ways to expose already-resolved state.
+- `run` projects into a child process
+- `sync` projects into a generated file
+- `export` projects into stdout
+- none of those outputs become the source of truth
 
-That distinction matters a lot. It keeps generated outputs from quietly turning into hidden configuration.
+## What projection is
 
-## Modes
+Projection is the handoff layer between `envctl`'s model and the outside world.
 
-### run
+Its job is to answer:
 
-```bash
-envctl run -- app
-```
+> how should this resolved environment be exposed for this workflow?
 
-```bash
-envctl --group Application run -- app
-```
+That is why `envctl` has different projection modes instead of pretending every tool wants the same interface.
 
-This injects values into the subprocess environment.
+## What projection is not
 
-* no file is created
-* values are passed in memory
-* expanded values are passed exactly as resolved
-* values reach the immediate subprocess only
-* this is usually the safest projection mode
-* `--group LABEL` injects only variables declared with that exact contract group
+Projection is not:
 
-If the target tool supports it, `run` is often the cleanest option because it avoids writing secrets to disk for that workflow.
+* the source of truth
+* a substitute for the contract
+* local storage
+* resolution itself
 
-If the immediate subprocess is `docker run` or `docker compose run`, Docker still requires explicit container forwarding such as `-e`, `--env`, or `--env-file`.
+A generated `.env.local`, a subprocess environment, or stdout export lines are all outputs of the model, not the model.
 
-For container-oriented workflows, prefer an explicit env-file handoff instead of relying on `envctl run` to reach the container:
+## The three projection shapes
 
-```bash
-docker run --env-file <(envctl export --format dotenv) my-image
-```
+Conceptually, `envctl` projects resolved state in three different ways.
 
-Example:
+### 1. In-memory subprocess injection
 
-```bash
-envctl run -- docker run --rm -p 7002:7002 \
-  -e ARIA_EVENTD_PORT \
-  -e ARIA_LOG_DIR \
-  -e ARIA_RELATIONAL_STORE_MODE \
-  -e ARIA_RELATIONAL_STORE_PROVIDER \
-  -e ARIA_RELATIONAL_STORE_DSN \
-  -e ARIA_EVENT_BUS_MODE \
-  -e ARIA_EVENT_BUS_PROVIDER \
-  -e ARIA_EVENT_BUS_URL \
-  aria-eventd:dev
-```
+This is the `run` shape.
 
-Forwarding only part of the contract can leave the container with an incoherent runtime configuration. If you do not want NATS in the containerized workflow, forward a coherent disabled contract instead:
+The resolved environment is passed directly into a child process.
 
-```bash
-envctl run -- docker run --rm \
-  -e ARIA_EVENT_BUS_MODE=disabled \
-  -e ARIA_EVENT_BUS_PROVIDER=none \
-  aria-eventd:dev
-```
+What matters conceptually:
 
-### sync
+* no dotenv file is created
+* the handoff is ephemeral
+* this is usually the cleanest path when the target process can receive env vars directly
 
-```bash
-envctl sync
-```
+This is the projection mode that stays closest to the runtime model.
 
-```bash
-envctl sync --output-path /tmp/env.env
-```
+### 2. File generation
 
-```bash
-envctl --group Database sync
-```
+This is the `sync` shape.
 
-This creates `.env.local`.
+The resolved environment is materialized into a dotenv file on disk.
 
-* the file is generated explicitly
-* it is a compatibility artifact
+What matters conceptually:
+
+* the file is generated output
+* it exists for compatibility with tools that want a file
 * it is safe to delete and regenerate
-* it contains the final expanded values, not the original `${...}` expressions
-* `--output-path PATH` writes the same generated dotenv projection to an explicit file path
-* when groups are present, dotenv projection output includes readable section headers
-* `--group LABEL` writes only variables declared with that exact contract group
 
-This mode is useful when another tool really wants a file on disk.
+This mode is useful, but it is easier to misuse if people start treating the generated file as the real source of truth.
 
-### export
+### 3. Stdout projection
 
-```bash
-envctl export
-```
+This is the `export` shape.
 
-```bash
-envctl export --format dotenv
-```
+The resolved environment is printed to standard output in a shell-oriented or dotenv-oriented format.
 
-```bash
-envctl --group Application export --format dotenv
-```
+What matters conceptually:
 
-This prints shell export lines.
+* it is designed for chaining into other commands or scripts
+* it is still projection output, not storage
+* it keeps the handoff explicit
 
-* useful for shell-based workflows
-* more shell-specific than `run`
-* should be treated as output, not storage
-* prints the final expanded values
-* `--format dotenv` prints raw dotenv `KEY=value` lines to stdout
-* dotenv export does not include the sync header
-* `--group LABEL` prints only variables declared with that exact contract group
+## The core distinction
 
-## The rule that matters most
+The main difference between the projection modes is not “which command name do I type?”
 
-Projection output is **not** the source of truth.
+It is:
 
-It is always derived from the resolved environment.
+* `run` projects into a process
+* `sync` projects into a file
+* `export` projects into stdout
 
-That is true whether the output is:
+That mental split is more important than memorizing syntax.
 
-* a subprocess environment
-* a generated `.env.local`
-* shell export lines
+## Why projection exists at all
+
+Different tools want the same environment in different shapes.
+
+Instead of turning one of those shapes into the hidden canonical form, `envctl` keeps them all downstream of resolution.
+
+That avoids a common failure mode:
+
+* the generated file becomes stale
+* the file starts being edited by hand
+* the team no longer knows whether the contract, the vault, or the artifact is the truth
+
+Projection exists to prevent that collapse.
+
+## Common mistakes projection avoids
+
+Keeping projection explicit helps avoid:
+
+* treating `.env.local` as the primary state store
+* assuming shell inheritance is part of resolution
+* writing secrets to disk when direct subprocess injection would be enough
+* confusing “what the project needs” with “how one tool expects to receive it”
+
+## Projection and containers
+
+Projection is also where people often make incorrect assumptions about Docker.
+
+If `envctl` injects variables into the Docker client process, that does not automatically mean the container sees the full resolved environment.
+
+That is why container workflows often need explicit forwarding or an env-file handoff. The key idea is not Docker syntax itself, but this:
+
+> projection must match the interface the downstream tool actually consumes
+
+## When to choose each mode
+
+Choose the projection shape by downstream interface:
+
+* choose `run` when the target process can directly receive env vars
+* choose `sync` when a tool explicitly expects a file on disk
+* choose `export` when another shell command or script wants stdout
+
+The right question is not “which one is most powerful?”
+
+It is:
+
+> what is the narrowest projection that fits this workflow cleanly?
 
 ## Why this matters
 
-Keeping projection separate from state helps avoid problems like:
+When projection stays separate from state:
 
-* stale `.env.local` files
-* conflicting sources of truth
-* hidden behavior that is hard to debug
+* the model remains easier to trust
+* generated artifacts stay disposable
+* debugging gets easier
+* teams avoid silent divergence between local files and actual runtime truth
 
-A projected file may be useful, but it is still just an output of the model, not the model itself.
+In short, projection answers:
 
-## See also
+> now that the environment is resolved, how should I hand it off?
 
-* [Resolution](resolution.md)
+## Read next
+
+Connect projection back to the model and the exact command behavior:
+
+<div class="grid cards envctl-read-next" markdown>
+
+-   **Resolution**
+
+    Revisit the step that decides the effective environment before any handoff.
+
+    [Read about resolution](resolution.md)
+
+-   **run**
+
+    See the exact subprocess projection behavior.
+
+    [Open the `run` command](../reference/commands/run.md)
+
+-   **sync**
+
+    See when file generation is appropriate and when it is not.
+
+    [Open the `sync` command](../reference/commands/sync.md)
+
+</div>

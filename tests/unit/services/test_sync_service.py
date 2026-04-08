@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -187,3 +188,52 @@ def test_run_sync_filters_values_by_group_selection(
         "# ------------------------------------------------------------------\n"
         "APP_NAME=demo\n"
     )
+
+
+def test_run_sync_logs_info_when_writing_output(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    context = make_project_context(repo_env_path="/tmp/demo/.env.local")
+    contract = make_contract({"APP_NAME": make_variable_spec(name="APP_NAME")})
+    report = make_resolution_report(
+        values={
+            "APP_NAME": make_resolved_value(
+                key="APP_NAME",
+                value="demo",
+                source="profile",
+            )
+        }
+    )
+
+    monkeypatch.setattr(sync_service, "load_project_context", lambda: (object(), context))
+    monkeypatch.setattr(
+        sync_service,
+        "resolve_projectable_environment",
+        lambda _context, *, active_profile, selection, operation: (
+            contract,
+            report,
+            (),
+        ),
+    )
+    monkeypatch.setattr(sync_service, "write_text_atomic", lambda path, text: None)
+
+    logger = logging.getLogger("envctl")
+    logger.addHandler(caplog.handler)
+    logger.setLevel(logging.INFO)
+    caplog.set_level("INFO")
+
+    try:
+        sync_service.run_sync("staging")
+    finally:
+        logger.removeHandler(caplog.handler)
+
+    messages = [
+        record.message
+        for record in caplog.records
+        if record.name == "envctl.services.sync_service" and record.levelname == "INFO"
+    ]
+    assert messages == [
+        "Writing synced environment file",
+        "Synced environment file written",
+    ]

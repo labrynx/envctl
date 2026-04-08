@@ -14,7 +14,10 @@ from envctl.services.selection_filtering import (
     build_variable_groups,
     filter_projection_values,
 )
+from envctl.utils.logging import get_logger
 from envctl.utils.project_paths import normalize_profile_name
+
+logger = get_logger(__name__)
 
 
 def run_export(
@@ -22,10 +25,25 @@ def run_export(
     *,
     format: Literal["shell", "dotenv"] = "shell",
     selection: ContractSelection | None = None,
-) -> tuple[ProjectContext, str, str, tuple[ContractDeprecationWarning, ...]]:
+) -> tuple[
+    ProjectContext,
+    str,
+    dict[str, str],
+    str,
+    tuple[ContractDeprecationWarning, ...],
+]:
     """Render the resolved environment as shell export lines."""
     _config, context = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
+    logger.debug(
+        "Running export",
+        extra={
+            "active_profile": resolved_profile,
+            "format": format,
+            "selection": selection.describe() if selection is not None else "full contract",
+            "repo_root": context.repo_root,
+        },
+    )
 
     contract, report, warnings = resolve_projectable_environment(
         context,
@@ -39,6 +57,15 @@ def run_export(
         contract,
         selection=selection,
     )
+    logger.debug(
+        "Prepared export values",
+        extra={
+            "active_profile": resolved_profile,
+            "format": format,
+            "exported_key_count": len(values),
+            "warning_count": len(warnings),
+        },
+    )
 
     if format == "dotenv":
         rendered = render_dotenv(
@@ -48,4 +75,12 @@ def run_export(
         )
     else:
         rendered = render_shell_exports(values)
-    return context, resolved_profile, rendered, warnings
+    logger.debug(
+        "Rendered export output",
+        extra={
+            "active_profile": resolved_profile,
+            "format": format,
+            "rendered_line_count": len(rendered.splitlines()),
+        },
+    )
+    return context, resolved_profile, values, rendered, warnings

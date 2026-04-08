@@ -74,6 +74,18 @@ def test_ensure_logging_configured_honors_env_level(
     assert logger.propagate is False
 
 
+def test_ensure_logging_configured_accepts_info_level(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    logger = logging.getLogger("envctl")
+    monkeypatch.setenv(logging_utils.ENVCTL_LOG_LEVEL_ENVVAR, "INFO")
+
+    logging_utils.ensure_logging_configured()
+
+    assert logger.level == logging.INFO
+    assert logger.propagate is False
+
+
 def test_ensure_logging_configured_falls_back_for_invalid_level(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

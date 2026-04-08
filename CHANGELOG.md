@@ -20,6 +20,9 @@ The CLI is now more consistent across commands, making it easier to understand a
 - New `envctl guard secrets` command to block staged envctl vault payloads and master keys before commit
 - `envctl init` now installs a local managed Git pre-commit hook when the repository can safely use `.githooks`
 - New root contract format `.envctl.yaml`, with automatic fallback to legacy `.envctl.schema.yaml`
+- `export` now supports structured JSON output for automation-friendly projection
+- Release builds now generate a CycloneDX SBOM for the published wheel
+- New distribution reference covering release artifacts, checksums, and provenance verification
 - Global contract graph built at runtime, including:
   - resolved contract files
   - import relationships
@@ -39,6 +42,9 @@ The CLI is now more consistent across commands, making it easier to understand a
 
 - New master keys now use a canonical, self-identifying master-key format: `ENVCTL-MASTER-KEY-V1:<key-id>:<base64-key>`
 - Legacy raw master keys are migrated automatically when loaded from disk and writable
+- Release builds now publish a `SHA256SUMS` manifest alongside wheel and source artifacts
+- Release checksums now cover the published SBOM as part of the release metadata set
+- Release builds now generate GitHub attestations for published artifacts
 - Contract loading is now repo-aware:
   - `.envctl.yaml` is the new standard root contract
   - `.envctl.schema.yaml` is treated as legacy and used only as fallback
@@ -64,6 +70,11 @@ The CLI is now more consistent across commands, making it easier to understand a
 - `doctor`, `check`, `inspect`, `export`, `run`, and `sync` surface scope-aware behavior more consistently
 - CLI commands now handle warnings, JSON payloads, and text-only behavior more consistently
 - Internal tracing now covers config loading, project-context resolution, contract loading, profile persistence, projection validation, environment resolution, and command execution
+
+### Fixed
+
+- Makefile packaging targets now follow the configured Python executable instead of assuming `python` is available on the path
+- Vault services are split more explicitly by query, mutation, and project-crypto responsibilities while preserving the public service facade
 
 ### Deprecated
 

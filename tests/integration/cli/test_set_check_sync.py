@@ -48,11 +48,6 @@ def find_single_state_path(workspace: Path) -> Path:
     return matching[0]
 
 
-def normalize_output(value: str) -> str:
-    """Normalize path separators in CLI output."""
-    return value.replace("\\", "/")
-
-
 def normalize_newlines(value: str) -> str:
     """Normalize Windows and Unix newlines for assertions."""
     return value.replace("\r\n", "\n")

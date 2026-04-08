@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% set url = page.url if page and page.url else "" %}
+  {% set page_class = "envctl-page envctl-page--default" %}
+
+  {% if url in ["", "index/"] %}
+    {% set page_class = "envctl-page envctl-page--home" %}
+  {% elif url.startswith("getting-started/") %}
+    {% set page_class = "envctl-page envctl-page--getting-started" %}
+  {% elif url.startswith("concepts/") %}
+    {% set page_class = "envctl-page envctl-page--concepts" %}
+  {% elif url.startswith("guides/") or url.startswith("workflows/") %}
+    {% set page_class = "envctl-page envctl-page--guides" %}
+  {% elif url.startswith("reference/") %}
+    {% set page_class = "envctl-page envctl-page--reference" %}
+  {% elif url.startswith("architecture/") %}
+    {% set page_class = "envctl-page envctl-page--architecture" %}
+  {% elif url.startswith("troubleshooting/") %}
+    {% set page_class = "envctl-page envctl-page--troubleshooting" %}
+  {% elif url.startswith("internals/") %}
+    {% set page_class = "envctl-page envctl-page--internals" %}
+  {% endif %}
+
+  <section class="{{ page_class }}">
+    {% include "partials/page-context.html" %}
+    {% include "partials/advanced-note.html" %}
+    {{ super() }}
+  </section>
+{% endblock %}

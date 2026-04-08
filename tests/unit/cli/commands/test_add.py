@@ -24,7 +24,7 @@ def test_resolve_required_returns_none_when_no_flags() -> None:
 
 
 def test_resolve_required_raises_when_both_flags_are_set() -> None:
-    with pytest.raises(typer.BadParameter, match=r"--required or --optional"):
+    with pytest.raises(ValueError, match=r"--required or --optional"):
         add_command_module._resolve_required(True, True)
 
 
@@ -41,7 +41,7 @@ def test_resolve_sensitive_returns_none_when_no_flags() -> None:
 
 
 def test_resolve_sensitive_raises_when_both_flags_are_set() -> None:
-    with pytest.raises(typer.BadParameter, match=r"--sensitive or --non-sensitive"):
+    with pytest.raises(ValueError, match=r"--sensitive or --non-sensitive"):
         add_command_module._resolve_sensitive(True, True)
 
 

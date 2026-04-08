@@ -11,17 +11,22 @@ import typer
 
 def print_success(message: str) -> None:
     """Print a success message."""
-    typer.echo(f"[OK] {message}")
+    typer.secho(f"[OK] {message}", fg="green", bold=True)
 
 
 def print_warning(message: str) -> None:
     """Print a warning message."""
-    typer.echo(f"[WARN] {message}")
+    typer.secho(f"[WARN] {message}", fg="yellow", bold=True)
+
+
+def print_failure(message: str, *, err: bool = False) -> None:
+    """Print a failure message."""
+    typer.secho(f"[ERROR] {message}", fg="red", bold=True, err=err)
 
 
 def print_error(message: str) -> None:
     """Print an error message to stderr."""
-    typer.echo(message, err=True)
+    typer.secho(message, fg="red", bold=True, err=True)
 
 
 def print_cancelled() -> None:
@@ -36,13 +41,14 @@ def print_cancelled() -> None:
 
 def print_kv(key: str, value: str) -> None:
     """Print a key/value pair."""
-    typer.echo(f"{key}: {value}")
+    typer.secho(f"{key}:", fg="bright_black", bold=True, nl=False)
+    typer.echo(f" {value}")
 
 
 def print_section(title: str) -> None:
     """Print a section header."""
     typer.echo()
-    typer.echo(title)
+    typer.secho(title, fg="bright_blue", bold=True)
 
 
 def print_list(title: str, items: list[str]) -> None:

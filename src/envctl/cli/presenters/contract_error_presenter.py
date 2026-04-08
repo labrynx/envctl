@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
-import typer
-
+from envctl.cli.presenters.common import (
+    print_action_list,
+    print_error_title,
+    print_kv_line,
+    print_section,
+)
 from envctl.domain.error_diagnostics import ContractDiagnostics
 
 
@@ -13,22 +17,17 @@ def render_contract_error(
     message: str,
 ) -> None:
     """Render a structured contract error to stderr."""
-    typer.echo(f"Error: {message}", err=True)
-    typer.echo(err=True)
-    typer.echo(f"path: {diagnostics.path}", err=True)
+    print_error_title(message)
+    print_section("Context", err=True)
+    print_kv_line("path", str(diagnostics.path), err=True)
     if diagnostics.field is not None:
-        typer.echo(f"field: {diagnostics.field}", err=True)
+        print_kv_line("field", diagnostics.field, err=True)
     if diagnostics.key is not None:
-        typer.echo(f"key: {diagnostics.key}", err=True)
+        print_kv_line("key", diagnostics.key, err=True)
 
     if diagnostics.issues:
-        typer.echo(err=True)
-        typer.echo("Contract issues", err=True)
+        print_section("Contract issues", err=True)
         for issue in diagnostics.issues:
-            typer.echo(f"  - {issue.field}: {issue.detail}", err=True)
+            print_kv_line(issue.field, issue.detail, err=True)
 
-    if diagnostics.suggested_actions:
-        typer.echo(err=True)
-        typer.echo("Next steps", err=True)
-        for action in diagnostics.suggested_actions:
-            typer.echo(f"  - Run `{action}`", err=True)
+    print_action_list(diagnostics.suggested_actions, err=True)

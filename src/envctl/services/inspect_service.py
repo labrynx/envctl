@@ -23,7 +23,10 @@ from envctl.services.resolution_diagnostics import (
 )
 from envctl.services.resolution_service import resolve_environment
 from envctl.services.selection_filtering import filter_resolution_report
+from envctl.utils.logging import get_logger
 from envctl.utils.project_paths import normalize_profile_name
+
+logger = get_logger(__name__)
 
 
 def _build_contract_graph_summary(bundle: ResolvedContractBundle) -> InspectContractGraph:
@@ -51,12 +54,39 @@ def run_inspect(
     """Inspect the resolved environment."""
     _config, context = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
+    active_selection = selection or ContractSelection()
+    logger.debug(
+        "Running inspect",
+        extra={
+            "active_profile": resolved_profile,
+            "selection": active_selection.describe(),
+            "repo_root": context.repo_root,
+        },
+    )
     bundle = load_resolved_contract_bundle(context.repo_root)
+    logger.debug(
+        "Loaded inspect contract bundle",
+        extra={
+            "contract_count": len(bundle.graph.contract_paths),
+            "variable_count": len(bundle.graph.variables),
+            "set_count": len(bundle.graph.sets_index),
+            "group_count": len(bundle.graph.groups_index),
+        },
+    )
     contract = bundle.contract
     report = resolve_environment(context, contract, active_profile=resolved_profile)
-    active_selection = selection or ContractSelection()
     filtered_report = filter_resolution_report(report, contract, selection=active_selection)
+    logger.debug(
+        "Built inspect filtered report",
+        extra={
+            "active_profile": resolved_profile,
+            "selection": active_selection.describe(),
+            "visible_value_count": len(filtered_report.values),
+            "problem_count": len(build_diagnostic_problems(filtered_report)),
+        },
+    )
 
+    problems = build_diagnostic_problems(filtered_report)
     result = InspectResult(
         project=context,
         active_profile=resolved_profile,
@@ -65,9 +95,18 @@ def run_inspect(
         values_path=str(context.vault_values_path),
         summary=build_diagnostic_summary(filtered_report),
         variables=tuple(filtered_report.values[key] for key in sorted(filtered_report.values)),
-        problems=build_diagnostic_problems(filtered_report),
+        problems=problems,
         contract_graph=_build_contract_graph_summary(bundle),
         warnings=tuple(bundle.command_warnings) + tuple(context.runtime_warnings),
+    )
+    logger.debug(
+        "Inspect result ready",
+        extra={
+            "active_profile": resolved_profile,
+            "selection": active_selection.describe(),
+            "value_count": len(result.variables),
+            "warning_count": len(result.warnings),
+        },
     )
     return context, result, bundle.warnings
 
@@ -79,6 +118,14 @@ def run_inspect_key(
     """Inspect one resolved key in detail."""
     _config, context = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
+    logger.debug(
+        "Running inspect key",
+        extra={
+            "active_profile": resolved_profile,
+            "key": key,
+            "repo_root": context.repo_root,
+        },
+    )
     bundle = load_resolved_contract_bundle(context.repo_root)
     contract = bundle.contract
     report = resolve_environment(context, contract, active_profile=resolved_profile)
@@ -95,6 +142,16 @@ def run_inspect_key(
     graph = bundle.graph
     effective_sets = tuple(name for name, keys in graph.sets_index.items() if key in keys)
     declared_in = graph.declared_in.get(key, context.repo_contract_path)
+    logger.debug(
+        "Resolved inspect key details",
+        extra={
+            "active_profile": resolved_profile,
+            "key": key,
+            "declared_in": declared_in,
+            "set_count": len(effective_sets),
+            "group_count": len(spec.normalized_groups),
+        },
+    )
 
     result = InspectKeyResult(
         project=context,
@@ -114,6 +171,15 @@ def run_inspect_key(
             for _ in [0]
             if item.detail and not item.valid
         ),
+    )
+    logger.debug(
+        "Inspect key result ready",
+        extra={
+            "active_profile": resolved_profile,
+            "key": key,
+            "warning_count": len(result.warnings),
+            "valid": item.valid,
+        },
     )
     return context, result, bundle.warnings
 

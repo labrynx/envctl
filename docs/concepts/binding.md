@@ -104,7 +104,22 @@ Binding helps `envctl` find the right local project state without guessing. It a
 
 In day-to-day use, that means fewer surprises and less invisible magic.
 
-## See also
+## Read next
 
-* [Profiles](profiles.md)
-* [Resolution](resolution.md)
+Continue from project identity into local context and runtime behavior:
+
+<div class="grid cards envctl-read-next" markdown>
+
+-   **Profiles**
+
+    See how the selected local value set stays separate from project identity.
+
+    [Read about profiles](profiles.md)
+
+-   **Resolution**
+
+    See what happens after the right local project state is found.
+
+    [Read about resolution](resolution.md)
+
+</div>

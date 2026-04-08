@@ -11,6 +11,9 @@ from envctl.constants import STATE_VERSION
 from envctl.domain.error_diagnostics import StateDiagnostics
 from envctl.errors import StateError
 from envctl.utils.atomic import write_json_atomic
+from envctl.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def _utc_now_iso() -> str:
@@ -152,8 +155,10 @@ def read_state(path: Path) -> dict[str, Any] | None:
     Supported legacy versions are normalized in memory.
     """
     if not path.exists():
+        logger.debug("State file is missing", extra={"path": path})
         return None
 
+    logger.debug("Reading state file", extra={"path": path})
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
@@ -187,7 +192,16 @@ def read_state(path: Path) -> dict[str, Any] | None:
         )
 
     normalized = _normalize_state_payload(raw, path)
-    return _validate_state_payload(normalized, path)
+    validated = _validate_state_payload(normalized, path)
+    logger.debug(
+        "Read state file successfully",
+        extra={
+            "path": path,
+            "project_id": validated["project_id"],
+            "known_path_count": len(validated.get("known_paths", [])),
+        },
+    )
+    return validated
 
 
 def write_state(
@@ -202,6 +216,10 @@ def write_state(
     Backward-compatible helper kept for existing tests and callers.
     """
     now = _utc_now_iso()
+    logger.debug(
+        "Writing state file",
+        extra={"path": path, "project_id": project_id, "repo_root": repo_root},
+    )
     write_json_atomic(
         path,
         {
@@ -228,6 +246,10 @@ def upsert_state(
     git_remote: str | None,
 ) -> None:
     """Create or update per-project state inside the vault."""
+    logger.debug(
+        "Upserting state file",
+        extra={"path": path, "project_id": project_id, "repo_root": repo_root},
+    )
     existing = read_state(path) if path.exists() else None
     now = _utc_now_iso()
 
@@ -255,3 +277,7 @@ def upsert_state(
     }
 
     write_json_atomic(path, payload)
+    logger.debug(
+        "Upserted state file",
+        extra={"path": path, "project_id": project_id, "known_path_count": len(known_paths)},
+    )

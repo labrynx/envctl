@@ -18,6 +18,8 @@ htmlcov
 
 dist/
 build/
+site/
+
 **/*.egg-info/
 
 .vscode/
@@ -33,3 +35,4 @@ tmp/
 .import_linter_cache
 # envctl
 master.key
+*.prof

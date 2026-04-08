@@ -1,0 +1,159 @@
+site_name: envctl
+site_description: Contract-driven environment management without drift
+site_url: https://labrynx.github.io/envctl/
+repo_url: https://github.com/labrynx/envctl
+repo_name: labrynx/envctl
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  language: en
+  custom_dir: overrides
+  logo: assets/logo/envctl-logo.png
+  favicon: assets/favicon/envctl-favicon.png
+
+  features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.prune
+    - navigation.indexes
+    - navigation.top
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+    - content.action.view
+
+  palette:
+    - scheme: default
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+
+    - scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - search
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js
+  - assets/javascripts/extra.js
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/labrynx/envctl
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Overview: getting-started/index.md
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+      - First project: getting-started/first-project.md
+      - Mental model: getting-started/mental-model.md
+  - Guides:
+      - Overview: guides/index.md
+      - Docker: guides/docker.md
+      - CI: guides/ci.md
+      - Profiles: guides/profiles.md
+      - Debugging: guides/debugging.md
+      - Team: guides/team.md
+      - Daily workflow: workflows/daily.md
+  - Reference:
+      - Overview: reference/index.md
+      - Commands:
+          - Overview: reference/commands/index.md
+          - init: reference/commands/init.md
+          - add: reference/commands/add.md
+          - set: reference/commands/set.md
+          - unset: reference/commands/unset.md
+          - remove: reference/commands/remove.md
+          - fill: reference/commands/fill.md
+          - check: reference/commands/check.md
+          - inspect: reference/commands/inspect.md
+          - run: reference/commands/run.md
+          - sync: reference/commands/sync.md
+          - export: reference/commands/export.md
+          - status: reference/commands/status.md
+          - config: reference/commands/config.md
+          - profile: reference/commands/profile.md
+          - vault: reference/commands/vault.md
+          - project: reference/commands/project.md
+          - guard: reference/commands/guard.md
+      - Configuration: reference/configuration.md
+      - Vault: reference/vault.md
+      - Profiles: reference/profiles.md
+      - Security: reference/security.md
+      - Encryption: reference/encryption.md
+      - Platforms: reference/platforms.md
+      - Distribution: reference/distribution.md
+      - Roadmap: reference/roadmap.md
+  - Concepts:
+      - Overview: concepts/index.md
+      - Contract: concepts/contract.md
+      - Vault: concepts/vault.md
+      - Profiles: concepts/profiles.md
+      - Resolution: concepts/resolution.md
+      - Projection: concepts/projection.md
+      - Binding: concepts/binding.md
+      - Metadata and local state: concepts/metadata.md
+  - Architecture:
+      - Overview: architecture/index.md
+      - Layers: architecture/layers.md
+      - Boundaries: architecture/boundaries.md
+      - Internals (advanced): internals/architecture.md
+      - Compatibility (advanced): internals/compatibility.md
+  - Troubleshooting:
+      - Overview: troubleshooting/index.md
+      - Common errors: troubleshooting/common-errors.md
+      - Recovery: troubleshooting/recovery.md

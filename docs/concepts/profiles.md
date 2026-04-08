@@ -8,6 +8,9 @@ The key point is this:
 
 > profiles change local values, not project requirements
 
+!!! warning "Profiles do not change the contract and do not inherit"
+    A profile selects one local value set for the same contract. It does not redefine requirements, and it does not silently fall back to another profile.
+
 ## What a profile is
 
 A profile is a named set of local values.
@@ -134,7 +137,22 @@ Profile-aware commands follow a fixed model:
 * `add` updates the contract and writes only to the active profile
 * `remove` updates the contract and removes values from all persisted profiles
 
-## See also
+## Read next
 
-* [Contract](contract.md)
-* [Resolution](resolution.md)
+Continue from local context selection into runtime behavior:
+
+<div class="grid cards envctl-read-next" markdown>
+
+-   **Contract**
+
+    Revisit the part of the model that profiles never change.
+
+    [Read about the contract](contract.md)
+
+-   **Resolution**
+
+    See how the active profile affects the effective environment.
+
+    [Read about resolution](resolution.md)
+
+</div>

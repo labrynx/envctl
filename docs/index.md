@@ -1,82 +1,151 @@
-# Documentation
+<section class="envctl-splash">
+  <div class="envctl-splash__content">
+    <p class="envctl-eyebrow">Stop .env drift</p>
+    <h1>Your <code>.env.local</code> works... until it doesn't.</h1>
+    <p class="envctl-lead">
+      <code>envctl</code> keeps environments consistent by separating shared requirements from local values, then making runtime behavior explicit.
+    </p>
+    <div class="envctl-hero__actions">
+      <a class="md-button md-button--primary" href="getting-started/index.md">Get started</a>
+      <a class="md-button" href="concepts/index.md">Learn the model</a>
+    </div>
+    <p class="envctl-hero-note">
+      No hidden source of truth.<br />
+      No guessing which value won.
+    </p>
+  </div>
+  <a class="envctl-splash__scroll" href="#why-it-exists" aria-label="Scroll to overview">
+    <span>See how it works</span>
+    <span aria-hidden="true">↓</span>
+  </a>
+</section>
 
-This documentation is organized by intent.
+<div class="envctl-home-body" markdown="1">
 
-In other words, it is split by the kind of help you need at a given moment. Sometimes you want to get started quickly. Sometimes you want to understand the model. Sometimes you just want to look up one command and move on.
+<div class="grid cards envctl-splash-highlights" markdown>
 
-Use this page as your main entry point.
+-   **Shared requirements**
 
-## Start here
+    The repo says what must exist.
 
-If you are new to `envctl`, begin with:
+-   **Local values**
 
-- [Quickstart](getting-started/quickstart.md)
-- [First project](getting-started/first-project.md)
-- [Mental model](getting-started/mental-model.md)
+    Each machine keeps real values out of Git.
 
-These pages are the fastest way to go from “what is this?” to “I can actually use it.”
+-   **Explicit runtime**
 
-## Learn the concepts
+    You can inspect what wins before you run anything.
 
-If you want to understand how the system works, start here:
+</div>
 
-- [Contract](concepts/contract.md)
-- [Profiles](concepts/profiles.md)
-- [Binding](concepts/binding.md)
-- [Resolution](concepts/resolution.md)
-- [Projection](concepts/projection.md)
-- [Metadata and local state](concepts/metadata.md)
+## Why it exists { #why-it-exists }
 
-These pages explain the model behind the commands.
+Different machines behave differently.
 
-## Follow real workflows
+Onboarding breaks.
 
-If you want practical usage patterns, go here:
+CI fails in ways you cannot reproduce.
 
-- [Daily workflow](workflows/daily.md)
-- [Team workflow](workflows/team.md)
-- [CI workflow](workflows/ci.md)
-- [Debugging workflow](workflows/debugging.md)
-- [Use cases](workflows/use-cases.md)
+`envctl` gives you a cleaner model:
 
-These pages are less about theory and more about “what do I do in this situation?”
+- a **contract** for what must exist
+- a **vault** for local values outside version control
+- **profiles** for different contexts
+- deterministic **resolution**
+- safe **projection** only when needed
 
-## Look up exact behavior
+---
 
-If you want command or configuration reference, use:
+## Choose your path
 
-- [Commands reference](reference/commands.md)
-- [Configuration reference](reference/config.md)
-- [Vault reference](reference/vault.md)
-- [Profiles reference](reference/profiles.md)
-- [Security reference](reference/security.md)
-- [Platform support](reference/platforms.md)
-- [Roadmap](reference/roadmap.md)
+<div class="grid cards envctl-splash-paths" markdown>
 
-These pages are meant for precise lookup.
+-   **New here**
 
-## Compatibility and migration
+    Install the CLI, initialize your local setup, and run the shortest working path.
 
-If you are updating older repositories, scripts, or habits, read:
+    [Go to getting started](getting-started/index.md)
 
-- [Migration and compatibility](internals/compatibility.md)
+-   **Want the model**
 
-## Contribute or extend
+    Learn contract, vault, resolution, and projection before you dive into commands.
 
-If you want to understand how `envctl` is built internally, read:
+    [Go to concepts](concepts/index.md)
 
-- [Internal architecture](internals/architecture.md)
+-   **Need exact behavior**
 
-## Documentation model
+    Look up command semantics, flags, and configuration details.
 
-This repository uses five documentation types:
+    [Go to reference](reference/index.md)
 
-- **Getting started** → get productive quickly
-- **Concepts** → understand the model
-- **Workflows** → solve practical problems
-- **Reference** → look up exact behavior
-- **Internals** → contribute safely
+-   **Something broke**
 
-This separation is intentional.
+    Start from symptoms, causes, and recovery paths instead of guessing.
 
-It keeps onboarding, explanation, usage, lookup, and implementation details from collapsing into one giant document.
+    [Go to troubleshooting](troubleshooting/index.md)
+
+</div>
+
+---
+
+## The model at a glance
+
+`envctl` is not just a CLI. It is a model:
+
+<div class="grid cards envctl-splash-model" markdown>
+
+-   :material-file-document-outline:{ .lg .middle } **Contract**
+
+    The shared definition of required variables, defaults, validation, and intent.
+
+-   :material-shield-lock-outline:{ .lg .middle } **Vault**
+
+    Local values stay outside Git, where they belong.
+
+-   :material-layers-outline:{ .lg .middle } **Profiles**
+
+    Switch context without duplicating fragile files across machines.
+
+-   :material-source-branch:{ .lg .middle } **Resolution**
+
+    Values are resolved in a deterministic order, not by guesswork.
+
+-   :material-export:{ .lg .middle } **Projection**
+
+    Inject values into a process, export them, or generate files only when needed.
+
+-   :material-magnify-scan:{ .lg .middle } **Diagnostics**
+
+    See what is missing, what is selected, and why something fails.
+
+</div>
+
+---
+
+## Read next
+
+Understand the core model before you dive into command detail:
+
+<div class="grid cards envctl-read-next" markdown>
+
+-   **Contract**
+
+    Start with the shared definition of what the project expects.
+
+    [Read about the contract](concepts/contract.md)
+
+-   **Resolution**
+
+    See how `envctl` decides what is actually true at runtime.
+
+    [Read about resolution](concepts/resolution.md)
+
+-   **Projection**
+
+    Understand why generated files and process injection stay downstream of the model.
+
+    [Read about projection](concepts/projection.md)
+
+</div>
+
+</div>

@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
-import typer
-
+from envctl.cli.presenters.common import (
+    print_action_list,
+    print_bullet_list,
+    print_error_title,
+    print_kv_line,
+    print_section,
+)
 from envctl.domain.error_diagnostics import (
     ProjectBindingDiagnostics,
     RepositoryDiscoveryDiagnostics,
@@ -16,7 +21,7 @@ def render_repository_discovery_error(
     message: str,
 ) -> None:
     """Render a structured repository discovery error to stderr."""
-    typer.echo(f"Error: {message}", err=True)
+    print_error_title(message)
 
     if (
         diagnostics.repo_root is not None
@@ -25,24 +30,20 @@ def render_repository_discovery_error(
         or diagnostics.git_stdout is not None
         or diagnostics.git_stderr is not None
     ):
-        typer.echo(err=True)
+        print_section("Context", err=True)
 
     if diagnostics.repo_root is not None:
-        typer.echo(f"repo_root: {diagnostics.repo_root}", err=True)
+        print_kv_line("repo_root", str(diagnostics.repo_root), err=True)
     if diagnostics.cwd is not None:
-        typer.echo(f"cwd: {diagnostics.cwd}", err=True)
+        print_kv_line("cwd", str(diagnostics.cwd), err=True)
     if diagnostics.git_args:
-        typer.echo(f"git_args: {' '.join(diagnostics.git_args)}", err=True)
+        print_kv_line("git_args", " ".join(diagnostics.git_args), err=True)
     if diagnostics.git_stdout is not None:
-        typer.echo(f"git_stdout: {diagnostics.git_stdout}", err=True)
+        print_kv_line("git_stdout", diagnostics.git_stdout, err=True)
     if diagnostics.git_stderr is not None:
-        typer.echo(f"git_stderr: {diagnostics.git_stderr}", err=True)
+        print_kv_line("git_stderr", diagnostics.git_stderr, err=True)
 
-    if diagnostics.suggested_actions:
-        typer.echo(err=True)
-        typer.echo("Next steps", err=True)
-        for action in diagnostics.suggested_actions:
-            typer.echo(f"  - Run `{action}`", err=True)
+    print_action_list(diagnostics.suggested_actions, err=True)
 
 
 def render_project_binding_error(
@@ -51,21 +52,25 @@ def render_project_binding_error(
     message: str,
 ) -> None:
     """Render a structured project binding error to stderr."""
-    typer.echo(f"Error: {message}", err=True)
+    print_error_title(message)
+    has_details = any(
+        (
+            diagnostics.repo_root is not None,
+            diagnostics.project_id is not None,
+            bool(diagnostics.matching_ids),
+            bool(diagnostics.matching_directories),
+        )
+    )
+    if has_details:
+        print_section("Context", err=True)
     if diagnostics.repo_root is not None:
-        typer.echo(err=True)
-        typer.echo(f"repo_root: {diagnostics.repo_root}", err=True)
+        print_kv_line("repo_root", str(diagnostics.repo_root), err=True)
     if diagnostics.project_id is not None:
-        typer.echo(f"project_id: {diagnostics.project_id}", err=True)
+        print_kv_line("project_id", diagnostics.project_id, err=True)
     if diagnostics.matching_ids:
-        typer.echo(f"matching_ids: {', '.join(diagnostics.matching_ids)}", err=True)
+        print_kv_line("matching_ids", ", ".join(diagnostics.matching_ids), err=True)
     if diagnostics.matching_directories:
-        typer.echo("matching_directories:", err=True)
-        for path in diagnostics.matching_directories:
-            typer.echo(f"  - {path}", err=True)
+        print_section("Matching directories", err=True)
+        print_bullet_list((str(path) for path in diagnostics.matching_directories), err=True)
 
-    if diagnostics.suggested_actions:
-        typer.echo(err=True)
-        typer.echo("Next steps", err=True)
-        for action in diagnostics.suggested_actions:
-            typer.echo(f"  - Run `{action}`", err=True)
+    print_action_list(diagnostics.suggested_actions, err=True)

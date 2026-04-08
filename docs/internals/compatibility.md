@@ -157,6 +157,78 @@ Compatibility features remain supported for now, but they are transitional by na
 
 For concrete removal plans, refer to the changelog and release notes.
 
+---
+
+## Local development workflow policy
+
+The canonical contributor workflow currently uses:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+make validate
+```
+
+### Behavior
+
+- contributor docs and CI expectations are aligned to the editable `pip` workflow first
+- `.venv` is the supported baseline for local reproduction
+- `make validate` is the canonical local quality gate
+
+### `uv.lock`
+
+`uv.lock` is intentionally tracked, but it currently plays a narrower role.
+
+### Behavior
+
+- it records one tested dependency resolution state
+- it may support optional local `uv` workflows
+- it is not yet the canonical CI input
+
+### Recommendation
+
+Treat `.venv` + editable `pip install -e ".[dev]"` as the default contributor contract unless the CI/tooling policy changes explicitly.
+
+---
+
+## Documentation stack policy
+
+The documentation site currently targets the MkDocs 1.x / Material 9.x line.
+
+### Behavior
+
+- `mkdocs build --strict` is expected to pass locally and in CI
+- docs and overrides are maintained against the currently supported stack
+- major-version migration of MkDocs/Material is not assumed to be safe by default
+
+### Recommendation
+
+- keep the current line stable unless there is a deliberate migration plan
+- treat upstream major-version changes as compatibility work, not routine dependency churn
+- record and review any future migration plan before changing the supported docs stack
+
+---
+
+## Release artifact policy
+
+Release integrity is currently strengthened with lightweight, observable controls rather than a full attestation chain.
+
+### Behavior
+
+- release builds generate both wheel and source artifacts in CI
+- smoke tests install the built wheel before publication
+- a `SHA256SUMS` manifest is generated for released package artifacts and SBOM metadata
+- a CycloneDX SBOM is generated for the built wheel
+- GitHub artifact attestations are generated for release artifacts
+- the checksum manifest is attached to the GitHub release alongside the package files
+
+### Recommendation
+
+Treat checksum verification as the minimum offline baseline for released artifacts.
+
+If stronger provenance is added later, it should extend this policy explicitly rather than replace it silently.
+
 
 ## Master key compatibility
 

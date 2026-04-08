@@ -1,14 +1,67 @@
 # Resolution
 
-Resolution is how `envctl` answers the question:
+Resolution is how `envctl` decides what value each variable actually has at runtime.
 
-> “What values does the application actually receive?”
+If the contract says what should exist, resolution answers the next question:
 
-If the contract describes what should exist, and the vault stores what is available locally, resolution is the step that decides what finally counts at runtime.
+> what is the effective value right now, and why?
 
-## Resolution pipeline
+That makes resolution the bridge between shared intent and usable runtime state.
 
-Resolution happens in a small pipeline:
+!!! important "Resolution does not read arbitrary host environment variables"
+    Resolution only uses declared contract data, active profile values, and contract defaults. It does not silently pull undeclared shell state into the model.
+
+## TL;DR
+
+Resolution is where `envctl` combines the contract with local vault state and decides the effective environment.
+
+- The contract defines what must exist and what defaults are allowed.
+- The vault supplies local values for the active profile.
+- Resolution is deterministic: it does not quietly read arbitrary host shell state.
+- Projection only happens after resolution succeeds.
+
+```mermaid
+flowchart TD
+    contract["Contract<br/>declared keys + defaults"]
+    vault["Vault<br/>active profile values"]
+    selection["1. Selection"]
+    expansion["2. Expansion"]
+    validation["3. Validation"]
+    runtime["Resolved runtime view"]
+
+    contract --> selection
+    vault --> selection
+    selection --> expansion
+    expansion --> validation
+    validation --> runtime
+```
+
+## What resolution is
+
+Resolution is the process that turns:
+
+* contract declarations
+* active profile values
+* contract defaults
+
+into one validated runtime view.
+
+It is where `envctl` stops being a storage model and becomes an executable environment model.
+
+## What resolution is not
+
+Resolution is not:
+
+* projection
+* file generation
+* shell inheritance magic
+* “whatever the current host environment happens to contain”
+
+If something is not declared in the contract or selected by the resolution rules, it does not quietly appear just because it exists in your shell.
+
+## The observable flow
+
+At a high level, resolution does three things:
 
 ```text
 selection
@@ -16,17 +69,11 @@ selection
 -> validation
 ```
 
-That high-level model breaks down like this:
+That is the flow you should keep in your head when debugging.
 
-```text
-selection
--> placeholder parsing/tokenization
--> placeholder resolution
--> rendering
--> validation
-```
+## 1. Selection
 
-## Selection order
+Selection decides the raw value source for each variable.
 
 The effective order is:
 
@@ -35,15 +82,19 @@ active profile values
 -> contract defaults
 ```
 
-In other words, `envctl` first looks at the active profile. If a value is not provided there, it can fall back to a default declared in the contract.
+That means:
 
-Arbitrary host process variables do not participate in selection.
+* local values in the active profile win first
+* if a value is not present there, the contract may provide a default
+* arbitrary host process variables do not participate in selection
 
-## Expansion
+This is one of the places where `envctl` becomes easier to reason about than ad hoc dotenv conventions.
 
-After selection, `envctl` expands supported placeholders inside the selected raw values.
+## 2. Expansion
 
-In v1, the only supported placeholder form is:
+After selection, `envctl` resolves supported placeholders inside the chosen raw values.
+
+In v1, the supported placeholder form is:
 
 ```text
 ${VAR}
@@ -51,96 +102,131 @@ ${VAR}
 
 That means:
 
-* `${VAR}` is expanded
+* `${VAR}` is meaningful
 * `$VAR` stays literal
-* malformed placeholders make resolution invalid
+* malformed placeholders are invalid
 
-When `envctl` resolves `${VAR}`:
+### Contract-only expansion
 
-* `VAR` must be a declared envctl contract key
-* the referenced key is resolved through the same contract-aware resolution pipeline
+Expansion is contract-only.
+
+If a value references `${VAR}`:
+
+* `VAR` must be a declared contract key
+* that referenced key is resolved through the same model
 * if the referenced key has no selected value, resolution becomes invalid
-* if the placeholder is unknown to the contract, resolution becomes invalid
+* if the placeholder points to an unknown key, resolution becomes invalid
 
-This is deliberate.
+This is deliberate. It avoids hidden dependence on arbitrary machine state.
 
-Placeholder expansion is **contract-only**. `envctl` does **not** fall back to arbitrary host process variables during placeholder resolution.
+So an expression like `${HOME}` is only valid if `HOME` is part of the contract.
 
-That means expressions such as `${HOME}` are only valid if `HOME` is explicitly declared in the contract.
+## 3. Validation
 
-Optional contract `group` labels do not change this behavior. A targeted command such as
-`envctl --group Application export --format dotenv` may still resolve `${VAR}` references to
-variables declared in other groups. Group selection affects which variables are targeted for the
-command output, not how references are resolved.
+Once selection and expansion have produced an effective value, resolution validates the result against the contract.
 
-## Inputs
+Typical checks include:
 
-Resolution uses:
-
-* contract
-* active profile
-* local values
-* contract defaults
-
-These are the pieces that decide the final runtime view.
-
-## Output
-
-The result of resolution is a resolved environment:
-
-* variables have been evaluated
-* supported placeholders have been expanded
-* missing values have been identified
-* validation has been applied
-
-This is the state that commands like `run`, `sync`, and `inspect` work from.
-
-## Validation
-
-Resolution also validates what it finds.
-
-That includes checks such as:
-
-* required variables
+* missing required values
 * placeholder syntax and reference validity
 * type correctness
-* declared string formats (`json`, `url`, `csv`)
-* allowed values
+* declared formats such as `json`, `url`, or `csv`
+* allowed choices
 * patterns
 
-So resolution is not only about combining sources. It is also about confirming that the result makes sense under the contract.
+So resolution is not just “pick a value”. It is “pick a value and confirm it still makes sense”.
 
-## Commands that use resolution
+## What the output looks like
 
-These commands rely on the resolution step:
+The output of resolution is one resolved environment:
 
-* `check`
-* `inspect`
-* `inspect KEY` — and `explain KEY` remains as a deprecated alias during transition
-* `run`
-* `sync`
-* `export`
+* values are selected
+* placeholders are expanded
+* invalid states are surfaced
+* the result is ready to inspect, validate, or project
 
-Each of them uses the resolved state in a different way, but they all depend on the same underlying model.
+This is the state that commands like `check`, `inspect`, `run`, `sync`, and `export` work from.
 
-## Missing values
+## What resolution makes observable
 
-If required values are missing:
+A good resolution model should make these questions answerable:
 
-* `check` fails
-* `run` fails
-* `fill` can help resolve the problem interactively
+* where did this value come from?
+* was a default used?
+* did a placeholder chain resolve cleanly?
+* why did this variable fail validation?
+* why did projection get blocked?
 
-That behavior is deliberate. `envctl` does not silently invent values just to make a command pass.
+That is why resolution matters so much to the product. It is where “environment configuration” becomes something you can reason about instead of guess.
 
-## Why explicit resolution matters
+## Common failure modes
 
-When resolution rules are clear, debugging gets easier.
+Resolution usually fails in a few predictable ways:
 
-You do not have to wonder whether a profile inherited something invisibly, whether a generated file quietly changed what the app sees, or whether a host machine variable leaked into resolution unexpectedly. You can trace the result back through a small, visible set of contract-defined inputs.
+* a required variable has no selected value
+* a placeholder points to an undeclared key
+* a placeholder references a key that also cannot resolve
+* a value exists but fails type or format validation
+* a user expects host environment inheritance that the model does not allow
 
-That makes the system easier to trust and easier to explain.
+These failures are useful because they reveal bad assumptions early.
 
-## See also
+## Why there is no magic
 
-* [Projection](projection.md)
+`envctl` is deliberately conservative here.
+
+It does not quietly:
+
+* inherit undeclared shell variables into resolution
+* invent values to make a command pass
+* let one profile bleed into another
+* let groups redefine how expansion works
+
+That strictness is the reason the system stays explainable.
+
+## Relation to selectors
+
+Selectors such as `--group`, `--set`, and `--var` change the active scope a command is concerned with.
+
+They do not change the basic resolution model itself.
+
+That distinction matters: selection affects what output or validation target you asked for, but expansion still follows contract-defined references.
+
+## Why this matters
+
+When resolution is explicit:
+
+* debugging gets faster
+* CI becomes more trustworthy
+* local workflows stop depending on hidden machine quirks
+* projection outputs stop feeling mysterious
+
+In short, resolution answers:
+
+> given the contract and my selected local state, what is actually true right now?
+
+## Read next
+
+Move from the runtime model to the places where it becomes visible:
+
+<div class="grid cards envctl-read-next" markdown>
+
+-   **Projection**
+
+    See how resolved state is handed to a process, file, or stdout.
+
+    [Read about projection](projection.md)
+
+-   **check**
+
+    Use the fast diagnostic path when you want a short readiness answer.
+
+    [Open the `check` command](../reference/commands/check.md)
+
+-   **inspect**
+
+    Use the deeper diagnostic path when you need to understand one value.
+
+    [Open the `inspect` command](../reference/commands/inspect.md)
+
+</div>

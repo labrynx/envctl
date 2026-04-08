@@ -5,11 +5,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from envctl.cli.app import app
-
-
-def normalize_output(value: str) -> str:
-    """Normalize path separators in CLI output."""
-    return value.replace("\\", "/")
+from tests.support.paths import normalize_path_str
 
 
 def test_profile_create_list_path_and_remove(
@@ -29,7 +25,7 @@ def test_profile_create_list_path_and_remove(
 
     path_result = runner.invoke(app, ["profile", "path", "dev"], catch_exceptions=False)
     assert path_result.exit_code == 0
-    assert "profiles/dev.env" in normalize_output(path_result.stdout)
+    assert "profiles/dev.env" in normalize_path_str(path_result.stdout)
 
     removed = runner.invoke(app, ["profile", "remove", "dev", "--yes"], catch_exceptions=False)
     assert removed.exit_code == 0

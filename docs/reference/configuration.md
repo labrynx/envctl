@@ -1,8 +1,11 @@
-# Configuration Reference
+# Configuration
 
 This page describes the user-level config file used by `envctl`.
 
 The config controls how the tool behaves on your machine. It does not define the project contract, and it does not store secret values.
+
+!!! note "Config controls tool behavior, not project truth"
+    Use config for machine-level defaults such as vault location or default profile. Do not treat it as a place for contract data or secret values.
 
 ## Location
 
@@ -85,13 +88,11 @@ Optional block controlling vault encryption at rest.
 
 When `enabled` is `true`:
 
-* `envctl` loads or generates `<vault_dir>/master.key` on first use.
-* All vault profile reads and writes pass through the encryption layer transparently.
-* `vault edit` decrypts to a temporary file before opening the editor and
-  re-encrypts afterwards.
+* `envctl` loads or generates `<vault_dir>/master.key` on first use
+* all vault profile reads and writes pass through the encryption layer transparently
+* `vault edit` decrypts to a temporary file before opening the editor and re-encrypts afterwards
 
-See [Encryption Reference](encryption.md) for the full workflow, key backup
-guidance, and migration commands.
+See [Encryption Reference](encryption.md) for the full workflow, key backup guidance, and migration commands.
 
 ## Rules
 
@@ -114,6 +115,7 @@ ENVCTL_LOG_LEVEL=DEBUG envctl check
 Supported values:
 
 * `DEBUG`
+* `INFO`
 * `WARNING`
 * `ERROR`
 

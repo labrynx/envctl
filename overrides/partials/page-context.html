@@ -1,0 +1,52 @@
+{% set url = page.url if page and page.url else "" %}
+{% set is_home = url in ["", "index/"] %}
+{% set is_section_index = url in [
+  "getting-started/",
+  "concepts/",
+  "guides/",
+  "reference/",
+  "architecture/",
+  "troubleshooting/"
+] %}
+
+{% if not is_home and not is_section_index and not url.startswith("internals/") %}
+  {% set eyebrow = "" %}
+  {% set message = "" %}
+  {% set href = "" %}
+
+  {% if url.startswith("getting-started/") %}
+    {% set eyebrow = "Getting started" %}
+    {% set message = "Start here when you want the shortest path to a working setup." %}
+    {% set href = base_url ~ "/getting-started/" %}
+  {% elif url.startswith("concepts/") %}
+    {% set eyebrow = "Concepts" %}
+    {% set message = "This page explains the model behind the CLI." %}
+    {% set href = base_url ~ "/concepts/" %}
+  {% elif url.startswith("guides/") or url.startswith("workflows/") %}
+    {% set eyebrow = "Guides" %}
+    {% set message = "This page applies the model to a real workflow." %}
+    {% set href = base_url ~ "/guides/" %}
+  {% elif url.startswith("reference/") %}
+    {% set eyebrow = "Reference" %}
+    {% set message = "This page documents exact behavior." %}
+    {% set href = base_url ~ "/reference/" %}
+  {% elif url.startswith("troubleshooting/") %}
+    {% set eyebrow = "Troubleshooting" %}
+    {% set message = "This page helps explain a failure, not just patch it." %}
+    {% set href = base_url ~ "/troubleshooting/" %}
+  {% elif url.startswith("architecture/") %}
+    {% set eyebrow = "Architecture" %}
+    {% set message = "This page explains system design and boundaries." %}
+    {% set href = base_url ~ "/architecture/" %}
+  {% endif %}
+
+  {% if eyebrow %}
+    <div class="envctl-page-context" markdown>
+      <p class="envctl-page-context__eyebrow">{{ eyebrow }}</p>
+      <p class="envctl-page-context__body">
+        {{ message }}
+        <a class="envctl-page-context__link" href="{{ href }}">Open the {{ eyebrow|lower }} overview</a>
+      </p>
+    </div>
+  {% endif %}
+{% endif %}

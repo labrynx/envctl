@@ -1,0 +1,11 @@
+{% set url = page.url if page and page.url else "" %}
+
+{% if url.startswith("internals/") %}
+  <div class="envctl-advanced-note" markdown>
+    <p class="envctl-advanced-note__eyebrow">Advanced</p>
+    <p class="envctl-advanced-note__body">
+      Maintainer-facing documentation. If you want the main product path first, go back to
+      <a class="envctl-advanced-note__link" href="{{ base_url }}/architecture/">Architecture</a>.
+    </p>
+  </div>
+{% endif %}

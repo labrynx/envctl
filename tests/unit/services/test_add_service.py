@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -198,6 +199,46 @@ def test_run_add_applies_format_override(
 
     content = context.repo_contract_path.read_text(encoding="utf-8")
     assert "format: json" in content
+
+
+def test_run_add_logs_info_without_value_payload(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    context = make_context(tmp_path)
+
+    monkeypatch.setattr(
+        add_service,
+        "load_project_context",
+        lambda project_name=None, persist_binding=False: (object(), context),
+    )
+    monkeypatch.setattr(add_service, "load_contract_optional", lambda path: None)
+
+    logger = logging.getLogger("envctl")
+    logger.addHandler(caplog.handler)
+    logger.setLevel(logging.INFO)
+    caplog.set_level("INFO")
+
+    try:
+        add_service.run_add(
+            AddVariableRequest(
+                key="API_KEY",
+                value="supersecret",
+            )
+        )
+    finally:
+        logger.removeHandler(caplog.handler)
+
+    matching = [
+        record
+        for record in caplog.records
+        if record.name == "envctl.services.add_service"
+        and record.levelname == "INFO"
+        and record.message == "Added variable to contract and profile"
+    ]
+    assert matching
+    assert not hasattr(matching[0], "value")
 
 
 def test_run_add_rejects_invalid_format_override(

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import typer
-
 from envctl.cli.commands.vault.commands import (
     vault_audit_command,
     vault_check_command,
@@ -14,8 +12,11 @@ from envctl.cli.commands.vault.commands import (
     vault_prune_command,
     vault_show_command,
 )
+from envctl.cli.typer_theme import create_typer_app
 
-vault_app = typer.Typer(help="Operate on the local vault artifact.")
+vault_app = create_typer_app(
+    help_text="Inspect and maintain the local [bold]vault[/bold] artifact."
+)
 
 vault_app.command("edit")(vault_edit_command)
 vault_app.command("check")(vault_check_command)
