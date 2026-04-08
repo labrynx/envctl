@@ -17,6 +17,16 @@ layers =
     envctl.domain
 
 # ==============================================================
+# Domain purity
+# ==============================================================
+
+[importlinter:contract:domain_is_independent]
+name = Domain must remain independent
+type = independence
+modules =
+    envctl.domain
+
+# ==============================================================
 # Explicit architectural guards
 # ==============================================================
 

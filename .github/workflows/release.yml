@@ -20,6 +20,8 @@ jobs:
 
     permissions:
       contents: read
+      id-token: write
+      attestations: write
 
     steps:
       - name: Checkout code
@@ -54,11 +56,60 @@ jobs:
       - name: Check package metadata
         run: python -m twine check dist/*
 
+      - name: Resolve release artifact paths
+        id: artifacts
+        run: |
+          wheel_path="$(find dist -maxdepth 1 -type f -name '*.whl' | head -n 1)"
+          sdist_path="$(find dist -maxdepth 1 -type f -name '*.tar.gz' | head -n 1)"
+          test -n "$wheel_path"
+          test -n "$sdist_path"
+          echo "wheel_path=$wheel_path" >> "$GITHUB_OUTPUT"
+          echo "sdist_path=$sdist_path" >> "$GITHUB_OUTPUT"
+
+      - name: Build release SBOM
+        run: |
+          python -m venv .sbom-venv
+          ./.sbom-venv/bin/python -m pip install --upgrade pip
+          ./.sbom-venv/bin/python -m pip install cyclonedx-bom==7.3.0 "${{ steps.artifacts.outputs.wheel_path }}"
+          ./.sbom-venv/bin/python -m cyclonedx_py environment --of JSON --output-file dist/envctl-wheel.sbom.cdx.json
+
+      - name: Generate release checksums
+        run: |
+          cd dist
+          sha256sum *.whl *.tar.gz envctl-wheel.sbom.cdx.json > SHA256SUMS
+
+      - name: Generate artifact attestation for wheel
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ steps.artifacts.outputs.wheel_path }}
+
+      - name: Generate artifact attestation for sdist
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ steps.artifacts.outputs.sdist_path }}
+
+      - name: Generate SBOM attestation for wheel
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ steps.artifacts.outputs.wheel_path }}
+          sbom-path: dist/envctl-wheel.sbom.cdx.json
+
       - name: Upload distribution artifacts
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
           name: python-dist
-          path: dist/*
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error
+
+      - name: Upload release metadata
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: release-metadata
+          path: |
+            dist/SHA256SUMS
+            dist/envctl-wheel.sbom.cdx.json
           if-no-files-found: error
 
   smoke-test:
@@ -85,14 +136,42 @@ jobs:
           name: python-dist
           path: dist
 
+      - name: Download release metadata
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: release-metadata
+          path: dist
+
       - name: Create virtual environment
         run: python -m venv .release-venv
+
+      - name: Verify artifact checksums (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cd dist
+          sha256sum -c SHA256SUMS
+
+      - name: Verify artifact checksums (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $lines = Get-Content dist/SHA256SUMS
+          foreach ($line in $lines) {
+            $parts = $line -split '\s+', 2
+            $expected = $parts[0].ToLower()
+            $fileName = $parts[1].Trim()
+            $actual = (Get-FileHash -Path (Join-Path 'dist' $fileName) -Algorithm SHA256).Hash.ToLower()
+            if ($actual -ne $expected) {
+              throw "Checksum mismatch for $fileName"
+            }
+          }
 
       - name: Install wheel and verify CLI (Unix)
         if: runner.os != 'Windows'
         run: |
           ./.release-venv/bin/python -m pip install --upgrade pip
           ./.release-venv/bin/python -m pip install dist/*.whl
+          ./.release-venv/bin/python -m pip check
           ./.release-venv/bin/envctl --version
           ./.release-venv/bin/python -m envctl --version
 
@@ -102,6 +181,7 @@ jobs:
         run: |
           .\.release-venv\Scripts\python.exe -m pip install --upgrade pip
           .\.release-venv\Scripts\python.exe -m pip install dist\*.whl
+          .\.release-venv\Scripts\python.exe -m pip check
           .\.release-venv\Scripts\envctl.exe --version
           .\.release-venv\Scripts\python.exe -m envctl --version
 
@@ -146,8 +226,18 @@ jobs:
           name: python-dist
           path: dist
 
+      - name: Download release metadata
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: release-metadata
+          path: dist
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe
         with:
-          files: dist/*
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/SHA256SUMS
+            dist/envctl-wheel.sbom.cdx.json
           generate_release_notes: true

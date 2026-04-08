@@ -16,8 +16,9 @@ IMPORT_LINTER ?= lint-imports
 COV_MIN ?= 85
 PYTEST ?= pytest
 PRE_COMMIT ?= pre-commit
-BUILD ?= python -m build
-TWINE ?= python -m twine
+BUILD ?= $(PYTHON) -m build
+TWINE ?= $(PYTHON) -m twine
+CYCLONEDX ?= cyclonedx-py
 
 # -----------------------------------------
 # Project paths
@@ -50,10 +51,12 @@ PYTEST_COV_ARGS ?= --cov=$(COV_TARGET) --cov-report=term-missing:skip-covered --
 	check check-clean fix \
 	clean clean-hard \
 	build-package check-package publish-test publish-package \
+	dist-checksums dist-sbom \
 	run inspect \
 	status commit push \
 	pre-commit-install pre-commit-run pre-push-run \
-	imports
+	imports \
+	docs-check
 
 # -----------------------------------------
 # Help
@@ -148,13 +151,24 @@ build-package: clean ## Build distribution artifacts
 	$(BUILD)
 
 check-package: build-package ## Validate built distribution metadata
-	$(TWINE) check dist/*
+	$(TWINE) check dist/*.whl dist/*.tar.gz
+
+dist-checksums: dist-sbom ## Write SHA256SUMS for built distribution artifacts and SBOM
+	cd dist && sha256sum *.whl *.tar.gz envctl-wheel.sbom.cdx.json > SHA256SUMS
+
+dist-sbom: build-package ## Generate a CycloneDX SBOM for the built wheel
+	rm -rf .sbom-venv
+	$(PYTHON) -m venv .sbom-venv
+	./.sbom-venv/bin/python -m pip install --upgrade pip
+	./.sbom-venv/bin/python -m pip install cyclonedx-bom==7.3.0 dist/*.whl
+	./.sbom-venv/bin/python -m cyclonedx_py environment --of JSON --output-file dist/envctl-wheel.sbom.cdx.json
+	rm -rf .sbom-venv
 
 publish-test: build-package check-package ## Upload package to TestPyPI
-	$(TWINE) upload --repository testpypi dist/*
+	$(TWINE) upload --repository testpypi dist/*.whl dist/*.tar.gz
 
 publish-package: build-package check-package ## Upload package to PyPI
-	$(TWINE) upload dist/*
+	$(TWINE) upload dist/*.whl dist/*.tar.gz
 
 # -----------------------------------------
 # Cleanup
@@ -178,7 +192,7 @@ clean: ## Remove caches, coverage files, and build artifacts
 	find . -type d -name "*.prof" -prune -exec rm -rf {} +
 
 clean-hard: clean ## Remove additional local environment artifacts
-	rm -rf .tox .nox .cache
+	rm -rf .tox .nox .cache .sbom-venv .release-venv
 
 # -----------------------------------------
 # Git helpers
@@ -213,3 +227,16 @@ run: ## Run envctl CLI
 
 inspect: ## Run envctl inspect
 	envctl inspect
+
+# -----------------------------------------
+# Documentation
+# -----------------------------------------
+
+docs-build:
+	python -m mkdocs build
+
+docs-check: ## Build documentation with strict validation
+	python -m mkdocs build --strict
+
+docs-serve: docs-build
+	python -m mkdocs serve
