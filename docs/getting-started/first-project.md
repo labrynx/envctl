@@ -26,6 +26,9 @@ envctl init
 
 `init` is the main bootstrap command.
 
+!!! note "`init` prepares the repository; it does not invent secrets"
+    `init` can establish local structure and normalize project state, but it does not silently make the environment valid or generate real secret values for you.
+
 Depending on the repository and the current local state, it may:
 
 * prepare local vault structure
@@ -147,9 +150,28 @@ envctl vault show
 
 Use this when you want to look at the current profile’s stored vault data rather than the resolved runtime view.
 
-## What to read next
+## Read next
 
-* [Mental model](mental-model.md)
-* [Contract](../concepts/contract.md)
-* [Profiles](../concepts/profiles.md)
-* [Daily workflow](../workflows/daily.md)
+Continue from first-run onboarding into the model and the normal day-to-day loop:
+
+<div class="grid cards envctl-read-next" markdown>
+
+-   **Mental model**
+
+    See the compact explanation of the layers you just used.
+
+    [Open mental model](mental-model.md)
+
+-   **Contract**
+
+    Understand the shared project definition behind the onboarding flow.
+
+    [Read about the contract](../concepts/contract.md)
+
+-   **Daily workflow**
+
+    Move from first setup into the normal rhythm of working with `envctl`.
+
+    [Open the daily workflow guide](../workflows/daily.md)
+
+</div>

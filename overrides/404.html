@@ -1,0 +1,21 @@
+{% extends "main.html" %}
+
+{% block content %}
+  <section class="envctl-404">
+    <img
+      src="{{ base_url }}/assets/images/404.png"
+      alt="404 Not Found"
+      class="envctl-404__image"
+    >
+
+    <p class="envctl-404__text">
+      The page is gone, but your environment does not have to drift.
+    </p>
+
+    <div class="envctl-404__actions">
+      <a href="{{ config.site_url }}" class="md-button md-button--primary">Go home</a>
+      <a href="{{ base_url }}/getting-started/" class="md-button">Getting started</a>
+      <a href="{{ base_url }}/concepts/" class="md-button">Concepts</a>
+    </div>
+  </section>
+{% endblock %}

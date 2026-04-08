@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="360" viewBox="0 0 960 360" role="img" aria-labelledby="title desc">
+  <title id="title">envctl system model</title>
+  <desc id="desc">The contract in the repository and the local vault feed resolution. Resolution produces the effective environment, which is then projected through run, sync, or export.</desc>
+  <defs>
+    <style>
+      .panel {
+        fill: #f8fafc;
+        stroke: #cbd5e1;
+        stroke-width: 2;
+        rx: 22;
+      }
+      .panel-strong {
+        fill: #111827;
+        stroke: #111827;
+        stroke-width: 2;
+        rx: 24;
+      }
+      .panel-soft {
+        fill: #ffffff;
+        stroke: #cbd5e1;
+        stroke-width: 2;
+        rx: 18;
+      }
+      .label {
+        font: 700 28px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        fill: #0f172a;
+      }
+      .label-strong {
+        font: 700 30px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        fill: #ffffff;
+      }
+      .sub {
+        font: 500 17px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        fill: #475569;
+      }
+      .sub-strong {
+        font: 500 17px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        fill: #dbe4f0;
+      }
+      .chip {
+        fill: #ffffff;
+        stroke: #cbd5e1;
+        stroke-width: 1.75;
+        rx: 999;
+      }
+      .chip-label {
+        font: 700 17px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        fill: #0f172a;
+      }
+      .arrow {
+        stroke: #0f172a;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+      }
+      .arrow-soft {
+        stroke: #334155;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+      }
+    </style>
+    <marker id="arrowhead" markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#0f172a"/>
+    </marker>
+    <marker id="arrowhead-soft" markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#334155"/>
+    </marker>
+  </defs>
+
+  <rect x="84" y="52" width="236" height="96" class="panel"/>
+  <text x="202" y="92" text-anchor="middle" class="label">Contract</text>
+  <text x="202" y="118" text-anchor="middle" class="sub">shared requirements in the repo</text>
+
+  <rect x="640" y="52" width="236" height="96" class="panel"/>
+  <text x="758" y="92" text-anchor="middle" class="label">Vault</text>
+  <text x="758" y="118" text-anchor="middle" class="sub">local values on one machine</text>
+
+  <rect x="332" y="112" width="296" height="112" class="panel-strong"/>
+  <text x="480" y="160" text-anchor="middle" class="label-strong">Resolution</text>
+  <text x="480" y="188" text-anchor="middle" class="sub-strong">decides the effective environment</text>
+
+  <rect x="366" y="268" width="228" height="60" class="panel-soft"/>
+  <text x="480" y="305" text-anchor="middle" class="label" style="font-size:22px;">Projection</text>
+
+  <path d="M320 104 L332 145" class="arrow" marker-end="url(#arrowhead)"/>
+  <path d="M640 104 L628 145" class="arrow" marker-end="url(#arrowhead)"/>
+  <path d="M480 224 L480 268" class="arrow" marker-end="url(#arrowhead)"/>
+
+  <rect x="680" y="260" width="74" height="36" class="chip"/>
+  <text x="717" y="283" text-anchor="middle" class="chip-label">run</text>
+
+  <rect x="770" y="260" width="74" height="36" class="chip"/>
+  <text x="807" y="283" text-anchor="middle" class="chip-label">sync</text>
+
+  <rect x="860" y="260" width="86" height="36" class="chip"/>
+  <text x="903" y="283" text-anchor="middle" class="chip-label">export</text>
+
+  <path d="M594 298 L680 278" class="arrow-soft" marker-end="url(#arrowhead-soft)"/>
+  <path d="M594 298 L770 278" class="arrow-soft" marker-end="url(#arrowhead-soft)"/>
+  <path d="M594 298 L860 278" class="arrow-soft" marker-end="url(#arrowhead-soft)"/>
+</svg>

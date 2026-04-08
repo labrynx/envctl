@@ -23,55 +23,49 @@ The repository is intentionally split into a small set of layers with directed d
 
 ```mermaid
 flowchart TD
-    CLI[CLI]
-    SERVICES[Services]
-    DOMAIN[Domain]
-    REPOSITORY[Repository]
-    CONFIG[Config]
-    ADAPTERS[Adapters]
-    UTILS[Utils]
+    CLI["Layer 1 · Interaction<br/>CLI"]
+    SERVICES["Layer 2 · Orchestration<br/>Services"]
+    CORE["Layer 3 · Core semantics<br/>Domain"]
+    INFRA["Layer 3 · Infrastructure-facing modules<br/>Repository · Config · Adapters"]
+    UTILS["Layer 4 · Shared utilities<br/>Utils"]
 
     CLI --> SERVICES
-
-    SERVICES --> DOMAIN
-    SERVICES --> REPOSITORY
-    SERVICES --> CONFIG
-    SERVICES --> ADAPTERS
-    SERVICES --> UTILS
-
-    REPOSITORY --> DOMAIN
-    REPOSITORY --> ADAPTERS
-    REPOSITORY --> CONFIG
-    REPOSITORY --> UTILS
-
-    ADAPTERS --> DOMAIN
-    ADAPTERS --> CONFIG
-    ADAPTERS --> UTILS
-
-    DOMAIN --> UTILS
-    CONFIG --> UTILS
+    SERVICES --> CORE
+    SERVICES --> INFRA
+    CORE --> UTILS
+    INFRA --> UTILS
 ```
 
 The CLI talks to services. Services orchestrate workflows. The deeper layers should not depend on Typer or presentation concerns.
 
 ### Layer responsibilities
 
+This second view is not about dependency direction.
+
+It is about ownership: what kind of work belongs in each layer, and what kind of work should be pushed elsewhere.
+
 ```mermaid
 flowchart LR
-    CLI[CLI<br/>commands, prompts, presenters, serializers]
-    SERVICES[Services<br/>workflow orchestration]
-    DOMAIN[Domain<br/>core semantics and stable models]
-    REPOSITORY[Repository<br/>persisted project and contract state]
-    CONFIG[Config<br/>local tool configuration]
-    ADAPTERS[Adapters<br/>git, dotenv, editor, external integration]
-    UTILS[Utils<br/>small generic helpers]
+    CLI["CLI"]
+    CLI_OWNS["owns:<br/>commands<br/>prompts<br/>terminal / JSON presentation"]
 
-    CLI --> SERVICES
-    SERVICES --> DOMAIN
-    SERVICES --> REPOSITORY
-    SERVICES --> CONFIG
-    SERVICES --> ADAPTERS
-    SERVICES --> UTILS
+    SERVICES["Services"]
+    SERVICES_OWNS["owns:<br/>workflow orchestration<br/>use-case coordination<br/>command-to-domain glue"]
+
+    DOMAIN["Domain"]
+    DOMAIN_OWNS["owns:<br/>resolution rules<br/>contract semantics<br/>stable product models"]
+
+    INFRA["Repository / Config / Adapters"]
+    INFRA_OWNS["owns:<br/>stored state<br/>user config<br/>external IO and integrations"]
+
+    UTILS["Utils"]
+    UTILS_OWNS["owns:<br/>small generic helpers<br/>shared low-level utilities"]
+
+    CLI --> CLI_OWNS
+    SERVICES --> SERVICES_OWNS
+    DOMAIN --> DOMAIN_OWNS
+    INFRA --> INFRA_OWNS
+    UTILS --> UTILS_OWNS
 ```
 
 ## Dependency Rules (Architecture Contract)
@@ -82,18 +76,15 @@ Dependencies must always point inward or downward in the architecture.
 No layer may depend on a layer above it.
 
 ```mermaid
-flowchart LR
-    CLI[CLI]
-    SERVICES[Services]
-    REPOSITORY[Repository]
-    ADAPTERS[Adapters]
+flowchart TD
+    CLI["CLI"]
+    SERVICES["Services"]
+    INFRA["Repository / Adapters"]
 
     CLI -->|valid| SERVICES
-    SERVICES -->|valid| REPOSITORY
-    SERVICES -->|valid| ADAPTERS
+    SERVICES -->|valid| INFRA
 
-    CLI -. direct bypass .-> REPOSITORY
-    CLI -. direct infrastructure coupling .-> ADAPTERS
+    CLI -. invalid bypass .-> INFRA
 ```
 
 These rules are about architectural ownership, not about denying all transitive reachability.
