@@ -5,11 +5,7 @@ from pathlib import Path
 import pytest
 
 import envctl.utils.tilde as tilde_utils
-
-
-def normalize_path_str(value: str) -> str:
-    """Normalize path separators for assertions."""
-    return value.replace("\\", "/")
+from tests.support.paths import normalize_path_str
 
 
 def test_to_tilde_path_uses_home_prefix(

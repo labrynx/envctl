@@ -15,7 +15,10 @@ from envctl.services.resolution_diagnostics import (
 )
 from envctl.services.resolution_service import resolve_environment
 from envctl.services.selection_filtering import filter_resolution_report
+from envctl.utils.logging import get_logger
 from envctl.utils.project_paths import normalize_profile_name
+
+logger = get_logger(__name__)
 
 
 def _build_check_result(
@@ -40,13 +43,39 @@ def run_check(
     """Validate the current project environment against the contract."""
     _config, context = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
+    active_selection = selection or ContractSelection()
+    logger.debug(
+        "Running check",
+        extra={
+            "active_profile": resolved_profile,
+            "selection": active_selection.describe(),
+            "repo_root": context.repo_root,
+        },
+    )
     bundle = load_resolved_contract_bundle(context.repo_root)
     contract = bundle.contract
     report = resolve_environment(context, contract, active_profile=resolved_profile)
-    active_selection = selection or ContractSelection()
     filtered_report = filter_resolution_report(report, contract, selection=active_selection)
+    logger.debug(
+        "Built filtered check report",
+        extra={
+            "active_profile": resolved_profile,
+            "selection": active_selection.describe(),
+            "visible_value_count": len(filtered_report.values),
+            "missing_required_count": len(filtered_report.missing_required),
+            "invalid_key_count": len(filtered_report.invalid_keys),
+            "unknown_key_count": len(filtered_report.unknown_keys),
+        },
+    )
     result = _build_check_result(resolved_profile, active_selection, filtered_report)
     if context.runtime_warnings:
+        logger.debug(
+            "Appending runtime warnings to check result",
+            extra={
+                "active_profile": resolved_profile,
+                "runtime_warning_count": len(context.runtime_warnings),
+            },
+        )
         result = CheckResult(
             active_profile=result.active_profile,
             selection=result.selection,
@@ -55,4 +84,13 @@ def run_check(
             values=result.values,
             warnings=result.warnings + context.runtime_warnings,
         )
+    logger.debug(
+        "Check result ready",
+        extra={
+            "active_profile": resolved_profile,
+            "selection": active_selection.describe(),
+            "problem_count": len(result.problems),
+            "warning_count": len(result.warnings),
+        },
+    )
     return (context, result, bundle.warnings)

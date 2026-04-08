@@ -9,7 +9,7 @@ from collections.abc import Sequence, Sized
 from envctl.utils.masking import mask_value
 
 ENVCTL_LOG_LEVEL_ENVVAR = "ENVCTL_LOG_LEVEL"
-_ALLOWED_LOG_LEVELS = {"DEBUG", "WARNING", "ERROR"}
+_ALLOWED_LOG_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR"}
 _DEFAULT_LOG_LEVEL = "WARNING"
 _ENVCTL_LOGGER_NAME = "envctl"
 _RESERVED_LOG_RECORD_KEYS = set(logging.makeLogRecord({}).__dict__.keys()) | {

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from types import SimpleNamespace
 
 import pytest
@@ -7,11 +8,7 @@ import pytest
 import envctl.services.vault_service as vault_service
 from tests.support.contexts import make_project_context
 from tests.support.contracts import make_standard_contract
-
-
-def normalize_path_str(value: object) -> str:
-    """Normalize path-like values for cross-platform assertions."""
-    return str(value).replace("\\", "/")
+from tests.support.paths import normalize_path_str
 
 
 def test_run_vault_path_returns_explicit_profile_path(
@@ -27,7 +24,7 @@ def test_run_vault_path_returns_explicit_profile_path(
     )
     monkeypatch.setattr(
         vault_service,
-        "require_persisted_profile",
+        "resolve_selected_profile",
         lambda context, profile: (
             profile,
             context.vault_project_dir / "profiles" / "staging.env",
@@ -87,7 +84,7 @@ def test_get_unknown_vault_keys_uses_active_profile_file(
     )
     monkeypatch.setattr(
         vault_service,
-        "require_persisted_profile",
+        "resolve_selected_profile",
         lambda context, profile: (profile, context.vault_project_dir / "profiles" / "dev.env"),
     )
     monkeypatch.setattr(
@@ -126,7 +123,7 @@ def test_run_vault_prune_removes_unknown_keys(
     )
     monkeypatch.setattr(
         vault_service,
-        "require_persisted_profile",
+        "resolve_selected_profile",
         lambda context, profile: (
             profile,
             context.vault_project_dir / "profiles" / "staging.env",
@@ -181,7 +178,7 @@ def test_run_vault_edit_uses_active_profile_path(
     )
     monkeypatch.setattr(
         vault_service,
-        "require_persisted_profile",
+        "resolve_selected_profile",
         lambda context, profile: (
             profile,
             context.vault_project_dir / "profiles" / "staging.env",
@@ -214,3 +211,65 @@ def test_run_vault_edit_uses_active_profile_path(
     assert result.profile == "staging"
     assert normalize_path_str(result.path).endswith("/profiles/staging.env")
     assert opened["path"] == str(result.path)
+
+
+def test_run_vault_prune_logs_debug_and_info_summary(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    context = make_project_context()
+    contract = make_standard_contract()
+
+    monkeypatch.setattr(
+        vault_service,
+        "load_project_context",
+        lambda: (SimpleNamespace(encryption_strict=False), context),
+    )
+    monkeypatch.setattr(vault_service, "load_contract_optional", lambda path: contract)
+    monkeypatch.setattr(
+        vault_service,
+        "resolve_selected_profile",
+        lambda context, profile: (profile, context.vault_project_dir / "profiles" / "staging.env"),
+    )
+    monkeypatch.setattr(
+        vault_service,
+        "load_profile_values",
+        lambda context, profile, require_existing_explicit=False, allow_plaintext=True: (
+            profile,
+            context.vault_project_dir / "profiles" / "staging.env",
+            {"APP_NAME": "demo", "UNKNOWN": "x"},
+        ),
+    )
+    monkeypatch.setattr(
+        vault_service,
+        "write_profile_values",
+        lambda context, profile, values, require_existing_explicit=False: (
+            profile,
+            context.vault_project_dir / "profiles" / "staging.env",
+        ),
+    )
+
+    logger = logging.getLogger("envctl")
+    logger.addHandler(caplog.handler)
+    logger.setLevel(logging.DEBUG)
+    caplog.set_level("DEBUG")
+
+    try:
+        vault_service.run_vault_prune("staging")
+    finally:
+        logger.removeHandler(caplog.handler)
+
+    assert any(
+        record.name == "envctl.services.vault_service"
+        and record.levelname == "DEBUG"
+        and record.message == "Vault prune result ready"
+        and getattr(record, "removed_key_count", None) == 1
+        for record in caplog.records
+    )
+    assert any(
+        record.name == "envctl.services.vault_service"
+        and record.levelname == "INFO"
+        and record.message == "Vault prune completed"
+        and getattr(record, "removed_key_count", None) == 1
+        for record in caplog.records
+    )

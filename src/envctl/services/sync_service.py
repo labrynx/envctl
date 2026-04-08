@@ -16,7 +16,10 @@ from envctl.services.selection_filtering import (
     filter_projection_values,
 )
 from envctl.utils.atomic import write_text_atomic
+from envctl.utils.logging import get_logger
 from envctl.utils.project_paths import build_repo_sync_env_path, normalize_profile_name
+
+logger = get_logger(__name__)
 
 
 def run_sync(
@@ -28,6 +31,14 @@ def run_sync(
     """Materialize the resolved environment into the repository env file."""
     _config, context = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
+    logger.debug(
+        "Running sync",
+        extra={
+            "active_profile": resolved_profile,
+            "selection": selection.describe() if selection is not None else "full contract",
+            "repo_root": context.repo_root,
+        },
+    )
 
     contract, report, warnings = resolve_projectable_environment(
         context,
@@ -48,6 +59,14 @@ def run_sync(
         variable_groups=build_variable_groups(contract, values),
     )
     target_path = output_path or build_repo_sync_env_path(context.repo_root, resolved_profile)
+    logger.info(
+        "Writing synced environment file",
+        extra={
+            "active_profile": resolved_profile,
+            "target_path": target_path,
+            "resolved_key_count": len(values),
+        },
+    )
 
     try:
         write_text_atomic(target_path, rendered)
@@ -57,5 +76,13 @@ def run_sync(
         raise ExecutionError(
             f"Could not write synced environment file: {target_path}: {exc.strerror or exc}"
         ) from exc
+    logger.info(
+        "Synced environment file written",
+        extra={
+            "active_profile": resolved_profile,
+            "target_path": target_path,
+            "resolved_key_count": len(values),
+        },
+    )
 
     return context, resolved_profile, target_path, warnings

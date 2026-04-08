@@ -16,12 +16,16 @@ from envctl.domain.runtime import RuntimeMode
 from envctl.errors import ConfigError
 from envctl.utils.atomic import write_json_atomic
 from envctl.utils.filesystem import ensure_dir
+from envctl.utils.logging import get_logger
 from envctl.utils.tilde import to_tilde_path
+
+logger = get_logger(__name__)
 
 
 def write_default_config_file() -> Path:
     """Create the default envctl config file if it does not exist."""
     config_path = get_default_config_path()
+    logger.debug("Preparing to write default config file", extra={"path": config_path})
 
     if config_path.exists():
         raise ConfigError(
@@ -45,4 +49,5 @@ def write_default_config_file() -> Path:
             "encryption": {"enabled": False, "strict": False},
         },
     )
+    logger.debug("Default config file written", extra={"path": config_path})
     return config_path
