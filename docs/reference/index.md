@@ -45,4 +45,5 @@ Use the reference when you need precision:
 - [Encryption reference](encryption.md)
 - [Platform support](platforms.md)
 - [Distribution reference](distribution.md)
+- [Observability reference](observability.md)
 - [Roadmap](roadmap.md)

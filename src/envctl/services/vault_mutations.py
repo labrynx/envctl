@@ -14,6 +14,10 @@ from envctl.domain.app_config import AppConfig
 from envctl.domain.operations import VaultEditResult, VaultPruneResult
 from envctl.domain.project import ProjectContext
 from envctl.errors import ExecutionError
+from envctl.observability import get_active_observability_context
+from envctl.observability.events import VAULT_ERROR, VAULT_FINISH, VAULT_START
+from envctl.observability.recorder import duration_ms, record_event
+from envctl.observability.timing import utcnow
 
 
 def _run_vault_edit_encrypted(
@@ -63,7 +67,31 @@ def get_unknown_vault_keys_impl(
     logger: Logger,
 ) -> tuple[ProjectContext, str, Path, tuple[str, ...]]:
     """Return unknown keys stored in the active profile vault."""
-    config, context = load_project_context()
+    started_at = utcnow()
+    obs_context = get_active_observability_context()
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=VAULT_START,
+            status="start",
+            module=__name__,
+            operation="get_unknown_vault_keys_impl",
+            fields={},
+        )
+    try:
+        config, context = load_project_context()
+    except Exception:
+        if obs_context is not None:
+            record_event(
+                obs_context,
+                event=VAULT_ERROR,
+                status="error",
+                duration_ms=duration_ms(started_at),
+                module=__name__,
+                operation="get_unknown_vault_keys_impl",
+                fields={},
+            )
+        raise
     require_no_plaintext_in_strict_mode(context, strict=config.encryption_strict)
     resolved_profile, profile_path = resolve_selected_profile(context, active_profile)
     logger.debug(
@@ -84,14 +112,36 @@ def get_unknown_vault_keys_impl(
             "All vault keys are unknown because contract is missing",
             extra={"active_profile": resolved_profile, "unknown_key_count": len(values)},
         )
-        return context, resolved_profile, profile_path, tuple(sorted(values))
+        result = context, resolved_profile, profile_path, tuple(sorted(values))
+        if obs_context is not None:
+            record_event(
+                obs_context,
+                event=VAULT_FINISH,
+                status="finish",
+                duration_ms=duration_ms(started_at),
+                module=__name__,
+                operation="get_unknown_vault_keys_impl",
+                fields={"unknown_key_count": len(values)},
+            )
+        return result
 
     unknown_keys = tuple(sorted(set(values) - set(contract.variables)))
     logger.debug(
         "Collected unknown vault keys",
         extra={"active_profile": resolved_profile, "unknown_key_count": len(unknown_keys)},
     )
-    return context, resolved_profile, profile_path, unknown_keys
+    result = context, resolved_profile, profile_path, unknown_keys
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=VAULT_FINISH,
+            status="finish",
+            duration_ms=duration_ms(started_at),
+            module=__name__,
+            operation="get_unknown_vault_keys_impl",
+            fields={"unknown_key_count": len(unknown_keys)},
+        )
+    return result
 
 
 def run_vault_edit_impl(
@@ -106,7 +156,31 @@ def run_vault_edit_impl(
     logger: Logger,
 ) -> tuple[ProjectContext, VaultEditResult]:
     """Open the current physical vault file for the selected profile."""
-    config, context = load_project_context()
+    started_at = utcnow()
+    obs_context = get_active_observability_context()
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=VAULT_START,
+            status="start",
+            module=__name__,
+            operation="run_vault_edit_impl",
+            fields={},
+        )
+    try:
+        config, context = load_project_context()
+    except Exception:
+        if obs_context is not None:
+            record_event(
+                obs_context,
+                event=VAULT_ERROR,
+                status="error",
+                duration_ms=duration_ms(started_at),
+                module=__name__,
+                operation="run_vault_edit_impl",
+                fields={},
+            )
+        raise
     require_no_plaintext_in_strict_mode(context, strict=config.encryption_strict)
     resolved_profile, profile_path = resolve_selected_profile(context, active_profile)
     logger.debug(
@@ -154,11 +228,22 @@ def run_vault_edit_impl(
         },
     )
 
-    return context, VaultEditResult(
+    result = context, VaultEditResult(
         path=profile_path,
         profile=resolved_profile,
         created=created,
     )
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=VAULT_FINISH,
+            status="finish",
+            duration_ms=duration_ms(started_at),
+            module=__name__,
+            operation="run_vault_edit_impl",
+            fields={"created": created},
+        )
+    return result
 
 
 def run_vault_prune_impl(
@@ -173,7 +258,31 @@ def run_vault_prune_impl(
     logger: Logger,
 ) -> tuple[ProjectContext, str, Path, VaultPruneResult]:
     """Remove unknown keys from the active profile vault."""
-    config, context = load_project_context()
+    started_at = utcnow()
+    obs_context = get_active_observability_context()
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=VAULT_START,
+            status="start",
+            module=__name__,
+            operation="run_vault_prune_impl",
+            fields={},
+        )
+    try:
+        config, context = load_project_context()
+    except Exception:
+        if obs_context is not None:
+            record_event(
+                obs_context,
+                event=VAULT_ERROR,
+                status="error",
+                duration_ms=duration_ms(started_at),
+                module=__name__,
+                operation="run_vault_prune_impl",
+                fields={},
+            )
+        raise
     require_no_plaintext_in_strict_mode(context, strict=config.encryption_strict)
     resolved_profile, profile_path = resolve_selected_profile(context, active_profile)
     logger.debug(
@@ -224,7 +333,7 @@ def run_vault_prune_impl(
         },
     )
 
-    return (
+    result = (
         context,
         resolved_profile,
         profile_path,
@@ -234,3 +343,14 @@ def run_vault_prune_impl(
             kept_keys=len(kept),
         ),
     )
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=VAULT_FINISH,
+            status="finish",
+            duration_ms=duration_ms(started_at),
+            module=__name__,
+            operation="run_vault_prune_impl",
+            fields={"removed_key_count": len(removed_keys), "kept_key_count": len(kept)},
+        )
+    return result

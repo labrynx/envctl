@@ -10,6 +10,10 @@ from envctl.domain.operations import RunCommandResult
 from envctl.domain.project import ProjectContext
 from envctl.domain.selection import ContractSelection
 from envctl.errors import ExecutionError
+from envctl.observability import get_active_observability_context
+from envctl.observability.events import RUN_EXEC_ERROR, RUN_EXEC_FINISH, RUN_EXEC_START
+from envctl.observability.recorder import duration_ms, record_event
+from envctl.observability.timing import utcnow
 from envctl.services.context_service import load_project_context
 from envctl.services.projection_validation import resolve_projectable_environment
 from envctl.services.selection_filtering import filter_projection_values
@@ -99,8 +103,30 @@ def run_command(
     selection: ContractSelection | None = None,
 ) -> tuple[ProjectContext, RunCommandResult, tuple[ContractDeprecationWarning, ...]]:
     """Run one command with the resolved environment injected."""
+    started_at = utcnow()
+    obs_context = get_active_observability_context()
+    command_head = command[0] if command else "-"
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=RUN_EXEC_START,
+            status="start",
+            module=__name__,
+            operation="run_command",
+            fields={"arg_count": len(command), "command_head": command_head},
+        )
     if not command:
         logger.error("Refusing to run an empty command")
+        if obs_context is not None:
+            record_event(
+                obs_context,
+                event=RUN_EXEC_ERROR,
+                status="error",
+                duration_ms=duration_ms(started_at),
+                module=__name__,
+                operation="run_command",
+                fields={"arg_count": 0, "reason": "empty_command"},
+            )
         raise ExecutionError("No command provided")
 
     logger.debug(
@@ -160,6 +186,16 @@ def run_command(
                 "error": str(exc),
             },
         )
+        if obs_context is not None:
+            record_event(
+                obs_context,
+                event=RUN_EXEC_ERROR,
+                status="error",
+                duration_ms=duration_ms(started_at),
+                module=__name__,
+                operation="run_command",
+                fields={"arg_count": len(command), "command_head": command_head},
+            )
         raise ExecutionError(f"Failed to launch child process: {command[0]}") from exc
 
     docker_warnings = _build_docker_warning(command)
@@ -188,6 +224,22 @@ def run_command(
             "exit_code": completed.returncode,
         },
     )
+
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=RUN_EXEC_FINISH,
+            status="finish",
+            duration_ms=duration_ms(started_at),
+            module=__name__,
+            operation="run_command",
+            fields={
+                "arg_count": len(command),
+                "resolved_key_count": len(resolved_values),
+                "warning_count": len(docker_warnings),
+                "exit_code": completed.returncode,
+            },
+        )
 
     return (
         context,

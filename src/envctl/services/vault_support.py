@@ -14,6 +14,10 @@ from envctl.domain.operations import (
 )
 from envctl.domain.project import ProjectContext
 from envctl.errors import ExecutionError
+from envctl.observability import get_active_observability_context
+from envctl.observability.events import VAULT_ERROR, VAULT_FINISH, VAULT_START
+from envctl.observability.recorder import duration_ms, record_event
+from envctl.observability.timing import utcnow
 from envctl.repository.profile_repository import require_persisted_profile
 from envctl.repository.profile_repository import (
     resolve_profile_path as resolve_profile_vault_path,
@@ -208,8 +212,29 @@ def audit_project(
 
 def run_encrypt_for_context(context: ProjectContext) -> VaultEncryptResult:
     """Encrypt all plaintext vault profile files for one prepared context."""
+    started_at = utcnow()
+    obs_context = get_active_observability_context()
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=VAULT_START,
+            status="start",
+            module=__name__,
+            operation="run_encrypt_for_context",
+            fields={},
+        )
     crypto = context.vault_crypto
     if crypto is None:
+        if obs_context is not None:
+            record_event(
+                obs_context,
+                event=VAULT_ERROR,
+                status="error",
+                duration_ms=duration_ms(started_at),
+                module=__name__,
+                operation="run_encrypt_for_context",
+                fields={"reason": "encryption_disabled"},
+            )
         raise ExecutionError(
             "Encryption is not enabled. "
             "Set 'encryption.enabled = true' in your config first, "
@@ -236,16 +261,51 @@ def run_encrypt_for_context(context: ProjectContext) -> VaultEncryptResult:
         crypto.write_encrypted_file(path, raw_text)
         encrypted.append(path)
 
-    return VaultEncryptResult(
+    result = VaultEncryptResult(
         encrypted_files=tuple(encrypted),
         skipped_files=tuple(skipped),
     )
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=VAULT_FINISH,
+            status="finish",
+            duration_ms=duration_ms(started_at),
+            module=__name__,
+            operation="run_encrypt_for_context",
+            fields={
+                "encrypted_file_count": len(result.encrypted_files),
+                "skipped_file_count": len(result.skipped_files),
+            },
+        )
+    return result
 
 
 def run_decrypt_for_context(context: ProjectContext) -> VaultDecryptResult:
     """Decrypt all encrypted vault profile files for one prepared context."""
+    started_at = utcnow()
+    obs_context = get_active_observability_context()
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=VAULT_START,
+            status="start",
+            module=__name__,
+            operation="run_decrypt_for_context",
+            fields={},
+        )
     crypto = context.vault_crypto
     if crypto is None:
+        if obs_context is not None:
+            record_event(
+                obs_context,
+                event=VAULT_ERROR,
+                status="error",
+                duration_ms=duration_ms(started_at),
+                module=__name__,
+                operation="run_decrypt_for_context",
+                fields={"reason": "encryption_disabled"},
+            )
         raise ExecutionError(
             "Encryption is not enabled. "
             "Enable encryption and run 'envctl vault encrypt' to encrypt first."
@@ -271,7 +331,21 @@ def run_decrypt_for_context(context: ProjectContext) -> VaultDecryptResult:
         write_text_atomic(path, plaintext)
         decrypted.append(path)
 
-    return VaultDecryptResult(
+    result = VaultDecryptResult(
         decrypted_files=tuple(decrypted),
         skipped_files=tuple(skipped),
     )
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=VAULT_FINISH,
+            status="finish",
+            duration_ms=duration_ms(started_at),
+            module=__name__,
+            operation="run_decrypt_for_context",
+            fields={
+                "decrypted_file_count": len(result.decrypted_files),
+                "skipped_file_count": len(result.skipped_files),
+            },
+        )
+    return result

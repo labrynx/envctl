@@ -7,6 +7,14 @@ from envctl.domain.diagnostics import CheckResult
 from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport
 from envctl.domain.selection import ContractSelection
+from envctl.observability import get_active_observability_context
+from envctl.observability.events import (
+    CONTRACT_COMPOSE_ERROR,
+    CONTRACT_COMPOSE_FINISH,
+    CONTRACT_COMPOSE_START,
+)
+from envctl.observability.recorder import duration_ms, record_event
+from envctl.observability.timing import utcnow
 from envctl.repository.contract_composition import load_resolved_contract_bundle
 from envctl.services.context_service import load_project_context
 from envctl.services.resolution_diagnostics import (
@@ -41,6 +49,20 @@ def run_check(
     selection: ContractSelection | None = None,
 ) -> tuple[ProjectContext, CheckResult, tuple[ContractDeprecationWarning, ...]]:
     """Validate the current project environment against the contract."""
+    started_at = utcnow()
+    obs_context = get_active_observability_context()
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=CONTRACT_COMPOSE_START,
+            status="start",
+            module=__name__,
+            operation="run_check",
+            fields={
+                "has_selection": selection is not None,
+                "has_profile": active_profile is not None,
+            },
+        )
     _config, context = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
     active_selection = selection or ContractSelection()
@@ -52,7 +74,23 @@ def run_check(
             "repo_root": context.repo_root,
         },
     )
-    bundle = load_resolved_contract_bundle(context.repo_root)
+    try:
+        bundle = load_resolved_contract_bundle(context.repo_root)
+    except Exception:
+        if obs_context is not None:
+            record_event(
+                obs_context,
+                event=CONTRACT_COMPOSE_ERROR,
+                status="error",
+                duration_ms=duration_ms(started_at),
+                module=__name__,
+                operation="run_check",
+                fields={
+                    "has_selection": selection is not None,
+                    "has_profile": active_profile is not None,
+                },
+            )
+        raise
     contract = bundle.contract
     report = resolve_environment(context, contract, active_profile=resolved_profile)
     filtered_report = filter_resolution_report(report, contract, selection=active_selection)
@@ -93,4 +131,18 @@ def run_check(
             "warning_count": len(result.warnings),
         },
     )
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=CONTRACT_COMPOSE_FINISH,
+            status="finish",
+            duration_ms=duration_ms(started_at),
+            module=__name__,
+            operation="run_check",
+            fields={
+                "contract_variable_count": len(contract.variables),
+                "problem_count": len(result.problems),
+                "warning_count": len(result.warnings),
+            },
+        )
     return (context, result, bundle.warnings)

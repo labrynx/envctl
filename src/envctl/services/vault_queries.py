@@ -10,6 +10,10 @@ from envctl.domain.app_config import AppConfig
 from envctl.domain.operations import VaultCheckResult, VaultShowResult
 from envctl.domain.project import ProjectContext
 from envctl.errors import ExecutionError
+from envctl.observability import get_active_observability_context
+from envctl.observability.events import VAULT_ERROR, VAULT_FINISH, VAULT_START
+from envctl.observability.recorder import duration_ms, record_event
+from envctl.observability.timing import utcnow
 from envctl.repository.contract_repository import load_contract_optional
 from envctl.repository.profile_repository import load_profile_values
 from envctl.vault_crypto import VaultFileState
@@ -42,7 +46,31 @@ def run_vault_check_impl(
     logger: Logger,
 ) -> tuple[ProjectContext, str, VaultCheckResult]:
     """Check the current physical vault file for the active profile."""
-    config, context = load_project_context()
+    started_at = utcnow()
+    obs_context = get_active_observability_context()
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=VAULT_START,
+            status="start",
+            module=__name__,
+            operation="run_vault_check_impl",
+            fields={},
+        )
+    try:
+        config, context = load_project_context()
+    except Exception:
+        if obs_context is not None:
+            record_event(
+                obs_context,
+                event=VAULT_ERROR,
+                status="error",
+                duration_ms=duration_ms(started_at),
+                module=__name__,
+                operation="run_vault_check_impl",
+                fields={},
+            )
+        raise
     require_no_plaintext_in_strict_mode(context, strict=config.encryption_strict)
     resolved_profile, profile_path = resolve_selected_profile(context, active_profile)
     logger.debug(
@@ -69,6 +97,16 @@ def run_vault_check_impl(
             "Vault check result ready",
             extra={"active_profile": resolved_profile, "state": state, "exists": False},
         )
+        if obs_context is not None:
+            record_event(
+                obs_context,
+                event=VAULT_FINISH,
+                status="finish",
+                duration_ms=duration_ms(started_at),
+                module=__name__,
+                operation="run_vault_check_impl",
+                fields={"exists": False, "key_count": 0},
+            )
         return context, resolved_profile, result
 
     try:
@@ -102,6 +140,16 @@ def run_vault_check_impl(
             "key_count": key_count,
         },
     )
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=VAULT_FINISH,
+            status="finish",
+            duration_ms=duration_ms(started_at),
+            module=__name__,
+            operation="run_vault_check_impl",
+            fields={"exists": True, "parseable": parseable, "key_count": key_count},
+        )
     return context, resolved_profile, result
 
 
@@ -113,12 +161,46 @@ def run_vault_path_impl(
     logger: Logger,
 ) -> tuple[ProjectContext, str, Path]:
     """Return the current physical vault path for the active profile."""
-    _config, context = load_project_context()
+    started_at = utcnow()
+    obs_context = get_active_observability_context()
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=VAULT_START,
+            status="start",
+            module=__name__,
+            operation="run_vault_path_impl",
+            fields={},
+        )
+    try:
+        _config, context = load_project_context()
+    except Exception:
+        if obs_context is not None:
+            record_event(
+                obs_context,
+                event=VAULT_ERROR,
+                status="error",
+                duration_ms=duration_ms(started_at),
+                module=__name__,
+                operation="run_vault_path_impl",
+                fields={},
+            )
+        raise
     resolved_profile, profile_path = resolve_selected_profile(context, active_profile)
     logger.debug(
         "Resolved vault path",
         extra={"active_profile": resolved_profile, "path": profile_path},
     )
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=VAULT_FINISH,
+            status="finish",
+            duration_ms=duration_ms(started_at),
+            module=__name__,
+            operation="run_vault_path_impl",
+            fields={},
+        )
     return context, resolved_profile, profile_path
 
 
@@ -132,7 +214,31 @@ def run_vault_show_impl(
     logger: Logger,
 ) -> tuple[ProjectContext, str, VaultShowResult]:
     """Return the current physical vault content for the active profile."""
-    config, context = load_project_context()
+    started_at = utcnow()
+    obs_context = get_active_observability_context()
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=VAULT_START,
+            status="start",
+            module=__name__,
+            operation="run_vault_show_impl",
+            fields={},
+        )
+    try:
+        config, context = load_project_context()
+    except Exception:
+        if obs_context is not None:
+            record_event(
+                obs_context,
+                event=VAULT_ERROR,
+                status="error",
+                duration_ms=duration_ms(started_at),
+                module=__name__,
+                operation="run_vault_show_impl",
+                fields={},
+            )
+        raise
     require_no_plaintext_in_strict_mode(context, strict=config.encryption_strict)
     resolved_profile, profile_path = resolve_selected_profile(context, active_profile)
     logger.debug(
@@ -163,7 +269,7 @@ def run_vault_show_impl(
         },
     )
 
-    return (
+    result = (
         context,
         resolved_profile,
         VaultShowResult(
@@ -175,3 +281,14 @@ def run_vault_show_impl(
             detail=detail,
         ),
     )
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=VAULT_FINISH,
+            status="finish",
+            duration_ms=duration_ms(started_at),
+            module=__name__,
+            operation="run_vault_show_impl",
+            fields={"exists": exists, "key_count": len(values)},
+        )
+    return result

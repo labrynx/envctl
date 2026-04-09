@@ -4,19 +4,24 @@ from __future__ import annotations
 
 import json
 
-from envctl.observability.models import ObservabilityEvent, TraceFormat
+from envctl.observability.models import ObservationEvent, TraceFormat
 
 
-def render_event(event: ObservabilityEvent, trace_format: TraceFormat) -> str:
+def render_event(event: ObservationEvent, trace_format: TraceFormat) -> str:
     """Render one event in the selected output format."""
 
     if trace_format == "text":
-        return f"{event.timestamp.isoformat()} {event.name} {event.payload}"
+        return f"{event.timestamp.isoformat()} {event.event} {event.payload}"
     return json.dumps(
         {
             "timestamp": event.timestamp.isoformat(),
-            "name": event.name,
-            "payload": event.payload,
+            "event": event.event,
+            "execution_id": event.execution_id,
+            "status": event.status,
+            "duration_ms": event.duration_ms,
+            "module": event.module,
+            "operation": event.operation,
+            "fields": event.fields or {},
         },
         sort_keys=True,
     )
