@@ -56,6 +56,27 @@ Do not use `check` when the real question is “why is one key behaving this way
 
 Do not use `check` when you need a generated dotenv file or subprocess environment. It validates; it does not project.
 
+
+## Observability options
+
+`check` supports optional observability flags to make validation flow easier to inspect while troubleshooting.
+
+* `--trace` enables trace output for validation stages
+* `--trace-format human|jsonl` selects trace output format (`human` by default)
+* `--trace-output stderr|file|both` controls destination (`stderr` by default)
+* `--trace-file PATH` writes traces to a file when output includes `file`
+* `--profile-observability` includes profile-selection and profile-loading trace details
+* `--debug-errors` includes extra error context intended for diagnosis
+
+These options do **not** change validation rules, selected scope, or exit behavior. They only increase visibility into what `check` is already doing.
+
+## Observability examples
+
+```bash
+envctl check --trace
+envctl check --trace --trace-format jsonl
+```
+
 ## Typical examples
 
 ```bash

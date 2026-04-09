@@ -62,6 +62,26 @@ For container workflows, prefer an explicit env-file handoff such as:
 docker run --env-file <(envctl export --format dotenv) my-image
 ```
 
+
+## Observability options
+
+`run` also supports optional observability flags for debugging projection flow:
+
+* `--trace` enables trace output for resolution and projection stages
+* `--trace-format human|jsonl` selects trace output format (`human` by default)
+* `--trace-output stderr|file|both` controls destination (`stderr` by default)
+* `--trace-file PATH` writes traces to a file when output includes `file`
+* `--profile-observability` includes profile-selection and profile-loading trace details
+* `--debug-errors` includes extra error context intended for diagnosis
+
+These options do **not** change projected values or subprocess behavior. They only add visibility into how `run` resolves and injects environment data.
+
+## Observability examples
+
+```bash
+envctl run --trace --profile-observability -- python app.py
+```
+
 ## Typical examples
 
 ```bash
