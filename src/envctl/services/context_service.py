@@ -8,6 +8,14 @@ from typing import TYPE_CHECKING
 from envctl.config.loader import load_config
 from envctl.domain.app_config import AppConfig
 from envctl.domain.project import ProjectContext
+from envctl.observability import get_active_observability_context
+from envctl.observability.events import (
+    CONTEXT_RESOLVE_ERROR,
+    CONTEXT_RESOLVE_FINISH,
+    CONTEXT_RESOLVE_START,
+)
+from envctl.observability.recorder import duration_ms, record_event
+from envctl.observability.timing import utcnow
 from envctl.repository.project_context import build_project_context, persist_project_binding
 from envctl.utils.logging import get_logger
 from envctl.utils.project_ids import new_project_id
@@ -66,6 +74,20 @@ def load_project_context(
     persist_binding: bool = False,
 ) -> tuple[AppConfig, ProjectContext]:
     """Load config and build the current project context."""
+    started_at = utcnow()
+    obs_context = get_active_observability_context()
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=CONTEXT_RESOLVE_START,
+            status="start",
+            module=__name__,
+            operation="load_project_context",
+            fields={
+                "persist_binding": persist_binding,
+                "has_project_name": project_name is not None,
+            },
+        )
     logger.debug(
         "Loading project context",
         extra={
@@ -74,8 +96,24 @@ def load_project_context(
         },
     )
 
-    config = load_config()
-    context = build_project_context(config, project_name=project_name)
+    try:
+        config = load_config()
+        context = build_project_context(config, project_name=project_name)
+    except Exception:
+        if obs_context is not None:
+            record_event(
+                obs_context,
+                event=CONTEXT_RESOLVE_ERROR,
+                status="error",
+                duration_ms=duration_ms(started_at),
+                module=__name__,
+                operation="load_project_context",
+                fields={
+                    "persist_binding": persist_binding,
+                    "has_project_name": project_name is not None,
+                },
+            )
+        raise
     logger.debug(
         "Built project context",
         extra={
@@ -119,4 +157,18 @@ def load_project_context(
             "runtime_warning_count": len(context.runtime_warnings),
         },
     )
+    if obs_context is not None:
+        record_event(
+            obs_context,
+            event=CONTEXT_RESOLVE_FINISH,
+            status="finish",
+            duration_ms=duration_ms(started_at),
+            module=__name__,
+            operation="load_project_context",
+            fields={
+                "persist_binding": persist_binding,
+                "has_runtime_warnings": bool(context.runtime_warnings),
+                "runtime_warning_count": len(context.runtime_warnings),
+            },
+        )
     return config, context
