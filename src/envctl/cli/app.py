@@ -32,6 +32,7 @@ from envctl.config.profile_resolution import resolve_active_profile
 from envctl.domain.runtime import OutputFormat
 from envctl.domain.selection import ContractSelection
 from envctl.errors import EnvctlError
+from envctl.observability import initialize_observability_context
 
 VERSION_OPTION = typer.Option(
     None,
@@ -122,6 +123,9 @@ def main(
             command=command,
         )
         raise typer.Exit(code=1) from exc
+
+    command_name = ctx.invoked_subcommand or "envctl"
+    initialize_observability_context(command_name=command_name)
 
     set_cli_state(
         ctx,
