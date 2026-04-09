@@ -97,6 +97,11 @@ PROFILE_OBSERVABILITY_OPTION = typer.Option(
     "--profile-observability/--no-profile-observability",
     help="Print slow phase profile summary at command end.",
 )
+DEBUG_ERRORS_OPTION = typer.Option(
+    False,
+    "--debug-errors",
+    help="Show Python traceback for unexpected internal errors.",
+)
 
 app = create_typer_app(
     help_text=(
@@ -128,6 +133,7 @@ def main(
     trace_output: Literal["stderr", "file", "both"] | None = TRACE_OUTPUT_OPTION,
     trace_file: Path | None = TRACE_FILE_OPTION,
     profile_observability: bool | None = PROFILE_OBSERVABILITY_OPTION,
+    debug_errors: bool = DEBUG_ERRORS_OPTION,
 ) -> None:
     """envctl - local environment control plane."""
     del version
@@ -179,6 +185,7 @@ def main(
         trace_output=trace_output,
         trace_file=trace_file,
         profile_observability=profile_observability,
+        debug_errors=debug_errors,
     )
 
 

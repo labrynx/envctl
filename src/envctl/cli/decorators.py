@@ -18,6 +18,7 @@ from envctl.cli.presenters import (
 )
 from envctl.cli.presenters.common import print_error_title, print_help_hint
 from envctl.cli.runtime import get_command_path, is_json_output
+from envctl.cli.runtime import is_error_debug_enabled
 from envctl.cli.serializers import (
     emit_json,
     serialize_error,
@@ -36,6 +37,8 @@ from envctl.domain.runtime import RuntimeMode
 from envctl.errors import EnvctlError, ExecutionError
 from envctl.observability import get_active_observability_context
 from envctl.observability.events import ERROR_HANDLED
+from envctl.observability.events import ERROR_UNHANDLED
+from envctl.observability.error_mapping import map_exception_to_error_event
 from envctl.observability.recorder import record_event
 from envctl.observability.renderers import render_profile_summary
 from envctl.observability.timing import observe_span
@@ -115,11 +118,24 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
                 result = func(*args, **kwargs)
         except EnvctlError as exc:
             if obs_context is not None:
+                mapping = map_exception_to_error_event(exc)
                 event_fields = {
                     "command": command,
                     "error_type": exc.__class__.__name__,
+                    "message_safe": mapping.message_safe,
+                    "phase": "command",
+                    "recoverable": mapping.recoverable,
                 }
                 span_fields.update(event_fields)
+                record_event(
+                    obs_context,
+                    event=mapping.event,
+                    status="error",
+                    duration_ms=None,
+                    module=__name__,
+                    operation="handle_errors",
+                    fields=event_fields,
+                )
                 record_event(
                     obs_context,
                     event=ERROR_HANDLED,
@@ -134,6 +150,50 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
                 json_output=is_json_output(),
                 command=get_command_path(),
             )
+            raise typer.Exit(code=1) from exc
+        except Exception as exc:
+            if obs_context is not None:
+                mapping = map_exception_to_error_event(exc)
+                event_fields = {
+                    "command": command,
+                    "error_type": exc.__class__.__name__,
+                    "message_safe": mapping.message_safe,
+                    "phase": "command",
+                    "recoverable": mapping.recoverable,
+                }
+                span_fields.update(event_fields)
+                record_event(
+                    obs_context,
+                    event=mapping.event,
+                    status="error",
+                    duration_ms=None,
+                    module=__name__,
+                    operation="handle_errors",
+                    fields=event_fields,
+                )
+                record_event(
+                    obs_context,
+                    event=ERROR_UNHANDLED,
+                    status="error",
+                    duration_ms=None,
+                    module=__name__,
+                    operation="emit_unhandled_error",
+                    fields=event_fields,
+                )
+            if is_error_debug_enabled():
+                raise
+            if is_json_output():
+                emit_json(
+                    serialize_error(
+                        error_type=exc.__class__.__name__,
+                        message="Unexpected internal error. Re-run with --debug-errors.",
+                        command=get_command_path(),
+                    )
+                )
+            else:
+                print_error(
+                    "Error: Unexpected internal error. Re-run with --debug-errors."
+                )
             raise typer.Exit(code=1) from exc
         finally:
             if (

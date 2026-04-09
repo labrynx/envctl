@@ -13,6 +13,7 @@ from envctl.observability.events import (
     CONTRACT_COMPOSE_FINISH,
     CONTRACT_COMPOSE_START,
 )
+from envctl.observability.error_mapping import map_exception_to_error_event
 from envctl.observability.recorder import duration_ms, record_event
 from envctl.observability.timing import utcnow
 from envctl.repository.contract_composition import load_resolved_contract_bundle
@@ -76,8 +77,9 @@ def run_check(
     )
     try:
         bundle = load_resolved_contract_bundle(context.repo_root)
-    except Exception:
+    except Exception as exc:
         if obs_context is not None:
+            mapping = map_exception_to_error_event(exc)
             record_event(
                 obs_context,
                 event=CONTRACT_COMPOSE_ERROR,
@@ -88,6 +90,21 @@ def run_check(
                 fields={
                     "has_selection": selection is not None,
                     "has_profile": active_profile is not None,
+                    "message_safe": mapping.message_safe,
+                    "phase": "contract_compose",
+                    "recoverable": mapping.recoverable,
+                },
+            )
+            record_event(
+                obs_context,
+                event=mapping.event,
+                status="error",
+                module=__name__,
+                operation="run_check",
+                fields={
+                    "message_safe": mapping.message_safe,
+                    "phase": "contract_compose",
+                    "recoverable": mapping.recoverable,
                 },
             )
         raise

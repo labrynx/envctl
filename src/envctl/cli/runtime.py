@@ -28,6 +28,7 @@ class CliState:
     trace_output: Literal["stderr", "file", "both"] | None = None
     trace_file: Path | None = None
     profile_observability: bool | None = None
+    debug_errors: bool = False
 
 
 def set_cli_state(
@@ -43,6 +44,7 @@ def set_cli_state(
     trace_output: Literal["stderr", "file", "both"] | None = None,
     trace_file: Path | None = None,
     profile_observability: bool | None = None,
+    debug_errors: bool = False,
 ) -> None:
     """Persist the CLI state on the Typer/Click context."""
     ctx.obj = CliState(
@@ -56,6 +58,7 @@ def set_cli_state(
         trace_output=trace_output,
         trace_file=trace_file,
         profile_observability=profile_observability,
+        debug_errors=debug_errors,
     )
 
 
@@ -153,3 +156,8 @@ def get_command_path() -> str | None:
         return f"envctl{command_path[4:]}"
 
     return command_path
+
+
+def is_error_debug_enabled() -> bool:
+    """Return whether detailed error tracebacks should be shown."""
+    return get_cli_state().debug_errors

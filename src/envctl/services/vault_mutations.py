@@ -16,6 +16,7 @@ from envctl.domain.project import ProjectContext
 from envctl.errors import ExecutionError
 from envctl.observability import get_active_observability_context
 from envctl.observability.events import VAULT_ERROR, VAULT_FINISH, VAULT_START
+from envctl.observability.error_mapping import map_exception_to_error_event
 from envctl.observability.recorder import duration_ms, record_event
 from envctl.observability.timing import utcnow
 
@@ -80,8 +81,9 @@ def get_unknown_vault_keys_impl(
         )
     try:
         config, context = load_project_context()
-    except Exception:
+    except Exception as exc:
         if obs_context is not None:
+            mapping = map_exception_to_error_event(exc)
             record_event(
                 obs_context,
                 event=VAULT_ERROR,
@@ -89,7 +91,23 @@ def get_unknown_vault_keys_impl(
                 duration_ms=duration_ms(started_at),
                 module=__name__,
                 operation="get_unknown_vault_keys_impl",
-                fields={},
+                fields={
+                    "message_safe": mapping.message_safe,
+                    "phase": "vault_unknown_keys",
+                    "recoverable": mapping.recoverable,
+                },
+            )
+            record_event(
+                obs_context,
+                event=mapping.event,
+                status="error",
+                module=__name__,
+                operation="get_unknown_vault_keys_impl",
+                fields={
+                    "message_safe": mapping.message_safe,
+                    "phase": "vault_unknown_keys",
+                    "recoverable": mapping.recoverable,
+                },
             )
         raise
     require_no_plaintext_in_strict_mode(context, strict=config.encryption_strict)
@@ -169,8 +187,9 @@ def run_vault_edit_impl(
         )
     try:
         config, context = load_project_context()
-    except Exception:
+    except Exception as exc:
         if obs_context is not None:
+            mapping = map_exception_to_error_event(exc)
             record_event(
                 obs_context,
                 event=VAULT_ERROR,
@@ -178,7 +197,23 @@ def run_vault_edit_impl(
                 duration_ms=duration_ms(started_at),
                 module=__name__,
                 operation="run_vault_edit_impl",
-                fields={},
+                fields={
+                    "message_safe": mapping.message_safe,
+                    "phase": "vault_edit",
+                    "recoverable": mapping.recoverable,
+                },
+            )
+            record_event(
+                obs_context,
+                event=mapping.event,
+                status="error",
+                module=__name__,
+                operation="run_vault_edit_impl",
+                fields={
+                    "message_safe": mapping.message_safe,
+                    "phase": "vault_edit",
+                    "recoverable": mapping.recoverable,
+                },
             )
         raise
     require_no_plaintext_in_strict_mode(context, strict=config.encryption_strict)
@@ -271,8 +306,9 @@ def run_vault_prune_impl(
         )
     try:
         config, context = load_project_context()
-    except Exception:
+    except Exception as exc:
         if obs_context is not None:
+            mapping = map_exception_to_error_event(exc)
             record_event(
                 obs_context,
                 event=VAULT_ERROR,
@@ -280,7 +316,23 @@ def run_vault_prune_impl(
                 duration_ms=duration_ms(started_at),
                 module=__name__,
                 operation="run_vault_prune_impl",
-                fields={},
+                fields={
+                    "message_safe": mapping.message_safe,
+                    "phase": "vault_prune",
+                    "recoverable": mapping.recoverable,
+                },
+            )
+            record_event(
+                obs_context,
+                event=mapping.event,
+                status="error",
+                module=__name__,
+                operation="run_vault_prune_impl",
+                fields={
+                    "message_safe": mapping.message_safe,
+                    "phase": "vault_prune",
+                    "recoverable": mapping.recoverable,
+                },
             )
         raise
     require_no_plaintext_in_strict_mode(context, strict=config.encryption_strict)

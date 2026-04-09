@@ -35,6 +35,7 @@ def test_root_callback_uses_explicit_profile_over_default(
         trace_output: str | None = None,
         trace_file: object | None = None,
         profile_observability: bool | None = None,
+        debug_errors: bool = False,
     ) -> None:
         captured.update(
             {
@@ -48,6 +49,7 @@ def test_root_callback_uses_explicit_profile_over_default(
                 "trace_output": trace_output,
                 "trace_file": trace_file,
                 "profile_observability": profile_observability,
+                "debug_errors": debug_errors,
             }
         )
 
@@ -71,6 +73,7 @@ def test_root_callback_uses_explicit_profile_over_default(
     assert captured["set_name"] is None
     assert captured["variable"] is None
     assert captured["trace_enabled"] is None
+    assert captured["debug_errors"] is False
 
 
 def test_root_callback_rejects_multiple_scope_selectors(
