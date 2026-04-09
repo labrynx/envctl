@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Literal
 
 import click
 import typer
@@ -21,6 +23,11 @@ class CliState:
     group: str | None = None
     set_name: str | None = None
     variable: str | None = None
+    trace_enabled: bool | None = None
+    trace_format: Literal["jsonl", "human"] | None = None
+    trace_output: Literal["stderr", "file", "both"] | None = None
+    trace_file: Path | None = None
+    profile_observability: bool | None = None
 
 
 def set_cli_state(
@@ -31,6 +38,11 @@ def set_cli_state(
     group: str | None = None,
     set_name: str | None = None,
     variable: str | None = None,
+    trace_enabled: bool | None = None,
+    trace_format: Literal["jsonl", "human"] | None = None,
+    trace_output: Literal["stderr", "file", "both"] | None = None,
+    trace_file: Path | None = None,
+    profile_observability: bool | None = None,
 ) -> None:
     """Persist the CLI state on the Typer/Click context."""
     ctx.obj = CliState(
@@ -39,6 +51,11 @@ def set_cli_state(
         group=group,
         set_name=set_name,
         variable=variable,
+        trace_enabled=trace_enabled,
+        trace_format=trace_format,
+        trace_output=trace_output,
+        trace_file=trace_file,
+        profile_observability=profile_observability,
     )
 
 
@@ -88,6 +105,31 @@ def get_contract_selection() -> ContractSelection:
         set_name=state.set_name,
         variable=state.variable,
     )
+
+
+def get_trace_enabled() -> bool | None:
+    """Return trace override, if set."""
+    return get_cli_state().trace_enabled
+
+
+def get_trace_format() -> Literal["jsonl", "human"] | None:
+    """Return trace format override, if set."""
+    return get_cli_state().trace_format
+
+
+def get_trace_output() -> Literal["stderr", "file", "both"] | None:
+    """Return trace output override, if set."""
+    return get_cli_state().trace_output
+
+
+def get_trace_file() -> Path | None:
+    """Return trace output file override, if set."""
+    return get_cli_state().trace_file
+
+
+def get_profile_observability() -> bool | None:
+    """Return profile observability override, if set."""
+    return get_cli_state().profile_observability
 
 
 def get_command_path() -> str | None:

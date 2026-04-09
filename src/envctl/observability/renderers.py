@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import datetime
 
 from envctl.observability.models import ObservationEvent, TraceFormat
 
@@ -12,8 +13,14 @@ from envctl.observability.models import ObservationEvent, TraceFormat
 def render_event(event: ObservationEvent, trace_format: TraceFormat) -> str:
     """Render one event in the selected output format."""
 
-    if trace_format == "text":
-        return f"{event.timestamp.isoformat()} {event.event} {event.payload}"
+    if trace_format == "human":
+        phase_name = event.event.rsplit(".", 1)[0]
+        if event.event.startswith("command.") and event.status in {"finish", "error"}:
+            total_ms = event.duration_ms if event.duration_ms is not None else 0
+            return f"Total [{total_ms}ms] status={event.status}"
+
+        duration_ms = event.duration_ms if event.duration_ms is not None else 0
+        return f"[{duration_ms}ms] {phase_name} status={event.status}"
     return json.dumps(
         {
             "timestamp": event.timestamp.isoformat(),
@@ -27,6 +34,19 @@ def render_event(event: ObservationEvent, trace_format: TraceFormat) -> str:
         },
         sort_keys=True,
     )
+
+
+def render_execution_header(
+    *,
+    execution_id: str,
+    started_at: datetime,
+    trace_format: TraceFormat,
+) -> str:
+    """Render execution-level header data."""
+
+    if trace_format == "human":
+        return f"Execution ID: {execution_id} at {started_at.isoformat()}"
+    return ""
 
 
 @dataclass(frozen=True)

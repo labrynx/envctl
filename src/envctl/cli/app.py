@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Literal
+
 import typer
 
 from envctl.cli.callbacks import version_callback
@@ -69,6 +72,31 @@ VAR_OPTION = typer.Option(
     "--var",
     help="Target one explicit contract variable.",
 )
+TRACE_OPTION = typer.Option(
+    None,
+    "--trace/--no-trace",
+    help="Enable/disable observability trace output for this execution.",
+)
+TRACE_FORMAT_OPTION = typer.Option(
+    None,
+    "--trace-format",
+    help="Trace renderer format: human or jsonl.",
+)
+TRACE_OUTPUT_OPTION = typer.Option(
+    None,
+    "--trace-output",
+    help="Trace destination: stderr, file, or both.",
+)
+TRACE_FILE_OPTION = typer.Option(
+    None,
+    "--trace-file",
+    help="Trace output file path when --trace-output includes file.",
+)
+PROFILE_OBSERVABILITY_OPTION = typer.Option(
+    None,
+    "--profile-observability/--no-profile-observability",
+    help="Print slow phase profile summary at command end.",
+)
 
 app = create_typer_app(
     help_text=(
@@ -95,6 +123,11 @@ def main(
     group: str | None = GROUP_OPTION,
     set_name: str | None = SET_OPTION,
     variable: str | None = VAR_OPTION,
+    trace_enabled: bool | None = TRACE_OPTION,
+    trace_format: Literal["human", "jsonl"] | None = TRACE_FORMAT_OPTION,
+    trace_output: Literal["stderr", "file", "both"] | None = TRACE_OUTPUT_OPTION,
+    trace_file: Path | None = TRACE_FILE_OPTION,
+    profile_observability: bool | None = PROFILE_OBSERVABILITY_OPTION,
 ) -> None:
     """envctl - local environment control plane."""
     del version
@@ -125,7 +158,14 @@ def main(
         raise typer.Exit(code=1) from exc
 
     command_name = ctx.invoked_subcommand or "envctl"
-    initialize_observability_context(command_name=command_name)
+    initialize_observability_context(
+        command_name=command_name,
+        trace_enabled=trace_enabled,
+        trace_format=trace_format,
+        trace_output=trace_output,
+        trace_file=trace_file,
+        profile_observability=profile_observability,
+    )
 
     set_cli_state(
         ctx,
@@ -134,6 +174,11 @@ def main(
         group=selection.group,
         set_name=selection.set_name,
         variable=selection.variable,
+        trace_enabled=trace_enabled,
+        trace_format=trace_format,
+        trace_output=trace_output,
+        trace_file=trace_file,
+        profile_observability=profile_observability,
     )
 
 

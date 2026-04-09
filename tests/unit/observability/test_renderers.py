@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from envctl.observability.models import ObservationEvent
-from envctl.observability.renderers import collect_top_slow_phases, render_profile_summary
+from envctl.observability.renderers import (
+    collect_top_slow_phases,
+    render_event,
+    render_profile_summary,
+)
 from envctl.observability.timing import utcnow
 
 
@@ -41,3 +45,14 @@ def test_render_profile_summary_lists_ranked_phases() -> None:
 
     assert "Observability profile (top slow phases):" in output
     assert "resolution: max=25ms" in output
+
+
+def test_render_event_human_includes_phase_duration_and_status() -> None:
+    output = render_event(_event("resolution.finish", "finish", 25), "human")
+    assert output == "[25ms] resolution status=finish"
+
+
+def test_render_event_jsonl_emits_machine_payload() -> None:
+    output = render_event(_event("resolution.finish", "finish", 25), "jsonl")
+    assert '"event": "resolution.finish"' in output
+    assert '"duration_ms": 25' in output
