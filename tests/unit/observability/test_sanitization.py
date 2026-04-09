@@ -54,3 +54,40 @@ def test_sanitize_command_masks_assignment_values() -> None:
         "PASSWORD=hu*****",
         "PLAIN=ok",
     )
+
+
+def test_sanitize_event_blocks_vault_material_to_prevent_secret_leakage() -> None:
+    event = sanitize_event(
+        _event(
+            {
+                "raw_vault_payload": "ENC[AES256_GCM,data:super-secret]",
+                "resolved_secrets": {"DATABASE_URL": "postgres://user:pass@db/app"},
+                "private_key": "-----BEGIN PRIVATE KEY-----...",
+                "profile": "local",
+            }
+        )
+    )
+
+    assert event.fields == {
+        "raw_vault_payload": "[BLOCKED]",
+        "resolved_secrets": "[BLOCKED]",
+        "private_key": "[BLOCKED]",
+        "profile": "local",
+    }
+
+
+def test_sanitize_command_masks_sensitive_flag_assignments() -> None:
+    sanitized = sanitize_command(
+        [
+            "run",
+            "--api-token=ghp_very_secret_token",
+            "--db-password=hunter2",
+            "--profile=local",
+        ]
+    )
+
+    assert sanitized[0] == "run"
+    assert sanitized[1].startswith("--api-token=gh")
+    assert sanitized[1] != "--api-token=ghp_very_secret_token"
+    assert sanitized[2] == "--db-password=hu*****"
+    assert sanitized[3] == "--profile=local"

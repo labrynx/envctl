@@ -1,0 +1,4 @@
+[0ms] command status=start
+[0ms] vault status=start
+[14ms] vault status=finish
+Total [15ms] status=finish
