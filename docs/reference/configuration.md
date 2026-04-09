@@ -120,3 +120,32 @@ Supported values:
 * `ERROR`
 
 This is not a config-file key. It is intentionally runtime-only, so you can enable tracing for one command without changing your normal machine defaults.
+
+## Observability runtime env vars
+
+`envctl` también soporta variables de entorno runtime para controlar observabilidad/tracing en una ejecución puntual, sin editar `config.json`.
+
+| Variable | Valores permitidos | Default | Descripción |
+|---|---|---|---|
+| `ENVCTL_OBSERVABILITY_TRACE` | booleano (`1/0`, `true/false`, `yes/no`, `on/off`) | `false` | Activa/desactiva emisión de eventos de observabilidad. |
+| `ENVCTL_OBSERVABILITY_PROFILE` | booleano (`1/0`, `true/false`, `yes/no`, `on/off`) | `false` | Activa resumen de perfiles/fases al final del comando. |
+| `ENVCTL_OBSERVABILITY_TRACE_FORMAT` | `human` \| `jsonl` | `jsonl` | Define el formato de renderizado de eventos. |
+| `ENVCTL_OBSERVABILITY_TRACE_OUTPUT` | `stderr` \| `file` \| `both` | `stderr` | Define destino de salida del trace. |
+| `ENVCTL_OBSERVABILITY_TRACE_FILE` | ruta de archivo | _auto_ cuando `TRACE_OUTPUT=file|both` | Ruta del archivo de salida para traces en archivo. |
+| `ENVCTL_OBSERVABILITY_SANITIZATION` | `full` \| `masked` \| `count_only` | `masked` | Política de sanitización para payloads/eventos observables. |
+
+Notas de comportamiento:
+
+* `ENVCTL_OBSERVABILITY_TRACE_FILE` solo tiene efecto cuando `ENVCTL_OBSERVABILITY_TRACE_OUTPUT` incluye `file`.
+* Si `TRACE_OUTPUT=file|both` y no defines `TRACE_FILE`, `envctl` escribe en `.envctl/observability/latest.jsonl` (o `.txt` si el formato es `human`).
+* Valores inválidos en `TRACE_FORMAT`, `TRACE_OUTPUT` o `SANITIZATION` hacen fallback silencioso al default indicado en la tabla.
+
+### Precedencia (CLI flag > env var)
+
+Cuando existe flag de CLI equivalente en la implementación actual, la precedencia es:
+
+1. Flag CLI (`--trace`, `--trace-format`, `--trace-output`, `--trace-file`, `--profile-observability`)
+2. Variable de entorno (`ENVCTL_OBSERVABILITY_*`)
+3. Default interno
+
+`ENVCTL_OBSERVABILITY_SANITIZATION` no tiene flag CLI equivalente hoy; se controla solo vía variable de entorno (o default interno).
