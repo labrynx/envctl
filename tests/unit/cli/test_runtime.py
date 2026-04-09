@@ -10,9 +10,14 @@ from envctl.cli.runtime import (
     get_cli_state,
     get_contract_selection,
     get_output_format,
+    get_profile_observability,
     get_selected_group,
     get_selected_set,
     get_selected_var,
+    get_trace_enabled,
+    get_trace_file,
+    get_trace_format,
+    get_trace_output,
     is_json_output,
     set_cli_state,
 )
@@ -38,6 +43,11 @@ def test_set_cli_state_persists_profile_output_and_selection() -> None:
             group="Application",
             set_name=None,
             variable=None,
+            trace_enabled=True,
+            trace_format="human",
+            trace_output="both",
+            trace_file=None,
+            profile_observability=True,
         )
 
         state = get_cli_state()
@@ -51,6 +61,11 @@ def test_set_cli_state_persists_profile_output_and_selection() -> None:
         assert get_selected_group() == "Application"
         assert get_selected_set() is None
         assert get_selected_var() is None
+        assert get_trace_enabled() is True
+        assert get_trace_format() == "human"
+        assert get_trace_output() == "both"
+        assert get_trace_file() is None
+        assert get_profile_observability() is True
         assert get_contract_selection().describe() == "group=Application"
 
 

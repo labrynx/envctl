@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     from envctl.observability.emitters import ObservabilityEmitter
 
-TraceFormat = Literal["json", "text"]
+TraceFormat = Literal["jsonl", "human"]
+TraceOutput = Literal["stderr", "file", "both"]
 
 
 @dataclass(frozen=True)
@@ -60,6 +62,8 @@ class ExecutionObservabilityContext:
     trace_enabled: bool
     profile_observability: bool
     trace_format: TraceFormat
+    trace_output: TraceOutput
+    trace_file: Path | None
     start_time: datetime
     emitters: tuple[ObservabilityEmitter, ...]
     events: list[ObservationEvent] | None = None
