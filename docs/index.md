@@ -147,5 +147,4 @@ Understand the core model before you dive into command detail:
     [Read about projection](concepts/projection.md)
 
 </div>
-
 </div>
