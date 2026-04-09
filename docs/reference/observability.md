@@ -38,3 +38,30 @@ Observation `fields` are sanitized before emission:
 - instrumentation should report counts, booleans, and states only
 
 Avoid adding raw environment values, key material, or file contents to event fields.
+
+## Observability change checklist
+
+Before merging observability-related changes, verify all items:
+
+- **Stable event contract**: keep canonical event names and required schema fields stable; if a compatibility break is unavoidable, document it explicitly and coordinate downstream parser updates.
+- **Mandatory sanitization**: ensure every new `fields` payload path passes through sanitization and does not include raw environment values, secrets, key material, or file contents.
+- **Renderer snapshots updated**: refresh and review human renderer snapshots and JSONL output expectations whenever observable output changes.
+
+## Suggested test suites for observability
+
+Use both unit and integration coverage:
+
+- **Unit tests** (`tests/unit/observability`): validate event contracts, sanitization behavior, renderers, emitters, timing, and recorder APIs in isolation.
+- **Integration tests** (`tests/integration/cli/test_trace_observability.py`): validate end-to-end CLI trace emission, including real command lifecycle events and output formats.
+
+## Focused validation commands
+
+Run targeted checks during development and CI:
+
+```bash
+# Unit suite focused on observability internals
+pytest tests/unit/observability -q
+
+# Integration coverage for CLI trace observability
+pytest tests/integration/cli/test_trace_observability.py -q
+```
