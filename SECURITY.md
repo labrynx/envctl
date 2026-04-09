@@ -75,3 +75,36 @@ envctl is designed around a contract-first and local-first model.
 - Optional encryption at rest for vault profiles
 
 Security issues related to these guarantees are treated with high priority.
+
+---
+
+## Explicit limits and non-goals
+
+The current security model is intentionally narrower than a remote secrets platform.
+
+What envctl aims to protect against:
+
+- accidental commitment of envctl-specific vault payloads or keys
+- confusion between contract data and real secret values
+- silent projection of invalid environments
+- casual leakage through normal user-facing output
+
+What envctl does not try to guarantee:
+
+- protection against a compromised local machine or user account
+- centralized access control, rotation policy, or remote audit trails
+- automatic protection of generated projection artifacts like synced env files
+- complete prevention of every possible secret-shaped string in Git history
+
+Operational assumptions:
+
+- the local machine is trusted
+- contributors use the documented workflow and local hooks where expected
+- encryption at rest protects vault files, not every artifact derived from them
+
+Threats outside the current intended scope:
+
+- host compromise
+- malicious local administrator access
+- remote secrets governance and approval workflows
+- organization-wide incident response tooling
