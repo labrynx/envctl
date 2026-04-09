@@ -35,14 +35,10 @@ from envctl.domain.error_diagnostics import (
 from envctl.domain.runtime import RuntimeMode
 from envctl.errors import EnvctlError, ExecutionError
 from envctl.observability import get_active_observability_context
-from envctl.observability.events import (
-    COMMAND_ERROR,
-    COMMAND_FINISH,
-    COMMAND_START,
-    ERROR_HANDLED,
-)
-from envctl.observability.recorder import duration_ms, record_event
-from envctl.observability.timing import utcnow
+from envctl.observability.events import ERROR_HANDLED
+from envctl.observability.recorder import record_event
+from envctl.observability.renderers import render_profile_summary
+from envctl.observability.timing import observe_span
 from envctl.utils.output import print_error
 
 
@@ -105,40 +101,30 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        started_at = utcnow()
         obs_context = get_active_observability_context()
         command = get_command_path()
-        if obs_context is not None:
-            record_event(
-                obs_context,
-                event=COMMAND_START,
-                status="start",
+        span_fields = {"command": command}
+        result: Any = None
+        try:
+            with observe_span(
+                "command",
                 module=__name__,
                 operation="handle_errors",
-                fields={"command": command},
-            )
-        try:
-            result = func(*args, **kwargs)
+                fields=span_fields,
+            ):
+                result = func(*args, **kwargs)
         except EnvctlError as exc:
             if obs_context is not None:
                 event_fields = {
                     "command": command,
                     "error_type": exc.__class__.__name__,
                 }
-                record_event(
-                    obs_context,
-                    event=COMMAND_ERROR,
-                    status="error",
-                    duration_ms=duration_ms(started_at),
-                    module=__name__,
-                    operation="handle_errors",
-                    fields=event_fields,
-                )
+                span_fields.update(event_fields)
                 record_event(
                     obs_context,
                     event=ERROR_HANDLED,
                     status="error",
-                    duration_ms=duration_ms(started_at),
+                    duration_ms=None,
                     module=__name__,
                     operation="emit_handled_error",
                     fields=event_fields,
@@ -149,16 +135,13 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
                 command=get_command_path(),
             )
             raise typer.Exit(code=1) from exc
-        if obs_context is not None:
-            record_event(
-                obs_context,
-                event=COMMAND_FINISH,
-                status="finish",
-                duration_ms=duration_ms(started_at),
-                module=__name__,
-                operation="handle_errors",
-                fields={"command": command},
-            )
+        finally:
+            if (
+                obs_context is not None
+                and obs_context.profile_observability
+                and obs_context.events is not None
+            ):
+                typer.echo(render_profile_summary(obs_context.events), err=True)
         return result
 
     return wrapper

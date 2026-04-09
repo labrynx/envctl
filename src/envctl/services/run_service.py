@@ -10,10 +10,7 @@ from envctl.domain.operations import RunCommandResult
 from envctl.domain.project import ProjectContext
 from envctl.domain.selection import ContractSelection
 from envctl.errors import ExecutionError
-from envctl.observability import get_active_observability_context
-from envctl.observability.events import RUN_EXEC_ERROR, RUN_EXEC_FINISH, RUN_EXEC_START
-from envctl.observability.recorder import duration_ms, record_event
-from envctl.observability.timing import utcnow
+from envctl.observability.timing import observe_span
 from envctl.services.context_service import load_project_context
 from envctl.services.projection_validation import resolve_projectable_environment
 from envctl.services.selection_filtering import filter_projection_values
@@ -103,150 +100,121 @@ def run_command(
     selection: ContractSelection | None = None,
 ) -> tuple[ProjectContext, RunCommandResult, tuple[ContractDeprecationWarning, ...]]:
     """Run one command with the resolved environment injected."""
-    started_at = utcnow()
-    obs_context = get_active_observability_context()
     command_head = command[0] if command else "-"
-    if obs_context is not None:
-        record_event(
-            obs_context,
-            event=RUN_EXEC_START,
-            status="start",
-            module=__name__,
-            operation="run_command",
-            fields={"arg_count": len(command), "command_head": command_head},
+    span_fields = {"arg_count": len(command), "command_head": command_head}
+    with observe_span(
+        "run.exec",
+        module=__name__,
+        operation="run_command",
+        fields=span_fields,
+    ):
+        if not command:
+            logger.error("Refusing to run an empty command")
+            span_fields["reason"] = "empty_command"
+            raise ExecutionError("No command provided")
+
+        logger.debug(
+            "Starting run command",
+            extra={
+                "command": sanitize_command_for_log(command),
+                "selection": selection.describe() if selection is not None else "full contract",
+            },
         )
-    if not command:
-        logger.error("Refusing to run an empty command")
-        if obs_context is not None:
-            record_event(
-                obs_context,
-                event=RUN_EXEC_ERROR,
-                status="error",
-                duration_ms=duration_ms(started_at),
-                module=__name__,
-                operation="run_command",
-                fields={"arg_count": 0, "reason": "empty_command"},
-            )
-        raise ExecutionError("No command provided")
 
-    logger.debug(
-        "Starting run command",
-        extra={
-            "command": sanitize_command_for_log(command),
-            "selection": selection.describe() if selection is not None else "full contract",
-        },
-    )
+        _config, context = load_project_context()
+        resolved_profile = normalize_profile_name(active_profile)
 
-    _config, context = load_project_context()
-    resolved_profile = normalize_profile_name(active_profile)
-
-    contract, report, warnings = resolve_projectable_environment(
-        context,
-        active_profile=resolved_profile,
-        selection=selection,
-        operation="run",
-    )
-
-    resolved_values = filter_projection_values(
-        {key: item.value for key, item in report.values.items()},
-        contract,
-        selection=selection,
-    )
-
-    logger.debug(
-        "Resolved environment for child process",
-        extra={
-            "active_profile": resolved_profile,
-            "resolved_key_count": len(resolved_values),
-            "resolved_key_summary": summarize_key_count(resolved_values),
-        },
-    )
-    logger.info(
-        "Executing child process",
-        extra={
-            "command": sanitize_command_for_log(command),
-            "active_profile": resolved_profile,
-            "selection": selection.describe() if selection is not None else "full contract",
-        },
-    )
-
-    try:
-        # Intentional: envctl run executes a user-requested command.
-        completed = subprocess.run(  # nosec  # noqa: S603
-            command,
-            check=False,
-            env=_build_child_env(resolved_values),
+        contract, report, warnings = resolve_projectable_environment(
+            context,
+            active_profile=resolved_profile,
+            selection=selection,
+            operation="run",
         )
-    except OSError as exc:
-        logger.error(
-            "Failed to launch child process",
+
+        resolved_values = filter_projection_values(
+            {key: item.value for key, item in report.values.items()},
+            contract,
+            selection=selection,
+        )
+
+        logger.debug(
+            "Resolved environment for child process",
+            extra={
+                "active_profile": resolved_profile,
+                "resolved_key_count": len(resolved_values),
+                "resolved_key_summary": summarize_key_count(resolved_values),
+            },
+        )
+        logger.info(
+            "Executing child process",
             extra={
                 "command": sanitize_command_for_log(command),
                 "active_profile": resolved_profile,
-                "error": str(exc),
+                "selection": selection.describe() if selection is not None else "full contract",
             },
         )
-        if obs_context is not None:
-            record_event(
-                obs_context,
-                event=RUN_EXEC_ERROR,
-                status="error",
-                duration_ms=duration_ms(started_at),
+
+        try:
+            with observe_span(
+                "subprocess.exec",
                 module=__name__,
                 operation="run_command",
                 fields={"arg_count": len(command), "command_head": command_head},
+            ):
+                # Intentional: envctl run executes a user-requested command.
+                completed = subprocess.run(  # nosec  # noqa: S603
+                    command,
+                    check=False,
+                    env=_build_child_env(resolved_values),
+                )
+        except OSError as exc:
+            logger.error(
+                "Failed to launch child process",
+                extra={
+                    "command": sanitize_command_for_log(command),
+                    "active_profile": resolved_profile,
+                    "error": str(exc),
+                },
             )
-        raise ExecutionError(f"Failed to launch child process: {command[0]}") from exc
+            raise ExecutionError(f"Failed to launch child process: {command[0]}") from exc
 
-    docker_warnings = _build_docker_warning(command)
-    if docker_warnings:
-        logger.warning(
-            "Run command produced docker environment handoff warning",
+        docker_warnings = _build_docker_warning(command)
+        if docker_warnings:
+            logger.warning(
+                "Run command produced docker environment handoff warning",
+                extra={
+                    "command": sanitize_command_for_log(command),
+                    "warning_count": len(docker_warnings),
+                },
+            )
+
+        logger.debug(
+            "Child process finished",
             extra={
                 "command": sanitize_command_for_log(command),
-                "warning_count": len(docker_warnings),
+                "active_profile": resolved_profile,
+                "exit_code": completed.returncode,
             },
         )
-
-    logger.debug(
-        "Child process finished",
-        extra={
-            "command": sanitize_command_for_log(command),
-            "active_profile": resolved_profile,
-            "exit_code": completed.returncode,
-        },
-    )
-    logger.info(
-        "Child process completed",
-        extra={
-            "command": sanitize_command_for_log(command),
-            "active_profile": resolved_profile,
-            "exit_code": completed.returncode,
-        },
-    )
-
-    if obs_context is not None:
-        record_event(
-            obs_context,
-            event=RUN_EXEC_FINISH,
-            status="finish",
-            duration_ms=duration_ms(started_at),
-            module=__name__,
-            operation="run_command",
-            fields={
-                "arg_count": len(command),
-                "resolved_key_count": len(resolved_values),
-                "warning_count": len(docker_warnings),
+        logger.info(
+            "Child process completed",
+            extra={
+                "command": sanitize_command_for_log(command),
+                "active_profile": resolved_profile,
                 "exit_code": completed.returncode,
             },
         )
 
-    return (
-        context,
-        RunCommandResult(
-            active_profile=resolved_profile,
-            exit_code=completed.returncode,
-            warnings=docker_warnings,
-        ),
-        warnings,
-    )
+        span_fields["resolved_key_count"] = len(resolved_values)
+        span_fields["warning_count"] = len(docker_warnings)
+        span_fields["exit_code"] = completed.returncode
+
+        return (
+            context,
+            RunCommandResult(
+                active_profile=resolved_profile,
+                exit_code=completed.returncode,
+                warnings=docker_warnings,
+            ),
+            warnings,
+        )

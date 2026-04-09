@@ -21,6 +21,7 @@ def test_record_event_builds_stable_observation_event() -> None:
         execution_id="exec-1",
         command_name="check",
         trace_enabled=True,
+        profile_observability=False,
         trace_format="json",
         start_time=utcnow(),
         emitters=(emitter,),

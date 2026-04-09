@@ -58,6 +58,7 @@ class ExecutionObservabilityContext:
     execution_id: str
     command_name: str
     trace_enabled: bool
+    profile_observability: bool
     trace_format: TraceFormat
     start_time: datetime
     emitters: tuple[ObservabilityEmitter, ...]

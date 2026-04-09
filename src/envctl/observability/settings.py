@@ -13,6 +13,7 @@ class ObservabilitySettings:
     """Runtime flags controlling observability behavior."""
 
     trace_enabled: bool
+    profile_observability: bool
     trace_format: TraceFormat
 
 
@@ -37,5 +38,6 @@ def load_observability_settings() -> ObservabilitySettings:
 
     return ObservabilitySettings(
         trace_enabled=_parse_bool(os.getenv("ENVCTL_OBSERVABILITY_TRACE")),
+        profile_observability=_parse_bool(os.getenv("ENVCTL_OBSERVABILITY_PROFILE")),
         trace_format=_parse_trace_format(os.getenv("ENVCTL_OBSERVABILITY_TRACE_FORMAT")),
     )
