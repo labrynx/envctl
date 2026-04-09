@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, TextIO
 
 from envctl.observability.models import ObservationEvent, SanitizationPolicy, TraceFormat
 from envctl.observability.renderers import render_event, render_execution_header
@@ -32,7 +32,7 @@ class StreamEmitter:
         self,
         *,
         trace_format: TraceFormat,
-        stream: object | None = None,
+        stream: TextIO | None = None,
         sanitization_policy: SanitizationPolicy = "masked",
     ) -> None:
         self._trace_format = trace_format

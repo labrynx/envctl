@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from envctl.config.loader import load_config
 from envctl.domain.app_config import AppConfig
@@ -67,7 +67,7 @@ def load_project_context(
     persist_binding: bool = False,
 ) -> tuple[AppConfig, ProjectContext]:
     """Load config and build the current project context."""
-    span_fields = {
+    span_fields: dict[str, Any] = {
         "persist_binding": persist_binding,
         "has_project_name": project_name is not None,
     }

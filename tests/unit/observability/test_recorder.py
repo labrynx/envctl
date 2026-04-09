@@ -2,16 +2,17 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from envctl.observability.models import ExecutionObservabilityContext
+from envctl.observability.models import ExecutionObservabilityContext, ObservationEvent
 from envctl.observability.recorder import duration_ms, record_event
 from envctl.observability.timing import utcnow
+from envctl.utils.masking import mask_value
 
 
 class _Emitter:
     def __init__(self) -> None:
-        self.events = []
+        self.events: list[ObservationEvent] = []
 
-    def emit(self, event) -> None:
+    def emit(self, event: ObservationEvent) -> None:
         self.events.append(event)
 
 
@@ -45,7 +46,7 @@ def test_record_event_builds_stable_observation_event() -> None:
     assert event.status == "start"
     assert event.module == "envctl.services.resolution_service.resolution"
     assert event.operation == "resolve_environment"
-    assert event.fields == {"profile": "local", "token": "[REDACTED]"}
+    assert event.fields == {"profile": "local", "token": mask_value("secret-value")}
     assert context.events == [event]
     assert emitter.events == [event]
 

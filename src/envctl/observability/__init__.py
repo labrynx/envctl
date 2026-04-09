@@ -10,7 +10,12 @@ from envctl.observability.context import (
     get_active_context,
     set_active_context,
 )
-from envctl.observability.emitters import FileEmitter, NullEmitter, StreamEmitter
+from envctl.observability.emitters import (
+    FileEmitter,
+    NullEmitter,
+    ObservabilityEmitter,
+    StreamEmitter,
+)
 from envctl.observability.models import (
     ExecutionObservabilityContext,
     SanitizationPolicy,
@@ -55,17 +60,13 @@ def initialize_observability_context(
     resolved_trace_output = settings.trace_output if trace_output is None else trace_output
     resolved_trace_file = settings.trace_file if trace_file is None else trace_file
     resolved_profile = (
-        settings.profile_observability
-        if profile_observability is None
-        else profile_observability
+        settings.profile_observability if profile_observability is None else profile_observability
     )
     resolved_sanitization_policy = (
-        settings.sanitization_policy
-        if sanitization_policy is None
-        else sanitization_policy
+        settings.sanitization_policy if sanitization_policy is None else sanitization_policy
     )
 
-    emitters = []
+    emitters: list[ObservabilityEmitter] = []
     effective_trace_file: Path | None = resolved_trace_file
 
     if resolved_trace_output in {"stderr", "both"}:

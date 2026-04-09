@@ -27,7 +27,7 @@ def _snapshot(name: str) -> str:
 
 
 def _render_trace(events: list[ObservationEvent]) -> str:
-    return "\n".join(render_event(event, "human") for event in events)
+    return "".join(f"{render_event(event, 'human')}\n" for event in events)
 
 
 def test_human_trace_snapshot_for_check_command() -> None:

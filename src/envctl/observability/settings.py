@@ -43,8 +43,12 @@ def _parse_trace_output(value: str | None) -> TraceOutput:
     if value is None:
         return "stderr"
     normalized = value.strip().lower()
-    if normalized in {"stderr", "file", "both"}:
-        return normalized
+    if normalized == "stderr":
+        return "stderr"
+    if normalized == "file":
+        return "file"
+    if normalized == "both":
+        return "both"
     return "stderr"
 
 
@@ -52,8 +56,12 @@ def _parse_sanitization_policy(value: str | None) -> SanitizationPolicy:
     if value is None:
         return "masked"
     normalized = value.strip().lower()
-    if normalized in {"full", "masked", "count_only"}:
-        return normalized
+    if normalized == "full":
+        return "full"
+    if normalized == "masked":
+        return "masked"
+    if normalized == "count_only":
+        return "count_only"
     return "masked"
 
 

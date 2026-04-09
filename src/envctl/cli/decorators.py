@@ -17,8 +17,7 @@ from envctl.cli.presenters import (
     render_state_error,
 )
 from envctl.cli.presenters.common import print_error_title, print_help_hint
-from envctl.cli.runtime import get_command_path, is_json_output
-from envctl.cli.runtime import is_error_debug_enabled
+from envctl.cli.runtime import get_command_path, is_error_debug_enabled, is_json_output
 from envctl.cli.serializers import (
     emit_json,
     serialize_error,
@@ -36,9 +35,8 @@ from envctl.domain.error_diagnostics import (
 from envctl.domain.runtime import RuntimeMode
 from envctl.errors import EnvctlError, ExecutionError
 from envctl.observability import get_active_observability_context
-from envctl.observability.events import ERROR_HANDLED
-from envctl.observability.events import ERROR_UNHANDLED
 from envctl.observability.error_mapping import map_exception_to_error_event
+from envctl.observability.events import ERROR_HANDLED, ERROR_UNHANDLED
 from envctl.observability.recorder import record_event
 from envctl.observability.renderers import render_profile_summary
 from envctl.observability.timing import observe_span
@@ -106,7 +104,7 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         obs_context = get_active_observability_context()
         command = get_command_path()
-        span_fields = {"command": command}
+        span_fields: dict[str, Any] = {"command": command}
         result: Any = None
         try:
             with observe_span(
@@ -116,6 +114,8 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
                 fields=span_fields,
             ):
                 result = func(*args, **kwargs)
+        except typer.Exit:
+            raise
         except EnvctlError as exc:
             if obs_context is not None:
                 mapping = map_exception_to_error_event(exc)
@@ -191,9 +191,7 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
                     )
                 )
             else:
-                print_error(
-                    "Error: Unexpected internal error. Re-run with --debug-errors."
-                )
+                print_error("Error: Unexpected internal error. Re-run with --debug-errors.")
             raise typer.Exit(code=1) from exc
         finally:
             if (
