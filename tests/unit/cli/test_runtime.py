@@ -10,7 +10,6 @@ from envctl.cli.runtime import (
     get_cli_state,
     get_contract_selection,
     get_output_format,
-    is_error_debug_enabled,
     get_profile_observability,
     get_selected_group,
     get_selected_set,
@@ -19,6 +18,7 @@ from envctl.cli.runtime import (
     get_trace_file,
     get_trace_format,
     get_trace_output,
+    is_error_debug_enabled,
     is_json_output,
     set_cli_state,
 )

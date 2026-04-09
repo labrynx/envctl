@@ -11,8 +11,8 @@ from envctl.domain.operations import VaultCheckResult, VaultShowResult
 from envctl.domain.project import ProjectContext
 from envctl.errors import ExecutionError
 from envctl.observability import get_active_observability_context
-from envctl.observability.events import VAULT_ERROR, VAULT_FINISH, VAULT_START
 from envctl.observability.error_mapping import map_exception_to_error_event
+from envctl.observability.events import VAULT_ERROR, VAULT_FINISH, VAULT_START
 from envctl.observability.recorder import duration_ms, record_event
 from envctl.observability.timing import utcnow
 from envctl.repository.contract_repository import load_contract_optional

@@ -8,12 +8,12 @@ from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport
 from envctl.domain.selection import ContractSelection
 from envctl.observability import get_active_observability_context
+from envctl.observability.error_mapping import map_exception_to_error_event
 from envctl.observability.events import (
     CONTRACT_COMPOSE_ERROR,
     CONTRACT_COMPOSE_FINISH,
     CONTRACT_COMPOSE_START,
 )
-from envctl.observability.error_mapping import map_exception_to_error_event
 from envctl.observability.recorder import duration_ms, record_event
 from envctl.observability.timing import utcnow
 from envctl.repository.contract_composition import load_resolved_contract_bundle

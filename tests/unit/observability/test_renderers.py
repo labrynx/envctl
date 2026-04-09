@@ -38,10 +38,12 @@ def test_collect_top_slow_phases_aggregates_by_phase() -> None:
 
 
 def test_render_profile_summary_lists_ranked_phases() -> None:
-    output = render_profile_summary([
-        _event("resolution.finish", "finish", 25),
-        _event("profile.load.finish", "finish", 8),
-    ])
+    output = render_profile_summary(
+        [
+            _event("resolution.finish", "finish", 25),
+            _event("profile.load.finish", "finish", 8),
+        ]
+    )
 
     assert "Observability profile (top slow phases):" in output
     assert "resolution: max=25ms" in output

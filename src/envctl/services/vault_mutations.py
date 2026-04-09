@@ -15,8 +15,8 @@ from envctl.domain.operations import VaultEditResult, VaultPruneResult
 from envctl.domain.project import ProjectContext
 from envctl.errors import ExecutionError
 from envctl.observability import get_active_observability_context
-from envctl.observability.events import VAULT_ERROR, VAULT_FINISH, VAULT_START
 from envctl.observability.error_mapping import map_exception_to_error_event
+from envctl.observability.events import VAULT_ERROR, VAULT_FINISH, VAULT_START
 from envctl.observability.recorder import duration_ms, record_event
 from envctl.observability.timing import utcnow
 
@@ -263,10 +263,13 @@ def run_vault_edit_impl(
         },
     )
 
-    result = context, VaultEditResult(
-        path=profile_path,
-        profile=resolved_profile,
-        created=created,
+    result = (
+        context,
+        VaultEditResult(
+            path=profile_path,
+            profile=resolved_profile,
+            created=created,
+        ),
     )
     if obs_context is not None:
         record_event(

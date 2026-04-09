@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
-import re
 
 from envctl.adapters.git import is_git_repository, list_staged_paths, read_staged_file
 from envctl.constants import VAULT_ENCRYPTION_FORMAT_VERSION
@@ -110,12 +110,7 @@ def _detect_master_key_finding(
 ) -> GitSecretFinding | None:
     material = None
 
-    if sample.startswith(b"ENVCTL-MASTER-KEY-V1:"):
-        try:
-            material = parse_master_key_material(sample)
-        except ExecutionError:
-            material = None
-    elif _looks_like_legacy_master_key(sample):
+    if sample.startswith(b"ENVCTL-MASTER-KEY-V1:") or _looks_like_legacy_master_key(sample):
         try:
             material = parse_master_key_material(sample)
         except ExecutionError:

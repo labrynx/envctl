@@ -152,9 +152,7 @@ def build_project_audit_context(
         vault_crypto=None,
     )
     crypto = (
-        load_configured_vault_crypto(config, base_context)
-        if config.encryption_enabled
-        else None
+        load_configured_vault_crypto(config, base_context) if config.encryption_enabled else None
     )
     return ProjectContext(
         project_slug=base_context.project_slug,

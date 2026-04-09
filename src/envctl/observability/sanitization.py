@@ -51,15 +51,9 @@ def sanitize_event(
         execution_id=sanitize_scalar(event.execution_id, policy="full"),
         status=sanitize_scalar(event.status, policy="full"),
         duration_ms=event.duration_ms,
-        module=(
-            sanitize_scalar(event.module, policy="full")
-            if event.module is not None
-            else None
-        ),
+        module=(sanitize_scalar(event.module, policy="full") if event.module is not None else None),
         operation=(
-            sanitize_scalar(event.operation, policy="full")
-            if event.operation is not None
-            else None
+            sanitize_scalar(event.operation, policy="full") if event.operation is not None else None
         ),
         fields=sanitize_payload(event.fields or {}, policy=policy),
     )

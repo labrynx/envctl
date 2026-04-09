@@ -137,8 +137,7 @@ def run_vault_audit_impl(
         extra={"projects_dir": config.projects_dir, "project_id": context.project_id},
     )
     projects = tuple(
-        audit_project(config, project_dir)
-        for project_dir in iter_project_dirs(config.projects_dir)
+        audit_project(config, project_dir) for project_dir in iter_project_dirs(config.projects_dir)
     )
     logger.debug("Vault audit result ready", extra={"project_count": len(projects)})
     return context, projects

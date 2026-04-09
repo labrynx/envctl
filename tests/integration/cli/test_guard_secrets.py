@@ -115,9 +115,9 @@ def test_guard_secrets_ignores_non_key_text_files(
     doc_path = repo / "overrides" / "partials" / "page-context.html"
     doc_path.parent.mkdir(parents=True, exist_ok=True)
     doc_path.write_text(
-        "{% set url = page.url if page and page.url else \"\" %}\n"
-        "{% if url.startswith(\"reference/\") %}\n"
-        "  <div class=\"envctl-page-context\">Reference overview</div>\n"
+        '{% set url = page.url if page and page.url else "" %}\n'
+        '{% if url.startswith("reference/") %}\n'
+        '  <div class="envctl-page-context">Reference overview</div>\n'
         "{% endif %}\n",
         encoding="utf-8",
     )
