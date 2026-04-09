@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any
 
 from envctl.observability.models import ExecutionObservabilityContext, ObservationEvent
-from envctl.observability.sanitization import sanitize_payload, sanitize_scalar
+from envctl.observability.sanitization import sanitize_event
 from envctl.observability.timing import utcnow
 
 
@@ -26,20 +26,21 @@ def record_event(
         event=event,
         timestamp=utcnow(),
         execution_id=context.execution_id,
-        status=sanitize_scalar(status),
+        status=status,
         duration_ms=duration_ms,
-        module=sanitize_scalar(module) if module is not None else None,
-        operation=sanitize_scalar(operation) if operation is not None else None,
-        fields=sanitize_payload(fields or {}),
+        module=module,
+        operation=operation,
+        fields=fields or {},
     )
+    sanitized_observation = sanitize_event(observation, policy=context.sanitization_policy)
 
     if context.events is not None:
-        context.events.append(observation)
+        context.events.append(sanitized_observation)
 
     for emitter in context.emitters:
-        emitter.emit(observation)
+        emitter.emit(sanitized_observation)
 
-    return observation
+    return sanitized_observation
 
 
 def duration_ms(started_at: datetime, ended_at: datetime | None = None) -> int:

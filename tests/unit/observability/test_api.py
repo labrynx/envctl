@@ -35,6 +35,7 @@ def test_initialize_observability_context_sets_active_context_when_enabled(
     assert context.trace_format == "human"
     assert context.trace_output == "stderr"
     assert context.trace_file is None
+    assert context.sanitization_policy == "masked"
     assert context.events == []
     assert get_active_observability_context() == context
 
