@@ -22,6 +22,9 @@ from envctl.domain.error_diagnostics import (
 )
 from envctl.errors import ContractError
 from envctl.utils.atomic import write_text_atomic
+from envctl.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def create_empty_contract(
@@ -30,6 +33,10 @@ def create_empty_contract(
     project_name: str | None = None,
 ) -> Contract:
     """Create an empty valid contract."""
+    logger.debug(
+        "Creating empty contract",
+        extra={"project_key": project_key or "-", "project_name": project_name or "-"},
+    )
     contract = Contract(version=CONTRACT_VERSION, variables={})
     if project_key is not None:
         contract = contract.with_meta(
@@ -51,8 +58,16 @@ def ensure_contract_metadata(
         and contract.meta.project_key == project_key
         and contract.meta.project_name == project_name
     ):
+        logger.debug(
+            "Contract metadata already matches expected values",
+            extra={"project_key": project_key},
+        )
         return contract
 
+    logger.debug(
+        "Updating contract metadata",
+        extra={"project_key": project_key, "project_name": project_name or "-"},
+    )
     return contract.with_meta(
         project_key=project_key,
         project_name=project_name,
@@ -125,6 +140,7 @@ def load_contract_with_warnings(
     path: Path,
 ) -> tuple[Contract, tuple[ContractDeprecationWarning, ...]]:
     """Load a contract from disk and collect normalized deprecation warnings."""
+    logger.debug("Loading contract with warnings", extra={"path": path})
     if not path.exists():
         _raise_contract_error(
             f"Contract file not found: {path}",
@@ -150,7 +166,7 @@ def load_contract_with_warnings(
     normalized, warnings = _normalize_contract_payload_with_path(raw, path)
 
     try:
-        return Contract.model_validate(normalized), warnings
+        contract = Contract.model_validate(normalized)
     except PydanticValidationError as exc:
         _raise_contract_error(
             f"Invalid contract: {exc}",
@@ -164,6 +180,15 @@ def load_contract_with_warnings(
                 for error in exc.errors()
             ),
         )
+    logger.debug(
+        "Loaded contract with warnings",
+        extra={
+            "path": path,
+            "variable_count": len(contract.variables),
+            "warning_count": len(warnings),
+        },
+    )
+    return contract, warnings
 
 
 def _normalize_contract_payload_with_path(
@@ -398,12 +423,18 @@ def _dedupe_warnings(
 def load_contract_optional(path: Path) -> Contract | None:
     """Load a contract when present, otherwise return None."""
     if not path.exists():
+        logger.debug("Optional contract is missing", extra={"path": path})
         return None
+    logger.debug("Optional contract exists; loading", extra={"path": path})
     return load_contract(path)
 
 
 def write_contract(path: Path, contract: Contract) -> None:
     """Write a contract to disk."""
+    logger.debug(
+        "Writing contract",
+        extra={"path": path, "variable_count": len(contract.variables)},
+    )
     content = yaml.safe_dump(
         contract.to_contract_payload(),
         sort_keys=False,

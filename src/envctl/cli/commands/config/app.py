@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import typer
-
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
 from envctl.cli.presenters import render_config_init_result
+from envctl.cli.typer_theme import create_typer_app
 from envctl.services.config_service import run_config_init
 
-config_app = typer.Typer(help="Manage envctl configuration.")
+config_app = create_typer_app(help_text="Manage [bold]envctl[/bold] configuration.")
 
 
 @config_app.command("init")

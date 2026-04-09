@@ -1,19 +1,19 @@
 ![envctl](docs/assets/envctl_banner.png)
 
-**Your `.env.local` works… until it doesn’t.**
+**Your `.env.local` works... until it doesn't.**
 
-It drifts between machines.  
-It misses variables.  
-It breaks when you least expect it.
+Different machines behave differently.<br>
+Onboarding breaks.<br>
+CI fails in ways you can't reproduce.
 
-envctl fixes that — and makes your environment boring again (which is exactly what you want).
+`envctl` stops that drift.
 
-**envctl makes your environment behave.**
+`envctl` keeps environments consistent.
 
 ---
 
 <div align="center">
-  
+
 [![Tests](https://github.com/labrynx/envctl/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/ci-tests.yml)
 [![Coverage](https://github.com/labrynx/envctl/actions/workflows/ci-coverage.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/ci-coverage.yml)
 
@@ -32,60 +32,72 @@ envctl fixes that — and makes your environment boring again (which is exactly 
 
 ---
 
-## What is this?
+## What `envctl` does
 
-Fair.
+`envctl` keeps environments consistent.
 
-`envctl` is a local-first environment control tool.
+It gives you:
 
-It takes your environment from:
+* shared requirements in the repo
+* local values outside Git
+* explicit runtime behavior instead of guesswork
 
-> “I think this should work…”
+It is not a secret manager.
+It is not a dotenv loader.
+It is not a shell trick.
 
-to:
-
-> “I know exactly what’s going on.”
-
-No cloud. No magic. No hidden state.  
-Just something you can reason about.
-
----
-
-## The problem (you’ve probably seen this)
-
-- It works on your machine… but not on your teammate’s  
-- CI fails because a variable is missing (again)  
-- You forgot to update `.env.local` somewhere  
-- Someone committed something they shouldn’t  
-- Nobody actually knows what variables are required  
-
-And somehow… it still “kind of works”
-
-Until it doesn’t.
+It is a local-first way to stop `.env` drift across development, teammates, and CI.
 
 ---
 
-## What envctl does differently
+## The problem
 
-Instead of a loose `.env` file, envctl splits things properly:
+You have probably seen some version of this already:
 
-- **contract** → what the project expects (`.envctl.yaml`)  
-- **vault** → your local values (never in git)  
-- **runtime** → the environment your app actually runs with  
+* it works on your machine, but not on your teammate's
+* CI fails because a variable is missing or shaped differently
+* onboarding depends on tribal knowledge
+* `.env.local` gets copied around until nobody trusts it
+* nobody can clearly say which variables are actually required
 
-So:
+That is not just a secret-storage problem.
 
-- the repo defines the rules  
-- your machine provides the values  
-- envctl builds the environment  
+It is an environment-consistency problem.
 
-No guessing.
+---
+
+## How `envctl` fixes it
+
+`envctl` makes environments explicit instead of implicit.
+
+It separates the environment into clear responsibilities:
+
+* **contract**: what the project requires
+* **vault**: what each machine stores locally
+* **profiles**: which local value set is active
+* **resolution**: what is actually true at runtime
+* **projection**: how that resolved environment is handed to tools
+
+That means:
+
+* the repo defines shared requirements
+* each machine keeps real values local
+* the runtime environment is explicit and checkable
+
+> No hidden source of truth.<br>
+> No guessing which value won.
 
 ---
 
 ## Quickstart
 
-From zero to running in seconds:
+Install the CLI:
+
+```bash
+python3 -m pip install envctl
+```
+
+Then the shortest useful flow is:
 
 ```bash
 envctl config init
@@ -93,134 +105,139 @@ envctl init
 envctl fill
 envctl check
 envctl run -- python app.py
-````
+```
 
-What’s happening here:
+What happens:
 
-* `config init` → sets up envctl locally
-* `init` → links your repo to envctl
-* `fill` → asks only for what’s missing
-* `check` → validates everything before you run
-* `run` → executes with a clean, resolved environment
+* `config init` creates your user-level `envctl` config
+* `init` prepares the repository for `envctl`
+* `fill` asks only for missing required values
+* `check` validates the resolved environment
+* `run` executes with the resolved environment injected directly
+
+If another tool really needs a file on disk, use `sync`.
+Otherwise, `run` is usually the cleanest path.
 
 ---
 
-## “But `.env.local` works for me”
+## Why it is different
 
-Yeah — it does.
+`envctl` is not mainly competing with cloud secret tools or dotenv loaders.
 
-Until:
+Its primary job is different:
 
-* you switch machines
-* someone joins the project
-* you add a new variable
-* something silently goes missing
+* cloud secret tools focus on secret distribution
+* dotenv loaders and shell tooling focus on injection
+* `envctl` focuses on environment coherence
 
-Here’s the difference:
+That is why the core value is not “where do secrets live?”.
 
-|                                | `.env.local` | direnv       | Doppler / Infisical | **envctl** |
-| ------------------------------ | ------------ | ------------ | ------------------- | ---------- |
-| Documents variables            | ❌            | ❌            | Partial             | ✅          |
-| Validates values               | ❌            | ❌            | ❌                   | ✅          |
-| Keeps secrets out of git       | ⚠️           | ✅            | ✅ cloud             | ✅ local    |
-| Supports multiple environments | manual files | manual files | ✅                   | ✅ profiles |
-| Works without cloud            | ✅            | ✅            | ❌                   | ✅          |
+The core value is:
 
-`envctl` is not a secrets manager.
-
-It’s the missing layer between your repo and your runtime.
+* what does this project require?
+* what does this machine actually have?
+* what environment will the app really receive?
 
 ---
 
 ## A typical workflow
 
-Here’s what this actually looks like:
-
 ```bash
-# add a new requirement
+# add a new shared requirement
 envctl add API_KEY sk-example
 git add .envctl.yaml
 git commit -m "require API_KEY"
 
-# someone else pulls
+# another developer pulls
 envctl check
 envctl fill
 envctl run -- python app.py
 ```
 
-That’s it. No tricks.
-
-The contract lives in git.
-The values stay on your machine.
-The environment rebuilds itself when needed.
+The contract changes in Git.
+Real values stay local.
+The runtime environment stays explicit.
 
 ---
 
-## Core concepts
-
-* **contract** → variables and constraints
-* **vault** → your local values
-* **profile** → environments (`local`, `dev`, `staging`, …)
-* **resolution** → builds the final environment
-* **projection** → applies it (`run`, `sync`, `export`)
-
----
-
-## Debugging (when things go weird)
-
-```bash
-ENVCTL_LOG_LEVEL=DEBUG envctl check
-ENVCTL_LOG_LEVEL=DEBUG envctl inspect DATABASE_URL
-ENVCTL_LOG_LEVEL=DEBUG envctl run -- python app.py
-```
-
-Values stay masked. You see what matters.
-
----
-
-## When envctl is a good fit
+## When `envctl` is a good fit
 
 * your `.env.local` keeps drifting
 * onboarding is fragile
-* CI behaves differently
-* you have multiple environments
-* you want to stay local-first
+* local and CI behavior diverge too easily
+* one machine needs multiple local contexts
+* you want a local-first workflow without turning generated files into the source of truth
 
----
+## When it is probably overkill
 
-## When it’s probably overkill
-
-* you have one static `.env` file
-* the project is tiny
-* everything already lives in a cloud secrets manager
+* you have one tiny project with a static env file
+* onboarding is trivial and unlikely to change
+* the team already solves environment consistency elsewhere and does not need another layer
 
 ---
 
 ## Security
 
 * no secrets in the contract
-* values stay on your machine
+* local values stay on the machine
 * sensitive output is masked
-* optional encryption at rest
+* encryption at rest is optional
 
-> envctl assumes your machine is trusted.
-> If it isn’t — nothing will save you anyway.
+`envctl` assumes the local machine is trusted. It is designed to keep environment handling explicit and safer, not to replace a full remote secrets platform.
 
 ---
 
 ## Documentation
 
+* [Docs home](docs/index.md)
+* [Getting started](docs/getting-started/index.md)
 * [Quickstart](docs/getting-started/quickstart.md)
-* [Mental model](docs/getting-started/mental-model.md)
-* [Commands reference](docs/reference/commands.md)
-* [Profiles](docs/reference/profiles.md)
-* [Vault](docs/reference/vault.md)
-* [Security](docs/reference/security.md)
-* [Migration and compatibility](docs/internals/compatibility.md)
+* [Concepts](docs/concepts/index.md)
+* [Commands reference](docs/reference/commands/index.md)
+* [Configuration reference](docs/reference/configuration.md)
+* [Distribution reference](docs/reference/distribution.md)
+* [Troubleshooting](docs/troubleshooting/index.md)
+* [Compatibility](docs/internals/compatibility.md)
 
 ---
 
-If you've ever said
-“it works on my machine”
+## Development
 
-…you’ll probably like envctl.
+The supported contributor baseline is:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -e ".[dev]"
+make validate
+```
+
+That is the canonical local workflow for this repository today.
+
+`uv.lock` is tracked to document one tested dependency resolution state and to support optional local workflows, but it is not yet the canonical CI input. Until that policy changes explicitly, local validation and CI should be expected to work from the editable `pip install -e ".[dev]"` path first.
+
+If you are editing documentation locally, install docs extras as well:
+
+```bash
+pip install -e ".[dev,docs]"
+make docs-check
+```
+
+The normal contributor validation path should include architecture checks, not only lint and tests:
+
+```bash
+make validate
+```
+
+That flow runs linting, formatting checks, type-checking, Bandit, tests with coverage, and `lint-imports`.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the detailed contributor workflow.
+
+---
+
+If you have ever said:
+
+> "it works on my machine"
+
+then `envctl` is probably solving a problem you already have.

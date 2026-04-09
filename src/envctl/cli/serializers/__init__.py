@@ -13,6 +13,7 @@ from envctl.cli.serializers.diagnostics import (
     serialize_state_diagnostics,
 )
 from envctl.cli.serializers.errors import serialize_error
+from envctl.cli.serializers.export import serialize_export_result
 from envctl.cli.serializers.inspect import serialize_inspect_key_result, serialize_inspect_result
 from envctl.cli.serializers.status import serialize_status_report
 from envctl.cli.serializers.warnings import serialize_command_warnings
@@ -26,6 +27,7 @@ __all__ = [
     "serialize_contract_diagnostics",
     "serialize_error",
     "serialize_error_diagnostics",
+    "serialize_export_result",
     "serialize_inspect_key_result",
     "serialize_inspect_result",
     "serialize_project_binding_diagnostics",

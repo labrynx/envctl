@@ -92,3 +92,5 @@ def test_root_callback_rejects_multiple_scope_selectors(
 
     assert result.exit_code != 0
     assert "mutually exclusive" in result.output
+    assert "Next steps" in result.output
+    assert "envctl --help" in result.output

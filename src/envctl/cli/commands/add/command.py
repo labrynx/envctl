@@ -5,13 +5,14 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import (
+    emit_usage_error,
     handle_errors,
     requires_writable_runtime,
     text_output_only,
 )
 from envctl.cli.presenters import render_add_result, render_inferred_spec
 from envctl.cli.prompts.input import confirm, prompt_string
-from envctl.cli.runtime import get_active_profile
+from envctl.cli.runtime import get_active_profile, get_command_path
 from envctl.domain.operations import AddVariableRequest
 from envctl.services.add_service import run_add
 
@@ -34,7 +35,7 @@ CHOICE_OPTION = typer.Option(None, "--choice")
 def _resolve_required(required: bool, optional: bool) -> bool | None:
     """Resolve required/optional flags."""
     if required and optional:
-        raise typer.BadParameter("Use either --required or --optional, not both.")
+        raise ValueError("Use either --required or --optional, not both.")
     if required:
         return True
     if optional:
@@ -45,7 +46,7 @@ def _resolve_required(required: bool, optional: bool) -> bool | None:
 def _resolve_sensitive(sensitive: bool, non_sensitive: bool) -> bool | None:
     """Resolve sensitive/non-sensitive flags."""
     if sensitive and non_sensitive:
-        raise typer.BadParameter("Use either --sensitive or --non-sensitive, not both.")
+        raise ValueError("Use either --sensitive or --non-sensitive, not both.")
     if sensitive:
         return True
     if non_sensitive:
@@ -197,22 +198,26 @@ def add_command(
     choice: list[str] | None = CHOICE_OPTION,
 ) -> None:
     """Add one variable to the contract and store its initial value in the active profile."""
-    request = _build_add_request(
-        key=key,
-        value=value,
-        type_=type_,
-        required=required,
-        optional=optional,
-        sensitive=sensitive,
-        non_sensitive=non_sensitive,
-        interactive=interactive,
-        description=description,
-        default=default,
-        example=example,
-        format_=format_,
-        pattern=pattern,
-        choice=choice,
-    )
+    try:
+        request = _build_add_request(
+            key=key,
+            value=value,
+            type_=type_,
+            required=required,
+            optional=optional,
+            sensitive=sensitive,
+            non_sensitive=non_sensitive,
+            interactive=interactive,
+            description=description,
+            default=default,
+            example=example,
+            format_=format_,
+            pattern=pattern,
+            choice=choice,
+        )
+    except ValueError as exc:
+        emit_usage_error(str(exc), command=get_command_path() or "envctl add")
+        raise typer.Exit(code=2) from exc
 
     context, result = run_add(request, get_active_profile())
 

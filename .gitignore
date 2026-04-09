@@ -18,6 +18,8 @@ htmlcov
 
 dist/
 build/
+site/
+
 **/*.egg-info/
 
 .vscode/

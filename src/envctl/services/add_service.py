@@ -15,10 +15,12 @@ from envctl.repository.contract_repository import (
 )
 from envctl.repository.profile_repository import load_profile_values, write_profile_values
 from envctl.services.context_service import load_project_context
+from envctl.utils.logging import get_logger
 from envctl.utils.project_paths import normalize_profile_name
 
 _ALLOWED_VARIABLE_TYPES: tuple[VariableType, ...] = ("string", "int", "bool", "url")
 _ALLOWED_VARIABLE_FORMATS: tuple[VariableFormat, ...] = ("json", "url", "csv")
+logger = get_logger(__name__)
 
 
 def _resolve_variable_type(raw_type: str | None, inferred_type: VariableType) -> VariableType:
@@ -142,6 +144,14 @@ def run_add(
     """Add one variable to the contract and store its initial value in the active profile."""
     _config, context = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
+    logger.debug(
+        "Running add variable",
+        extra={
+            "key": request.key,
+            "active_profile": resolved_profile,
+            "repo_root": context.repo_root,
+        },
+    )
 
     contract, contract_created = _load_or_create_contract(context)
 
@@ -163,6 +173,15 @@ def run_add(
         resolved_profile,
         profile_values,
         require_existing_explicit=True,
+    )
+    logger.info(
+        "Added variable to contract and profile",
+        extra={
+            "key": request.key,
+            "active_profile": resolved_profile,
+            "contract_created": contract_created,
+            "contract_entry_created": contract_entry_created,
+        },
     )
 
     result = AddVariableResult(

@@ -22,8 +22,11 @@ from envctl.repository.project_context import (
 )
 from envctl.services.context_service import load_configured_vault_crypto
 from envctl.utils.filesystem import ensure_dir, ensure_file
+from envctl.utils.logging import get_logger
 from envctl.utils.project_ids import new_project_id
 from envctl.vault_crypto import VaultCrypto
+
+logger = get_logger(__name__)
 
 
 def _load_previous_values(
@@ -68,6 +71,14 @@ def run_rebind(*, copy_values: bool = True) -> tuple[ProjectContext, RebindResul
     config = load_config()
     repo_root = resolve_repo_root()
     previous_project_id = get_local_git_config(repo_root, GIT_CONFIG_PROJECT_ID_KEY)
+    logger.debug(
+        "Running rebind",
+        extra={
+            "repo_root": repo_root,
+            "previous_project_id": previous_project_id or "-",
+            "copy_values": copy_values,
+        },
+    )
 
     previous_crypto = _load_previous_project_crypto(
         config=config,
@@ -78,8 +89,20 @@ def run_rebind(*, copy_values: bool = True) -> tuple[ProjectContext, RebindResul
         previous_project_id,
         crypto=previous_crypto,
     )
+    logger.debug(
+        "Loaded previous rebind values",
+        extra={
+            "previous_project_id": previous_project_id or "-",
+            "previous_value_count": len(previous_values),
+            "copy_values": copy_values,
+        },
+    )
 
     new_project_id_value = new_project_id()
+    logger.debug(
+        "Generated new project id for rebind",
+        extra={"new_project_id": new_project_id_value},
+    )
     context = build_context_for_project_id(
         config,
         repo_root=repo_root,
@@ -96,6 +119,14 @@ def run_rebind(*, copy_values: bool = True) -> tuple[ProjectContext, RebindResul
     if copy_values and previous_values:
         write_profile_values(context, "local", previous_values)
         copied = True
+    logger.info(
+        "Repository rebound to new project id",
+        extra={
+            "previous_project_id": previous_project_id or "-",
+            "new_project_id": new_project_id_value,
+            "copied_values": copied,
+        },
+    )
 
     return context, RebindResult(
         previous_project_id=previous_project_id,

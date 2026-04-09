@@ -8,11 +8,7 @@ import pytest
 import envctl.cli.commands.status.command as status_command_module
 from envctl.cli.commands.status import status_command
 from envctl.domain.status import StatusReport
-
-
-def normalize_path_str(value: str) -> str:
-    """Normalize serialized path values for cross-platform assertions."""
-    return value.replace("\\", "/")
+from tests.support.paths import normalize_path_str
 
 
 def test_status_command_renders_status_report(

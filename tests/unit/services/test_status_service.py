@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -174,3 +175,50 @@ def test_run_status_fails_when_explicit_profile_file_is_missing(
 
     with pytest.raises(ExecutionError, match=r"Create it with 'envctl profile create staging'"):
         status_service.run_status("staging")
+
+
+def test_run_status_logs_debug_summary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    context = make_status_context(tmp_path, contract_exists=True, vault_exists=True)
+    contract = object()
+    resolution = make_resolution_report(
+        values={"APP_NAME": make_resolved_value(key="APP_NAME", value="demo", source="vault")},
+        missing_required=("DATABASE_URL",),
+        invalid_keys=("PORT",),
+        unknown_keys=("OLD_KEY",),
+    )
+
+    monkeypatch.setattr(
+        status_service,
+        "load_project_context",
+        lambda project_name=None, persist_binding=False: (object(), context),
+    )
+    monkeypatch.setattr(status_service, "load_contract_for_context", lambda _context: contract)
+    monkeypatch.setattr(
+        status_service,
+        "resolve_environment",
+        lambda _context, _contract, *, active_profile=None: resolution,
+    )
+
+    logger = logging.getLogger("envctl")
+    logger.addHandler(caplog.handler)
+    logger.setLevel(logging.DEBUG)
+    caplog.set_level("DEBUG")
+
+    try:
+        status_service.run_status("local")
+    finally:
+        logger.removeHandler(caplog.handler)
+
+    assert any(
+        record.name == "envctl.services.status_service"
+        and record.levelname == "DEBUG"
+        and record.message == "Computed status report details"
+        and getattr(record, "missing_required_count", None) == 1
+        and getattr(record, "invalid_key_count", None) == 1
+        and getattr(record, "unknown_key_count", None) == 1
+        for record in caplog.records
+    )

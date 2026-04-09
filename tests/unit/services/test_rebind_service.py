@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -248,3 +249,77 @@ def test_run_rebind_does_not_copy_values_when_empty_is_requested(
     assert result.copied_values is False
     assert context.vault_values_path.exists()
     assert context.vault_values_path.read_text(encoding="utf-8") == ""
+
+
+def test_run_rebind_logs_debug_and_info_summary(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    config = make_config(tmp_path)
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir(parents=True, exist_ok=True)
+
+    context = make_project_context(
+        project_slug="demo",
+        project_key="demo",
+        project_id="prj_bbbbbbbbbbbbbbbb",
+        repo_root=repo_root,
+        repo_remote=None,
+        binding_source="local",
+        vault_project_dir=config.projects_dir / "demo--prj_bbbbbbbbbbbbbbbb",
+    )
+
+    monkeypatch.setattr(rebind_service, "load_config", lambda: config)
+    monkeypatch.setattr(
+        rebind_service,
+        "load_configured_vault_crypto",
+        lambda _config, _context: None,
+    )
+    monkeypatch.setattr(rebind_service, "resolve_repo_root", lambda: repo_root)
+    monkeypatch.setattr(
+        rebind_service,
+        "get_local_git_config",
+        lambda _repo_root, key: "prj_aaaaaaaaaaaaaaaa",
+    )
+    monkeypatch.setattr(rebind_service, "new_project_id", lambda: "prj_bbbbbbbbbbbbbbbb")
+    monkeypatch.setattr(
+        rebind_service,
+        "build_context_for_project_id",
+        lambda _config, repo_root, project_id, binding_source="local": context,
+    )
+    monkeypatch.setattr(
+        rebind_service,
+        "persist_project_binding",
+        lambda _config, context_arg: context_arg,
+    )
+    monkeypatch.setattr(
+        rebind_service,
+        "_load_previous_values",
+        lambda projects_dir, previous_project_id, crypto=None: {"APP_NAME": "demo"},
+    )
+
+    logger = logging.getLogger("envctl")
+    logger.addHandler(caplog.handler)
+    logger.setLevel(logging.DEBUG)
+    caplog.set_level("DEBUG")
+
+    try:
+        rebind_service.run_rebind(copy_values=True)
+    finally:
+        logger.removeHandler(caplog.handler)
+
+    assert any(
+        record.name == "envctl.services.rebind_service"
+        and record.levelname == "DEBUG"
+        and record.message == "Loaded previous rebind values"
+        and getattr(record, "previous_value_count", None) == 1
+        for record in caplog.records
+    )
+    assert any(
+        record.name == "envctl.services.rebind_service"
+        and record.levelname == "INFO"
+        and record.message == "Repository rebound to new project id"
+        and getattr(record, "copied_values", None) is True
+        for record in caplog.records
+    )

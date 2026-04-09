@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
-import typer
-
+from envctl.cli.presenters.common import (
+    print_action_list,
+    print_error_title,
+    print_kv_line,
+    print_section,
+)
 from envctl.domain.error_diagnostics import StateDiagnostics
 
 
@@ -13,14 +17,10 @@ def render_state_error(
     message: str,
 ) -> None:
     """Render a structured state error to stderr."""
-    typer.echo(f"Error: {message}", err=True)
-    typer.echo(err=True)
-    typer.echo(f"path: {diagnostics.path}", err=True)
+    print_error_title(message)
+    print_section("Context", err=True)
+    print_kv_line("path", str(diagnostics.path), err=True)
     if diagnostics.field is not None:
-        typer.echo(f"field: {diagnostics.field}", err=True)
+        print_kv_line("field", diagnostics.field, err=True)
 
-    if diagnostics.suggested_actions:
-        typer.echo(err=True)
-        typer.echo("Next steps", err=True)
-        for action in diagnostics.suggested_actions:
-            typer.echo(f"  - Run `{action}`", err=True)
+    print_action_list(diagnostics.suggested_actions, err=True)

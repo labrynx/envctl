@@ -24,8 +24,9 @@ from envctl.cli.commands.status import status_command
 from envctl.cli.commands.sync import sync_command
 from envctl.cli.commands.unset import unset_command
 from envctl.cli.commands.vault import vault_app
-from envctl.cli.decorators import emit_handled_error
+from envctl.cli.decorators import emit_handled_error, emit_usage_error
 from envctl.cli.runtime import set_cli_state
+from envctl.cli.typer_theme import create_typer_app
 from envctl.config.loader import load_config
 from envctl.config.profile_resolution import resolve_active_profile
 from envctl.domain.runtime import OutputFormat
@@ -68,7 +69,15 @@ VAR_OPTION = typer.Option(
     help="Target one explicit contract variable.",
 )
 
-app = typer.Typer(help="envctl - local environment control plane")
+app = create_typer_app(
+    help_text=(
+        "[bold]envctl[/bold] keeps project environment requirements explicit and local.\n\n"
+        "[bright_blue]Core flows[/bright_blue]\n"
+        "  - [bold]check[/bold], [bold]inspect[/bold], [bold]explain[/bold] for resolution\n"
+        "  - [bold]run[/bold], [bold]sync[/bold], [bold]export[/bold] for projection\n"
+        "  - [bold]set[/bold], [bold]unset[/bold], [bold]fill[/bold] for local values"
+    )
+)
 app.add_typer(config_app, name="config")
 app.add_typer(vault_app, name="vault")
 app.add_typer(project_app, name="project")
@@ -101,7 +110,8 @@ def main(
             config_default_profile=config.default_profile,
         )
     except ValueError as exc:
-        raise typer.BadParameter(str(exc)) from exc
+        emit_usage_error(str(exc), command="envctl")
+        raise typer.Exit(code=2) from exc
     except EnvctlError as exc:
         command = "envctl"
         if ctx.invoked_subcommand is not None:

@@ -6,11 +6,7 @@ import pytest
 
 from envctl.cli.presenters.contract_error_presenter import render_contract_error
 from envctl.domain.error_diagnostics import ContractDiagnosticIssue, ContractDiagnostics
-
-
-def normalize_output(value: str) -> str:
-    """Normalize path separators in presenter output."""
-    return value.replace("\\", "/")
+from tests.support.paths import normalize_path_str
 
 
 def test_render_contract_error_renders_summary_facts_and_next_steps(
@@ -34,7 +30,7 @@ def test_render_contract_error_renders_summary_facts_and_next_steps(
     captured = capsys.readouterr()
 
     assert captured.out == ""
-    err = normalize_output(captured.err)
+    err = normalize_path_str(captured.err)
     assert "Error: Invalid contract: validation failed" in err
     assert "path: /tmp/demo/.envctl.yaml" in err
     assert "field: variables.PORT.type" in err

@@ -135,6 +135,14 @@ def run_command(
             "resolved_key_summary": summarize_key_count(resolved_values),
         },
     )
+    logger.info(
+        "Executing child process",
+        extra={
+            "command": sanitize_command_for_log(command),
+            "active_profile": resolved_profile,
+            "selection": selection.describe() if selection is not None else "full contract",
+        },
+    )
 
     try:
         # Intentional: envctl run executes a user-requested command.
@@ -166,6 +174,14 @@ def run_command(
 
     logger.debug(
         "Child process finished",
+        extra={
+            "command": sanitize_command_for_log(command),
+            "active_profile": resolved_profile,
+            "exit_code": completed.returncode,
+        },
+    )
+    logger.info(
+        "Child process completed",
         extra={
             "command": sanitize_command_for_log(command),
             "active_profile": resolved_profile,

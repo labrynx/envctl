@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import pytest
@@ -10,8 +11,8 @@ from envctl.cli.app import app
 from envctl.domain.selection import ContractSelection, group_selection
 
 
-def _export_result() -> tuple[object, str, str, tuple[object, ...]]:
-    return ("context", "prod", "export APP_NAME='demo'\n", ())
+def _export_result() -> tuple[object, str, dict[str, str], str, tuple[object, ...]]:
+    return ("context", "prod", {"APP_NAME": "demo"}, "export APP_NAME='demo'\n", ())
 
 
 def test_export_command_uses_presenter(
@@ -29,7 +30,7 @@ def test_export_command_uses_presenter(
         active_profile: str | None = None,
         format: str = "shell",
         selection: ContractSelection | None = None,
-    ) -> tuple[object, str, str, tuple[object, ...]]:
+    ) -> tuple[object, str, dict[str, str], str, tuple[object, ...]]:
         captured["active_profile"] = active_profile
         captured["format"] = format
         captured["selection"] = selection
@@ -52,10 +53,18 @@ def test_export_command_uses_presenter(
     assert captured["rendered"] == "export APP_NAME='demo'\n"
 
 
-def test_export_command_rejects_json_mode() -> None:
+def test_export_command_emits_json_payload(monkeypatch: pytest.MonkeyPatch) -> None:
     runner = CliRunner()
+    monkeypatch.setattr(
+        "envctl.cli.commands.export.command.run_export",
+        lambda *args, **kwargs: _export_result(),
+    )
 
     result = runner.invoke(app, ["--json", "export"])
 
-    assert result.exit_code == 1
-    assert "JSON output is not supported for 'export' yet." in result.output
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["ok"] is True
+    assert payload["command"] == "export"
+    assert payload["data"]["format"] == "shell"
+    assert payload["data"]["values"]["APP_NAME"] == "demo"

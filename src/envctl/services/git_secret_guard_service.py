@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import re
 
 from envctl.adapters.git import is_git_repository, list_staged_paths, read_staged_file
 from envctl.constants import VAULT_ENCRYPTION_FORMAT_VERSION
@@ -11,6 +12,7 @@ from envctl.vault_crypto import MasterKeyMaterial, parse_master_key_material
 
 _MAX_INSPECTED_BYTES = 512 * 1024
 _VAULT_PREFIX = f"{VAULT_ENCRYPTION_FORMAT_VERSION}:".encode()
+_LEGACY_MASTER_KEY_PATTERN = re.compile(rb"^[A-Za-z0-9_-]{43}=$")
 
 
 @dataclass(frozen=True)
@@ -106,10 +108,18 @@ def _detect_master_key_finding(
     sample: bytes,
     legacy_key_material: MasterKeyMaterial | None,
 ) -> GitSecretFinding | None:
-    try:
-        material = parse_master_key_material(sample)
-    except ExecutionError:
-        material = None
+    material = None
+
+    if sample.startswith(b"ENVCTL-MASTER-KEY-V1:"):
+        try:
+            material = parse_master_key_material(sample)
+        except ExecutionError:
+            material = None
+    elif _looks_like_legacy_master_key(sample):
+        try:
+            material = parse_master_key_material(sample)
+        except ExecutionError:
+            material = None
 
     if material is not None:
         if material.is_legacy:
@@ -136,6 +146,11 @@ def _detect_master_key_finding(
         )
 
     return None
+
+
+def _looks_like_legacy_master_key(sample: bytes) -> bool:
+    """Return whether ``sample`` matches the standalone legacy Fernet key shape."""
+    return bool(_LEGACY_MASTER_KEY_PATTERN.fullmatch(sample))
 
 
 def _build_actions(path: Path, *, rotate_hint: bool = False) -> tuple[str, ...]:

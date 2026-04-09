@@ -16,6 +16,7 @@ from envctl.cli.presenters import (
     render_repository_discovery_error,
     render_state_error,
 )
+from envctl.cli.presenters.common import print_error_title, print_help_hint
 from envctl.cli.runtime import get_command_path, is_json_output
 from envctl.cli.serializers import (
     emit_json,
@@ -78,6 +79,16 @@ def emit_handled_error(
         return
 
     print_error(f"Error: {exc}")
+
+
+def emit_usage_error(
+    message: str,
+    *,
+    command: str | None,
+) -> None:
+    """Emit one styled usage error for text-mode CLI validation failures."""
+    print_error_title(message)
+    print_help_hint(command, err=True)
 
 
 def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
