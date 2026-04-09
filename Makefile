@@ -185,7 +185,9 @@ clean: ## Remove caches, coverage files, and build artifacts
 		coverage.xml \
 		dist \
 		build \
-		.eggs
+		.eggs \
+		site \
+		.import_linter_cache
 	find . -type d -name "*.egg-info" -prune -exec rm -rf {} +
 	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
 	find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete
