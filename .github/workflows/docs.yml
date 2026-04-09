@@ -14,15 +14,15 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@[SHA]
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0  # necesario para git-revision-date
-      - uses: actions/setup-python@[SHA]
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
           python-version: "3.12"
       - run: pip install -e ".[docs]"
       - run: mkdocs build --strict
-      - uses: actions/upload-pages-artifact@[SHA]
+      - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b
         with:
           path: site
       - id: deployment
