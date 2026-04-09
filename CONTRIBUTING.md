@@ -48,25 +48,60 @@ This project follows a simple principle: be respectful, provide constructive fee
    pip install -e .[dev]
    ```
 
-4. **Run the tests**
+4. **Run the canonical local validation flow**
 
    ```bash
-   pytest
+   make validate
    ```
+
+This is the supported baseline workflow for contributors today.
+
+### Official local workflow policy
+
+The repository currently supports one canonical local development path:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -e ".[dev]"
+make validate
+```
+
+This is the path that contributors should use first when checking whether the repo is healthy locally.
+
+`uv.lock` is still tracked intentionally, but its role is narrower:
+
+- it records one tested dependency resolution state
+- it supports optional local `uv` workflows for contributors who already use `uv`
+- it is not yet the canonical CI input or the primary contributor contract
+
+Until that policy changes explicitly, contributor docs and CI expectations should treat `.venv` + editable `pip install -e ".[dev]"` as the source of truth for local setup.
+
+### Docs workflow
+
+If you are editing documentation or site overrides, install docs extras too:
+
+```bash
+pip install -e ".[dev,docs]"
+make docs-check
+```
+
+Documentation is expected to build cleanly with strict MkDocs validation.
 
 ## Project structure
 
 ```text
 envctl/
 ├── docs/               # User and contributor documentation
-├── scripts/            # Development helper scripts
 ├── src/envctl/         # Main package
-│   ├── cli/            # Typer CLI (commands, formatting, callbacks)
+│   ├── cli/            # Typer CLI (commands, presenters, serializers, callbacks)
 │   ├── config/         # XDG config handling
 │   ├── domain/         # Core domain models and result objects
 │   ├── repository/     # Metadata and project context resolution
 │   ├── services/       # Command orchestration (business logic)
-│   ├── utils/          # Filesystem, permissions, helpers
+│   ├── adapters/       # External integrations (git, editor, dotenv)
+│   ├── utils/          # Generic helpers and internal support
 │   ├── constants.py
 │   ├── errors.py
 │   └── __main__.py
@@ -95,24 +130,24 @@ This separation ensures that business logic remains testable and independent fro
    * Return a clear result object where appropriate.
    * Raise domain exceptions (`EnvctlError` subclasses) for user-facing errors.
 
-2. **Add the CLI command** in `src/envctl/cli.py`
+2. **Add the CLI command** in the relevant command module under `src/envctl/cli/commands/`
 
-   * Create a new function decorated with `@app.command()`.
+   * Create or extend the relevant command module.
    * Use `typer.Option` and `typer.Argument` as needed.
    * Pass prompt callbacks only when the command is meant to be interactive.
-   * Handle output using `print_*` helpers.
+   * Keep service orchestration out of presenters and serializers.
 
 3. **Update documentation**
 
-   * Add the command to `docs/commands.md`.
-   * Update `docs/architecture.md` if the command changes the command model or lifecycle story.
+   * Add or update the relevant page under `docs/reference/commands/`.
+   * Update architecture docs under `docs/architecture/` or `docs/internals/` if the command changes boundaries or lifecycle story.
    * Update `README.md` if the command affects user-facing workflows.
-   * Update `docs/dev/architecture-in-depth.md` if the internal layering or dependency flow changes.
+   * Run `make docs-check` when documentation or overrides change.
 
 4. **Write tests**
 
-   * Create `tests/test_new.py` covering success paths, edge cases, and failure modes.
-   * Use the `isolated_env` and `repo_dir` fixtures to simulate filesystem isolation.
+   * Add targeted unit and/or integration tests under the existing `tests/unit/` and `tests/integration/` layout.
+   * Cover success paths, failure modes, and user-visible diagnostics when relevant.
 
 ## Special guidance for schema-based features
 
@@ -134,6 +169,7 @@ If not, it probably needs redesign.
 
 * Use `ruff format` for formatting
 * Use `ruff check` for linting
+* Run `lint-imports` as part of normal local validation, not only in CI
 * Keep functions small and focused
 * Prefer explicit control flow over hidden convenience
 * Docstrings should describe behavior, side effects, and failure conditions when useful
@@ -146,7 +182,8 @@ Rules to keep that boundary clean:
 
 * Use `src/envctl/utils/logging.py` for logger creation and safe helpers
 * Keep user-facing messaging in presenters and serializers
-* Prefer `DEBUG` for normal execution tracing
+* Prefer `DEBUG` for normal execution tracing and developer-facing diagnostics in services/repositories
+* Use `INFO` only for key operational milestones such as persistent writes or external process execution
 * Use `WARNING` only for unusual but recoverable situations
 * Use `ERROR` when the command is about to fail or has failed
 * Never log secret values, raw vault payloads, or unredacted sensitive command arguments
@@ -156,6 +193,7 @@ You can enable tracing locally with:
 
 ```bash
 ENVCTL_LOG_LEVEL=DEBUG envctl check
+ENVCTL_LOG_LEVEL=INFO envctl sync
 ```
 
 ## Running tests
@@ -176,6 +214,18 @@ ENVCTL_LOG_LEVEL=DEBUG envctl check
 
   ```bash
   pytest --cov=envctl
+  ```
+
+* Run the canonical validation flow:
+
+  ```bash
+  make validate
+  ```
+
+* Run strict docs validation when touching docs or overrides:
+
+  ```bash
+  make docs-check
   ```
 
 The test suite creates temporary directories and sets environment variables to avoid affecting your real system.

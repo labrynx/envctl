@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -65,3 +66,36 @@ def test_write_default_config_file_rejects_existing_file(
     assert diagnostics is not None
     assert diagnostics.category == "config_file_exists"
     assert diagnostics.path == config_path
+
+
+def test_write_default_config_file_logs_debug_summary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    config_path = tmp_path / "config.json"
+
+    monkeypatch.setattr(writer_module, "get_default_config_path", lambda: config_path)
+    monkeypatch.setattr(writer_module, "get_default_vault_dir", lambda: tmp_path / "vault")
+    monkeypatch.setattr(writer_module, "get_default_env_filename", lambda: ".env.local")
+    monkeypatch.setattr(writer_module, "get_default_contract_filename", lambda: ".envctl.yaml")
+    monkeypatch.setattr(writer_module, "ensure_dir", lambda path: None)
+    monkeypatch.setattr(writer_module, "write_json_atomic", lambda path, payload: None)
+
+    logger = logging.getLogger("envctl")
+    logger.addHandler(caplog.handler)
+    logger.setLevel(logging.DEBUG)
+    caplog.set_level("DEBUG")
+
+    try:
+        writer_module.write_default_config_file()
+    finally:
+        logger.removeHandler(caplog.handler)
+
+    assert any(
+        record.name == "envctl.config.writer"
+        and record.levelname == "DEBUG"
+        and record.message == "Default config file written"
+        and getattr(record, "path", None) == config_path
+        for record in caplog.records
+    )

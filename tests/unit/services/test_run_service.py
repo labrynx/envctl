@@ -359,6 +359,56 @@ def test_run_command_logs_warning_for_docker_handoff(
     )
 
 
+def test_run_command_logs_info_lifecycle_with_sanitized_command(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    _patch_valid_run_dependencies(monkeypatch)
+
+    monkeypatch.setattr(
+        "envctl.services.run_service.subprocess.run",
+        lambda command, check=False, env=None: CompletedProcess(
+            args=command,
+            returncode=7,
+        ),
+    )
+
+    logger = logging.getLogger("envctl")
+    logger.addHandler(caplog.handler)
+    logger.setLevel(logging.INFO)
+    caplog.set_level("INFO")
+
+    try:
+        run_service.run_command(
+            ["docker", "run", "API_KEY=supersecret", "aria-eventd:dev"],
+            "dev",
+        )
+    finally:
+        logger.removeHandler(caplog.handler)
+
+    start = next(
+        record
+        for record in caplog.records
+        if record.name == "envctl.services.run_service"
+        and record.levelname == "INFO"
+        and record.message == "Executing child process"
+    )
+    finish = next(
+        record
+        for record in caplog.records
+        if record.name == "envctl.services.run_service"
+        and record.levelname == "INFO"
+        and record.message == "Child process completed"
+    )
+    assert getattr(start, "command", ()) == (
+        "docker",
+        "run",
+        "API_KEY=su*********",
+        "aria-eventd:dev",
+    )
+    assert getattr(finish, "exit_code", None) == 7
+
+
 def test_run_command_logs_sanitized_error_context(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,

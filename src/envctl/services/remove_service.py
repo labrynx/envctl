@@ -14,7 +14,10 @@ from envctl.repository.profile_repository import (
     remove_key_from_profile,
 )
 from envctl.services.context_service import load_project_context
+from envctl.utils.logging import get_logger
 from envctl.utils.project_paths import normalize_profile_name
+
+logger = get_logger(__name__)
 
 
 def plan_remove(
@@ -24,6 +27,14 @@ def plan_remove(
     """Plan the effects of removing one variable globally."""
     _config, context = load_project_context()
     resolved_profile = normalize_profile_name(active_profile)
+    logger.debug(
+        "Planning remove",
+        extra={
+            "key": key,
+            "active_profile": resolved_profile,
+            "repo_root": context.repo_root,
+        },
+    )
 
     contract = load_contract(context.repo_contract_path)
     declared_in_contract = key in contract.variables
@@ -46,6 +57,15 @@ def plan_remove(
             other_profiles.append(profile)
         else:
             absent_other_profiles.append(profile)
+    logger.debug(
+        "Remove plan ready",
+        extra={
+            "key": key,
+            "active_profile": resolved_profile,
+            "present_in_other_profile_count": len(other_profiles),
+            "absent_in_other_profile_count": len(absent_other_profiles),
+        },
+    )
 
     return context, RemovePlan(
         key=key,
@@ -62,6 +82,14 @@ def run_remove(
 ) -> tuple[ProjectContext, RemoveVariableResult]:
     """Remove one variable from the contract and from all persisted profiles."""
     _config, context = load_project_context()
+    logger.debug(
+        "Running remove",
+        extra={
+            "key": key,
+            "active_profile": normalize_profile_name(active_profile),
+            "repo_root": context.repo_root,
+        },
+    )
 
     contract = load_contract(context.repo_contract_path)
     if key not in contract.variables:
@@ -69,6 +97,13 @@ def run_remove(
 
     updated_contract = contract.without_variable(key)
     write_contract(context.repo_contract_path, updated_contract)
+    logger.debug(
+        "Removed key from contract",
+        extra={
+            "key": key,
+            "repo_contract_path": context.repo_contract_path,
+        },
+    )
 
     _resolved_profile, _active_profile_path, _active_values = load_profile_values(
         context,
@@ -89,6 +124,23 @@ def run_remove(
             affected_paths.append(path)
         else:
             missing_from_profiles.append(profile)
+    logger.debug(
+        "Remove result ready",
+        extra={
+            "key": key,
+            "inspected_profile_count": len(inspected_profiles),
+            "removed_profile_count": len(removed_from_profiles),
+            "missing_profile_count": len(missing_from_profiles),
+        },
+    )
+    logger.info(
+        "Removed key from contract and profiles",
+        extra={
+            "key": key,
+            "inspected_profile_count": len(inspected_profiles),
+            "removed_profile_count": len(removed_from_profiles),
+        },
+    )
 
     return context, RemoveVariableResult(
         key=key,
