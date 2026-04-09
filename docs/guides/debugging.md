@@ -46,19 +46,30 @@ If you need to compare resolved state with physical stored values, drop down one
 envctl vault show
 ```
 
-If you need internal execution traces while diagnosing behavior, enable runtime logging explicitly:
+If you need execution-level observability events, use `--trace`:
+
+```bash
+envctl check --trace
+envctl check --trace --trace-format human
+envctl check --trace --trace-format jsonl --trace-output file
+```
+
+Use `--trace` when you need execution phases, timings, and an `execution_id` you can share in issues.
+
+Use `ENVCTL_LOG_LEVEL` when you need implementation-level internals from Python logging:
 
 ```bash
 ENVCTL_LOG_LEVEL=DEBUG envctl check
 ENVCTL_LOG_LEVEL=INFO envctl sync
 ```
 
-Use these levels deliberately:
+Treat them as separate channels:
 
-* `DEBUG` for step-by-step execution tracing
-* `INFO` for key operational milestones such as writes or subprocess execution
-* `WARNING` for unusual but recoverable situations
-* `ERROR` when the command is failing or about to fail
+* `--trace`: observability events for command lifecycle and phase timing (human or JSONL output)
+* `ENVCTL_LOG_LEVEL=DEBUG`: technical internal logs for implementation-level debugging
+* `ENVCTL_LOG_LEVEL=INFO`: operational milestones such as writes or subprocess execution
+* `ENVCTL_LOG_LEVEL=WARNING`: unusual but recoverable situations
+* `ENVCTL_LOG_LEVEL=ERROR`: command failures or imminent failures
 
 ## Result
 
@@ -79,7 +90,10 @@ When reporting a reproducible problem, prefer attaching:
 * the exact command you ran
 * whether you selected a non-default profile
 * the relevant `envctl check` or `envctl inspect` output
-* the `ENVCTL_LOG_LEVEL=DEBUG` trace if the failure is implementation-specific
+* the `execution_id` from trace output
+* a sanitized JSONL trace excerpt (`--trace --trace-format jsonl`)
+* a short summary of the slowest phases (name + duration)
+* `ENVCTL_LOG_LEVEL=DEBUG` logs only when implementation-specific internals are required
 * your platform, shell, Python version, and `envctl` version
 
 Do not include:
