@@ -1,0 +1,5 @@
+[0ms] command status=start
+[7ms] context.resolve status=finish
+[5ms] contract.compose status=finish
+[9ms] resolution status=finish
+Total [23ms] status=finish
