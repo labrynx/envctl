@@ -93,6 +93,58 @@ def test_handle_errors_emits_structured_json_when_enabled(
     }
 
 
+def test_handle_errors_hides_unexpected_stacktrace_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str] = {}
+
+    @handle_errors
+    def sample() -> None:
+        raise RuntimeError("kaboom")
+
+    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: False)
+    monkeypatch.setattr("envctl.cli.decorators.is_error_debug_enabled", lambda: False)
+    monkeypatch.setattr(
+        "envctl.cli.decorators.print_error",
+        lambda message: captured.update({"message": message}),
+    )
+
+    with pytest.raises(typer.Exit) as exc_info:
+        sample()
+
+    assert exc_info.value.exit_code == 1
+    assert "Unexpected internal error" in captured["message"]
+    assert "--debug-errors" in captured["message"]
+
+
+def test_handle_errors_emits_json_for_unexpected_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
+
+    @handle_errors
+    def sample() -> None:
+        raise RuntimeError("kaboom")
+
+    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: True)
+    monkeypatch.setattr("envctl.cli.decorators.is_error_debug_enabled", lambda: False)
+    monkeypatch.setattr("envctl.cli.decorators.get_command_path", lambda: "envctl check")
+    monkeypatch.setattr(
+        "envctl.cli.decorators.emit_json",
+        lambda payload: captured.update({"payload": payload}),
+    )
+
+    with pytest.raises(typer.Exit) as exc_info:
+        sample()
+
+    assert exc_info.value.exit_code == 1
+    payload = cast(dict[str, Any], captured["payload"])
+    assert payload["ok"] is False
+    assert payload["command"] == "envctl check"
+    assert payload["error"]["type"] == "RuntimeError"
+    assert "Unexpected internal error" in payload["error"]["message"]
+
+
 def test_handle_errors_renders_projection_validation_diagnostics(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

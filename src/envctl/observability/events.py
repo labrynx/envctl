@@ -28,3 +28,10 @@ VAULT_ERROR = "vault.error"
 
 ERROR_HANDLED = "error.handled"
 ERROR_UNHANDLED = "error.unhandled"
+
+# Minimal cross-module error taxonomy.
+ERROR_VALIDATION = "error.validation"
+ERROR_EXECUTION = "error.execution"
+ERROR_CONFIGURATION = "error.configuration"
+ERROR_SECURITY = "error.security"
+ERROR_UNEXPECTED = "error.unexpected"
