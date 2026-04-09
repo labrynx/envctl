@@ -94,3 +94,38 @@ def test_root_callback_rejects_multiple_scope_selectors(
     assert "mutually exclusive" in result.output
     assert "Next steps" in result.output
     assert "envctl --help" in result.output
+
+
+def test_root_callback_initializes_observability_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = CliRunner()
+    captured: dict[str, str] = {}
+
+    def fake_load_config() -> object:
+        return type("Config", (), {"default_profile": "local"})()
+
+    monkeypatch.setattr(app_module, "load_config", fake_load_config)
+
+    def fake_initialize_observability_context(*, command_name: str) -> None:
+        captured["command_name"] = command_name
+
+    monkeypatch.setattr(
+        app_module,
+        "initialize_observability_context",
+        fake_initialize_observability_context,
+    )
+
+    original_len = len(app_module.app.registered_commands)
+
+    @app_module.app.command("obs-probe")
+    def _obs_probe() -> None:
+        return None
+
+    try:
+        result = runner.invoke(app_module.app, ["obs-probe"])
+    finally:
+        del app_module.app.registered_commands[original_len:]
+
+    assert result.exit_code == 0
+    assert captured["command_name"] == "obs-probe"
