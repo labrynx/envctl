@@ -195,6 +195,7 @@ The runtime environment stays explicit.
 * [Concepts](docs/concepts/index.md)
 * [Commands reference](docs/reference/commands/index.md)
 * [Configuration reference](docs/reference/configuration.md)
+* [Observability reference](docs/reference/observability.md)
 * [Distribution reference](docs/reference/distribution.md)
 * [Troubleshooting](docs/troubleshooting/index.md)
 * [Compatibility](docs/internals/compatibility.md)

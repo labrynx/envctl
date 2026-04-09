@@ -135,6 +135,7 @@ nav:
       - Profiles: reference/profiles.md
       - Security: reference/security.md
       - Encryption: reference/encryption.md
+      - Observability: reference/observability.md
       - Platforms: reference/platforms.md
       - Distribution: reference/distribution.md
       - Roadmap: reference/roadmap.md
