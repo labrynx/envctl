@@ -25,6 +25,7 @@ def test_record_event_builds_stable_observation_event() -> None:
         trace_format="jsonl",
         trace_output="stderr",
         trace_file=None,
+        sanitization_policy="masked",
         start_time=utcnow(),
         emitters=(emitter,),
         events=[],

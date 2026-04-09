@@ -6,7 +6,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from envctl.observability.models import TraceFormat, TraceOutput
+from envctl.observability.models import SanitizationPolicy, TraceFormat, TraceOutput
 
 
 @dataclass(frozen=True)
@@ -18,6 +18,7 @@ class ObservabilitySettings:
     trace_format: TraceFormat
     trace_output: TraceOutput
     trace_file: Path | None
+    sanitization_policy: SanitizationPolicy
 
 
 def _parse_bool(value: str | None) -> bool:
@@ -47,6 +48,15 @@ def _parse_trace_output(value: str | None) -> TraceOutput:
     return "stderr"
 
 
+def _parse_sanitization_policy(value: str | None) -> SanitizationPolicy:
+    if value is None:
+        return "masked"
+    normalized = value.strip().lower()
+    if normalized in {"full", "masked", "count_only"}:
+        return normalized
+    return "masked"
+
+
 def load_observability_settings() -> ObservabilitySettings:
     """Read observability flags from environment variables."""
 
@@ -59,5 +69,8 @@ def load_observability_settings() -> ObservabilitySettings:
             Path(raw_trace_file).expanduser()
             if (raw_trace_file := os.getenv("ENVCTL_OBSERVABILITY_TRACE_FILE"))
             else None
+        ),
+        sanitization_policy=_parse_sanitization_policy(
+            os.getenv("ENVCTL_OBSERVABILITY_SANITIZATION")
         ),
     )

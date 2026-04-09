@@ -11,7 +11,12 @@ from envctl.observability.context import (
     set_active_context,
 )
 from envctl.observability.emitters import FileEmitter, NullEmitter, StreamEmitter
-from envctl.observability.models import ExecutionObservabilityContext, TraceFormat, TraceOutput
+from envctl.observability.models import (
+    ExecutionObservabilityContext,
+    SanitizationPolicy,
+    TraceFormat,
+    TraceOutput,
+)
 from envctl.observability.settings import load_observability_settings
 from envctl.observability.timing import utcnow
 
@@ -36,6 +41,7 @@ def initialize_observability_context(
     trace_output: TraceOutput | None = None,
     trace_file: Path | None = None,
     profile_observability: bool | None = None,
+    sanitization_policy: SanitizationPolicy | None = None,
 ) -> ExecutionObservabilityContext | None:
     """Initialize active observability context for one CLI invocation."""
 
@@ -53,16 +59,32 @@ def initialize_observability_context(
         if profile_observability is None
         else profile_observability
     )
+    resolved_sanitization_policy = (
+        settings.sanitization_policy
+        if sanitization_policy is None
+        else sanitization_policy
+    )
 
     emitters = []
     effective_trace_file: Path | None = resolved_trace_file
 
     if resolved_trace_output in {"stderr", "both"}:
-        emitters.append(StreamEmitter(trace_format=resolved_trace_format))
+        emitters.append(
+            StreamEmitter(
+                trace_format=resolved_trace_format,
+                sanitization_policy=resolved_sanitization_policy,
+            )
+        )
     if resolved_trace_output in {"file", "both"}:
         target_file = resolved_trace_file or _default_trace_file(trace_format=resolved_trace_format)
         effective_trace_file = target_file
-        emitters.append(FileEmitter(path=target_file, trace_format=resolved_trace_format))
+        emitters.append(
+            FileEmitter(
+                path=target_file,
+                trace_format=resolved_trace_format,
+                sanitization_policy=resolved_sanitization_policy,
+            )
+        )
 
     if not emitters:
         emitters.append(NullEmitter())
@@ -75,6 +97,7 @@ def initialize_observability_context(
         trace_format=resolved_trace_format,
         trace_output=resolved_trace_output,
         trace_file=effective_trace_file,
+        sanitization_policy=resolved_sanitization_policy,
         start_time=utcnow(),
         emitters=tuple(emitters),
         events=[],

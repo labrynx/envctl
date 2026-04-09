@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 TraceFormat = Literal["jsonl", "human"]
 TraceOutput = Literal["stderr", "file", "both"]
+SanitizationPolicy = Literal["full", "masked", "count_only"]
 
 
 @dataclass(frozen=True)
@@ -64,6 +65,7 @@ class ExecutionObservabilityContext:
     trace_format: TraceFormat
     trace_output: TraceOutput
     trace_file: Path | None
+    sanitization_policy: SanitizationPolicy
     start_time: datetime
     emitters: tuple[ObservabilityEmitter, ...]
     events: list[ObservationEvent] | None = None

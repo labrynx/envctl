@@ -6,6 +6,7 @@ import logging
 import os
 from collections.abc import Sequence, Sized
 
+from envctl.observability.sanitization import sanitize_command
 from envctl.utils.masking import mask_value
 
 ENVCTL_LOG_LEVEL_ENVVAR = "ENVCTL_LOG_LEVEL"
@@ -112,17 +113,4 @@ def summarize_key_count(keys: Sized) -> str:
 
 def sanitize_command_for_log(command: Sequence[str]) -> tuple[str, ...]:
     """Return one best-effort sanitized command preview for debug logging."""
-    return tuple(_sanitize_arg(arg) for arg in command)
-
-
-def _sanitize_arg(arg: str) -> str:
-    if "=" in arg:
-        key, value = arg.split("=", 1)
-        if _looks_sensitive_key(key):
-            return f"{key}={mask_value(value)}"
-    return arg
-
-
-def _looks_sensitive_key(key: str) -> bool:
-    normalized = key.strip().lower()
-    return any(token in normalized for token in ("secret", "token", "password", "passwd", "key"))
+    return sanitize_command(command, policy="masked")

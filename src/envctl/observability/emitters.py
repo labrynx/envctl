@@ -6,8 +6,9 @@ import sys
 from pathlib import Path
 from typing import Protocol
 
-from envctl.observability.models import ObservationEvent, TraceFormat
+from envctl.observability.models import ObservationEvent, SanitizationPolicy, TraceFormat
 from envctl.observability.renderers import render_event, render_execution_header
+from envctl.observability.sanitization import sanitize_event
 
 
 class ObservabilityEmitter(Protocol):
@@ -27,42 +28,58 @@ class NullEmitter:
 class StreamEmitter:
     """Emit observability events to one writable stream."""
 
-    def __init__(self, *, trace_format: TraceFormat, stream: object | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        trace_format: TraceFormat,
+        stream: object | None = None,
+        sanitization_policy: SanitizationPolicy = "masked",
+    ) -> None:
         self._trace_format = trace_format
         self._stream = stream if stream is not None else sys.stderr
+        self._sanitization_policy = sanitization_policy
         self._header_emitted = False
 
     def emit(self, event: ObservationEvent) -> None:
+        sanitized_event = sanitize_event(event, policy=self._sanitization_policy)
         if self._trace_format == "human" and not self._header_emitted:
             header = render_execution_header(
-                execution_id=event.execution_id,
-                started_at=event.timestamp,
+                execution_id=sanitized_event.execution_id,
+                started_at=sanitized_event.timestamp,
                 trace_format=self._trace_format,
             )
             if header:
                 print(header, file=self._stream)
             self._header_emitted = True
-        print(render_event(event, self._trace_format), file=self._stream)
+        print(render_event(sanitized_event, self._trace_format), file=self._stream)
 
 
 class FileEmitter:
     """Emit observability events to one file, truncating on first event."""
 
-    def __init__(self, *, path: Path, trace_format: TraceFormat) -> None:
+    def __init__(
+        self,
+        *,
+        path: Path,
+        trace_format: TraceFormat,
+        sanitization_policy: SanitizationPolicy = "masked",
+    ) -> None:
         self._path = path
         self._trace_format = trace_format
+        self._sanitization_policy = sanitization_policy
         self._initialized = False
 
     def emit(self, event: ObservationEvent) -> None:
+        sanitized_event = sanitize_event(event, policy=self._sanitization_policy)
         self._path.parent.mkdir(parents=True, exist_ok=True)
         with self._path.open("w" if not self._initialized else "a", encoding="utf-8") as handle:
             if self._trace_format == "human" and not self._initialized:
                 header = render_execution_header(
-                    execution_id=event.execution_id,
-                    started_at=event.timestamp,
+                    execution_id=sanitized_event.execution_id,
+                    started_at=sanitized_event.timestamp,
                     trace_format=self._trace_format,
                 )
                 if header:
                     handle.write(f"{header}\n")
-            handle.write(f"{render_event(event, self._trace_format)}\n")
+            handle.write(f"{render_event(sanitized_event, self._trace_format)}\n")
         self._initialized = True
