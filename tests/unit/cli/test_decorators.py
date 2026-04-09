@@ -27,6 +27,7 @@ from envctl.errors import (
     StateError,
     ValidationError,
 )
+from envctl.observability import clear_observability_context, initialize_observability_context
 from tests.support.builders import make_resolution_report
 from tests.support.paths import normalize_path_str
 
@@ -300,6 +301,25 @@ def test_emit_handled_error_renders_other_structured_families(
     assert "Error: bad state" in captured.err
     assert "Error: bad repo" in captured.err
     assert "Error: bad binding" in captured.err
+
+
+def test_handle_errors_prints_profile_summary_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    clear_observability_context()
+    monkeypatch.setenv("ENVCTL_OBSERVABILITY_TRACE", "true")
+    monkeypatch.setenv("ENVCTL_OBSERVABILITY_PROFILE", "true")
+    initialize_observability_context(command_name="check")
+
+    @handle_errors
+    def sample() -> None:
+        return None
+
+    sample()
+
+    captured = capsys.readouterr()
+    assert "Observability profile" in captured.err
 
 
 def test_requires_writable_runtime_blocks_ci_mode(

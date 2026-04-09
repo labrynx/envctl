@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from envctl.observability.context import clear_active_context, get_active_context, set_active_context
+from envctl.observability.context import (
+    clear_active_context,
+    get_active_context,
+    set_active_context,
+)
 from envctl.observability.emitters import NullEmitter
 from envctl.observability.models import ExecutionObservabilityContext
 from envctl.observability.settings import load_observability_settings
@@ -30,6 +34,7 @@ def initialize_observability_context(command_name: str) -> ExecutionObservabilit
         execution_id=str(uuid4()),
         command_name=command_name,
         trace_enabled=settings.trace_enabled,
+        profile_observability=settings.profile_observability,
         trace_format=settings.trace_format,
         start_time=utcnow(),
         emitters=(NullEmitter(),),

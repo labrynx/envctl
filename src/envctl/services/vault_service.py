@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
 
 import envctl.adapters.editor as editor_adapter
@@ -16,10 +15,7 @@ from envctl.domain.operations import (
     VaultShowResult,
 )
 from envctl.domain.project import ProjectContext
-from envctl.observability import get_active_observability_context
-from envctl.observability.events import VAULT_ERROR, VAULT_FINISH, VAULT_START
-from envctl.observability.recorder import duration_ms, record_event
-from envctl.observability.timing import utcnow
+from envctl.observability.timing import observe_span
 from envctl.repository.contract_repository import load_contract_optional
 from envctl.repository.profile_repository import load_profile_values, write_profile_values
 from envctl.services.context_service import load_project_context
@@ -54,70 +50,11 @@ from envctl.utils.logging import get_logger
 logger = get_logger(__name__)
 
 
-def _record_vault_start(operation: str, *, include_all_projects: bool | None = None) -> None:
-    obs_context = get_active_observability_context()
-    if obs_context is None:
-        return
-    fields: dict[str, object] = {}
-    if include_all_projects is not None:
-        fields["include_all_projects"] = include_all_projects
-    record_event(
-        obs_context,
-        event=VAULT_START,
-        status="start",
-        module=__name__,
-        operation=operation,
-        fields=fields,
-    )
-
-
-def _record_vault_finish(
-    operation: str,
-    started_at: datetime,
-    *,
-    fields: dict[str, object] | None = None,
-) -> None:
-    obs_context = get_active_observability_context()
-    if obs_context is None:
-        return
-    record_event(
-        obs_context,
-        event=VAULT_FINISH,
-        status="finish",
-        duration_ms=duration_ms(started_at),
-        module=__name__,
-        operation=operation,
-        fields=fields or {},
-    )
-
-
-def _record_vault_error(
-    operation: str,
-    started_at: datetime,
-    *,
-    fields: dict[str, object] | None = None,
-) -> None:
-    obs_context = get_active_observability_context()
-    if obs_context is None:
-        return
-    record_event(
-        obs_context,
-        event=VAULT_ERROR,
-        status="error",
-        duration_ms=duration_ms(started_at),
-        module=__name__,
-        operation=operation,
-        fields=fields or {},
-    )
-
-
 def run_vault_check(
     active_profile: str | None = None,
 ) -> tuple[ProjectContext, str, VaultCheckResult]:
     """Check the current physical vault file for the active profile."""
-    started_at = utcnow()
-    _record_vault_start("run_vault_check")
-    try:
+    with observe_span("vault", module=__name__, operation="run_vault_check") as span_fields:
         result = run_vault_check_impl(
             active_profile=active_profile,
             load_project_context=load_project_context,
@@ -127,49 +64,31 @@ def run_vault_check(
             is_world_writable=is_world_writable,
             logger=logger,
         )
-    except Exception:
-        _record_vault_error("run_vault_check", started_at)
-        raise
-    _context, _profile, check_result = result
-    _record_vault_finish(
-        "run_vault_check",
-        started_at,
-        fields={
-            "exists": check_result.exists,
-            "parseable": check_result.parseable,
-            "key_count": check_result.key_count,
-        },
-    )
-    return result
+        _context, _profile, check_result = result
+        span_fields["exists"] = check_result.exists
+        span_fields["parseable"] = check_result.parseable
+        span_fields["key_count"] = check_result.key_count
+        return result
 
 
 def run_vault_path(
     active_profile: str | None = None,
 ) -> tuple[ProjectContext, str, Path]:
     """Return the current physical vault path for the active profile."""
-    started_at = utcnow()
-    _record_vault_start("run_vault_path")
-    try:
-        result = run_vault_path_impl(
+    with observe_span("vault", module=__name__, operation="run_vault_path"):
+        return run_vault_path_impl(
             active_profile=active_profile,
             load_project_context=load_project_context,
             resolve_selected_profile=resolve_selected_profile,
             logger=logger,
         )
-    except Exception:
-        _record_vault_error("run_vault_path", started_at)
-        raise
-    _record_vault_finish("run_vault_path", started_at, fields={})
-    return result
 
 
 def run_vault_show(
     active_profile: str | None = None,
 ) -> tuple[ProjectContext, str, VaultShowResult]:
     """Return the current physical vault content for the active profile."""
-    started_at = utcnow()
-    _record_vault_start("run_vault_show")
-    try:
+    with observe_span("vault", module=__name__, operation="run_vault_show") as span_fields:
         result = run_vault_show_impl(
             active_profile=active_profile,
             load_project_context=load_project_context,
@@ -178,25 +97,17 @@ def run_vault_show(
             classify_vault_file=classify_vault_file,
             logger=logger,
         )
-    except Exception:
-        _record_vault_error("run_vault_show", started_at)
-        raise
-    _context, _profile, show_result = result
-    _record_vault_finish(
-        "run_vault_show",
-        started_at,
-        fields={"exists": show_result.exists, "key_count": len(show_result.values)},
-    )
-    return result
+        _context, _profile, show_result = result
+        span_fields["exists"] = show_result.exists
+        span_fields["key_count"] = len(show_result.values)
+        return result
 
 
 def run_vault_edit(
     active_profile: str | None = None,
 ) -> tuple[ProjectContext, VaultEditResult]:
     """Open the current physical vault file for the selected profile."""
-    started_at = utcnow()
-    _record_vault_start("run_vault_edit")
-    try:
+    with observe_span("vault", module=__name__, operation="run_vault_edit") as span_fields:
         result = run_vault_edit_impl(
             active_profile=active_profile,
             load_project_context=load_project_context,
@@ -207,21 +118,16 @@ def run_vault_edit(
             editor_open_file=editor_adapter.open_file,
             logger=logger,
         )
-    except Exception:
-        _record_vault_error("run_vault_edit", started_at)
-        raise
-    _context, edit_result = result
-    _record_vault_finish("run_vault_edit", started_at, fields={"created": edit_result.created})
-    return result
+        _context, edit_result = result
+        span_fields["created"] = edit_result.created
+        return result
 
 
 def get_unknown_vault_keys(
     active_profile: str | None = None,
 ) -> tuple[ProjectContext, str, Path, tuple[str, ...]]:
     """Return unknown keys stored in the active profile vault."""
-    started_at = utcnow()
-    _record_vault_start("get_unknown_vault_keys")
-    try:
+    with observe_span("vault", module=__name__, operation="get_unknown_vault_keys") as span_fields:
         result = get_unknown_vault_keys_impl(
             active_profile=active_profile,
             load_project_context=load_project_context,
@@ -231,25 +137,16 @@ def get_unknown_vault_keys(
             load_profile_values=load_profile_values,
             logger=logger,
         )
-    except Exception:
-        _record_vault_error("get_unknown_vault_keys", started_at)
-        raise
-    _context, _profile, _path, unknown_keys = result
-    _record_vault_finish(
-        "get_unknown_vault_keys",
-        started_at,
-        fields={"unknown_key_count": len(unknown_keys)},
-    )
-    return result
+        _context, _profile, _path, unknown_keys = result
+        span_fields["unknown_key_count"] = len(unknown_keys)
+        return result
 
 
 def run_vault_prune(
     active_profile: str | None = None,
 ) -> tuple[ProjectContext, str, Path, VaultPruneResult]:
     """Remove unknown keys from the active profile vault."""
-    started_at = utcnow()
-    _record_vault_start("run_vault_prune")
-    try:
+    with observe_span("vault", module=__name__, operation="run_vault_prune") as span_fields:
         result = run_vault_prune_impl(
             active_profile=active_profile,
             load_project_context=load_project_context,
@@ -260,19 +157,10 @@ def run_vault_prune(
             write_profile_values=write_profile_values,
             logger=logger,
         )
-    except Exception:
-        _record_vault_error("run_vault_prune", started_at)
-        raise
-    _context, _profile, _path, prune_result = result
-    _record_vault_finish(
-        "run_vault_prune",
-        started_at,
-        fields={
-            "removed_key_count": len(prune_result.removed_keys),
-            "kept_keys": prune_result.kept_keys,
-        },
-    )
-    return result
+        _context, _profile, _path, prune_result = result
+        span_fields["removed_key_count"] = len(prune_result.removed_keys)
+        span_fields["kept_keys"] = prune_result.kept_keys
+        return result
 
 
 def run_vault_encrypt_project(
@@ -280,9 +168,12 @@ def run_vault_encrypt_project(
     include_all_projects: bool = False,
 ) -> tuple[ProjectContext, VaultEncryptResult]:
     """Encrypt plaintext vault profile files for the current project or all projects."""
-    started_at = utcnow()
-    _record_vault_start("run_vault_encrypt_project", include_all_projects=include_all_projects)
-    try:
+    with observe_span(
+        "vault",
+        module=__name__,
+        operation="run_vault_encrypt_project",
+        fields={"include_all_projects": include_all_projects},
+    ) as span_fields:
         result = run_vault_encrypt_project_impl(
             include_all_projects=include_all_projects,
             load_project_context=load_project_context,
@@ -291,24 +182,10 @@ def run_vault_encrypt_project(
             run_encrypt_for_context=run_encrypt_for_context,
             logger=logger,
         )
-    except Exception:
-        _record_vault_error(
-            "run_vault_encrypt_project",
-            started_at,
-            fields={"include_all_projects": include_all_projects},
-        )
-        raise
-    _context, encrypt_result = result
-    _record_vault_finish(
-        "run_vault_encrypt_project",
-        started_at,
-        fields={
-            "include_all_projects": include_all_projects,
-            "encrypted_file_count": len(encrypt_result.encrypted_files),
-            "skipped_file_count": len(encrypt_result.skipped_files),
-        },
-    )
-    return result
+        _context, encrypt_result = result
+        span_fields["encrypted_file_count"] = len(encrypt_result.encrypted_files)
+        span_fields["skipped_file_count"] = len(encrypt_result.skipped_files)
+        return result
 
 
 def run_vault_decrypt_project(
@@ -316,9 +193,12 @@ def run_vault_decrypt_project(
     include_all_projects: bool = False,
 ) -> tuple[ProjectContext, VaultDecryptResult]:
     """Decrypt encrypted vault profile files for the current project or all projects."""
-    started_at = utcnow()
-    _record_vault_start("run_vault_decrypt_project", include_all_projects=include_all_projects)
-    try:
+    with observe_span(
+        "vault",
+        module=__name__,
+        operation="run_vault_decrypt_project",
+        fields={"include_all_projects": include_all_projects},
+    ) as span_fields:
         result = run_vault_decrypt_project_impl(
             include_all_projects=include_all_projects,
             load_project_context=load_project_context,
@@ -327,44 +207,21 @@ def run_vault_decrypt_project(
             run_decrypt_for_context=run_decrypt_for_context,
             logger=logger,
         )
-    except Exception:
-        _record_vault_error(
-            "run_vault_decrypt_project",
-            started_at,
-            fields={"include_all_projects": include_all_projects},
-        )
-        raise
-    _context, decrypt_result = result
-    _record_vault_finish(
-        "run_vault_decrypt_project",
-        started_at,
-        fields={
-            "include_all_projects": include_all_projects,
-            "decrypted_file_count": len(decrypt_result.decrypted_files),
-            "skipped_file_count": len(decrypt_result.skipped_files),
-        },
-    )
-    return result
+        _context, decrypt_result = result
+        span_fields["decrypted_file_count"] = len(decrypt_result.decrypted_files)
+        span_fields["skipped_file_count"] = len(decrypt_result.skipped_files)
+        return result
 
 
 def run_vault_audit() -> tuple[ProjectContext, tuple[VaultAuditProjectResult, ...]]:
     """Audit all project vaults and report plaintext or inconsistent files."""
-    started_at = utcnow()
-    _record_vault_start("run_vault_audit")
-    try:
+    with observe_span("vault", module=__name__, operation="run_vault_audit") as span_fields:
         result = run_vault_audit_impl(
             load_project_context=load_project_context,
             iter_project_dirs=iter_project_dirs,
             audit_project=audit_project,
             logger=logger,
         )
-    except Exception:
-        _record_vault_error("run_vault_audit", started_at)
-        raise
-    _context, audit_results = result
-    _record_vault_finish(
-        "run_vault_audit",
-        started_at,
-        fields={"project_count": len(audit_results)},
-    )
-    return result
+        _context, audit_results = result
+        span_fields["project_count"] = len(audit_results)
+        return result
