@@ -12,8 +12,8 @@ theme:
   name: material
   language: en
   custom_dir: overrides
-  #logo: assets/logo/envctl-logo.png
-  #favicon: assets/favicon/envctl-favicon.png
+  logo: assets/logo/envctl-logo.png
+  favicon: assets/favicon/envctl-favicon.png
 
   features:
     - navigation.instant
@@ -109,6 +109,7 @@ nav:
       - Overview: guides/index.md
       - Docker: guides/docker.md
       - CI: guides/ci.md
+      - Hooks: guides/hooks.md
       - Profiles: guides/profiles.md
       - Debugging: guides/debugging.md
       - Team: guides/team.md
@@ -153,6 +154,7 @@ nav:
       - Projection: concepts/projection.md
       - Binding: concepts/binding.md
       - Metadata and local state: concepts/metadata.md
+      - Hooks: concepts/hooks.md
   - Architecture:
       - Overview: architecture/index.md
       - Layers: architecture/layers.md
@@ -163,3 +165,4 @@ nav:
       - Overview: troubleshooting/index.md
       - Common errors: troubleshooting/common-errors.md
       - Recovery: troubleshooting/recovery.md
+      - Hooks: troubleshooting/hooks.md
