@@ -48,7 +48,7 @@
       color-mix(in srgb, var(--md-default-bg-color) 52%, transparent) 84%,
       var(--md-default-bg-color) 100%
     ),
-    url("../envctl_banner.png") center top / cover no-repeat;
+    url("../envctl-banner.png") center top / cover no-repeat;
   will-change: transform;
   pointer-events: none;
 }
@@ -269,7 +269,7 @@ body:has(.envctl-page--home) .md-path {
       color-mix(in srgb, var(--md-default-bg-color) 46%, transparent) 84%,
       var(--md-default-bg-color) 100%
     ),
-    url("../envctl_banner.png") center top / cover no-repeat;
+    url("../envctl-banner.png") center top / cover no-repeat;
 }
 
 [data-md-color-scheme="slate"] .md-typeset .envctl-splash-highlights > ul > li {
