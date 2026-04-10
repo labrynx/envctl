@@ -51,6 +51,7 @@ PYTEST_COV_ARGS ?= --cov=$(COV_TARGET) --cov-report=term-missing:skip-covered --
 	check check-clean fix \
 	clean clean-hard \
 	build-package check-package publish-test publish-package \
+	smoke-wheel smoke-sdist smoke-package \
 	dist-checksums dist-sbom \
 	run inspect \
 	status commit push \
@@ -134,7 +135,10 @@ test-debug: ## Run tests with maximum failure detail
 
 validate: lint format-check typecheck security test-ci imports ## Validate code quality
 
-check: validate build-package check-package ## Full validation including build
+check-package: build-package ## Validate built distribution metadata
+	$(TWINE) check dist/*.whl dist/*.tar.gz
+
+check: validate build-package check-package smoke-package ## Full validation including build
 
 check-clean: clean check ## Run full validation suite from a clean workspace
 
@@ -150,8 +154,29 @@ deadcode:
 build-package: clean ## Build distribution artifacts
 	$(BUILD)
 
-check-package: build-package ## Validate built distribution metadata
-	$(TWINE) check dist/*.whl dist/*.tar.gz
+smoke-wheel: build-package ## Install built wheel in a clean venv and verify import/CLI
+	rm -rf .release-venv
+	$(PYTHON) -m venv .release-venv
+	./.release-venv/bin/python -m pip install --upgrade pip
+	./.release-venv/bin/python -m pip install dist/*.whl
+	./.release-venv/bin/python -m pip check
+	./.release-venv/bin/python -c "import envctl; print(envctl.__name__)"
+	./.release-venv/bin/envctl --version
+	./.release-venv/bin/python -m envctl --version
+	rm -rf .release-venv
+
+smoke-sdist: build-package ## Install built sdist in a clean venv and verify import/CLI
+	rm -rf .release-venv-sdist
+	$(PYTHON) -m venv .release-venv-sdist
+	./.release-venv-sdist/bin/python -m pip install --upgrade pip
+	./.release-venv-sdist/bin/python -m pip install dist/*.tar.gz
+	./.release-venv-sdist/bin/python -m pip check
+	./.release-venv-sdist/bin/python -c "import envctl; print(envctl.__name__)"
+	./.release-venv-sdist/bin/envctl --version
+	./.release-venv-sdist/bin/python -m envctl --version
+	rm -rf .release-venv-sdist
+
+smoke-package: smoke-wheel smoke-sdist ## Run all package smoke tests
 
 dist-checksums: dist-sbom ## Write SHA256SUMS for built distribution artifacts and SBOM
 	cd dist && sha256sum *.whl *.tar.gz envctl-wheel.sbom.cdx.json > SHA256SUMS
@@ -234,11 +259,16 @@ inspect: ## Run envctl inspect
 # Documentation
 # -----------------------------------------
 
-docs-build:
-	python -m mkdocs build
+DOCS_DEPS ?= pip install -e ".[docs]"
 
-docs-check: ## Build documentation with strict validation
-	python -m mkdocs build --strict
+docs-install: ## Install documentation dependencies
+	$(PIP) install -e ".[docs]"
 
-docs-serve: docs-build
-	python -m mkdocs serve
+docs-build: ## Build MkDocs site locally
+	mkdocs build --strict
+
+docs-serve: ## Serve MkDocs site locally with live reload
+	mkdocs serve
+
+docs-deploy: ## Deploy MkDocs site to GitHub Pages (requires write access)
+	mkdocs gh-deploy --force

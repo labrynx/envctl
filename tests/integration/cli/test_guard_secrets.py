@@ -32,12 +32,22 @@ def _write_sample_contract(repo_root: Path) -> None:
     )
 
 
+def _combined_output(result: object) -> str:
+    stdout = getattr(result, "stdout", "") or ""
+    stderr = getattr(result, "stderr", "") or ""
+    output = stdout + stderr
+
+    if not output and hasattr(result, "output"):
+        return getattr(result, "output", "") or ""
+
+    return output
+
+
 def test_guard_secrets_fails_for_staged_master_key(
     runner: CliRunner,
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-
     home = tmp_path / "home"
     home.mkdir(parents=True, exist_ok=True)
 
@@ -73,11 +83,12 @@ def test_guard_secrets_fails_for_staged_master_key(
 
     assert guard_result.exit_code == 1
 
-    combined_output = guard_result.stdout + guard_result.stderr
+    output = _combined_output(guard_result)
 
-    assert "contains an envctl master key" in combined_output
-    assert "git restore --staged" in combined_output
+    assert "contains an envctl master key" in output
     assert "git restore --staged" in guard_result.stdout
+    assert "move the secret outside the repository" in guard_result.stdout
+    assert "rotate the key if it was already exposed" in guard_result.stdout
 
 
 def test_guard_secrets_ignores_non_key_text_files(
@@ -85,7 +96,6 @@ def test_guard_secrets_ignores_non_key_text_files(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-
     home = tmp_path / "home"
     home.mkdir(parents=True, exist_ok=True)
 
@@ -127,4 +137,4 @@ def test_guard_secrets_ignores_non_key_text_files(
     guard_result = runner.invoke(app, ["guard", "secrets"], catch_exceptions=False)
 
     assert guard_result.exit_code == 0
-    assert "master key" not in (guard_result.stdout + guard_result.stderr)
+    assert "master key" not in _combined_output(guard_result)

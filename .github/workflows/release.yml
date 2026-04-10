@@ -54,7 +54,7 @@ jobs:
           test -n "$(find dist -maxdepth 1 -type f -name '*.tar.gz')"
 
       - name: Check package metadata
-        run: python -m twine check dist/*
+        run: python -m twine check dist/*.whl dist/*.tar.gz
 
       - name: Resolve release artifact paths
         id: artifacts
@@ -79,17 +79,17 @@ jobs:
           sha256sum *.whl *.tar.gz envctl-wheel.sbom.cdx.json > SHA256SUMS
 
       - name: Generate artifact attestation for wheel
-        uses: actions/attest@v4
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26
         with:
           subject-path: ${{ steps.artifacts.outputs.wheel_path }}
 
       - name: Generate artifact attestation for sdist
-        uses: actions/attest@v4
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26
         with:
           subject-path: ${{ steps.artifacts.outputs.sdist_path }}
 
       - name: Generate SBOM attestation for wheel
-        uses: actions/attest@v4
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26
         with:
           subject-path: ${{ steps.artifacts.outputs.wheel_path }}
           sbom-path: dist/envctl-wheel.sbom.cdx.json
@@ -172,6 +172,7 @@ jobs:
           ./.release-venv/bin/python -m pip install --upgrade pip
           ./.release-venv/bin/python -m pip install dist/*.whl
           ./.release-venv/bin/python -m pip check
+          ./.release-venv/bin/python -c "import envctl; print(envctl.__name__)"
           ./.release-venv/bin/envctl --version
           ./.release-venv/bin/python -m envctl --version
 
@@ -184,6 +185,27 @@ jobs:
           .\.release-venv\Scripts\python.exe -m pip check
           .\.release-venv\Scripts\envctl.exe --version
           .\.release-venv\Scripts\python.exe -m envctl --version
+
+      - name: Install sdist and verify CLI (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          python -m venv .release-venv-sdist
+          ./.release-venv-sdist/bin/python -m pip install --upgrade pip
+          ./.release-venv-sdist/bin/python -m pip install dist/*.tar.gz
+          ./.release-venv-sdist/bin/python -m pip check
+          ./.release-venv-sdist/bin/envctl --version
+          ./.release-venv-sdist/bin/python -m envctl --version
+
+      - name: Install sdist and verify CLI (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -m venv .release-venv-sdist
+          .\.release-venv-sdist\Scripts\python.exe -m pip install --upgrade pip
+          .\.release-venv-sdist\Scripts\python.exe -m pip install dist\*.tar.gz
+          .\.release-venv-sdist\Scripts\python.exe -m pip check
+          .\.release-venv-sdist\Scripts\envctl.exe --version
+          .\.release-venv-sdist\Scripts\python.exe -m envctl --version
 
   publish:
     name: Publish to PyPI

@@ -12,8 +12,8 @@ theme:
   name: material
   language: en
   custom_dir: overrides
-  logo: assets/logo/envctl-logo.png
-  favicon: assets/favicon/envctl-favicon.png
+  #logo: assets/logo/envctl-logo.png
+  #favicon: assets/favicon/envctl-favicon.png
 
   features:
     - navigation.instant
@@ -80,6 +80,10 @@ markdown_extensions:
 
 plugins:
   - search
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+      fallback_to_build_date: true
 
 extra_css:
   - assets/stylesheets/extra.css

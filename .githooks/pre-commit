@@ -2,4 +2,10 @@
 set -eu
 
 # managed-by: envctl
-envctl guard secrets
+if command -v uv >/dev/null 2>&1; then
+  uv run envctl guard secrets
+else
+  envctl guard secrets
+fi
+
+# your additional checks here

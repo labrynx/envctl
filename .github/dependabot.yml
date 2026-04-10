@@ -21,13 +21,22 @@ updates:
     commit-message:
       prefix: "build(deps)"
 
+    # Minor and patch updates are merged automatically after CI passes,
+    # except for cryptography which is a heavy dependency and must always
+    # be reviewed manually regardless of update type.
     groups:
       python-minor-and-patch:
         patterns:
           - "*"
+        exclude-patterns:
+          - "cryptography"
         update-types:
           - "minor"
           - "patch"
+
+    # cryptography updates always require a manual review.
+    # This covers both security advisories and API surface changes.
+    ignore: []
 
   # -------------------------------------
   # GitHub Actions

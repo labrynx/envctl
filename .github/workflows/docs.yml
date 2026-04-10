@@ -1,29 +1,84 @@
 name: Docs
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+
+# Deploys the MkDocs Material site to GitHub Pages on every push to main.
+# Manual trigger available via workflow_dispatch.
+#
+# Prerequisites:
+#   1. Enable GitHub Pages in repository Settings → Pages → Source: GitHub Actions
+#   2. Resolve docs/assets/logo/envctl-logo.png and docs/assets/favicon/envctl-favicon.png
+#   3. Confirm site_url in mkdocs.yml matches the Pages URL
+
 permissions:
   contents: read
-  pages: write
-  id-token: write
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "overrides/**"
+      - "pyproject.toml"
+  workflow_dispatch:
+
+concurrency:
+  group: docs-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  deploy:
+  build:
+    name: Build docs
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0  # required for git-revision-date-localized
+
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install docs dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[docs]"
+
+      - name: Configure Git for revision dates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Build site (strict mode)
+        run: mkdocs build --strict
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs:
+      - build
+
+    permissions:
+      pages: write
+      id-token: write
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-        with:
-          fetch-depth: 0  # necesario para git-revision-date
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
-        with:
-          python-version: "3.12"
-      - run: pip install -e ".[docs]"
-      - run: mkdocs build --strict
-      - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b
-        with:
-          path: site
-      - id: deployment
-        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e

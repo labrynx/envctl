@@ -36,3 +36,6 @@ tmp/
 # envctl
 master.key
 *.prof
+.envctl/observability/
+.release-venv/
+.release-venv-sdist/
