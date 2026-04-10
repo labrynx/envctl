@@ -15,7 +15,10 @@ from envctl.domain.hooks import (
     HookStatus,
 )
 from envctl.errors import ExecutionError
-from envctl.services.git_secret_guard_service import GitSecretGuardResult
+from envctl.services.git_secret_guard_service import (
+    GitSecretFinding,
+    GitSecretGuardResult,
+)
 from tests.support.contexts import make_project_context
 
 
@@ -482,7 +485,18 @@ def test_hook_execution_service_run_returns_non_zero_for_failed_guard(
         "run_git_secret_guard",
         lambda _context: GitSecretGuardResult(
             scanned_paths=(Path("a"),),
-            findings=(SimpleNamespace(),),
+            findings=(
+                GitSecretFinding(
+                    path=Path("a"),
+                    kind="master_key",
+                    message="Staged content contains an envctl master key.",
+                    actions=(
+                        "git restore --staged -- 'a'",
+                        "move the secret outside the repository",
+                        "rotate the key if it was already exposed",
+                    ),
+                ),
+            ),
         ),
     )
 
