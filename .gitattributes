@@ -1,3 +1,7 @@
 *.png filter=lfs diff=lfs merge=lfs -text
 *.jpg filter=lfs diff=lfs merge=lfs -text
 *.webp filter=lfs diff=lfs merge=lfs -text
+
+docs/assets/**/*.png -filter -diff -merge text
+docs/assets/**/*.jpg -filter -diff -merge text
+docs/assets/**/*.webp -filter -diff -merge text
