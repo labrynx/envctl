@@ -1,2 +1,12 @@
 #!/bin/sh
-HOOK_NAME=pre-push exec .githooks/_shared_hook.sh "$@"
+# managed-by: envctl
+# hook: pre-push
+# version: 1
+
+if ! command -v envctl >/dev/null 2>&1; then
+  echo >&2 "envctl is not available in PATH in this environment."
+  exit 1
+fi
+
+envctl hook-run pre-push "$@"
+exit $?

@@ -1,11 +1,12 @@
 #!/bin/sh
-set -eu
-
 # managed-by: envctl
-if command -v uv >/dev/null 2>&1; then
-  uv run envctl guard secrets
-else
-  envctl guard secrets
+# hook: pre-commit
+# version: 1
+
+if ! command -v envctl >/dev/null 2>&1; then
+  echo >&2 "envctl is not available in PATH in this environment."
+  exit 1
 fi
 
-# your additional checks here
+envctl hook-run pre-commit "$@"
+exit $?
