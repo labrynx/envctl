@@ -582,6 +582,7 @@ def test_run_init_reports_managed_hooks_installed(
         "load_project_context",
         lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
+
     class FakeHookService:
         def __init__(self, repo_root: Path) -> None:
             assert repo_root == context.repo_root
@@ -623,6 +624,7 @@ def test_run_init_reports_foreign_hook_conflict(
         "load_project_context",
         lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
+
     class FakeHookService:
         def __init__(self, repo_root: Path) -> None:
             assert repo_root == context.repo_root

@@ -351,9 +351,7 @@ class HookService:
             self._hook_repository.write(path, rendered)
             self._hook_repository.ensure_executable(path)
             action = (
-                HookAction.CREATED
-                if before.status == HookStatus.MISSING
-                else HookAction.REWRITTEN
+                HookAction.CREATED if before.status == HookStatus.MISSING else HookAction.REWRITTEN
             )
             return HookOperationResult(
                 name=spec.name,

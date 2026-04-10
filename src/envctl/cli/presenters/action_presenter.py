@@ -175,7 +175,10 @@ def render_init_result(
     print_kv("hooks_installed", "yes" if init_result.hooks_installed else "no")
     if init_result.hooks_reason is not None:
         print_kv("hooks_reason", init_result.hooks_reason.value)
-    if init_result.hooks_reason not in {None, HooksReason.INSTALLED, HooksReason.ALREADY_HEALTHY}:
+    if init_result.hooks_reason is not None and init_result.hooks_reason not in {
+        HooksReason.INSTALLED,
+        HooksReason.ALREADY_HEALTHY,
+    }:
         print_warning(_render_hooks_reason(init_result.hooks_reason))
     for warning in init_result.runtime_warnings:
         print_warning(warning)

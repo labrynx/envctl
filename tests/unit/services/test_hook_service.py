@@ -42,7 +42,7 @@ def test_render_managed_hook_uses_minimal_wrapper() -> None:
     assert rendered.startswith("#!/bin/sh\n")
     assert "# managed-by: envctl\n" in rendered
     assert f"# hook: {spec.name.value}\n" in rendered
-    assert 'command -v envctl >/dev/null 2>&1' in rendered
+    assert "command -v envctl >/dev/null 2>&1" in rendered
     assert f'envctl hook-run {spec.name.value} "$@"' in rendered
     assert "\r" not in rendered
 

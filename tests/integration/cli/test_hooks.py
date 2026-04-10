@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 from typer.testing import CliRunner
 
@@ -13,8 +14,8 @@ from envctl.cli.app import app
 from tests.integration.cli.conftest import _git, _write_sample_contract
 
 
-def _parse_json(output: str) -> dict[str, object]:
-    return json.loads(output)
+def _parse_json(output: str) -> dict[str, Any]:
+    return cast(dict[str, Any], json.loads(output))
 
 
 def test_hooks_install_status_remove_flow(
@@ -52,7 +53,8 @@ def test_hooks_status_json_reports_missing_hooks(
     assert payload["ok"] is False
     assert payload["schema_version"] == 1
     assert payload["command"] == "hooks status"
-    assert payload["data"]["overall_status"] == "degraded"
+    data = cast(dict[str, Any], payload["data"])
+    assert data["overall_status"] == "degraded"
 
 
 def test_hooks_install_without_force_keeps_foreign_hook_visible(
@@ -122,8 +124,7 @@ def test_hook_wrapper_executes_via_sh_with_envctl_on_path(
     bin_dir.mkdir(parents=True, exist_ok=True)
     shim_path = bin_dir / "envctl"
     shim_path.write_text(
-        "#!/bin/sh\n"
-        f'exec "{sys.executable}" -m envctl "$@"\n',
+        f'#!/bin/sh\nexec "{sys.executable}" -m envctl "$@"\n',
         encoding="utf-8",
     )
     shim_path.chmod(0o755)
