@@ -35,6 +35,7 @@ Depending on the repository and the current local state, it may:
 * establish binding and persisted state
 * create or normalize contract metadata
 * infer a starter contract from `.env.example` when supported
+* install envctl-managed `pre-commit` and `pre-push` wrappers when the effective hooks path is supported
 
 A few things are worth calling out here:
 
@@ -56,6 +57,12 @@ envctl status
 At this point, it helps to ask: what is already ready, and what is still missing?
 
 `status` gives you that overview. It is meant to answer the practical question, “What should I do next?”
+
+If you specifically want to verify the managed Git protection layer, inspect it directly:
+
+```bash
+envctl hooks status
+```
 
 ## Step 4: provide missing required values
 

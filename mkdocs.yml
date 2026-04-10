@@ -134,6 +134,7 @@ nav:
           - vault: reference/commands/vault.md
           - project: reference/commands/project.md
           - guard: reference/commands/guard.md
+          - hooks: reference/commands/hooks.md
       - Configuration: reference/configuration.md
       - Vault: reference/vault.md
       - Profiles: reference/profiles.md

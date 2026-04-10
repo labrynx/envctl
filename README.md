@@ -110,13 +110,28 @@ envctl run -- python app.py
 What happens:
 
 * `config init` creates your user-level `envctl` config
-* `init` prepares the repository for `envctl`
+* `init` prepares the repository for `envctl` and attempts to install managed Git hooks
 * `fill` asks only for missing required values
 * `check` validates the resolved environment
 * `run` executes with the resolved environment injected directly
 
 If another tool really needs a file on disk, use `sync`.
 Otherwise, `run` is usually the cleanest path.
+
+## Local Git protection
+
+`envctl` can keep its own secret guard wired into Git without becoming a generic hooks manager.
+
+The managed workflow is:
+
+```bash
+envctl hooks status
+envctl hooks install
+envctl hooks repair
+envctl hooks remove
+```
+
+Those commands manage only `envctl`'s own `pre-commit` and `pre-push` wrappers, both of which run `envctl guard secrets`.
 
 ---
 
@@ -182,6 +197,7 @@ The runtime environment stays explicit.
 * local values stay on the machine
 * sensitive output is masked
 * encryption at rest is optional
+* managed Git hooks can run `guard secrets` automatically before commit and push
 
 `envctl` assumes the local machine is trusted. It is designed to keep environment handling explicit and safer, not to replace a full remote secrets platform.
 
