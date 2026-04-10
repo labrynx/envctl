@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+from envctl.domain.hooks import HooksReason
 from envctl.vault_crypto import VaultFileState
 
 InitContractTemplate = Literal["example", "starter"] | None
@@ -18,8 +19,8 @@ class InitResult:
     contract_created: bool
     contract_template: InitContractTemplate = None
     contract_skipped: bool = False
-    git_guard_installed: bool = False
-    git_guard_reason: str | None = None
+    hooks_installed: bool = False
+    hooks_reason: HooksReason | None = None
     runtime_warnings: tuple[str, ...] = ()
 
 

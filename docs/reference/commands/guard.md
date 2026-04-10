@@ -31,4 +31,10 @@ Do not treat `guard` as a general secret scanner for every possible credential i
 
 ## Integration
 
-This is the command used by the Git hook that `envctl init` installs when the current repository can safely adopt `.githooks` as its local hooks path.
+This is the policy command used by the managed Git wrappers installed through:
+
+* `envctl init`
+* `envctl hooks install`
+* `envctl hooks repair`
+
+`envctl` keeps those wrappers intentionally minimal and routes the real logic back through Python with `envctl hook-run <hook>`.

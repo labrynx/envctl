@@ -38,6 +38,7 @@ def build_json_command_payload(
     command: str,
     data: Mapping[str, Any],
     ok: bool = True,
+    schema_version: int | None = None,
     contract_warnings: Sequence[ContractDeprecationWarning] = (),
     command_warnings: Sequence[CommandWarning] = (),
     extra_warnings: Sequence[CommandWarning] = (),
@@ -49,11 +50,14 @@ def build_json_command_payload(
         command_warnings=command_warnings,
         extra_warnings=extra_warnings,
     )
-    return {
+    payload: dict[str, Any] = {
         "ok": ok,
         "command": command,
         "data": payload_data,
     }
+    if schema_version is not None:
+        payload["schema_version"] = schema_version
+    return payload
 
 
 def render_contract_warnings_if_any(

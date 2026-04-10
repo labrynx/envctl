@@ -53,3 +53,9 @@ A simple rule of thumb is:
 * use `run` to execute
 * use `set` for local changes
 * use `inspect` to understand what is going on
+
+If you need to verify the local Git safety net itself, add:
+
+```bash
+envctl hooks status
+```

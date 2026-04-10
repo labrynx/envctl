@@ -16,6 +16,8 @@ from envctl.cli.commands.explain import explain_command
 from envctl.cli.commands.export import export_command
 from envctl.cli.commands.fill import fill_command
 from envctl.cli.commands.guard import guard_app
+from envctl.cli.commands.hook_run import hook_run_command
+from envctl.cli.commands.hooks import hooks_app
 from envctl.cli.commands.init import init_command
 from envctl.cli.commands.inspect import inspect_command
 from envctl.cli.commands.profile import profile_app
@@ -117,6 +119,7 @@ app.add_typer(vault_app, name="vault")
 app.add_typer(project_app, name="project")
 app.add_typer(profile_app, name="profile")
 app.add_typer(guard_app, name="guard")
+app.add_typer(hooks_app, name="hooks")
 
 
 @app.callback()
@@ -190,6 +193,10 @@ def main(
 
 
 app.command("doctor")(doctor_command)
+app.command(
+    "hook-run",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)(hook_run_command)
 app.command("init")(init_command)
 app.command("add")(add_command)
 app.command("set")(set_command)

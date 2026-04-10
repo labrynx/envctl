@@ -72,6 +72,22 @@ Projection is explicit on purpose:
 
 Important: `sync` output is **not** encrypted automatically. Encryption protects vault files, not generated projection artifacts.
 
+## Local Git protection
+
+`envctl` can also protect against accidental commits and pushes of envctl-specific secret material through managed Git hooks.
+
+That protection is intentionally narrow:
+
+* it only manages envctl-owned `pre-commit` and `pre-push` wrappers
+* both wrappers run `envctl guard secrets`
+* it does not act as a general secret scanner or hook-merging framework
+
+Important limits still apply:
+
+* `git commit --no-verify` bypasses hooks
+* CI enforcement must be configured separately
+* external shared hooks paths are outside envctl's management perimeter
+
 ## Distribution safety
 
 Published release artifacts are treated as build outputs that should be verifiable, not just downloadable.
@@ -113,3 +129,4 @@ Users still need to:
 * [Contract](../concepts/contract.md)
 * [Vault reference](vault.md)
 * [Encryption reference](encryption.md)
+* [Hooks command reference](commands/hooks.md)

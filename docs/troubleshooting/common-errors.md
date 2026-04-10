@@ -222,3 +222,47 @@ Binding is how `envctl` connects a repository checkout to the right local vault 
 
 * [Binding](../concepts/binding.md)
 * [Recovery](recovery.md)
+
+## Managed hooks are missing, drifted, or conflicted
+
+### What you see
+
+Typically:
+
+* `envctl hooks status` exits non-zero
+* output mentions `missing`, `drifted`, `foreign`, or `unsupported`
+* `init` warns that managed hooks were not fully installed
+
+### What it means
+
+The envctl-owned Git protection layer is not currently in a healthy state.
+
+Common causes:
+
+* the managed hook files were deleted or edited
+* another tool already owns one of the supported hook names
+* the effective Git hooks path resolves outside the repository perimeter
+
+### How to fix it
+
+Start with inspection:
+
+```bash
+envctl hooks status
+```
+
+If the hooks are envctl-managed but damaged or missing:
+
+```bash
+envctl hooks repair
+```
+
+If a supported hook is owned by something else and you really want envctl to take over that hook name:
+
+```bash
+envctl hooks install --force
+```
+
+### Why this happens
+
+`envctl` keeps hook management intentionally narrow and non-invasive. It only owns its own supported wrappers and refuses to manage hooks outside the repository perimeter.

@@ -21,7 +21,8 @@ The CLI is now more consistent across commands, making it easier to understand a
 - Optional local observability recorder for persisting emitted traces and events
 - Stable observability event contract with centralized sanitization before rendering and emission
 - New `envctl guard secrets` command to block staged envctl vault payloads and master keys before commit
-- `envctl init` now installs a local managed Git pre-commit hook when the repository can safely use `.githooks`
+- New `envctl hooks` command group for inspecting, installing, repairing, and removing envctl-managed Git hooks
+- New internal `envctl hook-run <hook>` command used by managed hook wrappers
 - New root contract format `.envctl.yaml`, with automatic fallback to legacy `.envctl.schema.yaml`
 - `export` now supports structured JSON output for automation-friendly projection
 - Release builds now generate a CycloneDX SBOM for the published wheel
@@ -45,6 +46,9 @@ The CLI is now more consistent across commands, making it easier to understand a
 
 - New master keys now use a canonical, self-identifying master-key format: `ENVCTL-MASTER-KEY-V1:<key-id>:<base64-key>`
 - Legacy raw master keys are migrated automatically when loaded from disk and writable
+- `envctl init` now attempts to install envctl-managed `pre-commit` and `pre-push` hooks in the effective Git hooks path instead of relying on a repo-owned `.githooks` layout
+- Managed hooks now use minimal canonical wrappers that dispatch back to Python through `envctl hook-run`
+- Hooks commands now support versioned JSON output for automation-friendly verification and repair flows
 - Release builds now publish a `SHA256SUMS` manifest alongside wheel and source artifacts
 - Release checksums now cover the published SBOM as part of the release metadata set
 - Release builds now generate GitHub attestations for published artifacts

@@ -17,6 +17,7 @@ from envctl.cli.presenters.check_presenter import render_check_result
 from envctl.cli.presenters.config_error_presenter import render_config_error
 from envctl.cli.presenters.contract_error_presenter import render_contract_error
 from envctl.cli.presenters.deprecation_presenter import render_contract_deprecation_warnings
+from envctl.cli.presenters.hooks_presenter import render_hook_operation, render_hooks_status
 from envctl.cli.presenters.inspect_presenter import (
     render_contract_group_result,
     render_contract_groups_summary,
@@ -78,6 +79,8 @@ __all__ = [
     "render_export_output",
     "render_fill_no_changes",
     "render_fill_result",
+    "render_hook_operation",
+    "render_hooks_status",
     "render_inferred_spec",
     "render_init_result",
     "render_inspect_key_result",

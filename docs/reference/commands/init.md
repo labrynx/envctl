@@ -17,6 +17,7 @@ It is the bootstrap command that establishes local project state and helps you g
 * initializes the current project in the local vault
 * can bootstrap a missing contract depending on `--contract`
 * establishes or repairs the local project binding when needed
+* attempts to install envctl-managed `pre-commit` and `pre-push` hooks
 * is safe to think of as “prepare this repository for envctl”
 
 ## Key option
@@ -31,6 +32,18 @@ Controls how `envctl` handles a missing contract:
 * `skip`
 
 The exact choice changes how much scaffolding `init` performs when the repository does not already have a contract.
+
+## Managed hooks behavior
+
+As part of bootstrap, `init` attempts to install the managed Git hooks that `envctl` uses to run `guard secrets` automatically.
+
+That hook installation is intentionally non-invasive:
+
+* it only touches supported hook names owned by `envctl`
+* it does not overwrite foreign hooks unless you later opt into `envctl hooks install --force`
+* it does not manage hooks paths outside the current repository perimeter
+
+If hook installation cannot complete cleanly, `init` still finishes the repository bootstrap and reports the hook outcome separately.
 
 ## When to use it
 
@@ -56,3 +69,4 @@ envctl init --contract starter
 * use [`config`](config.md) to create your user-level config first
 * use [`project`](project.md) when you need lower-level binding operations
 * use [`fill`](fill.md) after initialization to add missing required values
+* use [`hooks`](hooks.md) to inspect, repair, or remove managed Git hooks explicitly

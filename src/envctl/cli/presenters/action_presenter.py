@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from envctl.domain.hooks import HooksReason
 from envctl.domain.operations import InitResult
 from envctl.utils.masking import mask_value
 from envctl.utils.output import (
@@ -171,11 +172,28 @@ def render_init_result(
     elif init_result.contract_skipped:
         print_warning("No contract file was created")
 
-    print_kv("git_guard_installed", "yes" if init_result.git_guard_installed else "no")
-    if init_result.git_guard_reason:
-        print_warning(init_result.git_guard_reason)
+    print_kv("hooks_installed", "yes" if init_result.hooks_installed else "no")
+    if init_result.hooks_reason is not None:
+        print_kv("hooks_reason", init_result.hooks_reason.value)
+    if init_result.hooks_reason is not None and init_result.hooks_reason not in {
+        HooksReason.INSTALLED,
+        HooksReason.ALREADY_HEALTHY,
+    }:
+        print_warning(_render_hooks_reason(init_result.hooks_reason))
     for warning in init_result.runtime_warnings:
         print_warning(warning)
+
+
+def _render_hooks_reason(reason: HooksReason) -> str:
+    if reason == HooksReason.PARTIAL_CONFLICT:
+        return "Managed hooks were partially installed, but conflicts remain."
+    if reason == HooksReason.UNSUPPORTED_HOOKS_PATH:
+        return "Managed hooks were not installed because the effective hooks path is unsupported."
+    if reason == HooksReason.FOREIGN_HOOK_PRESENT:
+        return "Managed hooks were not installed because a foreign hook is already present."
+    if reason == HooksReason.INSTALL_FAILED:
+        return "Managed hooks could not be installed due to an unexpected error."
+    return reason.value
 
 
 def render_remove_result(

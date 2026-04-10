@@ -17,6 +17,15 @@ from envctl.domain.contract_inference import (
     infer_type,
     looks_like_placeholder,
 )
+from envctl.domain.hooks import (
+    HookAction,
+    HookName,
+    HookOperationReport,
+    HookOperationResult,
+    HooksReason,
+    HooksStatusLevel,
+    HookStatus,
+)
 from envctl.domain.operations import InitResult
 from envctl.domain.project import ProjectContext
 from tests.support.contexts import make_project_context
@@ -62,7 +71,11 @@ def test_run_init_creates_vault_files_and_preserves_existing_contract(
     result_context, result = init_service.run_init()
 
     assert result_context == context
-    assert result == InitResult(contract_created=False)
+    assert result == InitResult(
+        contract_created=False,
+        hooks_installed=False,
+        hooks_reason=HooksReason.INSTALL_FAILED,
+    )
 
     assert context.vault_project_dir.exists()
     assert context.vault_values_path.exists()
@@ -88,6 +101,8 @@ def test_run_init_creates_starter_contract_when_requested(
         contract_created=True,
         contract_template="starter",
         contract_skipped=False,
+        hooks_installed=False,
+        hooks_reason=HooksReason.INSTALL_FAILED,
     )
 
     contract = load_yaml(context.repo_contract_path)
@@ -139,6 +154,8 @@ def test_run_init_skips_contract_when_requested(
         contract_created=False,
         contract_template=None,
         contract_skipped=True,
+        hooks_installed=False,
+        hooks_reason=HooksReason.INSTALL_FAILED,
     )
     assert not context.repo_contract_path.exists()
 
@@ -177,6 +194,8 @@ def test_run_init_creates_contract_from_env_example(
         contract_created=True,
         contract_template="example",
         contract_skipped=False,
+        hooks_installed=False,
+        hooks_reason=HooksReason.INSTALL_FAILED,
     )
 
     contract = load_yaml(context.repo_contract_path)
@@ -234,6 +253,8 @@ def test_run_init_example_mode_falls_back_to_starter_when_example_is_missing(
         contract_created=True,
         contract_template="example",
         contract_skipped=False,
+        hooks_installed=False,
+        hooks_reason=HooksReason.INSTALL_FAILED,
     )
 
     contract = load_yaml(context.repo_contract_path)
@@ -273,6 +294,8 @@ def test_run_init_ask_mode_uses_example_when_confirm_accepts(
         contract_created=True,
         contract_template="example",
         contract_skipped=False,
+        hooks_installed=False,
+        hooks_reason=HooksReason.INSTALL_FAILED,
     )
     assert len(confirmations) == 1
     assert ".env.example" in confirmations[0][0]
@@ -307,6 +330,8 @@ def test_run_init_ask_mode_uses_starter_after_declining_example(
         contract_created=True,
         contract_template="starter",
         contract_skipped=False,
+        hooks_installed=False,
+        hooks_reason=HooksReason.INSTALL_FAILED,
     )
     assert len(confirmations) == 2
     assert ".env.example" in confirmations[0]
@@ -337,6 +362,8 @@ def test_run_init_ask_mode_skips_after_declining_all_prompts(
         contract_created=False,
         contract_template=None,
         contract_skipped=True,
+        hooks_installed=False,
+        hooks_reason=HooksReason.INSTALL_FAILED,
     )
     assert len(confirmations) == 1
     assert "starter contract scaffold" in confirmations[0]
@@ -365,6 +392,8 @@ def test_run_init_ask_mode_without_confirm_uses_example_when_available(
         contract_created=True,
         contract_template="example",
         contract_skipped=False,
+        hooks_installed=False,
+        hooks_reason=HooksReason.INSTALL_FAILED,
     )
 
 
@@ -386,6 +415,8 @@ def test_run_init_ask_mode_without_confirm_uses_starter_when_example_is_missing(
         contract_created=True,
         contract_template="starter",
         contract_skipped=False,
+        hooks_installed=False,
+        hooks_reason=HooksReason.INSTALL_FAILED,
     )
 
 
@@ -540,7 +571,7 @@ def test_looks_like_placeholder_detects_your_prefix_only() -> None:
     assert looks_like_placeholder("your_custom_value") is True
 
 
-def test_run_init_installs_managed_git_hook_when_repo_is_git(
+def test_run_init_reports_managed_hooks_installed(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -551,26 +582,38 @@ def test_run_init_installs_managed_git_hook_when_repo_is_git(
         "load_project_context",
         lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
-    monkeypatch.setattr(init_service, "is_git_repository", lambda repo_root: True)
-    monkeypatch.setattr(init_service, "get_local_git_config", lambda repo_root, key: None)
 
-    captured: dict[str, str] = {}
-    monkeypatch.setattr(
-        init_service,
-        "set_local_git_config",
-        lambda repo_root, key, value: captured.update({"key": key, "value": value}),
-    )
+    class FakeHookService:
+        def __init__(self, repo_root: Path) -> None:
+            assert repo_root == context.repo_root
+
+        def install(self) -> HookOperationReport:
+            return HookOperationReport(
+                hooks_path=context.repo_root / ".git" / "hooks",
+                final_status=HooksStatusLevel.HEALTHY,
+                changed=True,
+                results=(
+                    HookOperationResult(
+                        name=HookName.PRE_COMMIT,
+                        path=context.repo_root / ".git" / "hooks" / "pre-commit",
+                        before_status=HookStatus.MISSING,
+                        after_status=HookStatus.HEALTHY,
+                        action=HookAction.CREATED,
+                        changed=True,
+                        managed=True,
+                    ),
+                ),
+            )
+
+    monkeypatch.setattr(init_service, "HookService", FakeHookService)
 
     _, result = init_service.run_init(contract_mode="skip")
 
-    hook_path = context.repo_root / ".githooks" / "pre-commit"
-    assert result.git_guard_installed is True
-    assert hook_path.exists()
-    assert "envctl guard secrets" in hook_path.read_text(encoding="utf-8")
-    assert captured == {"key": "core.hooksPath", "value": ".githooks"}
+    assert result.hooks_installed is True
+    assert result.hooks_reason == HooksReason.INSTALLED
 
 
-def test_run_init_does_not_overwrite_foreign_hooks_path(
+def test_run_init_reports_foreign_hook_conflict(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -581,11 +624,32 @@ def test_run_init_does_not_overwrite_foreign_hooks_path(
         "load_project_context",
         lambda project_name=None, persist_binding=False: (SimpleNamespace(), context),
     )
-    monkeypatch.setattr(init_service, "is_git_repository", lambda repo_root: True)
-    monkeypatch.setattr(init_service, "get_local_git_config", lambda repo_root, key: ".husky")
+
+    class FakeHookService:
+        def __init__(self, repo_root: Path) -> None:
+            assert repo_root == context.repo_root
+
+        def install(self) -> HookOperationReport:
+            return HookOperationReport(
+                hooks_path=context.repo_root / ".git" / "hooks",
+                final_status=HooksStatusLevel.CONFLICT,
+                changed=False,
+                results=(
+                    HookOperationResult(
+                        name=HookName.PRE_COMMIT,
+                        path=context.repo_root / ".git" / "hooks" / "pre-commit",
+                        before_status=HookStatus.FOREIGN,
+                        after_status=HookStatus.FOREIGN,
+                        action=HookAction.SKIPPED_FOREIGN,
+                        changed=False,
+                        managed=False,
+                    ),
+                ),
+            )
+
+    monkeypatch.setattr(init_service, "HookService", FakeHookService)
 
     _, result = init_service.run_init(contract_mode="skip")
 
-    assert result.git_guard_installed is False
-    assert result.git_guard_reason is not None
-    assert "core.hooksPath=.husky" in result.git_guard_reason
+    assert result.hooks_installed is False
+    assert result.hooks_reason == HooksReason.FOREIGN_HOOK_PRESENT

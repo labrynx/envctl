@@ -41,7 +41,7 @@ def write_sample_contract(repo: Path) -> None:
     )
 
 
-def patch_git_for_repo(monkeypatch: pytest.MonkeyPatch, repo: Path) -> None:
+def patch_git_for_repo(monkeypatch: pytest.MonkeyPatch, repo: Path) -> None:  # noqa: C901
     """Patch git helpers so tests operate inside an isolated repository."""
 
     git_config_store: dict[str, str] = {}
@@ -57,6 +57,12 @@ def patch_git_for_repo(monkeypatch: pytest.MonkeyPatch, repo: Path) -> None:
         if args == ["rev-parse", "--show-toplevel"]:
             return str(repo)
 
+        if args == ["rev-parse", "--absolute-git-dir"]:
+            return str(repo / ".git")
+
+        if args == ["rev-parse", "--git-path", "hooks"]:
+            return git_config_store.get("core.hooksPath", ".git/hooks")
+
         if args == ["rev-parse", "--is-inside-work-tree"]:
             return "true"
 
@@ -68,6 +74,9 @@ def patch_git_for_repo(monkeypatch: pytest.MonkeyPatch, repo: Path) -> None:
 
         if args == ["config", "--local", "--get", "envctl.projectId"]:
             return git_config_store.get("envctl.projectId", "")
+
+        if args == ["config", "--local", "--get", "core.hooksPath"]:
+            return git_config_store.get("core.hooksPath", "")
 
         if len(args) == 4 and args[:2] == ["config", "--local"]:
             key = args[2]

@@ -98,6 +98,7 @@ Scope selectors operate on the current contract model. For legacy field behavior
     Prevent secret material from being committed.
 
     - [guard](guard.md)
+    - [hooks](hooks.md)
 
 </div>
 
@@ -128,6 +129,7 @@ Scope selectors operate on the current contract model. For legacy field behavior
 - [project](project.md)
 - [vault](vault.md)
 - [guard](guard.md)
+- [hooks](hooks.md)
 
 ## Deprecated aliases
 

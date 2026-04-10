@@ -50,6 +50,8 @@ This prepares the repository for contract-based workflows and establishes local 
 
 If the repository has never been used with `envctl` before, this is the step that gets the local structure into a sensible starting state.
 
+It also attempts to install the managed `pre-commit` and `pre-push` wrappers that run `envctl guard secrets`.
+
 ## 4. Fill missing values
 
 ```bash
@@ -92,6 +94,14 @@ envctl --profile dev run -- python app.py
 ```
 
 This is useful when one machine needs more than one local setup.
+
+## Optional: verify local Git protection
+
+```bash
+envctl hooks status
+```
+
+Use this when you want to confirm that the managed hooks are still healthy after setup or after changing local Git configuration.
 
 ## Optional: create `.env.local`
 

@@ -20,6 +20,7 @@ Examples of things to avoid unless strongly justified:
 - interactive logic inside `init`
 - read-only commands that mutate state
 - schema files that become alternate secret stores
+- generic hook-management features unrelated to envctl-owned protection
 
 ## Code of Conduct
 
@@ -195,6 +196,25 @@ envctl --trace check
 envctl --trace --trace-format human check
 envctl --trace --trace-format jsonl --trace-output file check
 ```
+
+## Managed hooks contribution guidance
+
+`envctl` now owns a very small managed hooks subsystem. Keep its boundary tight.
+
+Rules:
+
+* do not turn it into a generic hooks framework
+* do not add support for arbitrary hook names without a clear product reason
+* keep hook wrappers minimal and POSIX-compatible
+* keep product logic in Python, not in shell scripts
+* do not reintroduce `.githooks` as the active product mechanism
+* do not make `--force` bypass the repository-perimeter safety rule
+
+If you change managed hook behavior:
+
+* update `docs/reference/commands/hooks.md`
+* update `docs/reference/commands/init.md` and `guard.md` when behavior changes there too
+* add or adjust cross-platform tests, especially the real `sh`-executed wrapper path
 
 ## Running tests
 
