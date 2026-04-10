@@ -136,6 +136,26 @@ def test_resolve_hooks_path_resolves_relative_git_output(
     assert result == (repo_root / ".git" / "hooks").resolve()
 
 
+def test_resolve_hooks_path_preserves_absolute_git_output(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    absolute = tmp_path / "shared-hooks"
+    absolute.mkdir()
+
+    monkeypatch.setattr(
+        git_adapters,
+        "_run_git",
+        lambda args, cwd=None, check=True: str(absolute),
+    )
+
+    result = git_adapters.resolve_hooks_path(repo_root)
+
+    assert result == absolute.resolve()
+
+
 def test_get_repo_remote_returns_value_when_available(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -188,3 +208,22 @@ def test_get_repo_remote_returns_none_when_git_output_is_empty(
     result = git_adapters.get_repo_remote(repo_root)
 
     assert result is None
+
+
+def test_unset_local_git_config_is_noop_when_value_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    calls: list[list[str]] = []
+
+    def fake_run_git(args: list[str], cwd: Path | None = None, check: bool = True) -> str:
+        calls.append(args)
+        return ""
+
+    monkeypatch.setattr(git_adapters, "_run_git", fake_run_git)
+
+    git_adapters.unset_local_git_config(repo_root, "core.hooksPath")
+
+    assert calls == [["config", "--local", "--get", "core.hooksPath"]]
