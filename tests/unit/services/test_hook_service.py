@@ -573,7 +573,7 @@ def test_record_inspection_emits_event_when_observability_is_active(
         is_executable=True,
     )
 
-    monkeypatch.setattr(hook_service, "get_active_observability_context", lambda: object())
+    monkeypatch.setattr(hook_service, "get_active_observability_context", object)
     monkeypatch.setattr(
         hook_service,
         "record_event",
