@@ -56,3 +56,17 @@ def test_duration_ms_returns_positive_elapsed_time() -> None:
     ended_at = started_at + timedelta(milliseconds=123)
 
     assert duration_ms(started_at, ended_at) == 123
+
+
+def test_duration_ms_returns_zero_for_equal_timestamps() -> None:
+    started_at = utcnow()
+    ended_at = started_at
+
+    assert duration_ms(started_at, ended_at) == 0
+
+
+def test_duration_ms_returns_negative_elapsed_time() -> None:
+    started_at = utcnow()
+    ended_at = started_at - timedelta(milliseconds=123)
+
+    assert duration_ms(started_at, ended_at) == -123
