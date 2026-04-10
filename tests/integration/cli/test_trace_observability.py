@@ -71,8 +71,12 @@ def test_trace_human_check_has_stable_core_shape(runner: CliRunner, workspace) -
     assert normalized_first
     assert normalized_first == normalized_second
     assert normalized_first[0] == "Execution ID: <execution-id> at <timestamp>"
+    assert any("config.load" in line for line in normalized_first)
+    assert any("profile.resolve" in line for line in normalized_first)
     assert any("context.resolve" in line for line in normalized_first)
     assert any("resolution" in line for line in normalized_first)
+    assert not any("contract.io" in line for line in normalized_first)
+    assert not any("profile.io" in line for line in normalized_first)
     assert any(line.startswith("Total [<ms>] status=finish") for line in normalized_first)
 
 
@@ -122,5 +126,68 @@ def test_trace_json_emits_minimum_fields_and_event_sequence_stability(
     second_sequence = [(item["event"], item["status"]) for item in second_events]
 
     assert first_sequence == second_sequence
-    assert first_sequence[0] == ("command.start", "start")
+    assert first_sequence[0] == ("config.load.start", "start")
     assert first_sequence[-1] == ("command.finish", "finish")
+    assert ("config.load.start", "start") in first_sequence
+    assert ("config.load.finish", "finish") in first_sequence
+    assert ("profile.resolve.start", "start") in first_sequence
+    assert ("profile.resolve.finish", "finish") in first_sequence
+    assert not any(item["operation"] == "load_contract_optional" for item in first_events)
+    assert not any(item["operation"] == "from_env_or_file" for item in first_events)
+    assert not any(item["operation"] == "inspect_bytes" for item in first_events)
+
+
+def test_trace_human_inspect_hides_redundant_internal_phases(
+    runner: CliRunner,
+    workspace,
+) -> None:
+    del workspace
+    _prepare_valid_workspace(runner)
+
+    result = runner.invoke(
+        app,
+        ["--trace", "--trace-format", "human", "inspect"],
+        catch_exceptions=False,
+    )
+
+    assert result.exit_code == 0
+    normalized = _normalize_human_trace(result.output)
+
+    assert normalized
+    assert any("config.load" in line for line in normalized)
+    assert any("profile.resolve" in line for line in normalized)
+    assert any("context.resolve" in line for line in normalized)
+    assert any("contract.compose" in line for line in normalized)
+    assert len([line for line in normalized if "resolution status=finish" in line]) == 1
+    assert not any("contract.io" in line for line in normalized)
+    assert not any("profile.io" in line for line in normalized)
+    assert not any("vault status=" in line for line in normalized)
+
+
+def test_trace_json_inspect_omits_redundant_internal_operations(
+    runner: CliRunner,
+    workspace,
+) -> None:
+    del workspace
+    _prepare_valid_workspace(runner)
+
+    result = runner.invoke(
+        app,
+        ["--trace", "--trace-format", "jsonl", "inspect"],
+        catch_exceptions=False,
+    )
+
+    assert result.exit_code == 0
+    events = _extract_json_trace_lines(result.output)
+
+    assert events
+    assert not any(item["operation"] == "run_inspect" for item in events)
+    assert not any(item["operation"] == "load_contract_optional" for item in events)
+    assert not any(item["operation"] == "from_env_or_file" for item in events)
+    assert not any(item["operation"] == "inspect_bytes" for item in events)
+    resolution_finishes = [
+        item
+        for item in events
+        if item["event"] == "resolution.finish" and item["operation"] == "resolve_environment"
+    ]
+    assert len(resolution_finishes) == 1

@@ -125,3 +125,17 @@ source_modules =
     envctl.cli.serializers
 forbidden_modules =
     envctl.services
+
+# ==============================================================
+# Observability is infrastructure
+# ==============================================================
+
+[importlinter:contract:observability_is_infrastructure]
+name = Observability must not depend on business layers
+type = forbidden
+source_modules = envctl.observability
+forbidden_modules =
+    envctl.cli
+    envctl.services
+    envctl.repository
+    envctl.config

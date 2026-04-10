@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from envctl.observability.events import validate_event_name
 from envctl.observability.models import ExecutionObservabilityContext, ObservationEvent
 from envctl.observability.sanitization import sanitize_event
 from envctl.observability.timing import utcnow
@@ -21,6 +22,7 @@ def record_event(
     fields: dict[str, Any] | None = None,
 ) -> ObservationEvent:
     """Create and dispatch one event for a context."""
+    validate_event_name(event)
 
     observation = ObservationEvent(
         event=event,

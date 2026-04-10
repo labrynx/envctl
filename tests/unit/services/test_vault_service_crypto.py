@@ -1,7 +1,6 @@
 # tests/unit/services/test_vault_service_crypto.py
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 
 import pytest
@@ -226,47 +225,3 @@ def test_encrypt_then_decrypt_full_roundtrip(
 
     vault_service_module.run_vault_decrypt_project()
     assert values_path.read_text(encoding="utf-8") == "APP_NAME=demo\nDEBUG=true\n"
-
-
-def test_encrypt_logs_info_summary(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    key_path = tmp_path / "vault" / "master.key"
-    crypto = VaultCrypto.load_or_create(key_path, protected_paths=())
-
-    values_path = tmp_path / "vault" / "values.env"
-    values_path.parent.mkdir(parents=True, exist_ok=True)
-    values_path.write_text("APP_NAME=demo\n", encoding="utf-8")
-
-    context = make_project_context(
-        vault_project_dir=values_path.parent,
-        vault_values_path=values_path,
-        vault_key_path=key_path,
-        vault_crypto=crypto,
-    )
-
-    monkeypatch.setattr(
-        vault_service_module,
-        "load_project_context",
-        lambda: (object(), context),
-    )
-
-    logger = logging.getLogger("envctl")
-    logger.addHandler(caplog.handler)
-    logger.setLevel(logging.INFO)
-    caplog.set_level("INFO")
-
-    try:
-        vault_service_module.run_vault_encrypt_project()
-    finally:
-        logger.removeHandler(caplog.handler)
-
-    assert any(
-        record.name == "envctl.services.vault_service"
-        and record.levelname == "INFO"
-        and record.message == "Vault encrypt completed"
-        and getattr(record, "encrypted_file_count", None) == 1
-        for record in caplog.records
-    )

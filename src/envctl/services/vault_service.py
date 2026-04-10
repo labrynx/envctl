@@ -45,9 +45,6 @@ from envctl.services.vault_support import (
     run_encrypt_for_context,
 )
 from envctl.utils.filesystem import is_world_writable
-from envctl.utils.logging import get_logger
-
-logger = get_logger(__name__)
 
 
 def run_vault_check(
@@ -62,12 +59,13 @@ def run_vault_check(
             resolve_selected_profile=resolve_selected_profile,
             classify_vault_file=classify_vault_file,
             is_world_writable=is_world_writable,
-            logger=logger,
         )
-        _context, _profile, check_result = result
+        _context, resolved_profile, check_result = result
+        span_fields["selected_profile"] = resolved_profile
         span_fields["exists"] = check_result.exists
         span_fields["parseable"] = check_result.parseable
         span_fields["key_count"] = check_result.key_count
+        span_fields["state"] = check_result.state
         return result
 
 
@@ -75,13 +73,15 @@ def run_vault_path(
     active_profile: str | None = None,
 ) -> tuple[ProjectContext, str, Path]:
     """Return the current physical vault path for the active profile."""
-    with observe_span("vault", module=__name__, operation="run_vault_path"):
-        return run_vault_path_impl(
+    with observe_span("vault", module=__name__, operation="run_vault_path") as span_fields:
+        result = run_vault_path_impl(
             active_profile=active_profile,
             load_project_context=load_project_context,
             resolve_selected_profile=resolve_selected_profile,
-            logger=logger,
         )
+        _context, resolved_profile, _path = result
+        span_fields["selected_profile"] = resolved_profile
+        return result
 
 
 def run_vault_show(
@@ -95,11 +95,12 @@ def run_vault_show(
             require_no_plaintext_in_strict_mode=require_no_plaintext_in_strict_mode,
             resolve_selected_profile=resolve_selected_profile,
             classify_vault_file=classify_vault_file,
-            logger=logger,
         )
-        _context, _profile, show_result = result
+        _context, resolved_profile, show_result = result
+        span_fields["selected_profile"] = resolved_profile
         span_fields["exists"] = show_result.exists
         span_fields["key_count"] = len(show_result.values)
+        span_fields["state"] = show_result.state
         return result
 
 
@@ -116,9 +117,9 @@ def run_vault_edit(
             write_profile_values=write_profile_values,
             load_profile_values=load_profile_values,
             editor_open_file=editor_adapter.open_file,
-            logger=logger,
         )
         _context, edit_result = result
+        span_fields["selected_profile"] = edit_result.profile
         span_fields["created"] = edit_result.created
         return result
 
@@ -135,9 +136,9 @@ def get_unknown_vault_keys(
             resolve_selected_profile=resolve_selected_profile,
             load_contract_optional=load_contract_optional,
             load_profile_values=load_profile_values,
-            logger=logger,
         )
-        _context, _profile, _path, unknown_keys = result
+        _context, resolved_profile, _path, unknown_keys = result
+        span_fields["selected_profile"] = resolved_profile
         span_fields["unknown_key_count"] = len(unknown_keys)
         return result
 
@@ -155,11 +156,11 @@ def run_vault_prune(
             load_contract_optional=load_contract_optional,
             load_profile_values=load_profile_values,
             write_profile_values=write_profile_values,
-            logger=logger,
         )
-        _context, _profile, _path, prune_result = result
+        _context, resolved_profile, _path, prune_result = result
+        span_fields["selected_profile"] = resolved_profile
         span_fields["removed_key_count"] = len(prune_result.removed_keys)
-        span_fields["kept_keys"] = prune_result.kept_keys
+        span_fields["kept_key_count"] = prune_result.kept_keys
         return result
 
 
@@ -180,7 +181,6 @@ def run_vault_encrypt_project(
             iter_project_dirs=iter_project_dirs,
             build_project_audit_context=build_project_audit_context,
             run_encrypt_for_context=run_encrypt_for_context,
-            logger=logger,
         )
         _context, encrypt_result = result
         span_fields["encrypted_file_count"] = len(encrypt_result.encrypted_files)
@@ -205,7 +205,6 @@ def run_vault_decrypt_project(
             iter_project_dirs=iter_project_dirs,
             build_project_audit_context=build_project_audit_context,
             run_decrypt_for_context=run_decrypt_for_context,
-            logger=logger,
         )
         _context, decrypt_result = result
         span_fields["decrypted_file_count"] = len(decrypt_result.decrypted_files)
@@ -220,7 +219,6 @@ def run_vault_audit() -> tuple[ProjectContext, tuple[VaultAuditProjectResult, ..
             load_project_context=load_project_context,
             iter_project_dirs=iter_project_dirs,
             audit_project=audit_project,
-            logger=logger,
         )
         _context, audit_results = result
         span_fields["project_count"] = len(audit_results)

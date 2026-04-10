@@ -7,9 +7,7 @@ from collections.abc import Mapping
 
 from envctl.constants import DEFAULT_PROFILE, ENVCTL_PROFILE_ENVVAR
 from envctl.errors import ConfigError
-from envctl.utils.logging import get_logger
-
-logger = get_logger(__name__)
+from envctl.observability.timing import observe_span
 
 
 def validate_profile_name(value: object, source_label: str) -> str:
@@ -43,25 +41,25 @@ def resolve_active_profile(
     3. config ``default_profile``
     4. ``local``
     """
-    if cli_profile is not None:
-        logger.debug("Resolved active profile from CLI option", extra={"source": "--profile"})
-        return validate_profile_name(cli_profile, "--profile")
+    with observe_span(
+        "profile.resolve",
+        module=__name__,
+        operation="resolve_active_profile",
+        fields={"has_cli_profile": cli_profile is not None},
+    ) as span_fields:
+        if cli_profile is not None:
+            span_fields["source"] = "--profile"
+            return validate_profile_name(cli_profile, "--profile")
 
-    resolved_environ = os.environ if environ is None else environ
-    env_profile_raw = resolved_environ.get(ENVCTL_PROFILE_ENVVAR)
-    if env_profile_raw is not None:
-        logger.debug(
-            "Resolved active profile from environment",
-            extra={"source": ENVCTL_PROFILE_ENVVAR},
-        )
-        return validate_profile_name(env_profile_raw, ENVCTL_PROFILE_ENVVAR)
+        resolved_environ = os.environ if environ is None else environ
+        env_profile_raw = resolved_environ.get(ENVCTL_PROFILE_ENVVAR)
+        if env_profile_raw is not None:
+            span_fields["source"] = ENVCTL_PROFILE_ENVVAR
+            return validate_profile_name(env_profile_raw, ENVCTL_PROFILE_ENVVAR)
 
-    if config_default_profile is not None:
-        logger.debug(
-            "Resolved active profile from config default",
-            extra={"source": "config.default_profile"},
-        )
-        return validate_profile_name(config_default_profile, "config.default_profile")
+        if config_default_profile is not None:
+            span_fields["source"] = "config.default_profile"
+            return validate_profile_name(config_default_profile, "config.default_profile")
 
-    logger.debug("Resolved active profile from fallback", extra={"source": DEFAULT_PROFILE})
-    return DEFAULT_PROFILE
+        span_fields["source"] = DEFAULT_PROFILE
+        return DEFAULT_PROFILE

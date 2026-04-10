@@ -12,6 +12,7 @@ from envctl.domain.operations import (
 )
 from envctl.domain.project import ProjectContext
 from envctl.errors import ExecutionError, ValidationError
+from envctl.observability.timing import observe_span
 from envctl.repository.profile_repository import (
     list_explicit_profiles,
     load_profile_values,
@@ -19,10 +20,7 @@ from envctl.repository.profile_repository import (
     write_profile_values,
 )
 from envctl.services.context_service import load_project_context
-from envctl.utils.logging import get_logger
 from envctl.utils.project_paths import normalize_profile_name
-
-logger = get_logger(__name__)
 
 
 def _validate_explicit_profile_name(profile: str) -> str:
@@ -42,68 +40,52 @@ def run_profile_list(
     active_profile: str | None = None,
 ) -> tuple[ProjectContext, ProfileListResult]:
     """List available profiles for the current project."""
-    _config, context = load_project_context()
-    resolved_active = normalize_profile_name(active_profile)
-    logger.debug(
-        "Listing profiles",
-        extra={
-            "active_profile": resolved_active,
-            "repo_root": context.repo_root,
-        },
-    )
+    with observe_span(
+        "profile.manage",
+        module=__name__,
+        operation="run_profile_list",
+        fields={},
+    ) as span_fields:
+        _config, context = load_project_context()
+        resolved_active = normalize_profile_name(active_profile)
 
-    discovered = [DEFAULT_PROFILE, *list_explicit_profiles(context)]
-    unique_profiles = sorted(
-        set(discovered),
-        key=lambda name: (name != DEFAULT_PROFILE, name),
-    )
-
-    return context, ProfileListResult(
-        active_profile=resolved_active,
-        profiles=tuple(unique_profiles),
-    )
+        discovered = [DEFAULT_PROFILE, *list_explicit_profiles(context)]
+        unique_profiles = sorted(
+            set(discovered),
+            key=lambda name: (name != DEFAULT_PROFILE, name),
+        )
+        span_fields["selected_profile"] = resolved_active
+        span_fields["profile_count"] = len(unique_profiles)
+        return context, ProfileListResult(
+            active_profile=resolved_active,
+            profiles=tuple(unique_profiles),
+        )
 
 
 def run_profile_create(
     profile: str,
 ) -> tuple[ProjectContext, ProfileCreateResult]:
     """Create one explicit empty profile if missing."""
-    _config, context = load_project_context()
-    normalized = _validate_explicit_profile_name(profile)
-    logger.debug(
-        "Creating profile",
-        extra={
-            "profile": normalized,
-            "repo_root": context.repo_root,
-        },
-    )
-    _resolved_profile, path = resolve_profile_path(context, normalized)
+    with observe_span(
+        "profile.manage",
+        module=__name__,
+        operation="run_profile_create",
+        fields={"updated": True},
+    ) as span_fields:
+        _config, context = load_project_context()
+        normalized = _validate_explicit_profile_name(profile)
+        _resolved_profile, path = resolve_profile_path(context, normalized)
 
-    already_exists = path.exists()
-    if not already_exists:
-        write_profile_values(context, normalized, {})
-    logger.debug(
-        "Profile create result ready",
-        extra={
-            "profile": normalized,
-            "profile_created": not already_exists,
-            "path": path,
-        },
-    )
-    logger.info(
-        "Profile create completed",
-        extra={
-            "profile": normalized,
-            "profile_created": not already_exists,
-            "path": path,
-        },
-    )
-
-    return context, ProfileCreateResult(
-        profile=normalized,
-        path=path,
-        created=not already_exists,
-    )
+        already_exists = path.exists()
+        if not already_exists:
+            write_profile_values(context, normalized, {})
+        span_fields["selected_profile"] = normalized
+        span_fields["created"] = not already_exists
+        return context, ProfileCreateResult(
+            profile=normalized,
+            path=path,
+            created=not already_exists,
+        )
 
 
 def run_profile_copy(
@@ -111,96 +93,61 @@ def run_profile_copy(
     target_profile: str,
 ) -> tuple[ProjectContext, ProfileCopyResult]:
     """Copy one profile into another."""
-    _config, context = load_project_context()
+    with observe_span(
+        "profile.manage",
+        module=__name__,
+        operation="run_profile_copy",
+        fields={"updated": True},
+    ) as span_fields:
+        _config, context = load_project_context()
 
-    source = normalize_profile_name(source_profile)
-    target = _validate_explicit_profile_name(target_profile)
+        source = normalize_profile_name(source_profile)
+        target = _validate_explicit_profile_name(target_profile)
 
-    if source == target:
-        raise ValidationError("Source and target profiles must be different")
-    logger.debug(
-        "Copying profile",
-        extra={
-            "source_profile": source,
-            "target_profile": target,
-            "repo_root": context.repo_root,
-        },
-    )
+        if source == target:
+            raise ValidationError("Source and target profiles must be different")
 
-    _resolved_source, source_path, source_values = load_profile_values(context, source)
-    if not source_values and not source_path.exists():
-        raise ExecutionError(f"Source profile does not exist: {source}")
+        _resolved_source, source_path, source_values = load_profile_values(context, source)
+        if not source_values and not source_path.exists():
+            raise ExecutionError(f"Source profile does not exist: {source}")
 
-    _resolved_target, target_path = write_profile_values(context, target, source_values)
-    logger.debug(
-        "Profile copy result ready",
-        extra={
-            "source_profile": source,
-            "target_profile": target,
-            "copied_key_count": len(source_values),
-            "target_path": target_path,
-        },
-    )
-    logger.info(
-        "Profile copy completed",
-        extra={
-            "source_profile": source,
-            "target_profile": target,
-            "copied_key_count": len(source_values),
-            "target_path": target_path,
-        },
-    )
-
-    return context, ProfileCopyResult(
-        source_profile=source,
-        target_profile=target,
-        source_path=source_path,
-        target_path=target_path,
-        copied_keys=len(source_values),
-    )
+        _resolved_target, target_path = write_profile_values(context, target, source_values)
+        span_fields["selected_profile"] = target
+        span_fields["copied_key_count"] = len(source_values)
+        return context, ProfileCopyResult(
+            source_profile=source,
+            target_profile=target,
+            source_path=source_path,
+            target_path=target_path,
+            copied_keys=len(source_values),
+        )
 
 
 def run_profile_remove(
     profile: str,
 ) -> tuple[ProjectContext, ProfileRemoveResult]:
     """Remove one explicit profile file."""
-    _config, context = load_project_context()
-    normalized = _validate_explicit_profile_name(profile)
-    logger.debug(
-        "Removing profile",
-        extra={
-            "profile": normalized,
-            "repo_root": context.repo_root,
-        },
-    )
-    _resolved_profile, path = resolve_profile_path(context, normalized)
+    with observe_span(
+        "profile.manage",
+        module=__name__,
+        operation="run_profile_remove",
+        fields={"updated": True},
+    ) as span_fields:
+        _config, context = load_project_context()
+        normalized = _validate_explicit_profile_name(profile)
+        _resolved_profile, path = resolve_profile_path(context, normalized)
 
-    removed = False
-    if path.exists():
-        path.unlink()
-        removed = True
-    logger.debug(
-        "Profile remove result ready",
-        extra={
-            "profile": normalized,
-            "removed": removed,
-            "path": path,
-        },
-    )
-    logger.info(
-        "Profile remove completed",
-        extra={
-            "profile": normalized,
-            "removed": removed,
-            "path": path,
-        },
-    )
-
-    return context, ProfileRemoveResult(
-        profile=normalized,
-        path=path,
-        removed=removed,
-    )
+        removed = False
+        if path.exists():
+            path.unlink()
+            removed = True
+        span_fields["selected_profile"] = normalized
+        span_fields["removed"] = removed
+        return context, ProfileRemoveResult(
+            profile=normalized,
+            path=path,
+            removed=removed,
+        )
 
 
 def run_profile_path(

@@ -41,7 +41,7 @@ def test_render_profile_summary_lists_ranked_phases() -> None:
     output = render_profile_summary(
         [
             _event("resolution.finish", "finish", 25),
-            _event("profile.load.finish", "finish", 8),
+            _event("profile.resolve.finish", "finish", 8),
         ]
     )
 
@@ -54,7 +54,62 @@ def test_render_event_human_includes_phase_duration_and_status() -> None:
     assert output == "[25ms] resolution status=finish"
 
 
+def test_render_event_human_includes_compact_field_summary() -> None:
+    event = ObservationEvent(
+        event="resolution.finish",
+        timestamp=utcnow(),
+        execution_id="exec-1",
+        status="finish",
+        duration_ms=25,
+        module="tests",
+        operation="test",
+        fields={
+            "selected_profile": "local",
+            "resolved_key_count": 4,
+            "warning_count": 1,
+            "plaintext": "[BLOCKED]",
+        },
+    )
+
+    output = render_event(event, "human")
+
+    assert output == (
+        "[25ms] resolution status=finish "
+        "selected_profile=local resolved_key_count=4 warning_count=1"
+    )
+
+
 def test_render_event_jsonl_emits_machine_payload() -> None:
     output = render_event(_event("resolution.finish", "finish", 25), "jsonl")
     assert '"event": "resolution.finish"' in output
     assert '"duration_ms": 25' in output
+
+
+def test_render_event_human_hides_redundant_contract_io() -> None:
+    event = ObservationEvent(
+        event="contract.io.finish",
+        timestamp=utcnow(),
+        execution_id="exec-1",
+        status="finish",
+        duration_ms=3,
+        module="tests",
+        operation="load_contract_with_warnings",
+        fields={"contract_variable_count": 4},
+    )
+
+    assert render_event(event, "human") == ""
+
+
+def test_render_event_human_hides_internal_vault_crypto_helper() -> None:
+    event = ObservationEvent(
+        event="vault.finish",
+        timestamp=utcnow(),
+        execution_id="exec-1",
+        status="finish",
+        duration_ms=1,
+        module="tests",
+        operation="load_or_create",
+        fields={"material_source": "file", "material_id": "abcd1234"},
+    )
+
+    assert render_event(event, "human") == ""

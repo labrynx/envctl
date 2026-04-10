@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import logging
-
 import pytest
 
 import envctl.services.export_service as export_service
@@ -170,44 +168,4 @@ def test_run_export_projects_only_selected_group(
         "# Application\n"
         "# ------------------------------------------------------------------\n"
         "API_URL=http://host\n"
-    )
-
-
-def test_run_export_logs_debug_summary(
-    monkeypatch: pytest.MonkeyPatch,
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    context = make_project_context()
-    report = make_resolution_report(
-        values={"APP_NAME": make_resolved_value(key="APP_NAME", value="demo", source="profile")}
-    )
-    contract = make_contract({"APP_NAME": make_variable_spec(name="APP_NAME")})
-
-    monkeypatch.setattr(export_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(
-        export_service,
-        "resolve_projectable_environment",
-        lambda _context, *, active_profile, selection, operation: (
-            contract,
-            report,
-            (),
-        ),
-    )
-
-    logger = logging.getLogger("envctl")
-    logger.addHandler(caplog.handler)
-    logger.setLevel(logging.DEBUG)
-    caplog.set_level("DEBUG")
-
-    try:
-        export_service.run_export("staging", format="dotenv")
-    finally:
-        logger.removeHandler(caplog.handler)
-
-    assert any(
-        record.name == "envctl.services.export_service"
-        and record.levelname == "DEBUG"
-        and record.message == "Prepared export values"
-        and getattr(record, "exported_key_count", None) == 1
-        for record in caplog.records
     )

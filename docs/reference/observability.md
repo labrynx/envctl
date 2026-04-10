@@ -15,27 +15,63 @@ Each emitted event conforms to this stable schema:
 - `operation` (string, optional): operation/function identifier.
 - `fields` (object, optional): sanitized metadata (counts/state only; no secret values).
 
-## Canonical event names
+## Stable event families
 
-The canonical names are centralized in `src/envctl/observability/events.py`:
+The canonical taxonomy is centralized in `src/envctl/observability/events.py`.
 
-- `command.start`, `command.finish`, `command.error`
-- `context.resolve.start`, `context.resolve.finish`, `context.resolve.error`
-- `contract.compose.start`, `contract.compose.finish`, `contract.compose.error`
-- `resolution.start`, `resolution.finish`, `resolution.error`
-- `run.exec.start`, `run.exec.finish`, `run.exec.error`
-- `vault.start`, `vault.finish`, `vault.error`
-- `error.handled`, `error.unhandled`
+Stable families:
+
+- `command`
+- `config.load`
+- `config.write`
+- `context.resolve`
+- `contract.compose`
+- `contract.io`
+- `profile.resolve`
+- `profile.io`
+- `profile.manage`
+- `state.io`
+- `resolution`
+- `projection.validate`
+- `projection.render`
+- `variables.mutate`
+- `binding.mutate`
+- `vault`
+- `run.exec`
+- `subprocess.exec`
+- `error.*`
+
+For normal lifecycle operations, each span emits exactly:
+
+- `<family>.start`
+- and then one of:
+  - `<family>.finish`
+  - `<family>.error`
 
 These names and required fields are intended to remain stable for CI, telemetry parsing, and tooling integrations.
+
+## Common fields
+
+`fields` are extensible, but common names are normalized:
+
+- selection: `selected_profile`, `selection_scope`
+- counts: `*_count`
+- subprocess: `command_head`, `arg_count`, `exit_code`
+- booleans/results: `exists`, `created`, `updated`, `removed`, `parseable`
+- error metadata: `error_type`, `error_kind`, `handled`, `recoverable`, `message_safe`
+
+Avoid introducing one-off names when a normalized field already exists.
 
 ## Sensitivity guarantees
 
 Observation `fields` are sanitized before emission:
 
 - common secret-like keys are redacted
+- safe count fields remain visible
 - non-scalar values are summarized rather than emitted verbatim
 - instrumentation should report counts, booleans, and states only
+
+The `human` renderer shows a compact subset of safe `finish/error` fields. The JSONL contract remains the source of truth.
 
 Avoid adding raw environment values, key material, or file contents to event fields.
 

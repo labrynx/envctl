@@ -98,6 +98,8 @@ def sanitize_value(
     normalized_key = (key or "").strip().lower()
     if _is_forbidden_vault_field(normalized_key):
         return _BLOCKED_VALUE
+    if normalized_key.endswith("_count"):
+        return sanitize_scalar(value, policy="full")
     if _is_sensitive_key(normalized_key):
         return _sanitize_sensitive_value(value, policy=policy)
 

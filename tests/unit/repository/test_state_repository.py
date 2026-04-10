@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 from typing import Any
 
@@ -159,32 +158,3 @@ def test_read_state_raises_on_invalid_known_paths(tmp_path: Path) -> None:
     assert diagnostics is not None
     assert diagnostics.category == "invalid_known_paths"
     assert diagnostics.field == "known_paths"
-
-
-def test_write_state_logs_debug_summary(
-    tmp_path: Path,
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    path = tmp_path / "state.json"
-    logger = logging.getLogger("envctl")
-    logger.addHandler(caplog.handler)
-    logger.setLevel(logging.DEBUG)
-    caplog.set_level("DEBUG")
-
-    try:
-        state_repository.write_state(
-            path,
-            project_slug="demo",
-            project_id="prj_aaaaaaaaaaaaaaaa",
-            repo_root="/tmp/demo",
-        )
-    finally:
-        logger.removeHandler(caplog.handler)
-
-    assert any(
-        record.name == "envctl.repository.state_repository"
-        and record.levelname == "DEBUG"
-        and record.message == "Writing state file"
-        and getattr(record, "project_id", None) == "prj_aaaaaaaaaaaaaaaa"
-        for record in caplog.records
-    )

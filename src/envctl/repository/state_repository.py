@@ -10,10 +10,8 @@ from typing import Any
 from envctl.constants import STATE_VERSION
 from envctl.domain.error_diagnostics import StateDiagnostics
 from envctl.errors import StateError
+from envctl.observability.timing import observe_span
 from envctl.utils.atomic import write_json_atomic
-from envctl.utils.logging import get_logger
-
-logger = get_logger(__name__)
 
 
 def _utc_now_iso() -> str:
@@ -154,54 +152,53 @@ def read_state(path: Path) -> dict[str, Any] | None:
     Corrupt or unreadable state is an explicit error.
     Supported legacy versions are normalized in memory.
     """
-    if not path.exists():
-        logger.debug("State file is missing", extra={"path": path})
-        return None
+    with observe_span(
+        "state.io",
+        module=__name__,
+        operation="read_state",
+        fields={"path_kind": "state"},
+    ) as span_fields:
+        exists = path.exists()
+        span_fields["exists"] = exists
+        if not exists:
+            return None
 
-    logger.debug("Reading state file", extra={"path": path})
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        raise StateError(
-            f"State file is corrupted: {path}",
-            diagnostics=StateDiagnostics(
-                category="corrupted_state",
-                path=path,
-                suggested_actions=("repair the project binding",),
-            ),
-        ) from exc
-    except OSError as exc:
-        raise StateError(
-            f"Unable to read state file: {path}",
-            diagnostics=StateDiagnostics(
-                category="unreadable_state",
-                path=path,
-                suggested_actions=("check state file permissions",),
-            ),
-        ) from exc
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise StateError(
+                f"State file is corrupted: {path}",
+                diagnostics=StateDiagnostics(
+                    category="corrupted_state",
+                    path=path,
+                    suggested_actions=("repair the project binding",),
+                ),
+            ) from exc
+        except OSError as exc:
+            raise StateError(
+                f"Unable to read state file: {path}",
+                diagnostics=StateDiagnostics(
+                    category="unreadable_state",
+                    path=path,
+                    suggested_actions=("check state file permissions",),
+                ),
+            ) from exc
 
-    if not isinstance(raw, dict):
-        raise StateError(
-            f"State file must contain a JSON object: {path}",
-            diagnostics=StateDiagnostics(
-                category="invalid_state_shape",
-                path=path,
-                field="root",
-                suggested_actions=("repair the project binding",),
-            ),
-        )
+        if not isinstance(raw, dict):
+            raise StateError(
+                f"State file must contain a JSON object: {path}",
+                diagnostics=StateDiagnostics(
+                    category="invalid_state_shape",
+                    path=path,
+                    field="root",
+                    suggested_actions=("repair the project binding",),
+                ),
+            )
 
-    normalized = _normalize_state_payload(raw, path)
-    validated = _validate_state_payload(normalized, path)
-    logger.debug(
-        "Read state file successfully",
-        extra={
-            "path": path,
-            "project_id": validated["project_id"],
-            "known_path_count": len(validated.get("known_paths", [])),
-        },
-    )
-    return validated
+        normalized = _normalize_state_payload(raw, path)
+        validated = _validate_state_payload(normalized, path)
+        span_fields["known_path_count"] = len(validated.get("known_paths", []))
+        return validated
 
 
 def write_state(
@@ -216,24 +213,27 @@ def write_state(
     Backward-compatible helper kept for existing tests and callers.
     """
     now = _utc_now_iso()
-    logger.debug(
-        "Writing state file",
-        extra={"path": path, "project_id": project_id, "repo_root": repo_root},
-    )
-    write_json_atomic(
-        path,
-        {
-            "version": STATE_VERSION,
-            "project_slug": project_slug,
-            "project_key": project_slug,
-            "project_id": project_id,
-            "repo_root": repo_root,
-            "git_remote": None,
-            "known_paths": [repo_root],
-            "created_at": now,
-            "last_seen_at": now,
-        },
-    )
+    with observe_span(
+        "state.io",
+        module=__name__,
+        operation="write_state",
+        fields={"path_kind": "state", "updated": True},
+    ) as span_fields:
+        write_json_atomic(
+            path,
+            {
+                "version": STATE_VERSION,
+                "project_slug": project_slug,
+                "project_key": project_slug,
+                "project_id": project_id,
+                "repo_root": repo_root,
+                "git_remote": None,
+                "known_paths": [repo_root],
+                "created_at": now,
+                "last_seen_at": now,
+            },
+        )
+        span_fields["known_path_count"] = 1
 
 
 def upsert_state(
@@ -246,38 +246,37 @@ def upsert_state(
     git_remote: str | None,
 ) -> None:
     """Create or update per-project state inside the vault."""
-    logger.debug(
-        "Upserting state file",
-        extra={"path": path, "project_id": project_id, "repo_root": repo_root},
-    )
-    existing = read_state(path) if path.exists() else None
-    now = _utc_now_iso()
+    with observe_span(
+        "state.io",
+        module=__name__,
+        operation="upsert_state",
+        fields={"path_kind": "state", "updated": True},
+    ) as span_fields:
+        existing = read_state(path) if path.exists() else None
+        now = _utc_now_iso()
 
-    known_paths: list[str] = []
-    if existing is not None:
-        for item in existing.get("known_paths", []):
-            normalized = str(item).strip()
-            if normalized and normalized not in known_paths:
-                known_paths.append(normalized)
+        known_paths: list[str] = []
+        if existing is not None:
+            for item in existing.get("known_paths", []):
+                normalized = str(item).strip()
+                if normalized and normalized not in known_paths:
+                    known_paths.append(normalized)
 
-    normalized_repo_root = str(repo_root).strip()
-    if normalized_repo_root and normalized_repo_root not in known_paths:
-        known_paths.append(normalized_repo_root)
+        normalized_repo_root = str(repo_root).strip()
+        if normalized_repo_root and normalized_repo_root not in known_paths:
+            known_paths.append(normalized_repo_root)
 
-    payload: dict[str, Any] = {
-        "version": STATE_VERSION,
-        "project_slug": project_slug,
-        "project_key": project_key,
-        "project_id": project_id,
-        "repo_root": normalized_repo_root,
-        "git_remote": git_remote,
-        "known_paths": known_paths,
-        "created_at": existing.get("created_at", now) if existing is not None else now,
-        "last_seen_at": now,
-    }
+        payload: dict[str, Any] = {
+            "version": STATE_VERSION,
+            "project_slug": project_slug,
+            "project_key": project_key,
+            "project_id": project_id,
+            "repo_root": normalized_repo_root,
+            "git_remote": git_remote,
+            "known_paths": known_paths,
+            "created_at": existing.get("created_at", now) if existing is not None else now,
+            "last_seen_at": now,
+        }
 
-    write_json_atomic(path, payload)
-    logger.debug(
-        "Upserted state file",
-        extra={"path": path, "project_id": project_id, "known_path_count": len(known_paths)},
-    )
+        write_json_atomic(path, payload)
+        span_fields["known_path_count"] = len(known_paths)

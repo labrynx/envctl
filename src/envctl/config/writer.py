@@ -14,40 +14,42 @@ from envctl.constants import DEFAULT_PROFILE
 from envctl.domain.error_diagnostics import ConfigDiagnostics
 from envctl.domain.runtime import RuntimeMode
 from envctl.errors import ConfigError
+from envctl.observability.timing import observe_span
 from envctl.utils.atomic import write_json_atomic
 from envctl.utils.filesystem import ensure_dir
-from envctl.utils.logging import get_logger
 from envctl.utils.tilde import to_tilde_path
-
-logger = get_logger(__name__)
 
 
 def write_default_config_file() -> Path:
     """Create the default envctl config file if it does not exist."""
     config_path = get_default_config_path()
-    logger.debug("Preparing to write default config file", extra={"path": config_path})
+    with observe_span(
+        "config.write",
+        module=__name__,
+        operation="write_default_config_file",
+        fields={"path_kind": "config"},
+    ) as span_fields:
+        if config_path.exists():
+            raise ConfigError(
+                f"Config file already exists: {config_path}",
+                diagnostics=ConfigDiagnostics(
+                    category="config_file_exists",
+                    path=config_path,
+                    suggested_actions=("edit existing config.json",),
+                ),
+            )
 
-    if config_path.exists():
-        raise ConfigError(
-            f"Config file already exists: {config_path}",
-            diagnostics=ConfigDiagnostics(
-                category="config_file_exists",
-                path=config_path,
-                suggested_actions=("edit existing config.json",),
-            ),
+        ensure_dir(config_path.parent)
+        write_json_atomic(
+            config_path,
+            {
+                "vault_dir": to_tilde_path(get_default_vault_dir()),
+                "env_filename": get_default_env_filename(),
+                "contract_filename": get_default_contract_filename(),
+                "runtime_mode": RuntimeMode.LOCAL.value,
+                "default_profile": DEFAULT_PROFILE,
+                "encryption": {"enabled": False, "strict": False},
+            },
         )
-
-    ensure_dir(config_path.parent)
-    write_json_atomic(
-        config_path,
-        {
-            "vault_dir": to_tilde_path(get_default_vault_dir()),
-            "env_filename": get_default_env_filename(),
-            "contract_filename": get_default_contract_filename(),
-            "runtime_mode": RuntimeMode.LOCAL.value,
-            "default_profile": DEFAULT_PROFILE,
-            "encryption": {"enabled": False, "strict": False},
-        },
-    )
-    logger.debug("Default config file written", extra={"path": config_path})
-    return config_path
+        span_fields["created"] = True
+        return config_path

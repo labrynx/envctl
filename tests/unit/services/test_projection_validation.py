@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 
 import pytest
@@ -123,63 +122,3 @@ def test_resolve_projectable_environment_raises_validation_error_with_selection(
     assert diagnostics.active_profile == "staging"
     assert diagnostics.selection.describe() == "group=Application"
     assert diagnostics.report.invalid_keys == ("API_URL",)
-
-
-def test_resolve_projectable_environment_logs_failure_summary(
-    monkeypatch: pytest.MonkeyPatch,
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    context = make_project_context()
-    contract = make_contract({"APP_NAME": make_variable_spec(name="APP_NAME")})
-    report = make_resolution_report(
-        values={
-            "APP_NAME": make_resolved_value(
-                key="APP_NAME",
-                value="demo",
-                valid=False,
-                detail="broken",
-            )
-        },
-        missing_required=("DATABASE_URL",),
-        invalid_keys=("APP_NAME",),
-        unknown_keys=("EXTRA_KEY",),
-    )
-
-    monkeypatch.setattr(
-        projection_validation,
-        "load_resolved_contract_bundle",
-        lambda _repo_root: _bundle_for(contract),
-    )
-    monkeypatch.setattr(
-        projection_validation,
-        "resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
-    )
-
-    logger = logging.getLogger("envctl")
-    logger.addHandler(caplog.handler)
-    caplog.set_level("ERROR")
-
-    try:
-        with pytest.raises(ValidationError):
-            projection_validation.resolve_projectable_environment(
-                context,
-                active_profile="staging",
-                selection=None,
-                operation="run",
-            )
-    finally:
-        logger.removeHandler(caplog.handler)
-
-    matching = [
-        record
-        for record in caplog.records
-        if record.name == "envctl.services.projection_validation"
-        and record.levelname == "ERROR"
-        and record.message == "Projection validation failed"
-    ]
-    assert matching
-    record = matching[0]
-    assert getattr(record, "missing_required", None) == "DATABASE_URL"
-    assert getattr(record, "invalid_keys", None) == "APP_NAME"
-    assert getattr(record, "unknown_keys", None) == "EXTRA_KEY"

@@ -14,10 +14,7 @@ from envctl.domain.operations import (
 )
 from envctl.domain.project import ProjectContext
 from envctl.errors import ExecutionError
-from envctl.observability import get_active_observability_context
-from envctl.observability.events import VAULT_ERROR, VAULT_FINISH, VAULT_START
-from envctl.observability.recorder import duration_ms, record_event
-from envctl.observability.timing import utcnow
+from envctl.observability.timing import observe_span
 from envctl.repository.profile_repository import require_persisted_profile
 from envctl.repository.profile_repository import (
     resolve_profile_path as resolve_profile_vault_path,
@@ -26,11 +23,8 @@ from envctl.repository.state_repository import read_state
 from envctl.services.context_service import load_configured_vault_crypto
 from envctl.utils.atomic import write_text_atomic
 from envctl.utils.filesystem import is_world_writable
-from envctl.utils.logging import get_logger
 from envctl.utils.project_paths import build_profiles_dir
 from envctl.vault_crypto import VaultCrypto, VaultFileState
-
-logger = get_logger(__name__)
 
 
 def resolve_selected_profile(
@@ -63,29 +57,19 @@ def classify_vault_file(
 ) -> tuple[VaultFileState, str]:
     """Return the inspection state for one vault path."""
     if not profile_path.exists():
-        logger.debug("Vault file is missing during classification", extra={"path": profile_path})
         return "missing", "Vault file does not exist."
 
     raw = profile_path.read_bytes()
     if context.vault_crypto is not None:
         inspection = context.vault_crypto.inspect_bytes(raw)
-        logger.debug(
-            "Classified vault file with crypto",
-            extra={"path": profile_path, "state": inspection.state},
-        )
         return inspection.state, inspection.detail
 
     if VaultCrypto.looks_encrypted(raw):
-        logger.debug(
-            "Vault file looks encrypted without active crypto",
-            extra={"path": profile_path},
-        )
         return (
             "encrypted",
             "Vault file is encrypted, but encryption is disabled in config.",
         )
 
-    logger.debug("Vault file classified as plaintext", extra={"path": profile_path})
     return "plaintext", "Vault file is plaintext."
 
 
@@ -98,10 +82,6 @@ def require_no_plaintext_in_strict_mode(
     if not strict:
         return
 
-    logger.debug(
-        "Checking strict vault plaintext policy",
-        extra={"project_id": context.project_id, "strict": strict},
-    )
     for path in collect_vault_profile_paths(context):
         state, detail = classify_vault_file(context, path)
         if state == "plaintext":
@@ -210,140 +190,90 @@ def audit_project(
 
 def run_encrypt_for_context(context: ProjectContext) -> VaultEncryptResult:
     """Encrypt all plaintext vault profile files for one prepared context."""
-    started_at = utcnow()
-    obs_context = get_active_observability_context()
-    if obs_context is not None:
-        record_event(
-            obs_context,
-            event=VAULT_START,
-            status="start",
-            module=__name__,
-            operation="run_encrypt_for_context",
-            fields={},
-        )
-    crypto = context.vault_crypto
-    if crypto is None:
-        if obs_context is not None:
-            record_event(
-                obs_context,
-                event=VAULT_ERROR,
-                status="error",
-                duration_ms=duration_ms(started_at),
-                module=__name__,
-                operation="run_encrypt_for_context",
-                fields={"reason": "encryption_disabled"},
+    with observe_span(
+        "vault",
+        module=__name__,
+        operation="run_encrypt_for_context",
+        fields={"project_id": context.project_id},
+    ) as span_fields:
+        crypto = context.vault_crypto
+        if crypto is None:
+            span_fields["reason"] = "encryption_disabled"
+            raise ExecutionError(
+                "Encryption is not enabled. "
+                "Set 'encryption.enabled = true' in your config first, "
+                "then re-run 'envctl vault encrypt'."
             )
-        raise ExecutionError(
-            "Encryption is not enabled. "
-            "Set 'encryption.enabled = true' in your config first, "
-            "then re-run 'envctl vault encrypt'."
+
+        profile_paths = collect_vault_profile_paths(context)
+        encrypted: list[Path] = []
+        skipped: list[Path] = []
+
+        for path in profile_paths:
+            inspection = crypto.inspect_file(path)
+            if inspection.state == "missing":
+                continue
+            if inspection.state == "encrypted":
+                skipped.append(path)
+                continue
+            if inspection.state == "wrong_key":
+                raise ExecutionError(f"Cannot encrypt '{path}': {inspection.detail}")
+            if inspection.state == "corrupt":
+                raise ExecutionError(f"Cannot encrypt '{path}': {inspection.detail}")
+
+            raw_text = path.read_text(encoding="utf-8")
+            crypto.write_encrypted_file(path, raw_text)
+            encrypted.append(path)
+
+        result = VaultEncryptResult(
+            encrypted_files=tuple(encrypted),
+            skipped_files=tuple(skipped),
         )
-
-    profile_paths = collect_vault_profile_paths(context)
-    encrypted: list[Path] = []
-    skipped: list[Path] = []
-
-    for path in profile_paths:
-        inspection = crypto.inspect_file(path)
-        if inspection.state == "missing":
-            continue
-        if inspection.state == "encrypted":
-            skipped.append(path)
-            continue
-        if inspection.state == "wrong_key":
-            raise ExecutionError(f"Cannot encrypt '{path}': {inspection.detail}")
-        if inspection.state == "corrupt":
-            raise ExecutionError(f"Cannot encrypt '{path}': {inspection.detail}")
-
-        raw_text = path.read_text(encoding="utf-8")
-        crypto.write_encrypted_file(path, raw_text)
-        encrypted.append(path)
-
-    result = VaultEncryptResult(
-        encrypted_files=tuple(encrypted),
-        skipped_files=tuple(skipped),
-    )
-    if obs_context is not None:
-        record_event(
-            obs_context,
-            event=VAULT_FINISH,
-            status="finish",
-            duration_ms=duration_ms(started_at),
-            module=__name__,
-            operation="run_encrypt_for_context",
-            fields={
-                "encrypted_file_count": len(result.encrypted_files),
-                "skipped_file_count": len(result.skipped_files),
-            },
-        )
-    return result
+        span_fields["encrypted_file_count"] = len(result.encrypted_files)
+        span_fields["skipped_file_count"] = len(result.skipped_files)
+        return result
 
 
 def run_decrypt_for_context(context: ProjectContext) -> VaultDecryptResult:
     """Decrypt all encrypted vault profile files for one prepared context."""
-    started_at = utcnow()
-    obs_context = get_active_observability_context()
-    if obs_context is not None:
-        record_event(
-            obs_context,
-            event=VAULT_START,
-            status="start",
-            module=__name__,
-            operation="run_decrypt_for_context",
-            fields={},
-        )
-    crypto = context.vault_crypto
-    if crypto is None:
-        if obs_context is not None:
-            record_event(
-                obs_context,
-                event=VAULT_ERROR,
-                status="error",
-                duration_ms=duration_ms(started_at),
-                module=__name__,
-                operation="run_decrypt_for_context",
-                fields={"reason": "encryption_disabled"},
+    with observe_span(
+        "vault",
+        module=__name__,
+        operation="run_decrypt_for_context",
+        fields={"project_id": context.project_id},
+    ) as span_fields:
+        crypto = context.vault_crypto
+        if crypto is None:
+            span_fields["reason"] = "encryption_disabled"
+            raise ExecutionError(
+                "Encryption is not enabled. "
+                "Enable encryption and run 'envctl vault encrypt' to encrypt first."
             )
-        raise ExecutionError(
-            "Encryption is not enabled. "
-            "Enable encryption and run 'envctl vault encrypt' to encrypt first."
+
+        profile_paths = collect_vault_profile_paths(context)
+        decrypted: list[Path] = []
+        skipped: list[Path] = []
+
+        for path in profile_paths:
+            inspection = crypto.inspect_file(path)
+            if inspection.state == "missing":
+                continue
+            if inspection.state == "plaintext":
+                skipped.append(path)
+                continue
+            if inspection.state == "wrong_key":
+                raise ExecutionError(f"Cannot decrypt '{path}': {inspection.detail}")
+            if inspection.state == "corrupt":
+                raise ExecutionError(f"Cannot decrypt '{path}': {inspection.detail}")
+
+            plaintext = crypto.decrypt(path.read_bytes())
+            write_text_atomic(path, plaintext)
+            decrypted.append(path)
+
+        result = VaultDecryptResult(
+            decrypted_files=tuple(decrypted),
+            skipped_files=tuple(skipped),
         )
-
-    profile_paths = collect_vault_profile_paths(context)
-    decrypted: list[Path] = []
-    skipped: list[Path] = []
-
-    for path in profile_paths:
-        inspection = crypto.inspect_file(path)
-        if inspection.state == "missing":
-            continue
-        if inspection.state == "plaintext":
-            skipped.append(path)
-            continue
-        if inspection.state == "wrong_key":
-            raise ExecutionError(f"Cannot decrypt '{path}': {inspection.detail}")
-        if inspection.state == "corrupt":
-            raise ExecutionError(f"Cannot decrypt '{path}': {inspection.detail}")
-
-        plaintext = crypto.decrypt(path.read_bytes())
-        write_text_atomic(path, plaintext)
-        decrypted.append(path)
-
-    result = VaultDecryptResult(
-        decrypted_files=tuple(decrypted),
-        skipped_files=tuple(skipped),
-    )
-    if obs_context is not None:
-        record_event(
-            obs_context,
-            event=VAULT_FINISH,
-            status="finish",
-            duration_ms=duration_ms(started_at),
-            module=__name__,
-            operation="run_decrypt_for_context",
-            fields={
-                "decrypted_file_count": len(result.decrypted_files),
-                "skipped_file_count": len(result.skipped_files),
-            },
-        )
-    return result
+        span_fields["decrypted_file_count"] = len(result.decrypted_files)
+        span_fields["skipped_file_count"] = len(result.skipped_files)
+        return result

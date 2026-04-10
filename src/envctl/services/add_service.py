@@ -7,6 +7,7 @@ from envctl.domain.contract_inference import infer_spec
 from envctl.domain.operations import AddVariableRequest, AddVariableResult
 from envctl.domain.project import ProjectContext
 from envctl.errors import ValidationError
+from envctl.observability.timing import observe_span
 from envctl.repository.contract_repository import (
     create_empty_contract,
     ensure_contract_metadata,
@@ -15,12 +16,10 @@ from envctl.repository.contract_repository import (
 )
 from envctl.repository.profile_repository import load_profile_values, write_profile_values
 from envctl.services.context_service import load_project_context
-from envctl.utils.logging import get_logger
 from envctl.utils.project_paths import normalize_profile_name
 
 _ALLOWED_VARIABLE_TYPES: tuple[VariableType, ...] = ("string", "int", "bool", "url")
 _ALLOWED_VARIABLE_FORMATS: tuple[VariableFormat, ...] = ("json", "url", "csv")
-logger = get_logger(__name__)
 
 
 def _resolve_variable_type(raw_type: str | None, inferred_type: VariableType) -> VariableType:
@@ -142,57 +141,51 @@ def run_add(
     active_profile: str | None = None,
 ) -> tuple[ProjectContext, AddVariableResult]:
     """Add one variable to the contract and store its initial value in the active profile."""
-    _config, context = load_project_context()
-    resolved_profile = normalize_profile_name(active_profile)
-    logger.debug(
-        "Running add variable",
-        extra={
-            "key": request.key,
-            "active_profile": resolved_profile,
-            "repo_root": context.repo_root,
-        },
-    )
+    with observe_span(
+        "variables.mutate",
+        module=__name__,
+        operation="run_add",
+        fields={"updated": True},
+    ) as span_fields:
+        _config, context = load_project_context()
+        resolved_profile = normalize_profile_name(active_profile)
 
-    contract, contract_created = _load_or_create_contract(context)
+        contract, contract_created = _load_or_create_contract(context)
 
-    inferred = infer_spec(request.key, request.value)
-    spec, inferred_spec, inferred_fields_used = _apply_request_to_spec(inferred, request)
+        inferred = infer_spec(request.key, request.value)
+        spec, inferred_spec, inferred_fields_used = _apply_request_to_spec(inferred, request)
 
-    contract_entry_created = request.key not in contract.variables
-    updated_contract = contract.with_variable(spec)
-    write_contract(context.repo_contract_path, updated_contract)
+        contract_entry_created = request.key not in contract.variables
+        updated_contract = contract.with_variable(spec)
+        write_contract(context.repo_contract_path, updated_contract)
 
-    _resolved_profile, profile_path, profile_values = load_profile_values(
-        context,
-        resolved_profile,
-        require_existing_explicit=True,
-    )
-    profile_values[request.key] = request.value
-    write_profile_values(
-        context,
-        resolved_profile,
-        profile_values,
-        require_existing_explicit=True,
-    )
-    logger.info(
-        "Added variable to contract and profile",
-        extra={
-            "key": request.key,
-            "active_profile": resolved_profile,
-            "contract_created": contract_created,
-            "contract_entry_created": contract_entry_created,
-        },
-    )
+        _resolved_profile, profile_path, profile_values = load_profile_values(
+            context,
+            resolved_profile,
+            require_existing_explicit=True,
+        )
+        profile_values[request.key] = request.value
+        write_profile_values(
+            context,
+            resolved_profile,
+            profile_values,
+            require_existing_explicit=True,
+        )
 
-    result = AddVariableResult(
-        key=request.key,
-        active_profile=resolved_profile,
-        profile_path=profile_path,
-        value_written=True,
-        contract_created=contract_created,
-        contract_updated=True,
-        contract_entry_created=contract_entry_created,
-        inferred_spec=inferred_spec,
-        inferred_fields_used=inferred_fields_used,
-    )
-    return context, result
+        span_fields["selected_profile"] = resolved_profile
+        span_fields["created"] = contract_created or contract_entry_created
+        span_fields["contract_created"] = contract_created
+        span_fields["contract_entry_created"] = contract_entry_created
+
+        result = AddVariableResult(
+            key=request.key,
+            active_profile=resolved_profile,
+            profile_path=profile_path,
+            value_written=True,
+            contract_created=contract_created,
+            contract_updated=True,
+            contract_entry_created=contract_entry_created,
+            inferred_spec=inferred_spec,
+            inferred_fields_used=inferred_fields_used,
+        )
+        return context, result

@@ -56,20 +56,11 @@ envctl check --trace --trace-format jsonl --trace-output file
 
 Use `--trace` when you need execution phases, timings, and an `execution_id` you can share in issues.
 
-Use `ENVCTL_LOG_LEVEL` when you need implementation-level internals from Python logging:
+Recommended modes:
 
-```bash
-ENVCTL_LOG_LEVEL=DEBUG envctl check
-ENVCTL_LOG_LEVEL=INFO envctl sync
-```
-
-Treat them as separate channels:
-
-* `--trace`: observability events for command lifecycle and phase timing (human or JSONL output)
-* `ENVCTL_LOG_LEVEL=DEBUG`: technical internal logs for implementation-level debugging
-* `ENVCTL_LOG_LEVEL=INFO`: operational milestones such as writes or subprocess execution
-* `ENVCTL_LOG_LEVEL=WARNING`: unusual but recoverable situations
-* `ENVCTL_LOG_LEVEL=ERROR`: command failures or imminent failures
+* `--trace --trace-format human`: compact high-signal flow for terminal debugging
+* `--trace --trace-format jsonl`: structured contract for tooling, issue attachments, or diffing
+* `--trace --trace-output file`: persist one trace artifact under `.envctl/observability/`
 
 ## Result
 
@@ -93,7 +84,6 @@ When reporting a reproducible problem, prefer attaching:
 * the `execution_id` from trace output
 * a sanitized JSONL trace excerpt (`--trace --trace-format jsonl`)
 * a short summary of the slowest phases (name + duration)
-* `ENVCTL_LOG_LEVEL=DEBUG` logs only when implementation-specific internals are required
 * your platform, shell, Python version, and `envctl` version
 
 Do not include:

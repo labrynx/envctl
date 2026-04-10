@@ -22,9 +22,7 @@ from envctl.domain.app_config import AppConfig
 from envctl.domain.error_diagnostics import ConfigDiagnostics
 from envctl.domain.runtime import RuntimeMode
 from envctl.errors import ConfigError
-from envctl.utils.logging import get_logger
-
-logger = get_logger(__name__)
+from envctl.observability.timing import observe_span
 
 SUPPORTED_KEYS = {
     "vault_dir",
@@ -215,101 +213,95 @@ def load_config() -> AppConfig:
     """Resolve the application configuration."""
     config_path = get_default_config_path()
     raw: dict[str, Any] = {}
-    logger.debug("Loading application config", extra={"config_path": config_path})
+    with observe_span(
+        "config.load",
+        module=__name__,
+        operation="load_config",
+        fields={"path_kind": "config"},
+    ) as span_fields:
+        if config_path.exists():
+            raw = _read_json(config_path)
+            unknown = set(raw.keys()) - SUPPORTED_KEYS
+            if unknown:
+                keys = ", ".join(sorted(unknown))
+                raise ConfigError(
+                    f"Unsupported config key(s): {keys}",
+                    diagnostics=ConfigDiagnostics(
+                        category="unsupported_keys",
+                        path=config_path,
+                        key=keys,
+                        suggested_actions=("remove unsupported config keys",),
+                    ),
+                )
+            span_fields["configured_key_count"] = len(raw)
+        else:
+            span_fields["configured_key_count"] = 0
 
-    if config_path.exists():
-        raw = _read_json(config_path)
-        logger.debug(
-            "Loaded config file", extra={"config_path": config_path, "configured_keys": sorted(raw)}
+        vault_dir = Path(raw.get("vault_dir", get_default_vault_dir())).expanduser().resolve()
+
+        env_filename = _validate_filename(
+            raw.get("env_filename", get_default_env_filename()),
+            "env_filename",
+            path=config_path if config_path.exists() else None,
+            source_label="config file",
         )
-        unknown = set(raw.keys()) - SUPPORTED_KEYS
-        if unknown:
-            keys = ", ".join(sorted(unknown))
-            raise ConfigError(
-                f"Unsupported config key(s): {keys}",
-                diagnostics=ConfigDiagnostics(
-                    category="unsupported_keys",
-                    path=config_path,
-                    key=keys,
-                    suggested_actions=("remove unsupported config keys",),
-                ),
-            )
+        contract_filename = _validate_filename(
+            raw.get("contract_filename", get_default_contract_filename()),
+            "contract_filename",
+            path=config_path if config_path.exists() else None,
+            source_label="config file",
+        )
 
-    vault_dir = Path(raw.get("vault_dir", get_default_vault_dir())).expanduser().resolve()
-
-    env_filename = _validate_filename(
-        raw.get("env_filename", get_default_env_filename()),
-        "env_filename",
-        path=config_path if config_path.exists() else None,
-        source_label="config file",
-    )
-    contract_filename = _validate_filename(
-        raw.get("contract_filename", get_default_contract_filename()),
-        "contract_filename",
-        path=config_path if config_path.exists() else None,
-        source_label="config file",
-    )
-
-    config_runtime_mode = _validate_runtime_mode(
-        raw.get("runtime_mode", RuntimeMode.LOCAL.value),
-        "config file",
-        path=config_path if config_path.exists() else None,
-    )
-
-    env_runtime_mode_raw = os.environ.get(ENVCTL_RUNTIME_MODE_ENVVAR)
-    runtime_mode = (
-        _validate_runtime_mode(env_runtime_mode_raw, ENVCTL_RUNTIME_MODE_ENVVAR)
-        if env_runtime_mode_raw is not None
-        else config_runtime_mode
-    )
-
-    try:
-        config_default_profile = validate_profile_name(
-            raw.get("default_profile", DEFAULT_PROFILE),
+        config_runtime_mode = _validate_runtime_mode(
+            raw.get("runtime_mode", RuntimeMode.LOCAL.value),
             "config file",
+            path=config_path if config_path.exists() else None,
         )
-    except ConfigError as exc:
-        if exc.diagnostics is None:
-            raise ConfigError(
-                str(exc),
-                diagnostics=ConfigDiagnostics(
-                    category="invalid_default_profile",
-                    path=config_path if config_path.exists() else None,
-                    key="default_profile",
-                    source_label="config file",
-                    value=repr(raw.get("default_profile", DEFAULT_PROFILE)),
-                    suggested_actions=("fix config.json",),
-                ),
-            ) from exc
-        raise
 
-    encryption_enabled, encryption_strict = _parse_encryption_config(
-        raw.get("encryption"),
-        path=config_path if config_path.exists() else None,
-    )
+        env_runtime_mode_raw = os.environ.get(ENVCTL_RUNTIME_MODE_ENVVAR)
+        runtime_mode = (
+            _validate_runtime_mode(env_runtime_mode_raw, ENVCTL_RUNTIME_MODE_ENVVAR)
+            if env_runtime_mode_raw is not None
+            else config_runtime_mode
+        )
 
-    logger.debug(
-        "Resolved application config",
-        extra={
-            "config_path": config_path,
-            "vault_dir": vault_dir,
-            "runtime_mode": runtime_mode.value,
-            "default_profile": config_default_profile,
-            "encryption_enabled": encryption_enabled,
-            "encryption_strict": encryption_strict,
-        },
-    )
+        try:
+            config_default_profile = validate_profile_name(
+                raw.get("default_profile", DEFAULT_PROFILE),
+                "config file",
+            )
+        except ConfigError as exc:
+            if exc.diagnostics is None:
+                raise ConfigError(
+                    str(exc),
+                    diagnostics=ConfigDiagnostics(
+                        category="invalid_default_profile",
+                        path=config_path if config_path.exists() else None,
+                        key="default_profile",
+                        source_label="config file",
+                        value=repr(raw.get("default_profile", DEFAULT_PROFILE)),
+                        suggested_actions=("fix config.json",),
+                    ),
+                ) from exc
+            raise
 
-    return AppConfig(
-        config_path=config_path,
-        vault_dir=vault_dir,
-        env_filename=env_filename,
-        contract_filename=contract_filename,
-        runtime_mode=runtime_mode,
-        default_profile=config_default_profile,
-        encryption_enabled=encryption_enabled,
-        encryption_strict=encryption_strict,
-    )
+        encryption_enabled, encryption_strict = _parse_encryption_config(
+            raw.get("encryption"),
+            path=config_path if config_path.exists() else None,
+        )
+        span_fields["selected_profile"] = config_default_profile
+        span_fields["encryption_enabled"] = encryption_enabled
+        span_fields["strict"] = encryption_strict
+        return AppConfig(
+            config_path=config_path,
+            vault_dir=vault_dir,
+            env_filename=env_filename,
+            contract_filename=contract_filename,
+            runtime_mode=runtime_mode,
+            default_profile=config_default_profile,
+            encryption_enabled=encryption_enabled,
+            encryption_strict=encryption_strict,
+        )
 
 
 def resolve_default_profile() -> str:

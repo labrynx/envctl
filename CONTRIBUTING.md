@@ -174,26 +174,26 @@ If not, it probably needs redesign.
 * Prefer explicit control flow over hidden convenience
 * Docstrings should describe behavior, side effects, and failure conditions when useful
 
-## Internal logging guidance
+## Observability guidance
 
-`envctl` uses internal logging for debugging implementation details. It is not a second user-facing output channel.
+`envctl` uses one structured observability layer for technical diagnostics. It is the only supported internal diagnostics model.
 
 Rules to keep that boundary clean:
 
-* Use `src/envctl/utils/logging.py` for logger creation and safe helpers
+* Emit lifecycle through `observe_span(...)`
+* Use `record_event(...)` only for cross-cutting point events such as handled/unhandled errors
 * Keep user-facing messaging in presenters and serializers
-* Prefer `DEBUG` for normal execution tracing and developer-facing diagnostics in services/repositories
-* Use `INFO` only for key operational milestones such as persistent writes or external process execution
-* Use `WARNING` only for unusual but recoverable situations
-* Use `ERROR` when the command is about to fail or has failed
-* Never log secret values, raw vault payloads, or unredacted sensitive command arguments
-* Prefer summaries and counts over full dumps of resolved environments
+* Prefer stable event families plus `operation` and sanitized `fields`
+* Prefer counts, booleans, states, and selection metadata over free-form messages
+* Never emit secret values, raw vault payloads, master-key material, or unredacted command arguments
+* The JSONL event contract is the source of truth; the human renderer is only a derived view
 
-You can enable tracing locally with:
+You can enable observability locally with:
 
 ```bash
-ENVCTL_LOG_LEVEL=DEBUG envctl check
-ENVCTL_LOG_LEVEL=INFO envctl sync
+envctl --trace check
+envctl --trace --trace-format human check
+envctl --trace --trace-format jsonl --trace-output file check
 ```
 
 ## Running tests

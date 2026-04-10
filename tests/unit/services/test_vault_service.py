@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import logging
 from types import SimpleNamespace
 
 import pytest
 
 import envctl.services.vault_service as vault_service
+from envctl.observability import clear_observability_context, initialize_observability_context
 from tests.support.contexts import make_project_context
 from tests.support.contracts import make_standard_contract
 from tests.support.paths import normalize_path_str
@@ -213,17 +213,24 @@ def test_run_vault_edit_uses_active_profile_path(
     assert opened["path"] == str(result.path)
 
 
-def test_run_vault_prune_logs_debug_and_info_summary(
+def test_run_vault_prune_emits_one_primary_vault_lifecycle(
     monkeypatch: pytest.MonkeyPatch,
-    caplog: pytest.LogCaptureFixture,
 ) -> None:
-    context = make_project_context()
+    clear_observability_context()
+    context = initialize_observability_context(
+        command_name="vault-prune",
+        trace_enabled=True,
+        trace_output="file",
+    )
+    assert context is not None
+
+    project_context = make_project_context()
     contract = make_standard_contract()
 
     monkeypatch.setattr(
         vault_service,
         "load_project_context",
-        lambda: (SimpleNamespace(encryption_strict=False), context),
+        lambda: (SimpleNamespace(encryption_strict=False), project_context),
     )
     monkeypatch.setattr(vault_service, "load_contract_optional", lambda path: contract)
     monkeypatch.setattr(
@@ -249,27 +256,14 @@ def test_run_vault_prune_logs_debug_and_info_summary(
         ),
     )
 
-    logger = logging.getLogger("envctl")
-    logger.addHandler(caplog.handler)
-    logger.setLevel(logging.DEBUG)
-    caplog.set_level("DEBUG")
+    vault_service.run_vault_prune("staging")
 
-    try:
-        vault_service.run_vault_prune("staging")
-    finally:
-        logger.removeHandler(caplog.handler)
+    assert context.events is not None
+    primary = [event for event in context.events if event.operation == "run_vault_prune"]
+    assert [event.event for event in primary] == ["vault.start", "vault.finish"]
+    assert len(primary) == 2
 
-    assert any(
-        record.name == "envctl.services.vault_service"
-        and record.levelname == "DEBUG"
-        and record.message == "Vault prune result ready"
-        and getattr(record, "removed_key_count", None) == 1
-        for record in caplog.records
-    )
-    assert any(
-        record.name == "envctl.services.vault_service"
-        and record.levelname == "INFO"
-        and record.message == "Vault prune completed"
-        and getattr(record, "removed_key_count", None) == 1
-        for record in caplog.records
-    )
+    event = primary[-1]
+    fields = event.fields
+    assert fields is not None
+    assert fields["removed_key_count"] == 1

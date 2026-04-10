@@ -122,6 +122,8 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
                 event_fields = {
                     "command": command,
                     "error_type": exc.__class__.__name__,
+                    "error_kind": mapping.event,
+                    "handled": True,
                     "message_safe": mapping.message_safe,
                     "phase": "command",
                     "recoverable": mapping.recoverable,
@@ -157,6 +159,8 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
                 event_fields = {
                     "command": command,
                     "error_type": exc.__class__.__name__,
+                    "error_kind": mapping.event,
+                    "handled": False,
                     "message_safe": mapping.message_safe,
                     "phase": "command",
                     "recoverable": mapping.recoverable,

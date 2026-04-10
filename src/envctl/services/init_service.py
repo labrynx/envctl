@@ -26,7 +26,17 @@ _HOOKS_DIRNAME = ".githooks"
 _PRE_COMMIT_PATH = Path(_HOOKS_DIRNAME) / "pre-commit"
 _HOOKS_PATH_CONFIG = "core.hooksPath"
 _ENVCTL_HOOK_MARKER = "# managed-by: envctl"
-_PRE_COMMIT_SCRIPT = "#!/bin/sh\nset -eu\n\n# managed-by: envctl\nenvctl guard secrets\n"
+_PRE_COMMIT_SCRIPT = (
+    "#!/bin/sh\n"
+    "set -eu\n\n"
+    "# managed-by: envctl\n"
+    "if command -v uv >/dev/null 2>&1; then\n"
+    "  uv run envctl guard secrets\n"
+    "else\n"
+    "  envctl guard secrets\n"
+    "fi\n\n"
+    "# your additional checks here\n\n"
+)
 _GITIGNORE_ENTRY = "master.key"
 
 

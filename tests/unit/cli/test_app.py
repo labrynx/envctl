@@ -196,3 +196,38 @@ def test_root_callback_passes_trace_flags(
     assert captured["trace_format"] == "human"
     assert captured["trace_output"] == "both"
     assert captured["profile_observability"] is True
+
+
+def test_root_callback_initializes_observability_before_loading_config(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = CliRunner()
+    call_order: list[str] = []
+
+    def fake_initialize_observability_context(*, command_name: str, **_: object) -> None:
+        call_order.append(f"init:{command_name}")
+
+    def fake_load_config() -> object:
+        call_order.append("load_config")
+        return type("Config", (), {"default_profile": "local"})()
+
+    monkeypatch.setattr(
+        app_module,
+        "initialize_observability_context",
+        fake_initialize_observability_context,
+    )
+    monkeypatch.setattr(app_module, "load_config", fake_load_config)
+
+    original_len = len(app_module.app.registered_commands)
+
+    @app_module.app.command("order-probe")
+    def _order_probe() -> None:
+        return None
+
+    try:
+        result = runner.invoke(app_module.app, ["order-probe"])
+    finally:
+        del app_module.app.registered_commands[original_len:]
+
+    assert result.exit_code == 0
+    assert call_order[:2] == ["init:order-probe", "load_config"]

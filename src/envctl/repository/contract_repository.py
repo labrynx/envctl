@@ -21,10 +21,8 @@ from envctl.domain.error_diagnostics import (
     ContractDiagnostics,
 )
 from envctl.errors import ContractError
+from envctl.observability.timing import observe_span
 from envctl.utils.atomic import write_text_atomic
-from envctl.utils.logging import get_logger
-
-logger = get_logger(__name__)
 
 
 def create_empty_contract(
@@ -33,10 +31,6 @@ def create_empty_contract(
     project_name: str | None = None,
 ) -> Contract:
     """Create an empty valid contract."""
-    logger.debug(
-        "Creating empty contract",
-        extra={"project_key": project_key or "-", "project_name": project_name or "-"},
-    )
     contract = Contract(version=CONTRACT_VERSION, variables={})
     if project_key is not None:
         contract = contract.with_meta(
@@ -58,16 +52,8 @@ def ensure_contract_metadata(
         and contract.meta.project_key == project_key
         and contract.meta.project_name == project_name
     ):
-        logger.debug(
-            "Contract metadata already matches expected values",
-            extra={"project_key": project_key},
-        )
         return contract
 
-    logger.debug(
-        "Updating contract metadata",
-        extra={"project_key": project_key, "project_name": project_name or "-"},
-    )
     return contract.with_meta(
         project_key=project_key,
         project_name=project_name,
@@ -140,55 +126,54 @@ def load_contract_with_warnings(
     path: Path,
 ) -> tuple[Contract, tuple[ContractDeprecationWarning, ...]]:
     """Load a contract from disk and collect normalized deprecation warnings."""
-    logger.debug("Loading contract with warnings", extra={"path": path})
-    if not path.exists():
-        _raise_contract_error(
-            f"Contract file not found: {path}",
-            category="missing_contract_file",
-            path=path,
-        )
+    with observe_span(
+        "contract.io",
+        module=__name__,
+        operation="load_contract_with_warnings",
+        fields={"path_kind": "contract"},
+    ) as span_fields:
+        if not path.exists():
+            _raise_contract_error(
+                f"Contract file not found: {path}",
+                category="missing_contract_file",
+                path=path,
+            )
 
-    try:
-        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except yaml.YAMLError:
-        _raise_contract_error(
-            f"Invalid YAML contract: {path}",
-            category="invalid_yaml",
-            path=path,
-        )
-    except OSError:
-        _raise_contract_error(
-            f"Unable to read contract: {path}",
-            category="unreadable_contract",
-            path=path,
-        )
+        try:
+            raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except yaml.YAMLError:
+            _raise_contract_error(
+                f"Invalid YAML contract: {path}",
+                category="invalid_yaml",
+                path=path,
+            )
+        except OSError:
+            _raise_contract_error(
+                f"Unable to read contract: {path}",
+                category="unreadable_contract",
+                path=path,
+            )
 
-    normalized, warnings = _normalize_contract_payload_with_path(raw, path)
+        normalized, warnings = _normalize_contract_payload_with_path(raw, path)
 
-    try:
-        contract = Contract.model_validate(normalized)
-    except PydanticValidationError as exc:
-        _raise_contract_error(
-            f"Invalid contract: {exc}",
-            category="validation_failed",
-            path=path,
-            issues=tuple(
-                ContractDiagnosticIssue(
-                    field=".".join(str(part) for part in error["loc"]),
-                    detail=str(error["msg"]),
-                )
-                for error in exc.errors()
-            ),
-        )
-    logger.debug(
-        "Loaded contract with warnings",
-        extra={
-            "path": path,
-            "variable_count": len(contract.variables),
-            "warning_count": len(warnings),
-        },
-    )
-    return contract, warnings
+        try:
+            contract = Contract.model_validate(normalized)
+        except PydanticValidationError as exc:
+            _raise_contract_error(
+                f"Invalid contract: {exc}",
+                category="validation_failed",
+                path=path,
+                issues=tuple(
+                    ContractDiagnosticIssue(
+                        field=".".join(str(part) for part in error["loc"]),
+                        detail=str(error["msg"]),
+                    )
+                    for error in exc.errors()
+                ),
+            )
+        span_fields["contract_variable_count"] = len(contract.variables)
+        span_fields["warning_count"] = len(warnings)
+        return contract, warnings
 
 
 def _normalize_contract_payload_with_path(
@@ -423,21 +408,25 @@ def _dedupe_warnings(
 def load_contract_optional(path: Path) -> Contract | None:
     """Load a contract when present, otherwise return None."""
     if not path.exists():
-        logger.debug("Optional contract is missing", extra={"path": path})
         return None
-    logger.debug("Optional contract exists; loading", extra={"path": path})
     return load_contract(path)
 
 
 def write_contract(path: Path, contract: Contract) -> None:
     """Write a contract to disk."""
-    logger.debug(
-        "Writing contract",
-        extra={"path": path, "variable_count": len(contract.variables)},
-    )
-    content = yaml.safe_dump(
-        contract.to_contract_payload(),
-        sort_keys=False,
-        allow_unicode=True,
-    )
-    write_text_atomic(path, content)
+    with observe_span(
+        "contract.io",
+        module=__name__,
+        operation="write_contract",
+        fields={
+            "path_kind": "contract",
+            "contract_variable_count": len(contract.variables),
+            "updated": True,
+        },
+    ):
+        content = yaml.safe_dump(
+            contract.to_contract_payload(),
+            sort_keys=False,
+            allow_unicode=True,
+        )
+        write_text_atomic(path, content)

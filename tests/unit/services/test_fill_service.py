@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import logging
-
 import pytest
 
 import envctl.services.fill_service as fill_service
@@ -96,52 +94,3 @@ def test_apply_fill_writes_only_non_blank_values_to_profile(
         "API_KEY": "secret",
         "DATABASE_URL": "postgres://db",
     }
-
-
-def test_apply_fill_logs_debug_summary(
-    monkeypatch: pytest.MonkeyPatch,
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    context = make_project_context()
-
-    monkeypatch.setattr(
-        fill_service,
-        "load_project_context",
-        lambda: (object(), context),
-    )
-    monkeypatch.setattr(
-        fill_service,
-        "load_profile_values",
-        lambda context, profile, require_existing_explicit=False: (
-            profile,
-            context.vault_values_path,
-            {"APP_NAME": "demo"},
-        ),
-    )
-    monkeypatch.setattr(
-        fill_service,
-        "write_profile_values",
-        lambda context, profile, values, require_existing_explicit=False: (
-            profile,
-            context.vault_values_path,
-        ),
-    )
-
-    logger = logging.getLogger("envctl")
-    logger.addHandler(caplog.handler)
-    logger.setLevel(logging.DEBUG)
-    caplog.set_level("DEBUG")
-
-    try:
-        fill_service.apply_fill({"API_KEY": "secret", "PORT": " "}, "local")
-    finally:
-        logger.removeHandler(caplog.handler)
-
-    assert any(
-        record.name == "envctl.services.fill_service"
-        and record.levelname == "DEBUG"
-        and record.message == "Applied fill values"
-        and getattr(record, "changed_key_count", None) == 1
-        and getattr(record, "skipped_blank_key_count", None) == 1
-        for record in caplog.records
-    )

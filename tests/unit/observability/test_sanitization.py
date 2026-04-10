@@ -39,7 +39,19 @@ def test_sanitize_event_count_only_policy_reduces_sensitive_material() -> None:
     assert event.fields == {
         "master_key": "[BLOCKED]",
         "resolved_secret": "[BLOCKED]",
-        "key_count": "[COUNT_ONLY]",
+        "key_count": 2,
+    }
+
+
+def test_sanitize_event_keeps_safe_count_fields_visible() -> None:
+    event = sanitize_event(
+        _event({"resolved_key_count": 6, "unknown_key_count": 1, "profile": "local"})
+    )
+
+    assert event.fields == {
+        "resolved_key_count": 6,
+        "unknown_key_count": 1,
+        "profile": "local",
     }
 
 

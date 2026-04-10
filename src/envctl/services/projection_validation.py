@@ -12,12 +12,11 @@ from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport
 from envctl.domain.selection import ContractSelection
 from envctl.errors import ValidationError
+from envctl.observability.fields import selection_scope
+from envctl.observability.timing import observe_span
 from envctl.repository.contract_composition import load_resolved_contract_bundle
 from envctl.services.resolution_service import resolve_environment
 from envctl.services.selection_filtering import filter_resolution_report
-from envctl.utils.logging import get_logger, summarize_keys
-
-logger = get_logger(__name__)
 
 
 def resolve_projectable_environment(
@@ -28,53 +27,38 @@ def resolve_projectable_environment(
     operation: ProjectionOperation,
 ) -> tuple[Contract, ResolutionReport, tuple[ContractDeprecationWarning, ...]]:
     """Resolve and validate one projectable environment."""
-    logger.debug(
-        "Resolving projectable environment",
-        extra={
-            "operation": operation,
-            "active_profile": active_profile,
-            "selection": selection.describe() if selection is not None else "full contract",
-            "repo_root": context.repo_root,
+    with observe_span(
+        "projection.validate",
+        module=__name__,
+        operation=f"resolve_projectable_environment:{operation}",
+        fields={
+            "selected_profile": active_profile,
+            "selection_scope": selection_scope(selection),
         },
-    )
+    ) as span_fields:
+        bundle = load_resolved_contract_bundle(context.repo_root)
+        contract = bundle.contract
+        report = resolve_environment(context, contract, active_profile=active_profile)
+        filtered_report = filter_resolution_report(report, contract, selection=selection)
 
-    bundle = load_resolved_contract_bundle(context.repo_root)
-    contract = bundle.contract
-    report = resolve_environment(context, contract, active_profile=active_profile)
-    filtered_report = filter_resolution_report(report, contract, selection=selection)
+        span_fields["resolved_key_count"] = len(report.values)
+        span_fields["missing_required_count"] = len(filtered_report.missing_required)
+        span_fields["invalid_key_count"] = len(filtered_report.invalid_keys)
+        span_fields["unknown_key_count"] = len(filtered_report.unknown_keys)
 
-    if filtered_report.is_valid and not filtered_report.unknown_keys:
-        logger.debug(
-            "Projection validation passed",
-            extra={
-                "operation": operation,
-                "active_profile": active_profile,
-                "resolved_key_count": len(report.values),
-            },
+        if filtered_report.is_valid and not filtered_report.unknown_keys:
+            return contract, report, bundle.warnings
+
+        raise ValidationError(
+            _build_projection_blocked_message(operation),
+            diagnostics=ProjectionValidationDiagnostics(
+                operation=operation,
+                active_profile=active_profile,
+                selection=selection or ContractSelection(),
+                report=filtered_report,
+                suggested_actions=_build_suggested_actions(filtered_report),
+            ),
         )
-        return contract, report, bundle.warnings
-
-    logger.error(
-        "Projection validation failed",
-        extra={
-            "operation": operation,
-            "active_profile": active_profile,
-            "missing_required": summarize_keys(filtered_report.missing_required),
-            "invalid_keys": summarize_keys(filtered_report.invalid_keys),
-            "unknown_keys": summarize_keys(filtered_report.unknown_keys),
-        },
-    )
-
-    raise ValidationError(
-        _build_projection_blocked_message(operation),
-        diagnostics=ProjectionValidationDiagnostics(
-            operation=operation,
-            active_profile=active_profile,
-            selection=selection or ContractSelection(),
-            report=filtered_report,
-            suggested_actions=_build_suggested_actions(filtered_report),
-        ),
-    )
 
 
 def _build_projection_blocked_message(operation: ProjectionOperation) -> str:

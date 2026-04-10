@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 
 import pytest
@@ -153,51 +152,3 @@ def test_run_profile_remove_rejects_local_profile(
 
     with pytest.raises(ValidationError, match=r"implicit local profile"):
         profile_service.run_profile_remove("local")
-
-
-def test_run_profile_copy_logs_info_summary(
-    monkeypatch: pytest.MonkeyPatch,
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    context = make_project_context()
-
-    monkeypatch.setattr(
-        profile_service,
-        "load_project_context",
-        lambda: (object(), context),
-    )
-    monkeypatch.setattr(
-        profile_service,
-        "load_profile_values",
-        lambda context, profile: (
-            profile,
-            context.vault_project_dir / "profiles" / f"{profile}.env",
-            {"APP_NAME": "demo"},
-        ),
-    )
-    monkeypatch.setattr(
-        profile_service,
-        "write_profile_values",
-        lambda context, profile, values: (
-            profile,
-            context.vault_project_dir / "profiles" / f"{profile}.env",
-        ),
-    )
-
-    logger = logging.getLogger("envctl")
-    logger.addHandler(caplog.handler)
-    logger.setLevel(logging.INFO)
-    caplog.set_level("INFO")
-
-    try:
-        profile_service.run_profile_copy("dev", "staging")
-    finally:
-        logger.removeHandler(caplog.handler)
-
-    assert any(
-        record.name == "envctl.services.profile_service"
-        and record.levelname == "INFO"
-        and record.message == "Profile copy completed"
-        and getattr(record, "copied_key_count", None) == 1
-        for record in caplog.records
-    )

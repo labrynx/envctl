@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import logging
-
 import pytest
 
 import envctl.services.inspect_service as inspect_service
@@ -139,48 +137,3 @@ def test_run_inspect_key_returns_detailed_item(
 
     assert result.item.key == "APP_NAME"
     assert result.groups == ("Application",)
-
-
-def test_run_inspect_logs_debug_summary(
-    monkeypatch: pytest.MonkeyPatch,
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    context = make_project_context()
-    contract = make_contract({"APP_NAME": make_variable_spec(name="APP_NAME")})
-    report = make_resolution_report(
-        values={"APP_NAME": make_resolved_value(key="APP_NAME", value="demo")}
-    )
-
-    monkeypatch.setattr(inspect_service, "load_project_context", lambda: (object(), context))
-    monkeypatch.setattr(
-        inspect_service,
-        "load_resolved_contract_bundle",
-        lambda _repo_root: ResolvedContractBundle(
-            contract=contract,
-            graph=ResolvedContractGraph(),
-            warnings=(),
-        ),
-    )
-    monkeypatch.setattr(
-        inspect_service,
-        "resolve_environment",
-        lambda _context, _contract, *, active_profile=None: report,
-    )
-
-    logger = logging.getLogger("envctl")
-    logger.addHandler(caplog.handler)
-    logger.setLevel(logging.DEBUG)
-    caplog.set_level("DEBUG")
-
-    try:
-        inspect_service.run_inspect("staging")
-    finally:
-        logger.removeHandler(caplog.handler)
-
-    assert any(
-        record.name == "envctl.services.inspect_service"
-        and record.levelname == "DEBUG"
-        and record.message == "Inspect result ready"
-        and getattr(record, "value_count", None) == 1
-        for record in caplog.records
-    )

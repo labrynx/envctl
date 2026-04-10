@@ -13,11 +13,9 @@ from envctl.domain.diagnostics import CommandWarning
 from envctl.domain.error_diagnostics import ContractDiagnosticIssue, ContractDiagnostics
 from envctl.domain.selection_resolution import resolve_variable_names_for_set
 from envctl.errors import ContractError
+from envctl.observability.timing import observe_span
 from envctl.repository.contract_discovery import discover_root_contract_path
 from envctl.repository.contract_graph import resolve_contract_graph
-from envctl.utils.logging import get_logger
-
-logger = get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -41,32 +39,30 @@ class _MergedSetBucket(TypedDict):
 
 def load_resolved_contract_bundle(repo_root: Path) -> ResolvedContractBundle:
     """Load the composed contract graph for one repository root."""
-    logger.debug("Loading resolved contract bundle", extra={"repo_root": repo_root})
-    discovery = discover_root_contract_path(repo_root)
-    load = resolve_contract_graph(discovery.path, repo_root=repo_root)
-    graph = build_resolved_contract_graph(
-        root_path=load.root_path,
-        contracts=load.contracts,
-        contract_paths=load.contract_paths,
-        import_graph=load.import_graph,
-    )
-    contract = compose_contract_from_graph(load.contracts)
-    logger.debug(
-        "Resolved contract bundle loaded",
-        extra={
-            "root_path": graph.root_path,
-            "contract_path_count": len(graph.contract_paths),
-            "variable_count": len(contract.variables),
-            "set_count": len(contract.sets),
-            "warning_count": len(load.warnings) + len(discovery.warnings),
-        },
-    )
-    return ResolvedContractBundle(
-        contract=contract,
-        graph=graph,
-        warnings=load.warnings,
-        command_warnings=discovery.warnings,
-    )
+    with observe_span(
+        "contract.compose",
+        module=__name__,
+        operation="load_resolved_contract_bundle",
+    ) as span_fields:
+        discovery = discover_root_contract_path(repo_root)
+        load = resolve_contract_graph(discovery.path, repo_root=repo_root)
+        graph = build_resolved_contract_graph(
+            root_path=load.root_path,
+            contracts=load.contracts,
+            contract_paths=load.contract_paths,
+            import_graph=load.import_graph,
+        )
+        contract = compose_contract_from_graph(load.contracts)
+        span_fields["contract_path_count"] = len(graph.contract_paths)
+        span_fields["contract_variable_count"] = len(contract.variables)
+        span_fields["set_count"] = len(contract.sets)
+        span_fields["warning_count"] = len(load.warnings) + len(discovery.warnings)
+        return ResolvedContractBundle(
+            contract=contract,
+            graph=graph,
+            warnings=load.warnings,
+            command_warnings=discovery.warnings,
+        )
 
 
 def compose_contract_from_graph(contracts: tuple[Contract, ...]) -> Contract:

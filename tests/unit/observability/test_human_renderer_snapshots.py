@@ -9,7 +9,13 @@ from envctl.observability.timing import utcnow
 SNAPSHOT_DIR = Path(__file__).parent / "snapshots"
 
 
-def _event(name: str, status: str, duration_ms: int) -> ObservationEvent:
+def _event(
+    name: str,
+    status: str,
+    duration_ms: int,
+    *,
+    operation: str = "snapshot",
+) -> ObservationEvent:
     return ObservationEvent(
         event=name,
         timestamp=utcnow(),
@@ -17,7 +23,7 @@ def _event(name: str, status: str, duration_ms: int) -> ObservationEvent:
         status=status,
         duration_ms=duration_ms,
         module="tests",
-        operation="snapshot",
+        operation=operation,
         fields={},
     )
 
@@ -27,7 +33,8 @@ def _snapshot(name: str) -> str:
 
 
 def _render_trace(events: list[ObservationEvent]) -> str:
-    return "".join(f"{render_event(event, 'human')}\n" for event in events)
+    lines = [line for event in events if (line := render_event(event, "human"))]
+    return "".join(f"{line}\n" for line in lines)
 
 
 def test_human_trace_snapshot_for_check_command() -> None:
@@ -62,8 +69,8 @@ def test_human_trace_snapshot_for_vault_audit_command() -> None:
     rendered = _render_trace(
         [
             _event("command.start", "start", 0),
-            _event("vault.start", "start", 0),
-            _event("vault.finish", "finish", 14),
+            _event("vault.start", "start", 0, operation="run_vault_audit"),
+            _event("vault.finish", "finish", 14, operation="run_vault_audit"),
             _event("command.finish", "finish", 15),
         ]
     )

@@ -8,9 +8,9 @@ from envctl.adapters.dotenv import dump_env, load_env_file, parse_env_text
 from envctl.constants import DEFAULT_PROFILE, DEFAULT_VALUES_FILENAME
 from envctl.domain.project import ProjectContext
 from envctl.errors import ExecutionError
+from envctl.observability.timing import observe_span
 from envctl.utils.atomic import write_text_atomic
 from envctl.utils.filesystem import ensure_dir
-from envctl.utils.logging import get_logger, summarize_key_count
 from envctl.utils.project_paths import (
     build_profile_env_path,
     build_profiles_dir,
@@ -19,49 +19,35 @@ from envctl.utils.project_paths import (
 )
 from envctl.vault_crypto import VaultCrypto
 
-logger = get_logger(__name__)
-
 
 def _load_env_text(
     path: Path,
     *,
     context: ProjectContext,
     allow_plaintext: bool = True,
-) -> str:
+) -> tuple[str, dict[str, str]]:
     """Read vault file content, decrypting when the context is encrypted."""
     if not path.exists():
-        logger.debug("Vault profile file does not exist yet", extra={"path": path})
-        return ""
+        return "", {"state": "missing"}
 
     if context.vault_crypto is not None:
-        logger.debug(
-            "Reading encrypted vault profile file",
-            extra={"path": path, "allow_plaintext": allow_plaintext},
-        )
-        return context.vault_crypto.read_file(path, allow_plaintext=allow_plaintext)
+        return context.vault_crypto.read_file_with_metadata(path, allow_plaintext=allow_plaintext)
 
     raw = path.read_bytes()
     if VaultCrypto.looks_encrypted(raw):
-        logger.error(
-            "Encrypted vault file cannot be read with encryption disabled",
-            extra={"path": path},
-        )
         raise ExecutionError(
             "Vault file is encrypted, but encryption is disabled. Enable encryption in config "
             "or run 'envctl vault decrypt' with the correct key first."
         )
 
-    logger.debug("Reading plaintext vault profile file", extra={"path": path})
-    return raw.decode("utf-8")
+    return raw.decode("utf-8"), {"state": "plaintext"}
 
 
 def _write_env_text(path: Path, content: str, *, context: ProjectContext) -> None:
     """Write vault file content, encrypting when the context is encrypted."""
     if context.vault_crypto is not None:
-        logger.debug("Writing encrypted vault profile file", extra={"path": path})
         context.vault_crypto.write_encrypted_file(path, content)
     else:
-        logger.debug("Writing plaintext vault profile file", extra={"path": path})
         write_text_atomic(path, content)
 
 
@@ -91,10 +77,6 @@ def require_persisted_profile(
         return resolved_profile, path
 
     if not path.exists():
-        logger.error(
-            "Requested explicit profile does not exist",
-            extra={"profile": resolved_profile, "path": path},
-        )
         raise ExecutionError(
             f"Profile does not exist: {resolved_profile}. "
             f"Create it with 'envctl profile create {resolved_profile}'."
@@ -150,7 +132,8 @@ def load_local_profile_values_from_vault_dir(
         vault_key_path=key_path or (vault_project_dir / "master.key"),
         vault_crypto=crypto,
     )
-    return parse_env_text(_load_env_text(path, context=context))
+    content, _metadata = _load_env_text(path, context=context)
+    return parse_env_text(content)
 
 
 def load_profile_values(
@@ -161,22 +144,24 @@ def load_profile_values(
     allow_plaintext: bool = True,
 ) -> tuple[str, Path, dict[str, str]]:
     """Load values for one profile."""
-    if require_existing_explicit:
-        resolved_profile, path = require_persisted_profile(context, profile)
-    else:
-        resolved_profile, path = resolve_profile_path(context, profile)
+    with observe_span(
+        "profile.io",
+        module=__name__,
+        operation="load_profile_values",
+        fields={"path_kind": "vault_profile"},
+    ) as span_fields:
+        if require_existing_explicit:
+            resolved_profile, path = require_persisted_profile(context, profile)
+        else:
+            resolved_profile, path = resolve_profile_path(context, profile)
 
-    values = parse_env_text(_load_env_text(path, context=context, allow_plaintext=allow_plaintext))
-    logger.debug(
-        "Loaded profile values",
-        extra={
-            "profile": resolved_profile,
-            "path": path,
-            "key_count": len(values),
-            "key_summary": summarize_key_count(values),
-        },
-    )
-    return resolved_profile, path, values
+        content, metadata = _load_env_text(path, context=context, allow_plaintext=allow_plaintext)
+        values = parse_env_text(content)
+        span_fields["selected_profile"] = resolved_profile
+        span_fields["key_count"] = len(values)
+        span_fields["exists"] = path.exists()
+        span_fields.update(metadata)
+        return resolved_profile, path, values
 
 
 def write_profile_values(
@@ -187,23 +172,22 @@ def write_profile_values(
     require_existing_explicit: bool = False,
 ) -> tuple[str, Path]:
     """Persist values for one profile."""
-    if require_existing_explicit:
-        resolved_profile, path = require_persisted_profile(context, profile)
-    else:
-        resolved_profile, path = resolve_profile_path(context, profile)
+    with observe_span(
+        "profile.io",
+        module=__name__,
+        operation="write_profile_values",
+        fields={"path_kind": "vault_profile", "updated": True},
+    ) as span_fields:
+        if require_existing_explicit:
+            resolved_profile, path = require_persisted_profile(context, profile)
+        else:
+            resolved_profile, path = resolve_profile_path(context, profile)
 
-    ensure_dir(path.parent)
-    logger.debug(
-        "Writing profile values",
-        extra={
-            "profile": resolved_profile,
-            "path": path,
-            "key_count": len(values),
-            "key_summary": summarize_key_count(values),
-        },
-    )
-    _write_env_text(path, dump_env(values), context=context)
-    return resolved_profile, path
+        ensure_dir(path.parent)
+        _write_env_text(path, dump_env(values), context=context)
+        span_fields["selected_profile"] = resolved_profile
+        span_fields["key_count"] = len(values)
+        return resolved_profile, path
 
 
 def remove_key_from_profile(
@@ -214,30 +198,29 @@ def remove_key_from_profile(
     require_existing_explicit: bool = False,
 ) -> tuple[str, Path, bool]:
     """Remove one key from one profile when present."""
-    resolved_profile, path, values = load_profile_values(
-        context,
-        profile,
-        require_existing_explicit=require_existing_explicit,
-    )
-    if key not in values:
-        logger.debug(
-            "Profile key not present; nothing to remove",
-            extra={"profile": resolved_profile, "key": key, "path": path},
+    with observe_span(
+        "profile.io",
+        module=__name__,
+        operation="remove_key_from_profile",
+        fields={"path_kind": "vault_profile"},
+    ) as span_fields:
+        resolved_profile, path, values = load_profile_values(
+            context,
+            profile,
+            require_existing_explicit=require_existing_explicit,
         )
-        return resolved_profile, path, False
-
-    logger.debug(
-        "Removing key from profile",
-        extra={"profile": resolved_profile, "key": key, "path": path},
-    )
-    values.pop(key, None)
-    write_profile_values(
-        context,
-        resolved_profile,
-        values,
-        require_existing_explicit=require_existing_explicit,
-    )
-    return resolved_profile, path, True
+        removed = key in values
+        if removed:
+            values.pop(key, None)
+            write_profile_values(
+                context,
+                resolved_profile,
+                values,
+                require_existing_explicit=require_existing_explicit,
+            )
+        span_fields["selected_profile"] = resolved_profile
+        span_fields["removed"] = removed
+        return resolved_profile, path, removed
 
 
 __all__ = [

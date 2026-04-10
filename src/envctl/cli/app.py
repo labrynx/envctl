@@ -138,6 +138,16 @@ def main(
     """envctl - local environment control plane."""
     del version
 
+    command_name = ctx.invoked_subcommand or "envctl"
+    initialize_observability_context(
+        command_name=command_name,
+        trace_enabled=trace_enabled,
+        trace_format=trace_format,
+        trace_output=trace_output,
+        trace_file=trace_file,
+        profile_observability=profile_observability,
+    )
+
     try:
         selection = ContractSelection.from_selectors(
             group=group,
@@ -162,16 +172,6 @@ def main(
             command=command,
         )
         raise typer.Exit(code=1) from exc
-
-    command_name = ctx.invoked_subcommand or "envctl"
-    initialize_observability_context(
-        command_name=command_name,
-        trace_enabled=trace_enabled,
-        trace_format=trace_format,
-        trace_output=trace_output,
-        trace_file=trace_file,
-        profile_observability=profile_observability,
-    )
 
     set_cli_state(
         ctx,

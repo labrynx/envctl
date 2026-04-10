@@ -1,5 +1,4 @@
 [0ms] command status=start
-[0ms] run.exec status=start
 [18ms] subprocess.exec status=finish
 [26ms] run.exec status=finish
 Total [27ms] status=finish

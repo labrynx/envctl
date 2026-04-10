@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 
 import pytest
@@ -206,28 +205,3 @@ def test_load_contract_raises_for_pydantic_validation_with_structured_issues(
     assert diagnostics.path == path
     assert diagnostics.issues
     assert any(issue.field.startswith("variables.PORT.type") for issue in diagnostics.issues)
-
-
-def test_write_contract_logs_debug_summary(
-    tmp_path: Path,
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    path = tmp_path / ".envctl.yaml"
-    contract = make_contract({"APP_NAME": make_variable_spec(name="APP_NAME")})
-    logger = logging.getLogger("envctl")
-    logger.addHandler(caplog.handler)
-    logger.setLevel(logging.DEBUG)
-    caplog.set_level("DEBUG")
-
-    try:
-        contract_repository.write_contract(path, contract)
-    finally:
-        logger.removeHandler(caplog.handler)
-
-    assert any(
-        record.name == "envctl.repository.contract_repository"
-        and record.levelname == "DEBUG"
-        and record.message == "Writing contract"
-        and getattr(record, "variable_count", None) == 1
-        for record in caplog.records
-    )

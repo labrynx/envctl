@@ -9,6 +9,7 @@ from cryptography.fernet import Fernet
 
 from envctl.constants import MASTER_KEY_FORMAT_VERSION
 from envctl.errors import ExecutionError
+from envctl.observability import clear_observability_context, initialize_observability_context
 from envctl.vault_crypto import (
     VaultCrypto,
     VaultDecryptionError,
@@ -230,3 +231,63 @@ def test_load_or_create_migrates_legacy_key_file(tmp_path: Path) -> None:
     assert crypto.key_id == derive_master_key_id(legacy_key)
     assert key_path.read_bytes().startswith(f"{MASTER_KEY_FORMAT_VERSION}:".encode())
     assert any(w.kind == "legacy_master_key_migrated" for w in crypto.runtime_warnings)
+
+
+def test_load_or_create_emits_observable_creation_event(tmp_path: Path) -> None:
+    clear_observability_context()
+    context = initialize_observability_context(
+        command_name="vault",
+        trace_enabled=True,
+        trace_output="file",
+    )
+    assert context is not None
+
+    key_path = tmp_path / "master.key"
+    VaultCrypto.load_or_create(key_path, protected_paths=())
+
+    assert context.events is not None
+    finish_events = [
+        event
+        for event in context.events
+        if event.operation == "load_or_create" and event.status == "finish"
+    ]
+    assert len(finish_events) == 1
+
+    event = finish_events[0]
+    fields = event.fields
+    assert fields is not None
+
+    assert fields["state"] == "created"
+    assert fields["created"] is True
+    assert "material_id" in fields
+    assert "key_bytes" not in fields
+
+
+def test_read_file_with_metadata_reports_payload_state_without_internal_events(
+    tmp_path: Path,
+) -> None:
+    clear_observability_context()
+    context = initialize_observability_context(
+        command_name="vault",
+        trace_enabled=True,
+        trace_output="file",
+    )
+    assert context is not None
+
+    key_path1 = tmp_path / "master-1.key"
+    key_path2 = tmp_path / "master-2.key"
+    crypto1 = VaultCrypto.load_or_create(key_path1, protected_paths=())
+    _crypto2 = VaultCrypto.load_or_create(key_path2, protected_paths=())
+
+    token = crypto1.encrypt("APP_NAME=demo\n")
+    values_path = tmp_path / "values.env"
+    values_path.write_bytes(token)
+
+    plaintext, metadata = crypto1.read_file_with_metadata(values_path)
+
+    assert plaintext == "APP_NAME=demo\n"
+    assert metadata["state"] == "encrypted"
+    assert "payload_material_id" in metadata
+    assert context.events is not None
+    assert not any(event.operation == "inspect_bytes" for event in context.events)
+    assert any(event.operation == "encrypt" for event in context.events)

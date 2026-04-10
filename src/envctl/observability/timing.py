@@ -25,6 +25,7 @@ def observe_span(
     """Emit start/finish/error events around one operation span."""
 
     from envctl.observability import get_active_observability_context
+    from envctl.observability.error_mapping import map_exception_to_error_event
     from envctl.observability.recorder import duration_ms, record_event
 
     started_at = utcnow()
@@ -41,8 +42,14 @@ def observe_span(
         )
     try:
         yield span_fields
-    except Exception:
+    except Exception as exc:
         if context is not None:
+            mapping = map_exception_to_error_event(exc)
+            span_fields.setdefault("error_type", exc.__class__.__name__)
+            span_fields.setdefault("error_kind", mapping.event)
+            span_fields.setdefault("handled", False)
+            span_fields.setdefault("recoverable", mapping.recoverable)
+            span_fields.setdefault("message_safe", mapping.message_safe)
             record_event(
                 context,
                 event=f"{event_prefix}.error",
