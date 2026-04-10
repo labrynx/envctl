@@ -49,3 +49,13 @@ def test_build_json_command_payload_injects_warnings_field() -> None:
             "warnings": [],
         },
     }
+
+
+def test_build_json_command_payload_includes_schema_version_when_requested() -> None:
+    payload = build_json_command_payload(
+        command="hooks status",
+        schema_version=1,
+        data={"overall_status": "healthy"},
+    )
+
+    assert payload["schema_version"] == 1

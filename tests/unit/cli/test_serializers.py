@@ -6,6 +6,8 @@ from envctl.cli.serializers import (
     serialize_contract_diagnostics,
     serialize_error,
     serialize_error_diagnostics,
+    serialize_hook_operation_report,
+    serialize_hooks_status_report,
     serialize_project_binding_diagnostics,
 )
 from envctl.domain.error_diagnostics import (
@@ -13,6 +15,16 @@ from envctl.domain.error_diagnostics import (
     ContractDiagnosticIssue,
     ContractDiagnostics,
     ProjectBindingDiagnostics,
+)
+from envctl.domain.hooks import (
+    HookAction,
+    HookInspectionResult,
+    HookName,
+    HookOperationReport,
+    HookOperationResult,
+    HooksStatusLevel,
+    HooksStatusReport,
+    HookStatus,
 )
 from tests.support.paths import normalize_path_str
 
@@ -58,3 +70,50 @@ def test_serialize_error_diagnostics_routes_to_specific_serializer() -> None:
         details=serialize_error_diagnostics(config),
     )
     assert payload["error"]["details"]["category"] == "invalid_json"
+
+
+def test_serialize_hooks_status_report_returns_expected_shape() -> None:
+    report = HooksStatusReport(
+        hooks_path=Path("/tmp/demo/.git/hooks"),
+        overall_status=HooksStatusLevel.DEGRADED,
+        results=(
+            HookInspectionResult(
+                name=HookName.PRE_COMMIT,
+                path=Path("/tmp/demo/.git/hooks/pre-commit"),
+                status=HookStatus.MISSING,
+                managed=False,
+                is_executable=None,
+            ),
+        ),
+    )
+
+    payload = serialize_hooks_status_report(report)
+
+    assert payload["overall_status"] == "degraded"
+    assert payload["results"][0]["hook_name"] == "pre-commit"
+    assert payload["results"][0]["is_executable"] is None
+
+
+def test_serialize_hook_operation_report_returns_expected_shape() -> None:
+    report = HookOperationReport(
+        hooks_path=Path("/tmp/demo/.git/hooks"),
+        final_status=HooksStatusLevel.HEALTHY,
+        changed=True,
+        results=(
+            HookOperationResult(
+                name=HookName.PRE_COMMIT,
+                path=Path("/tmp/demo/.git/hooks/pre-commit"),
+                before_status=HookStatus.MISSING,
+                after_status=HookStatus.HEALTHY,
+                action=HookAction.CREATED,
+                changed=True,
+                managed=True,
+            ),
+        ),
+    )
+
+    payload = serialize_hook_operation_report(report)
+
+    assert payload["overall_status"] == "healthy"
+    assert payload["changed"] is True
+    assert payload["results"][0]["action"] == "created"

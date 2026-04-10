@@ -93,6 +93,19 @@ def resolve_repo_root() -> Path:
     return Path(str(_run_git(["rev-parse", "--show-toplevel"]))).resolve()
 
 
+def resolve_git_dir(repo_root: Path) -> Path:
+    """Resolve the current repository Git directory."""
+    return Path(str(_run_git(["rev-parse", "--absolute-git-dir"], cwd=repo_root))).resolve()
+
+
+def resolve_hooks_path(repo_root: Path) -> Path:
+    """Resolve the effective Git hooks directory for one repository."""
+    raw_path = Path(str(_run_git(["rev-parse", "--git-path", "hooks"], cwd=repo_root)))
+    if raw_path.is_absolute():
+        return raw_path.resolve()
+    return (repo_root / raw_path).resolve()
+
+
 def is_git_repository(repo_root: Path) -> bool:
     """Return whether the given directory is a Git repository."""
     try:

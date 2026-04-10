@@ -98,6 +98,44 @@ def test_resolve_repo_root_returns_resolved_path(
     assert result == repo_root.resolve()
 
 
+def test_resolve_git_dir_returns_resolved_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    git_dir = repo_root / ".git"
+    git_dir.mkdir()
+
+    monkeypatch.setattr(
+        git_adapters,
+        "_run_git",
+        lambda args, cwd=None, check=True: str(git_dir),
+    )
+
+    result = git_adapters.resolve_git_dir(repo_root)
+
+    assert result == git_dir.resolve()
+
+
+def test_resolve_hooks_path_resolves_relative_git_output(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+
+    monkeypatch.setattr(
+        git_adapters,
+        "_run_git",
+        lambda args, cwd=None, check=True: ".git/hooks",
+    )
+
+    result = git_adapters.resolve_hooks_path(repo_root)
+
+    assert result == (repo_root / ".git" / "hooks").resolve()
+
+
 def test_get_repo_remote_returns_value_when_available(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

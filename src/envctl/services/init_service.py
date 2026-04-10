@@ -2,41 +2,27 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Literal
 
 import yaml
 from pydantic import ValidationError as PydanticValidationError
 
 from envctl.adapters.dotenv import load_env_file
-from envctl.adapters.git import get_local_git_config, is_git_repository, set_local_git_config
 from envctl.constants import CONTRACT_VERSION, DEFAULT_ENV_EXAMPLE_FILENAME
 from envctl.domain.contract_inference import infer_spec
+from envctl.domain.hooks import HooksReason
 from envctl.domain.operations import InitResult
 from envctl.domain.project import ConfirmFn, ProjectContext
+from envctl.errors import ExecutionError, ProjectDetectionError
 from envctl.repository.contract_repository import ensure_contract_metadata, load_contract_optional
 from envctl.services.context_service import load_project_context
+from envctl.services.hook_service import HookService, derive_init_hooks_outcome
 from envctl.utils.atomic import write_text_atomic
 from envctl.utils.filesystem import ensure_dir, ensure_file
 
 InitContractMode = Literal["ask", "example", "starter", "skip"]
 ResolvedInitContractMode = Literal["example", "starter", "skip"]
 
-_HOOKS_DIRNAME = ".githooks"
-_PRE_COMMIT_PATH = Path(_HOOKS_DIRNAME) / "pre-commit"
-_HOOKS_PATH_CONFIG = "core.hooksPath"
-_ENVCTL_HOOK_MARKER = "# managed-by: envctl"
-_PRE_COMMIT_SCRIPT = (
-    "#!/bin/sh\n"
-    "set -eu\n\n"
-    "# managed-by: envctl\n"
-    "if command -v uv >/dev/null 2>&1; then\n"
-    "  uv run envctl guard secrets\n"
-    "else\n"
-    "  envctl guard secrets\n"
-    "fi\n\n"
-    "# your additional checks here\n\n"
-)
 _GITIGNORE_ENTRY = "master.key"
 
 
@@ -59,15 +45,15 @@ def run_init(
         contract_mode=contract_mode,
         confirm=confirm,
     )
-    git_guard_installed, git_guard_reason = _install_git_guard(context)
+    hooks_installed, hooks_reason = _install_managed_hooks(context)
     _ensure_gitignore(context)
 
     return context, InitResult(
         contract_created=init_result.contract_created,
         contract_template=init_result.contract_template,
         contract_skipped=init_result.contract_skipped,
-        git_guard_installed=git_guard_installed,
-        git_guard_reason=git_guard_reason,
+        hooks_installed=hooks_installed,
+        hooks_reason=hooks_reason,
         runtime_warnings=tuple(warning.message for warning in context.runtime_warnings),
     )
 
@@ -119,28 +105,13 @@ def _ensure_contract(
     )
 
 
-def _install_git_guard(context: ProjectContext) -> tuple[bool, str | None]:
-    """Install the managed pre-commit hook when Git configuration is safe to change."""
-    if not is_git_repository(context.repo_root):
-        return False, None
-
-    existing_hooks_path = get_local_git_config(context.repo_root, _HOOKS_PATH_CONFIG)
-    if existing_hooks_path and existing_hooks_path != _HOOKS_DIRNAME:
-        return (
-            False,
-            f"Git already uses core.hooksPath={existing_hooks_path}; envctl did not overwrite it.",
-        )
-
-    hook_path = context.repo_root / _PRE_COMMIT_PATH
-    if hook_path.exists():
-        content = hook_path.read_text(encoding="utf-8")
-        if _ENVCTL_HOOK_MARKER not in content:
-            return False, f"Existing hook at '{_PRE_COMMIT_PATH}' is not managed by envctl."
-
-    hook_path.parent.mkdir(parents=True, exist_ok=True)
-    write_text_atomic(hook_path, _PRE_COMMIT_SCRIPT, mode=0o755)
-    set_local_git_config(context.repo_root, _HOOKS_PATH_CONFIG, _HOOKS_DIRNAME)
-    return True, None
+def _install_managed_hooks(context: ProjectContext) -> tuple[bool, HooksReason]:
+    """Install envctl-managed hooks without aborting project initialization."""
+    try:
+        report = HookService(context.repo_root).install()
+    except (ExecutionError, OSError, ProjectDetectionError):
+        return False, HooksReason.INSTALL_FAILED
+    return derive_init_hooks_outcome(report)
 
 
 def _ensure_gitignore(context: ProjectContext) -> None:
