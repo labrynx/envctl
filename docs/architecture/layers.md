@@ -1,10 +1,12 @@
 # Layers
 
-`envctl` is deliberately split into layers so that orchestration, domain rules, persistence, and infrastructure do not collapse into one hard-to-maintain blob.
-
-The point of the layers is not ceremony.
-
-The point is to make the codebase easier to change without breaking the product model.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Architecture</span>
+  <p class="envctl-section-intro__body">
+    This page describes the main codebase layers and what each one owns.
+    It is maintainer-facing: the goal is to keep the implementation aligned with the product model rather than letting responsibilities blur together.
+  </p>
+</div>
 
 ## The layer model
 
@@ -17,159 +19,113 @@ CLI
 -> Utils
 ```
 
-Not every layer depends on every other layer, but the direction is intentional:
+## Why the layers matter
 
-* outer layers orchestrate
-* inner layers define stable rules or data access
-* lower-level utilities stay generic
+The point of the layers is not ceremony. The point is to make the codebase easier to change without collapsing orchestration, domain semantics, persistence, and IO into one hard-to-maintain blob.
 
-## CLI
+## Layer ownership
 
-The CLI layer owns:
+### CLI
 
-* Typer commands
-* argument and selector validation
-* interactive prompts
-* presentation decisions
-* JSON vs terminal output routing
+Owns:
 
-In other words, the CLI is where the user-facing command shape lives.
+- Typer commands
+- argument and selector validation
+- prompts and output routing
+- terminal vs JSON presentation choices
 
-What it should **not** own:
+Should not own:
 
-* core resolution rules
-* persistence logic
-* reusable domain semantics
+- core resolution rules
+- persistence logic
+- reusable domain semantics
 
-The CLI should stay thin.
+### Services
 
-## Services
+Own:
 
-Services own use-case orchestration.
+- use-case orchestration
+- workflow coordination
+- command-to-domain glue
 
-That includes workflows such as:
+Should not become:
 
-* building resolved runtime state
-* validating the environment
-* coordinating projection
-* combining repository reads with domain logic
+- a second domain layer
+- a formatting layer
+- a dumping ground for CLI concerns
 
-Services are where “do this product workflow” belongs.
+### Domain
 
-What they should **not** become:
+Owns:
 
-* a second domain layer
-* a dumping ground for formatting logic
-* a place for direct CLI concerns
+- contract semantics
+- resolution rules
+- stable product models
+- normalization logic
 
-## Domain
+Should not know about:
 
-The domain layer owns the stable concepts and rules of the product.
+- Typer
+- terminal presentation
+- repository-specific orchestration
 
-That includes things like:
+### Repository / Config / Adapters
 
-* contract semantics
-* resolution rules
-* result models
-* normalization logic
+Own:
 
-If a rule is part of what `envctl` means rather than how one command is wired, it probably belongs here.
+- stored project and vault state
+- user config
+- external IO and integrations
 
-What the domain should **not** know about:
+Should not become:
 
-* Typer
-* terminal formatting
-* repository-specific orchestration
-* infrastructure details
+- hidden service logic
+- interactive CLI flows
+- a second domain layer
 
-## Repository
+### Utils
 
-The repository layer owns persisted project and contract state.
+Own:
 
-That includes reading and writing the things the product treats as durable state, such as:
+- small generic helpers
+- shared low-level utilities
 
-* contract data
-* local persisted values
-* related project state
-
-Repository code is where storage-facing coordination belongs.
-
-What it should **not** become:
-
-* a hidden service layer
-* a place to embed user interaction
-* a home for business rules that belong in domain
-
-## Config
-
-The config layer owns user-level tool configuration.
-
-That keeps machine-local tool behavior separate from:
-
-* project contract data
-* local vault values
-* command presentation logic
-
-This separation matters because config is upstream of many workflows, but is still not the same thing as project state.
-
-## Adapters
-
-Adapters talk to the outside world.
-
-Examples include:
-
-* Git integration
-* dotenv parsing or writing
-* editor launching
-* other IO-heavy integration points
-
-Adapters exist so the rest of the product does not have to pretend external tools and formats are pure domain concepts.
-
-## Utils
-
-Utils are the small generic helpers that other layers can share without dragging in higher-level meaning.
-
-They should stay boring.
-
-If a helper starts expressing product semantics, it probably no longer belongs in `utils`.
+If a helper starts expressing product semantics, it probably no longer belongs here.
 
 ## Dependency direction
 
-The important architectural rule is directional:
+The important rule is directional:
 
-* CLI can depend on services
-* services can depend on domain, repository, config, adapters, and utils
-* deeper layers must not reach back upward into CLI concerns
-
-This is exactly the kind of rule that import-linter can enforce well.
-
-## Why this matters in practice
-
-When layers stay clean:
-
-* command modules stay smaller
-* product semantics remain testable outside the CLI
-* infrastructure changes do not leak everywhere
-* architectural regressions become easier to spot
-
-In short, the layers exist so the codebase keeps matching the product model instead of eroding into convenience shortcuts.
+- CLI can depend on services
+- services can depend on domain, repository, config, adapters, and utils
+- deeper layers must not depend upward on CLI concerns
 
 ## Read next
 
-Go deeper from architectural shape into architectural limits and implementation detail:
+<div class="envctl-doc-card-grid" markdown>
 
-<div class="grid cards envctl-read-next" markdown>
+<div class="envctl-doc-card" markdown>
+### Boundaries
 
--   **Boundaries**
+See the product and codebase boundaries that keep these layers honest.
 
-    See the product and codebase limits that keep the layers honest.
+[Read about boundaries](boundaries.md)
+</div>
 
-    [Read about boundaries](boundaries.md)
+<div class="envctl-doc-card" markdown>
+### Internal architecture
 
--   **Internals (advanced)**
+Switch from the conceptual layer model to the repository’s current maintainer view.
 
-    Follow the maintainer-facing view of how the current repository is organized.
+[Read internal architecture](../internals/architecture.md)
+</div>
 
-    [Read the internal architecture guide](../internals/architecture.md)
+<div class="envctl-doc-card" markdown>
+### Concepts
+
+Go back to the product model the implementation is supposed to reinforce.
+
+[Open concepts](../concepts/index.md)
+</div>
 
 </div>

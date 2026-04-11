@@ -1,111 +1,117 @@
 # Debugging
 
-## Problem
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Guide</span>
+  <p class="envctl-section-intro__body">
+    Debugging with <code>envctl</code> works best when you stop guessing and inspect the model step by step:
+    validation, profile selection, resolution, and finally projection.
+  </p>
+</div>
 
-Something is failing, but it is not obvious whether the issue is:
+## When to use this guide
 
-* missing values
-* the wrong active profile
-* bad expansion
-* invalid contract data
-* or a projection problem
+Use this page when:
 
-## Goal
+- `envctl` behaves differently from what you expected
+- the application sees the wrong value
+- CI, Docker, or local runtime diverges
+- you are not sure which layer is actually wrong
 
-Move from broad diagnosis to one concrete cause without guessing.
+## Starting point
 
-## Steps
+Start with the smallest question first:
 
-Start with the smallest overview:
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">check first</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl check</span></code></pre>
+</div>
+
+If validation fails, stay at that layer first. Do not debug a downstream runtime before the model is valid.
+
+## A practical debugging flow
+
+### 1. Confirm the profile
+
+Many “wrong value” problems are really “wrong profile” problems.
 
 ```bash
-envctl status
+envctl --profile local check
+envctl --profile dev-alt check
 ```
 
-Then validate the environment directly:
-
-```bash
-envctl check
-```
-
-If you need the full runtime picture, inspect it:
-
-```bash
-envctl inspect
-```
-
-If the problem narrows down to one key, inspect just that key:
+### 2. Inspect the key or the smallest useful scope
 
 ```bash
 envctl inspect DATABASE_URL
+envctl --group Runtime inspect
+envctl --var DATABASE_URL inspect
 ```
 
-If you need to compare resolved state with physical stored values, drop down one level:
+Smaller surfaces make debugging faster.
+
+### 3. Compare validation and projection
+
+If `check` passes but the target process still behaves differently, the problem is usually no longer validation. It is projection.
+
+### 4. Test the exact runtime handoff
 
 ```bash
-envctl vault show
+envctl run -- python app.py
+envctl export --format dotenv
 ```
 
-If you need execution-level observability events, use `--trace`:
+Debug the path you actually use, not the one you assume exists.
 
-```bash
-envctl check --trace
-envctl check --trace --trace-format human
-envctl check --trace --trace-format jsonl --trace-output file
-```
+## Signals that usually matter
 
-Use `--trace` when you need execution phases, timings, and an `execution_id` you can share in issues.
+- **validation fails** → contract or local values are still wrong
+- **switching profile changes the result** → the issue is local context selection
+- **inspect looks right but runtime does not** → the issue is likely projection
+- **hooks or CI fail first** → that is often a clue about where the mismatch appears
 
-Recommended modes:
+## A useful rule
 
-* `--trace --trace-format human`: compact high-signal flow for terminal debugging
-* `--trace --trace-format jsonl`: structured contract for tooling, issue attachments, or diffing
-* `--trace --trace-output file`: persist one trace artifact under `.envctl/observability/`
+When something feels off, this order is usually enough:
 
-## Result
+1. validate with `check`
+2. confirm the intended profile
+3. inspect the key or subset that matters
+4. test the real projection path
+5. only then debug the downstream application itself
 
-You move from:
+## Read next
 
-* broad readiness
-* to contract-level validation
-* to full resolved state
-* to one-key inspection
-* to stored vault data only if needed
+<div class="envctl-doc-card-grid" markdown>
 
-That gives you a repeatable debugging path instead of jumping randomly between commands.
+<div class="envctl-doc-card" markdown>
+### inspect
 
-## What to attach to an issue
+Use inspection commands when you need to stop guessing.
 
-When reporting a reproducible problem, prefer attaching:
+[Open inspect reference](../reference/commands/inspect.md)
+</div>
 
-* the exact command you ran
-* whether you selected a non-default profile
-* the relevant `envctl check` or `envctl inspect` output
-* the `execution_id` from trace output
-* a sanitized JSONL trace excerpt (`--trace --trace-format jsonl`)
-* a short summary of the slowest phases (name + duration)
-* your platform, shell, Python version, and `envctl` version
+<div class="envctl-doc-card" markdown>
+### Resolution
 
-Do not include:
+Understand how envctl decides what is true at runtime.
 
-* real secret values
-* vault files
-* master keys
-* generated env artifacts containing sensitive data
+[Read about resolution](../concepts/resolution.md)
+</div>
 
-## Why this works
+<div class="envctl-doc-card" markdown>
+### Common errors
 
-Each command answers a different question:
+See the most frequent failure shapes and their usual first move.
 
-* `status` gives readiness
-* `check` gives pass/fail validation
-* `inspect` gives full resolved context
-* `inspect KEY` gives one-key explanation
-* `vault show` gives physical stored values
+[Open common errors](../troubleshooting/common-errors.md)
+</div>
 
-The guide works because it follows the structure of the model instead of skipping straight to low-level inspection.
-
-* [Resolution](../concepts/resolution.md)
-* [check](../reference/commands/check.md)
-* [inspect](../reference/commands/inspect.md)
-* [vault](../reference/commands/vault.md)
+</div>

@@ -1,158 +1,110 @@
 # Profiles
 
-Profiles let you keep more than one local value set for the same project.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Concept</span>
+  <p class="envctl-section-intro__body">
+    Profiles let one machine hold more than one local value set for the same contract.
+    They exist so you can switch local context without rewriting shared requirements or mutating one single local state over and over.
+  </p>
+</div>
 
-That is useful when one contract needs to support several real-world setups, such as local development, staging-like testing, or a CI-oriented configuration.
+## What they are
 
-The key point is this:
+A profile answers this question:
 
-> profiles change local values, not project requirements
+> Which local value set should this machine use right now?
 
-!!! warning "Profiles do not change the contract and do not inherit"
-    A profile selects one local value set for the same contract. It does not redefine requirements, and it does not silently fall back to another profile.
+It is a local context selector, not another project definition.
 
-## What a profile is
+## Why they matter
 
-A profile is a named set of local values.
+Without profiles, people usually end up:
 
-Examples:
+- overwriting values in place
+- renaming files manually
+- keeping several ad-hoc dotenv copies
+- forgetting which setup is active
 
-- `local`
-- `dev`
-- `staging`
-- `ci`
+Profiles stop that from becoming normal.
 
-Each profile belongs to the same contract. You are not creating a new project definition when you create a new profile. You are only creating another local value namespace for the same project.
+<div class="envctl-callout" markdown>
+Same project requirements, different local context — that is the real purpose of profiles.
+</div>
 
-## What a profile changes
+## What problem they solve
 
-A profile changes only stored values.
+Profiles let one machine satisfy the same shared contract in multiple valid ways.
 
-A profile does **not** change:
+Typical examples:
 
-- contract schema
+- `local` for normal daily development
+- `docker` for a container-oriented setup
+- `dev-alt` for another backend or account
+- `ci-like` for local reproduction of pipeline assumptions
+
+Explicit selection matters because many “wrong value” problems are really profile-selection problems:
+
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">select profile</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl --profile local check</span>
+<span class="envctl-doc-terminal__line">$ envctl --profile dev-alt run -- python app.py</span></code></pre>
+</div>
+
+## What they are not
+
+Profiles do not change:
+
+- the contract
 - required variables
-- types
-- descriptions
-- validation rules
+- shared metadata
+- repository-level environment shape
 
-So if a variable is required by the contract, it is required regardless of which profile you use. Profiles do not rewrite the rules. They only change which local values are available under those rules.
+So profiles are not alternate contracts and they are not shared runtime truth.
 
-## Storage layout
+## How they fit in the system
 
-The implicit default profile is stored as:
+Profiles sit between local storage and runtime truth:
 
-```text
-values.env
-```
+- the **contract** stays shared
+- the **vault** stores local values
+- a **profile** selects one local set
+- **resolution** computes what is true for this run
 
-This is not a compatibility alias.
-
-`values.env` is the canonical backing file for the implicit `local` profile.
-
-Explicit profiles are stored as:
-
-```text
-profiles/<name>.env
-```
-
-For example:
-
-```text
-~/.envctl/vault/projects/<slug>--<id>/
-  values.env
-  profiles/
-    dev.env
-    staging.env
-```
-
-This means `local` is the default value set, while named profiles live alongside it as separate files.
-
-`envctl` does not use `profiles/local.env`.
-
-## How profile selection works
-
-Profile selection follows this order:
-
-1. `--profile`
-2. `ENVCTL_PROFILE`
-3. config `default_profile`
-4. `local`
-
-That makes the selection rules easy to inspect. There is a clear order, and `envctl` does not silently pick a profile from hidden state.
-
-## Profile existence
-
-The implicit `local` profile is virtual until first write.
-
-That means `values.env` may not exist yet, and `envctl` can still treat `local` as an empty local namespace.
-
-Explicit profiles are different:
-
-* `dev`, `staging`, `ci`, and any other named profile must be created before use
-* commands do not auto-create them implicitly
-* if a named profile does not exist, `envctl` fails fast and tells you to run `envctl profile create <name>`
-
-This keeps profile-aware workflows explicit and predictable.
-
-## No inheritance
-
-Profiles do not inherit from each other.
-
-There is no:
-
-* fallback chain
-* cascading values
-* implicit merging
-
-This is intentional. Inheritance sounds convenient until you are debugging a surprising value and have to figure out which profile secretly contributed it.
-
-`envctl` keeps profiles flat so they are easier to reason about.
-
-## Typical usage
-
-```bash
-envctl profile create dev
-envctl --profile dev run -- app
-envctl profile create staging
-envctl --profile staging check
-```
-
-This gives you a simple way to work with multiple local environments while keeping the shared contract unchanged.
-
-## Profile commands
-
-* `profile list`
-* `profile create`
-* `profile copy`
-* `profile remove`
-* `profile path`
-
-## Mutation semantics
-
-Profile-aware commands follow a fixed model:
-
-* `set` writes only to the active profile
-* `unset` removes only from the active profile
-* `add` updates the contract and writes only to the active profile
-* `remove` updates the contract and removes values from all persisted profiles
+That is why profiles pair naturally with validation and runtime selection, but not with shared contract mutation.
 
 ## Read next
 
-Continue from local context selection into runtime behavior:
+<div class="envctl-doc-card-grid" markdown>
 
-<div class="grid cards envctl-read-next" markdown>
+<div class="envctl-doc-card" markdown>
+### Profiles guide
 
--   **Contract**
+See the operational workflow for creating, filling, copying, and removing profiles.
 
-    Revisit the part of the model that profiles never change.
+[Open profiles guide](../guides/profiles.md)
+</div>
 
-    [Read about the contract](contract.md)
+<div class="envctl-doc-card" markdown>
+### Profiles reference
 
--   **Resolution**
+See the exact selection and storage rules.
 
-    See how the active profile affects the effective environment.
+[Open profiles reference](../reference/profiles.md)
+</div>
 
-    [Read about resolution](resolution.md)
+<div class="envctl-doc-card" markdown>
+### Resolution
+
+Understand how selected profile values become part of final runtime truth.
+
+[Read about resolution](resolution.md)
+</div>
 
 </div>

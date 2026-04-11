@@ -1,72 +1,99 @@
 # Getting started
 
-Start here if you want to get `envctl` running quickly and understand the basic workflow without drowning in details.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Getting started</span>
+  <p class="envctl-section-intro__body">
+    Start here if you are new to <code>envctl</code> and want the shortest path to a correct mental model and a working repository.
+    This section is intentionally small: install the CLI, follow one safe flow, then deepen your understanding only where needed.
+  </p>
+</div>
 
-If the home page answered "why", this section answers "what do I do next?"
+## Who this section is for
 
-`envctl` works best when you understand one thing early:
+Use this section if you want one of two things:
 
-> the contract is shared, the values are local, and projection is explicit.
+- your first successful local setup
+- the minimum mental model that makes the CLI feel predictable
 
-<div class="grid cards" markdown>
+If you already know the model and just need exact behavior, skip to the [reference section](../reference/index.md).
 
--   :material-download:{ .lg .middle } **Installation**
+<div class="envctl-callout" markdown>
+The key split to learn early is simple: the **contract is shared**, the **values are local**, and **projection is explicit**.
+</div>
 
-    Set up the CLI and make sure the tooling is available in your shell.
+## Start with one of these
 
-    [Open installation guide](installation.md)
+<div class="envctl-doc-card-grid" markdown>
 
--   :material-rocket-launch-outline:{ .lg .middle } **Quickstart**
+<div class="envctl-doc-card" markdown>
+### Installation
 
-    The shortest path from zero to a working project with a contract and local values.
+Install the CLI and confirm it is available in your shell.
 
-    [Open quickstart](quickstart.md)
+[Open installation](installation.md)
+</div>
 
--   :material-flag-checkered:{ .lg .middle } **First project**
+<div class="envctl-doc-card" markdown>
+### Quickstart
 
-    A fuller onboarding flow from fresh clone to validated local environment.
+Take the shortest safe path from zero to a validated first run.
 
-    [Open first project guide](first-project.md)
+[Open quickstart](quickstart.md)
+</div>
 
--   :material-brain:{ .lg .middle } **Mental model**
+<div class="envctl-doc-card" markdown>
+### First project
 
-    Learn the minimum model that makes the rest of the CLI feel consistent.
+Follow a slightly fuller onboarding flow for a real repository checkout.
 
-    [Open mental model](mental-model.md)
+[Open first project](first-project.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Mental model
+
+Learn the minimum model before you memorize commands.
+
+[Open mental model](mental-model.md)
+</div>
 
 </div>
 
-## What you should expect
+## What you should get from this section
 
-By the end of this section, you should understand:
+By the end of this section, you should be able to answer:
 
-- how to install `envctl`
-- what the first project flow looks like
-- what problem the contract solves
-- why local values should stay out of Git
+- what belongs in the contract and what does not
+- where local values live
+- how a normal first-run flow works
+- why `run` is usually cleaner than generating files by default
 
 ## Read next
 
-Choose the next step based on how much context you want before you start:
+<div class="envctl-doc-card-grid" markdown>
 
-<div class="grid cards envctl-read-next" markdown>
+<div class="envctl-doc-card" markdown>
+### Quickstart
 
--   **Quickstart**
+If you want the shortest path to a working project, start here.
 
-    Take the shortest path from install to a working repository.
+[Open quickstart](quickstart.md)
+</div>
 
-    [Open quickstart](quickstart.md)
+<div class="envctl-doc-card" markdown>
+### Mental model
 
--   **Mental model**
+If you want the concepts before the commands, start here.
 
-    Learn the minimum model that makes the rest of the CLI feel consistent.
+[Open mental model](mental-model.md)
+</div>
 
-    [Open mental model](mental-model.md)
+<div class="envctl-doc-card" markdown>
+### Concepts
 
--   **First project**
+If you already have the basics and want the canonical definitions, continue here.
 
-    Follow a fuller onboarding flow from fresh clone to validated environment.
-
-    [Open first project](first-project.md)
+[Open concepts](../concepts/index.md)
+</div>
 
 </div>

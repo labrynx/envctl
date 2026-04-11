@@ -1,53 +1,98 @@
 # Guides
 
-Practical workflows for using `envctl` in real projects.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Guides</span>
+  <p class="envctl-section-intro__body">
+    This section is for real workflows.
+    Use it when you already know the basic model and want help applying it to Docker, CI, team usage, debugging, or day-to-day work.
+  </p>
+</div>
 
-This section is where the tool stops being abstract and starts being useful.
+## When to use guides
+
+Use Guides when your question sounds like:
+
+- how should I use `envctl` with Docker
+- how do profiles fit into a real workflow
+- how should a team share contract changes
+- how do I debug the right layer
+
+If your question is instead “what does this concept mean?”, go to [Concepts](../concepts/index.md). If you need exact syntax or behavior, go to [Reference](../reference/index.md).
+
+## Workflow guides
 
 <div class="grid cards" markdown>
 
 -   :material-docker:{ .lg .middle } **Docker**
 
-    Use `envctl` with container workflows without confusing host resolution and container injection.
+    Use `envctl` with containers without confusing host resolution and container injection.
 
     [Open Docker guide](docker.md)
 
 -   :material-source-branch:{ .lg .middle } **CI**
 
-    Run `envctl` in pipelines with predictable behavior and safer validation.
+    Run `envctl` in pipelines with predictable selection and projection behavior.
 
     [Open CI guide](ci.md)
 
 -   :material-layers-outline:{ .lg .middle } **Profiles**
 
-    Structure local and explicit profiles without copying fragile files between contexts.
+    Create, fill, copy, and remove local profiles without mutating the contract.
 
     [Open profiles guide](profiles.md)
 
--   :material-bug-outline:{ .lg .middle } **Debugging**
+-   :material-account-group-outline:{ .lg .middle } **Team workflows**
 
-    Move from broad diagnostics to one-key inspection without guesswork.
-
-    [Open debugging guide](debugging.md)
-
--   :material-account-group-outline:{ .lg .middle } **Team**
-
-    Keep the contract shared while values stay local to each machine.
+    Keep the contract shared while real values stay local to each machine.
 
     [Open team guide](team.md)
 
+-   :material-bug-outline:{ .lg .middle } **Debugging**
+
+    Debug the right layer instead of guessing at runtime behavior.
+
+    [Open debugging guide](debugging.md)
+
+-   :material-calendar-check-outline:{ .lg .middle } **Daily workflow**
+
+    See the small set of commands that matter most in normal day-to-day use.
+
+    [Open daily workflow](../workflows/daily.md)
+
+-   :material-source-commit:{ .lg .middle } **Hooks**
+
+    Operate the managed Git safety layer when your team uses it.
+
+    [Open hooks guide](hooks.md)
+
 </div>
 
-## Why guides matter
+## Read next
 
-The CLI is only half the story.
+<div class="envctl-doc-card-grid" markdown>
 
-Most mistakes happen when people mix up:
+<div class="envctl-doc-card" markdown>
+### Daily workflow
 
-- shared contract vs local values
-- resolution vs projection
-- development workflows vs automation workflows
+Start with the day-to-day command rhythm most users actually repeat.
 
-## Additional guides
+[Open daily workflow](../workflows/daily.md)
+</div>
 
-- [Daily workflow](../workflows/daily.md)
+<div class="envctl-doc-card" markdown>
+### Debugging
+
+Open this when reality and expectations stop matching.
+
+[Open debugging guide](debugging.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Troubleshooting
+
+If you are already in a failure state, start from symptoms instead.
+
+[Open troubleshooting](../troubleshooting/index.md)
+</div>
+
+</div>

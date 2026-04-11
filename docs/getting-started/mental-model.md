@@ -1,148 +1,294 @@
-# Mental Model
+# Mental model
 
-If you understand this page, the rest of `envctl` becomes much easier to follow.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Getting started</span>
+  <p class="envctl-section-intro__body">
+    This page is the onboarding version of the model.
+    It gives you the minimum structure you need before memorizing commands, while the canonical definitions live in the <a href="../concepts/">Concepts</a> section.
+  </p>
+</div>
 
-Most of the commands, workflows, and design choices make sense once you see the model underneath them.
+## Why this page matters
 
-## The five parts
+A lot of tooling feels harder than it really is because people learn commands before they learn the shape of the problem.
 
-A useful way to think about `envctl` is as five connected parts:
+With `envctl`, the shape matters.
 
-- **contract**
-- **vault**
-- **profile**
-- **resolution**
-- **projection**
+If you only memorize commands, sooner or later you end up asking questions like:
 
-Each one has a different job. Keeping them separate is one of the reasons the tool stays easier to reason about.
+- why does `check` pass here but not there
+- why do I need profiles
+- why is the contract separate from local values
+- why does `run` behave differently from `export`
 
-## Contract
+Those questions all get easier once the model is clear.
 
-The contract defines what the project needs.
+## The five-part model
 
-The main contract is discovered at the repo root. It prefers `.envctl.yaml` and still accepts `.envctl.schema.yaml` as a legacy fallback. That root contract may import other contract files, but the result is still one composed project contract. New repositories should treat `.envctl.yaml` as the standard shape, while legacy repositories can continue to work with `.envctl.schema.yaml` during migration.
+The simplest useful mental model is this:
 
-It lives in the repository:
+<div class="envctl-doc-card-grid" markdown>
 
-```text
-<repo-root>/.envctl.yaml
-<repo-root>/.envctl.schema.yaml  # legacy fallback
-```
+<div class="envctl-doc-card" markdown>
+### Contract
 
-It may describe things like:
+What the project requires.
+</div>
 
-* which variables exist
-* whether they are required
-* their type
-* whether they are sensitive
-* optional non-secret defaults
-* optional validation rules
+<div class="envctl-doc-card" markdown>
+### Vault
 
-The contract must not contain secrets.
+What this machine stores locally.
+</div>
 
-A good way to think about it is this: the contract is the shared description of the project’s requirements.
+<div class="envctl-doc-card" markdown>
+### Profiles
 
-## Vault
+Which local value set is active.
+</div>
 
-The vault stores local machine-owned values outside the repository.
+<div class="envctl-doc-card" markdown>
+### Resolution
 
-This is where real values live.
+What is actually true right now.
+</div>
 
-The vault is local by design. It is not meant to be shared through version control, and it is not supposed to become part of the project source tree.
+<div class="envctl-doc-card" markdown>
+### Projection
 
-## Profile
+How that truth reaches your tools.
+</div>
 
-A profile selects one local value set for the same contract.
+</div>
 
-Examples:
+If that five-step chain is clear, the CLI starts to make a lot more sense.
 
-* `local`
-* `dev`
-* `staging`
-* `ci`
+## 1. Contract — shared requirements
 
-A profile changes only stored values.
+The contract is the repository-level definition of the environment model.
 
-A profile does **not** change:
+It says things like:
 
-* which variables exist
-* which variables are required
-* types
-* descriptions
-* sensitivity flags
+- which variables exist
+- which ones are required
+- how the environment is structured
+- what the project expects before runtime
 
-So profiles give you multiple local setups for one project contract. They do not create multiple versions of the contract itself.
+The contract is shared.
 
-## Resolution
+It belongs in version control because it changes the project itself.
 
-Resolution is how `envctl` decides what value each variable gets at runtime.
+## 2. Vault — local real values
 
-The effective order is:
+The vault is where actual machine-specific values live.
 
-```text
-active profile values
--> contract defaults
-```
+That includes things like:
 
-That means the active profile provides explicit values first, and the contract can still provide non-sensitive defaults if no explicit value is set.
+- credentials
+- local URLs
+- developer-specific concrete values
 
-There is no hidden profile inheritance. The rules are meant to stay visible and easy to trace.
+The vault is local.
 
-## Projection
+It is deliberately separate from the contract so the repository does not become a place to store or move real secrets.
 
-Projection is how resolved state becomes usable.
+## 3. Profiles — local context selection
 
-The main projection modes are:
-
-* `run` → inject values into a subprocess
-* `sync` → generate `.env.local`
-* `export` → print shell export lines
-
-Projected files are outputs. They are not the source of truth.
-
-That matters because it keeps generated artifacts from silently becoming the real configuration model.
-
-## The most important distinction
-
-The contract defines what exists.
-
-The profile vault defines what is currently set.
-
-The resolved environment defines what actually runs.
-
-That distinction explains most command behavior.
-
-## Why the commands behave the way they do
-
-Once you keep those layers separate, these command semantics make sense:
-
-* `add` → contract + active-profile value
-* `set` → active-profile value only
-* `unset` → remove active-profile value only
-* `remove` → remove contract + all persisted profile values
-
-This is intentional.
-
-It stops shared requirements and machine-local values from getting mixed together.
-
-## Runtime mode is different
-
-`runtime_mode` is not a profile.
-
-* **profile** = which local value set to use
-* **runtime mode** = which command policy applies
+A machine may need more than one local context.
 
 For example:
 
-* `profile = "ci"` means “use the `ci` profile values”
-* `runtime_mode = "ci"` means “apply CI restrictions to command behavior”
+- one setup for normal development
+- one for Docker
+- one for reproducing CI-like behavior
 
-They are related only because they may both matter in the same workflow. They are not the same concept.
+Profiles let the same machine satisfy the same contract in different local ways.
 
-## If you remember only one thing
+So profiles do not change the project.
+They change the active local value set.
 
-> The contract defines what exists.
-> The vault stores local values.
-> The active profile selects one local value set.
-> Resolution decides what runs.
-> Projection makes it usable.
+## 4. Resolution — current truth
+
+Resolution is the moment where `envctl` computes what is actually true for this run.
+
+That means:
+
+- contract + local values + selected profile
+- become one effective environment state
+
+This is the step where the model stops being abstract.
+
+## 5. Projection — runtime handoff
+
+Projection is how the resolved environment reaches another tool.
+
+For example:
+
+- a subprocess through `run`
+- a rendered file through `export`
+- another explicit handoff path
+
+This matters because even when validation is correct, a runtime can still behave differently if the projection path is wrong.
+
+## One sentence version
+
+If you want the shortest possible mental model:
+
+> The repo defines requirements, the machine stores real values, the selected profile chooses context, resolution computes what is true, and projection hands it to the runtime.
+
+That is `envctl` in one sentence.
+
+## Why this is better than “just use a dotenv file”
+
+Because a single dotenv file usually collapses too many roles into one artifact.
+
+It becomes all of this at once:
+
+- pseudo-documentation
+- local runtime state
+- accidental source of truth
+- onboarding mechanism
+- team handoff file
+- stale snapshot of who knows when
+
+That is exactly the kind of ambiguity `envctl` is trying to avoid.
+
+## The most important separation
+
+If you remember only one thing from this page, let it be this:
+
+### Shared requirement
+
+belongs in the contract
+
+### Real local value
+
+belongs in local storage
+
+That separation is the backbone of the tool.
+
+Everything else becomes easier once that part is internalized.
+
+## What `check` really means
+
+When you run:
+
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">mental model check</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl check</span></code></pre>
+</div>
+
+you are really asking:
+
+> Does the currently resolved local environment satisfy the shared contract?
+
+That is a much more useful way to think about it than “did my env file load”.
+
+## What `fill` really means
+
+When you run:
+
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">mental model fill</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl fill</span></code></pre>
+</div>
+
+you are not editing shared requirements.
+
+You are supplying missing local values so the current machine can satisfy them.
+
+That difference is fundamental.
+
+## What `run` really means
+
+When you run:
+
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">mental model run</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl run -- python app.py</span></code></pre>
+</div>
+
+you are projecting resolved truth into a subprocess.
+
+So `run` is not “another check”.
+It is the runtime handoff step.
+
+## Where confusion usually comes from
+
+Most confusion comes from collapsing two or more layers together.
+
+For example:
+
+- treating the contract like local storage
+- treating local storage like team truth
+- treating validation like projection
+- treating projection like if it were the same thing as resolution
+
+When that happens, the system starts to feel more magical than it really is.
+
+## A healthy way to learn envctl
+
+This order tends to work well:
+
+1. understand the five-part model
+2. initialize your local setup
+3. fill only what is missing
+4. validate with `check`
+5. run through an explicit projection path
+
+That gives you a much clearer start than memorizing every command at once.
+
+<div class="envctl-callout" markdown>
+When you want the precise definition of one layer, switch from this onboarding page to the corresponding page in [Concepts](../concepts/index.md).
+</div>
+
+## Read next
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Quickstart
+
+Now that the model is clear, walk the shortest practical path.
+
+[Open quickstart](quickstart.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Contract
+
+Go deeper into the shared requirement layer.
+
+[Read about the contract](../concepts/contract.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Resolution
+
+See how the current environment becomes true for a run.
+
+[Read about resolution](../concepts/resolution.md)
+</div>
+
+</div>

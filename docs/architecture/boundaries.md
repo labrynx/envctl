@@ -1,5 +1,13 @@
 # Boundaries
 
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Architecture</span>
+  <p class="envctl-section-intro__body">
+    This page describes the boundaries that keep both the product model and the codebase understandable.
+    They are intentional limits, not incidental implementation details.
+  </p>
+</div>
+
 Architectural boundaries matter in `envctl` because the product itself is built around boundaries.
 
 The tool stays understandable only if it keeps clear lines between:

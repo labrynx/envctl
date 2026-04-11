@@ -1,122 +1,132 @@
 # Using hooks
 
-envctl can automatically install Git hooks to protect your repository from leaking secrets.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Guide</span>
+  <p class="envctl-section-intro__body">
+    Use Git hooks when you want immediate local feedback before commit and push.
+    In <code>envctl</code>, hooks exist for one focused reason: keep <code>envctl guard secrets</code> wired into the local Git flow in a visible, repairable way.
+  </p>
+</div>
 
-## Installing hooks
+## When to use this guide
 
-When you run:
+Use this page when:
 
-```
-envctl init
-```
+- you want envctl-managed hook protection in a repository
+- hook status looks unclear or drifted
+- you need to install, repair, force, or remove managed wrappers
 
-envctl will try to install managed hooks.
+If you want the concept, read [Hooks](../concepts/hooks.md) first.
 
-You may see:
+## Starting point
 
-```
-hooks_installed: yes
-```
+In most repositories, the normal path is:
 
-or:
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">bootstrap hooks</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl init</span>
+<span class="envctl-doc-terminal__line">$ envctl hooks status</span></code></pre>
+</div>
 
-```
-hooks_installed: no
-hooks_reason: partial_conflict
-```
+`init` attempts to install managed hooks during repository bootstrap. If that does not complete cleanly, inspect or repair hooks explicitly afterwards.
 
-A conflict usually means there are existing hooks.
+## Step 1: check current hook state
 
-## Checking hook status
-
-Run:
-
-```
+```bash
 envctl hooks status
 ```
 
-You will see the state of each hook:
+Typical states:
 
 - `healthy`
 - `missing`
 - `drifted`
 - `foreign`
+- `not_executable`
 - `unsupported`
 
-## Installing hooks manually
+Practical reading:
 
-If hooks are missing:
+- **healthy** → protection is in place
+- **missing** → install it
+- **drifted** / **not_executable** → repair it
+- **foreign** → something else owns that hook name
+- **unsupported** → envctl refuses to manage that hooks path
 
-```
+## Step 2: install or repair
+
+If wrappers are missing:
+
+```bash
 envctl hooks install
 ```
 
-This will:
+If wrappers exist but look wrong:
 
-- create missing hooks
-- fix broken managed hooks
-- leave foreign hooks untouched
-
-## Repairing hooks
-
-If something looks wrong:
-
-```
+```bash
 envctl hooks repair
 ```
 
-This ensures that all supported hooks are functional.
+Both commands stay conservative by default and leave foreign hooks alone.
 
-## Forcing installation
+## Step 3: force only when you mean takeover
 
-If you want envctl to take control of existing hooks:
-
-```
+```bash
 envctl hooks install --force
+envctl hooks repair --force
 ```
 
-This will overwrite foreign hooks for supported hook names.
+!!! warning "Use `--force` intentionally"
+    `--force` allows `envctl` to overwrite foreign hooks for supported hook names in the effective managed hooks path.
+    It is not a general “fix everything” switch.
 
-Use this only if you are sure.
+## Step 4: remove only envctl-managed wrappers
 
-## Removing hooks
-
-To remove managed hooks:
-
-```
+```bash
 envctl hooks remove
 ```
 
-This:
+This removes managed wrappers only. It does not remove foreign hooks.
 
-- deletes envctl-managed hooks
-- leaves foreign hooks untouched
+## Common branches
 
-## What hooks actually do
+- if the hooks path is **unsupported**, fix the Git hooks path first
+- if the hooks are **foreign**, decide whether envctl should really take ownership
+- if hooks are **healthy** but behavior still looks wrong, the issue may be staged content or workflow assumptions, not the wrapper itself
 
-Each managed hook is a simple wrapper:
+## Read next
 
-```
-envctl hook-run <hook-name>
-```
+<div class="envctl-doc-card-grid" markdown>
 
-Which internally runs:
+<div class="envctl-doc-card" markdown>
+### guard secrets
 
-```
-envctl guard secrets
-```
+See exactly what the managed wrappers execute.
 
-If secrets are found:
+[Open guard reference](../reference/commands/guard.md)
+</div>
 
-- the operation fails
-- the commit or push is blocked
+<div class="envctl-doc-card" markdown>
+### Hooks troubleshooting
 
-## When to use hooks
+Go deeper when hook state itself is missing, drifted, foreign, or unsupported.
 
-Hooks are useful when you want:
+[Open hooks troubleshooting](../troubleshooting/hooks.md)
+</div>
 
-- immediate feedback before committing
-- protection against accidental leaks
-- consistent behavior across developers
+<div class="envctl-doc-card" markdown>
+### Hooks reference
 
-They are not a replacement for CI checks.
+Inspect the exact command surface and semantics.
+
+[Open hooks reference](../reference/commands/hooks.md)
+</div>
+
+</div>

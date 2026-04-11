@@ -1,10 +1,22 @@
 # Architecture
 
-This section explains how `envctl` is structured internally and why those boundaries matter.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Architecture</span>
+  <p class="envctl-section-intro__body">
+    This section is for maintainers and contributors.
+    It explains how <code>envctl</code> is structured internally and which boundaries matter if you want the codebase to keep matching the product model.
+  </p>
+</div>
 
-The goal is not architecture for architecture’s sake.
+## When to use this section
 
-The goal is to keep the system understandable, testable, and resistant to accidental coupling.
+Use these pages when your question sounds like:
+
+- what belongs in each implementation layer
+- which boundaries are architectural, not accidental
+- where compatibility rules still shape the codebase
+
+If you are learning the product itself, go back to [Concepts](../concepts/index.md) or [Guides](../guides/index.md).
 
 <div class="grid cards" markdown>
 
@@ -43,3 +55,33 @@ The goal is to keep the system understandable, testable, and resistant to accide
 - domain rules
 - repository logic
 - adapters and platform concerns
+
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Layers
+
+Start here for the conceptual codebase shape.
+
+[Read about layers](layers.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Boundaries
+
+See the implementation limits that protect the product model.
+
+[Read about boundaries](boundaries.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Internal architecture
+
+Move to the maintainer-facing repository view when you need current ownership details.
+
+[Read the internal architecture guide](../internals/architecture.md)
+</div>
+
+</div>

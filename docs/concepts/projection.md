@@ -1,190 +1,110 @@
 # Projection
 
-Projection is how `envctl` exposes an already-resolved environment to other tools.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Concept</span>
+  <p class="envctl-section-intro__body">
+    Projection is the step where a resolved environment leaves the internal model and is handed to another tool.
+    It is how runtime truth becomes usable outside <code>envctl</code>.
+  </p>
+</div>
 
-By the time projection happens, the important decisions are already made:
+## What it is
 
-* the contract has been loaded
-* the active profile has been selected
-* values have been resolved
-* placeholders have been expanded
-* validation has happened
+Projection answers one question:
 
-Projection does not define state.
+> How does the resolved environment reach the thing that needs it?
 
-It only makes existing resolved state usable.
+That target might be a subprocess, a generated dotenv file, or another explicit handoff surface.
 
-!!! note "Projection outputs are artifacts, not the source of truth"
-    `run`, `sync`, and `export` expose already-resolved state. They do not replace the contract or the vault.
+## Why it matters
 
-## TL;DR
+Many environment failures are not contract failures and not local-storage failures. They are handoff failures.
 
-Projection is how resolved state leaves `envctl` and reaches the thing that needs it.
+Typical pattern:
 
-- `run` projects into a child process
-- `sync` projects into a generated file
-- `export` projects into stdout
-- none of those outputs become the source of truth
+- `check` passes
+- `inspect` looks right
+- the application still sees something else
 
-## What projection is
+At that point, the problem usually lives in projection.
 
-Projection is the handoff layer between `envctl`'s model and the outside world.
+<div class="envctl-callout" markdown>
+You can have correct resolution and still have incorrect projection.
+</div>
 
-Its job is to answer:
+## What problem it solves
 
-> how should this resolved environment be exposed for this workflow?
+Projection keeps runtime handoff explicit instead of guessed.
 
-That is why `envctl` has different projection modes instead of pretending every tool wants the same interface.
+Common projection paths are:
 
-## What projection is not
+- `run` for subprocess injection
+- `export` for stdout-oriented output
+- `sync` for file-based handoff
+
+One clear example is enough to show the idea:
+
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">projection</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl run -- python app.py</span>
+<span class="envctl-doc-terminal__line">$ envctl export --format dotenv</span></code></pre>
+</div>
+
+## What it is not
 
 Projection is not:
 
-* the source of truth
-* a substitute for the contract
-* local storage
-* resolution itself
+- the contract
+- local storage
+- the resolved environment itself
+- whatever variables happen to be in your shell already
 
-A generated `.env.local`, a subprocess environment, or stdout export lines are all outputs of the model, not the model.
+It is a deliberate handoff from resolved truth to a target surface.
 
-## The three projection shapes
+## How it fits in the system
 
-Conceptually, `envctl` projects resolved state in three different ways.
+Projection comes after resolution:
 
-### 1. In-memory subprocess injection
+- the **contract** defines requirements
+- local values and **profiles** define the current context
+- **resolution** computes what is true
+- **projection** hands that truth to tools
 
-This is the `run` shape.
-
-The resolved environment is passed directly into a child process.
-
-What matters conceptually:
-
-* no dotenv file is created
-* the handoff is ephemeral
-* this is usually the cleanest path when the target process can receive env vars directly
-
-This is the projection mode that stays closest to the runtime model.
-
-### 2. File generation
-
-This is the `sync` shape.
-
-The resolved environment is materialized into a dotenv file on disk.
-
-What matters conceptually:
-
-* the file is generated output
-* it exists for compatibility with tools that want a file
-* it is safe to delete and regenerate
-
-This mode is useful, but it is easier to misuse if people start treating the generated file as the real source of truth.
-
-### 3. Stdout projection
-
-This is the `export` shape.
-
-The resolved environment is printed to standard output in a shell-oriented or dotenv-oriented format.
-
-What matters conceptually:
-
-* it is designed for chaining into other commands or scripts
-* it is still projection output, not storage
-* it keeps the handoff explicit
-
-## The core distinction
-
-The main difference between the projection modes is not “which command name do I type?”
-
-It is:
-
-* `run` projects into a process
-* `sync` projects into a file
-* `export` projects into stdout
-
-That mental split is more important than memorizing syntax.
-
-## Why projection exists at all
-
-Different tools want the same environment in different shapes.
-
-Instead of turning one of those shapes into the hidden canonical form, `envctl` keeps them all downstream of resolution.
-
-That avoids a common failure mode:
-
-* the generated file becomes stale
-* the file starts being edited by hand
-* the team no longer knows whether the contract, the vault, or the artifact is the truth
-
-Projection exists to prevent that collapse.
-
-## Common mistakes projection avoids
-
-Keeping projection explicit helps avoid:
-
-* treating `.env.local` as the primary state store
-* assuming shell inheritance is part of resolution
-* writing secrets to disk when direct subprocess injection would be enough
-* confusing “what the project needs” with “how one tool expects to receive it”
-
-## Projection and containers
-
-Projection is also where people often make incorrect assumptions about Docker.
-
-If `envctl` injects variables into the Docker client process, that does not automatically mean the container sees the full resolved environment.
-
-That is why container workflows often need explicit forwarding or an env-file handoff. The key idea is not Docker syntax itself, but this:
-
-> projection must match the interface the downstream tool actually consumes
-
-## When to choose each mode
-
-Choose the projection shape by downstream interface:
-
-* choose `run` when the target process can directly receive env vars
-* choose `sync` when a tool explicitly expects a file on disk
-* choose `export` when another shell command or script wants stdout
-
-The right question is not “which one is most powerful?”
-
-It is:
-
-> what is the narrowest projection that fits this workflow cleanly?
-
-## Why this matters
-
-When projection stays separate from state:
-
-* the model remains easier to trust
-* generated artifacts stay disposable
-* debugging gets easier
-* teams avoid silent divergence between local files and actual runtime truth
-
-In short, projection answers:
-
-> now that the environment is resolved, how should I hand it off?
+That is why validation alone does not guarantee correct runtime behavior. The target still has to receive the right handoff.
 
 ## Read next
 
-Connect projection back to the model and the exact command behavior:
+<div class="envctl-doc-card-grid" markdown>
 
-<div class="grid cards envctl-read-next" markdown>
+<div class="envctl-doc-card" markdown>
+### Resolution
 
--   **Resolution**
+Go one step earlier and see how runtime truth is computed.
 
-    Revisit the step that decides the effective environment before any handoff.
+[Read about resolution](resolution.md)
+</div>
 
-    [Read about resolution](resolution.md)
+<div class="envctl-doc-card" markdown>
+### Docker guide
 
--   **run**
+See projection at a real boundary where mistakes are easy to make.
 
-    See the exact subprocess projection behavior.
+[Open Docker guide](../guides/docker.md)
+</div>
 
-    [Open the `run` command](../reference/commands/run.md)
+<div class="envctl-doc-card" markdown>
+### run reference
 
--   **sync**
+Explore the default subprocess projection path directly.
 
-    See when file generation is appropriate and when it is not.
-
-    [Open the `sync` command](../reference/commands/sync.md)
+[Open run reference](../reference/commands/run.md)
+</div>
 
 </div>
