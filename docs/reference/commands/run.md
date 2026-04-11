@@ -1,5 +1,13 @@
 # run
 
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    <code>run</code> is the default in-memory projection path.
+    Use it when a target command can consume environment variables directly and you want the narrowest runtime handoff.
+  </p>
+</div>
+
 ```bash
 envctl run -- command
 ```
@@ -96,3 +104,33 @@ envctl --group Runtime run -- make serve
 * use [`inspect`](inspect.md) or `envctl inspect KEY` when projection is blocked and you need the full runtime picture
 * use [`sync`](sync.md) for file-based projection
 * use [`export`](export.md) for stdout-oriented projection
+
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Projection
+
+Reconnect `run` to the projection layer it implements.
+
+[Read about projection](../../concepts/projection.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Docker guide
+
+See a common boundary where projection assumptions often break down.
+
+[Open Docker guide](../../guides/docker.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### export
+
+Use this instead when the target expects stdout rather than a subprocess environment.
+
+[Open export reference](export.md)
+</div>
+
+</div>

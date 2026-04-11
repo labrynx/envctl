@@ -1,5 +1,13 @@
 # Platform Support
 
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    This page describes the platform assumptions and portability boundaries of <code>envctl</code>.
+    Use it when you need to understand how filesystem, shell, and subprocess differences affect the supported workflows.
+  </p>
+</div>
+
 `envctl` is designed for Unix-like systems first, including Linux, macOS, and WSL.
 
 That does not mean other environments are impossible. It means the main workflows are designed around platforms where filesystem behavior, subprocess execution, and shell conventions are easier to keep consistent.
@@ -164,3 +172,33 @@ The main portability concerns now are:
 - path handling
 
 That is a much better place to be than relying on path-based link tricks.
+
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Projection
+
+Reconnect platform differences to the handoff paths they affect most.
+
+[Read about projection](../concepts/projection.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### run
+
+See the most portable projection mode directly.
+
+[Open run reference](commands/run.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Migration and compatibility
+
+Open this when platform behavior is shaped by compatibility constraints.
+
+[Open compatibility guide](../internals/compatibility.md)
+</div>
+
+</div>

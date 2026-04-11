@@ -1,5 +1,13 @@
 # check
 
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    <code>check</code> is the fast validation gate.
+    Use it when you want a short answer about whether the selected environment currently satisfies the contract.
+  </p>
+</div>
+
 ```bash
 envctl check
 ```
@@ -92,3 +100,33 @@ envctl --var DATABASE_URL check
 * use [`inspect`](inspect.md) when the short answer is not enough
 * use [`run`](run.md), [`sync`](sync.md), or [`export`](export.md) only after the environment validates cleanly
 * use [`fill`](fill.md) when required values are missing
+
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Resolution
+
+Reconnect validation to the step that computes what is true.
+
+[Read about resolution](../../concepts/resolution.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### inspect
+
+Use this when pass/fail is not enough.
+
+[Open inspect reference](inspect.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Debugging
+
+Use a methodical flow when validation is only the first clue.
+
+[Open debugging guide](../../guides/debugging.md)
+</div>
+
+</div>

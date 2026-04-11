@@ -1,5 +1,12 @@
-
 # status
+
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    <code>status</code> is the quick readiness snapshot.
+    Use it when you want a compact summary of whether the current project and profile are usable.
+  </p>
+</div>
 
 ```bash
 envctl status
@@ -30,3 +37,33 @@ Do not use `status` when you need the full resolved runtime picture or one-key d
 
 * use [`check`](check.md) for the short pass-or-fail validation gate
 * use [`inspect`](inspect.md) for the detailed runtime view
+
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### First project
+
+See where `status` helps answer “what is already ready?” during onboarding.
+
+[Open first project](../../getting-started/first-project.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### check
+
+Use this when you need explicit validation rather than a summary snapshot.
+
+[Open check reference](check.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### inspect
+
+Use this when the compact snapshot is not enough detail.
+
+[Open inspect reference](inspect.md)
+</div>
+
+</div>

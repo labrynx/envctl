@@ -1,5 +1,13 @@
 # Encryption Reference
 
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    This page describes how optional vault encryption works operationally.
+    Use it when you need the at-rest protection model, migration flow, key format, and practical limits.
+  </p>
+</div>
+
 `envctl` supports optional symmetric encryption of vault profile files at rest.
 
 When enabled, every vault file (`values.env`, `profiles/*.env`) is stored as
@@ -155,3 +163,33 @@ ENVCTL-MASTER-KEY-V1:<key-id>:<base64-key>
 Legacy raw Fernet keys are still accepted during the transition period, but they are deprecated and scheduled for removal in `v2.6.0`. When `envctl` loads a legacy key from disk and can safely rewrite the file, it migrates the file automatically to the canonical format without changing the real secret.
 
 `ENVCTL_VAULT_KEY` also accepts both formats during the transition period. Legacy values supplied only through the environment are not persisted automatically.
+
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Vault reference
+
+See the physical storage layout and vault command surface.
+
+[Open vault reference](vault.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Security reference
+
+Reconnect encryption to the broader safety model and its limits.
+
+[Open security reference](security.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Vault concept
+
+Go back to the conceptual role of local storage in the model.
+
+[Read about the vault](../concepts/vault.md)
+</div>
+
+</div>

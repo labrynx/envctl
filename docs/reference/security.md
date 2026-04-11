@@ -1,5 +1,13 @@
 # Security Reference
 
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    This page describes the security assumptions and limits of <code>envctl</code>.
+    It is about the safety properties the model gives you, and just as importantly, the problems it does not claim to solve.
+  </p>
+</div>
+
 `envctl` is designed to make local environment handling clearer and safer. It is not a remote secrets platform and it does not try to hide its trust assumptions.
 
 ## Core assumption
@@ -126,7 +134,30 @@ Users still need to:
 
 ## Related pages
 
-* [Contract](../concepts/contract.md)
-* [Vault reference](vault.md)
-* [Encryption reference](encryption.md)
-* [Hooks command reference](commands/hooks.md)
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Contract
+
+Reconnect security limits to the shared layer that must stay safe to publish.
+
+[Read about the contract](../concepts/contract.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Encryption reference
+
+See the operational details of optional at-rest protection.
+
+[Open encryption reference](encryption.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Distribution reference
+
+Connect local storage safety to release artifact integrity.
+
+[Open distribution reference](distribution.md)
+</div>
+
+</div>

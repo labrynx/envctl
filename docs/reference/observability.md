@@ -1,5 +1,13 @@
 # Observability event contract
 
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    This page defines the stable observability event contract emitted by <code>envctl</code> tracing.
+    Use it when you are building tooling around trace output or changing instrumentation in the codebase.
+  </p>
+</div>
+
 `envctl` emits structured observation events when tracing is enabled (`ENVCTL_OBSERVABILITY_TRACE=1`).
 
 ## Event schema (stable)
@@ -101,3 +109,33 @@ pytest tests/unit/observability -q
 # Integration coverage for CLI trace observability
 pytest tests/integration/cli/test_trace_observability.py -q
 ```
+
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Configuration
+
+See the runtime config and environment-variable controls around tracing.
+
+[Open configuration reference](configuration.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### check
+
+One of the main commands that exposes observability flags in practice.
+
+[Open check reference](commands/check.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### run
+
+See the projection command path that also exposes trace flags.
+
+[Open run reference](commands/run.md)
+</div>
+
+</div>

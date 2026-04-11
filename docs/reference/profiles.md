@@ -1,8 +1,12 @@
 # Profiles Reference
 
-Profiles are local value namespaces for the same project contract.
-
-They are useful when one machine needs more than one local setup, but the project requirements themselves do not change.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    This page covers the exact profile selection and storage rules.
+    Use it when you already know what profiles are and need the precise mechanics.
+  </p>
+</div>
 
 ## Selection order
 
@@ -15,10 +19,10 @@ The active profile is resolved in this order:
 
 ## Storage rules
 
-* `values.env` is the canonical file for the implicit `local` profile
-* explicit profiles are stored as `profiles/<name>.env`
-* `local` does not use `profiles/local.env`
-* explicit profiles must exist before use
+- `values.env` is the canonical file for the implicit `local` profile
+- explicit profiles are stored as `profiles/<name>.env`
+- `local` does not use `profiles/local.env`
+- explicit profiles must exist before use
 
 ## Commands
 
@@ -38,15 +42,13 @@ envctl profile create dev
 
 Creates a new explicit profile.
 
-Use this before running commands against a named profile such as `dev` or `staging`.
-
 ### `copy`
 
 ```bash
 envctl profile copy dev staging
 ```
 
-Copies one profile into another. This is useful when you want a starting point instead of filling everything from scratch.
+Copies one profile into another.
 
 ### `remove`
 
@@ -68,10 +70,38 @@ Shows the physical path for a profile file.
 
 Profiles follow a few important rules:
 
-* profiles do not change the contract
-* profiles do not inherit from each other
-* profiles are local only
-* `add`, `set`, `unset`, and `fill` target the active profile only
-* `remove` removes the key from the contract and all persisted profiles
+- profiles do not change the contract
+- profiles do not inherit from each other
+- profiles are local only
+- `add`, `set`, `unset`, and `fill` target the active profile only
+- `remove` removes the key from the contract and all persisted profiles
 
-That means profiles are about organizing local values, not about redefining the project.
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Profiles concept
+
+Go back to what profiles mean in the model.
+
+[Read about profiles](../concepts/profiles.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Profiles guide
+
+See the workflow for creating, filling, copying, and removing profiles.
+
+[Open profiles guide](../guides/profiles.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Configuration reference
+
+Reconnect selection rules to the config defaults that participate in them.
+
+[Open configuration reference](configuration.md)
+</div>
+
+</div>

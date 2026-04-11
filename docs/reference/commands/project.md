@@ -1,5 +1,12 @@
-
 # project
+
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    <code>project</code> manages repository identity and local binding continuity.
+    Use it when a checkout needs explicit binding, rebind, unbind, or recovery operations.
+  </p>
+</div>
 
 ```bash
 envctl project bind ID
@@ -40,3 +47,33 @@ These commands matter most when local binding is broken, moved, or needs recover
 ## Related commands
 
 * see [`status`](status.md) and [`inspect`](inspect.md) when you are diagnosing whether the local project context itself is healthy
+
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Binding
+
+Reconnect project commands to the conceptual identity layer.
+
+[Read about binding](../../concepts/binding.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Metadata and local state
+
+See the local support state that helps recovery remain coherent.
+
+[Read about metadata](../../concepts/metadata.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Recovery
+
+Open this when the problem already feels like state recovery, not normal usage.
+
+[Open recovery guide](../../troubleshooting/recovery.md)
+</div>
+
+</div>

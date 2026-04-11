@@ -1,5 +1,13 @@
 # Distribution
 
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    This page covers the release artifacts `envctl` publishes and the integrity signals around them.
+    Use it when you need packaging, checksum, SBOM, or attestation details.
+  </p>
+</div>
+
 This page describes what `envctl` publishes as release artifacts and what integrity signals are expected around them.
 
 ## Release artifacts
@@ -73,3 +81,33 @@ The current release integrity model is stronger than raw file upload, but it is 
 * it assumes consumers trust GitHub's attestation and release surfaces for verification
 
 That is good enough for the current phase of the project, but it should still be treated as incremental hardening rather than the final state.
+
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Security reference
+
+Connect release artifact integrity back to the broader security model.
+
+[Open security reference](security.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Roadmap
+
+See how distribution hardening fits into current product direction.
+
+[Open roadmap](roadmap.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Migration and compatibility
+
+Open this when release or tooling policy is being interpreted through legacy constraints.
+
+[Open compatibility guide](../internals/compatibility.md)
+</div>
+
+</div>

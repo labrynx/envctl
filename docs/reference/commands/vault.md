@@ -1,5 +1,12 @@
-
 # vault
+
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    <code>vault</code> operates on the physical local storage layer.
+    Use it when you need exact behavior for inspecting or maintaining persisted vault files rather than the resolved runtime view.
+  </p>
+</div>
 
 ```bash
 envctl vault check
@@ -43,3 +50,33 @@ Use vault commands when you need to inspect or maintain the physical state on di
 
 * see [`inspect`](inspect.md) for resolved state
 * see [`sync`](sync.md) for generated dotenv artifacts
+
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Vault concept
+
+Go back to the conceptual role of local storage in the model.
+
+[Read about the vault](../../concepts/vault.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Vault reference
+
+See the physical storage layout and non-command rules.
+
+[Open vault reference](../vault.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Encryption reference
+
+Open this when the stored files are encrypted at rest.
+
+[Open encryption reference](../encryption.md)
+</div>
+
+</div>
