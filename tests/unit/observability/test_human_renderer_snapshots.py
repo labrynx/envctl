@@ -34,7 +34,7 @@ def _snapshot(name: str) -> str:
 
 def _render_trace(events: list[ObservationEvent]) -> str:
     lines = [line for event in events if (line := render_event(event, "human"))]
-    return "".join(f"{line}\n" for line in lines)
+    return "\n".join(lines) + "\n"
 
 
 def test_human_trace_snapshot_for_check_command() -> None:

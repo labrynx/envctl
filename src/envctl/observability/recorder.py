@@ -45,8 +45,7 @@ def record_event(
     return sanitized_observation
 
 
-def duration_ms(started_at: datetime, ended_at: datetime | None = None) -> int:
+def duration_ms(started_at: datetime, ended_at: datetime) -> int:
     """Return elapsed milliseconds between two UTC timestamps."""
-    end = ended_at or utcnow()
-    elapsed = end - started_at
-    return max(0, int(elapsed.total_seconds() * 1000))
+    delta = ended_at - started_at
+    return int(delta.total_seconds() * 1000)
