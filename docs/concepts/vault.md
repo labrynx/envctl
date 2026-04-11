@@ -1,111 +1,107 @@
 # Vault
 
-The vault stores local values outside version control.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Concept</span>
+  <p class="envctl-section-intro__body">
+    The vault is the local storage layer where real environment values live.
+    It exists so the repository can describe shared requirements without becoming the place where actual secrets or machine-specific values are stored.
+  </p>
+</div>
 
-If the contract says what the project requires, the vault is where one machine keeps the real values it currently has.
+## What it is
 
-!!! warning "The vault is not `.env.local`"
-    The vault is persistent local storage. `.env.local` is only a generated projection artifact when you use `sync`.
+The vault answers one question:
 
-## What the vault is
+> Where do the real local values live on this machine?
 
-The vault is:
+That includes actual credentials, local URLs, and other concrete values that satisfy the contract here.
 
-* local
-* machine-owned
-* outside Git
-* the physical storage layer for real values
+## Why it matters
 
-This is where values written by commands such as `add`, `set`, and `fill` ultimately live.
+Without a local storage layer, teams usually fall into one of two bad patterns:
 
-## What the vault is not
+- secrets drift into repository-visible files
+- every developer invents a different local storage habit
+
+The vault makes the boundary explicit: the contract is shared, but real values stay local.
+
+<div class="envctl-callout" markdown>
+The vault is local truth, not shared truth.
+</div>
+
+## What problem it solves
+
+The vault solves safe locality:
+
+- one machine stores its own real values
+- onboarding does not require copying someone else’s env file
+- secret handling stops being confused with project definition
+
+That is why commands like `fill` matter:
+
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">fill local values</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl fill</span></code></pre>
+</div>
+
+That command supplies missing local values. It does not edit the shared model.
+
+## What it is not
 
 The vault is not:
 
-* the contract
-* a generated `.env.local`
-* user-level config
-* the resolved runtime environment
+- the contract
+- a public config file
+- a team secret-sharing channel
+- a generated dotenv artifact
 
-Those distinctions matter because they keep storage, intent, and runtime behavior from collapsing into one blurry thing.
+If those boundaries blur, the model becomes much harder to trust.
 
-## Vault vs contract
+## How it fits in the system
 
-The clean split looks like this:
+The vault is one layer in a chain:
 
-* the **contract** defines what the project needs
-* the **vault** stores what this machine actually has
+- the **contract** defines requirements
+- the **vault** stores real local values
+- **profiles** select which local set is active
+- **resolution** computes effective runtime truth
+- **projection** hands that truth to tools
 
-That is why contract files belong in the repository, while vault data does not.
-
-If the vault were committed to Git, it would stop being local state and start leaking machine-specific or sensitive data into shared project history.
-
-## Vault vs profiles
-
-Profiles are not a separate storage system from the vault.
-
-They are different local value sets inside the same vault-backed project state.
-
-In other words:
-
-* the vault is the storage layer
-* profiles are named slices of local values inside that storage
-
-That is why switching profiles changes which local values are active, but does not change the shared project definition.
-
-## Vault vs `.env.local`
-
-This is the mapping people get wrong most often.
-
-The vault is **not** `.env.local`.
-
-`.env.local` is a generated artifact when you use `sync`.
-The vault is the real local storage backing the model.
-
-That means:
-
-* the vault is persistent local state
-* `.env.local` is disposable output
-* the vault is storage
-* `.env.local` is projection
-
-If a generated env file is deleted, you can recreate it.
-If the vault is wrong, the underlying local state is wrong.
-
-## Why this matters
-
-Keeping the vault separate from both the contract and generated artifacts helps avoid a few classic mistakes:
-
-* treating `.env.local` as the source of truth
-* committing local values by accident
-* confusing “what the project needs” with “what this machine currently has”
-
-In short:
-
-> the contract is shared intent, the vault is local truth
+Optional encryption strengthens the storage layer, but it does not change the conceptual split.
 
 ## Read next
 
-Follow local storage into the rest of the model:
+<div class="envctl-doc-card-grid" markdown>
 
-<div class="grid cards envctl-read-next" markdown>
+<div class="envctl-doc-card" markdown>
+### Contract
 
--   **Contract**
+Revisit the shared layer the vault is meant to satisfy locally.
 
-    Revisit the shared requirements that the vault never replaces.
+[Read about the contract](contract.md)
+</div>
 
-    [Read about the contract](contract.md)
+<div class="envctl-doc-card" markdown>
+### Profiles
 
--   **Profiles**
+See how one machine can hold more than one local value set safely.
 
-    See how named local contexts sit on top of vault-backed state.
+[Read about profiles](profiles.md)
+</div>
 
-    [Read about profiles](profiles.md)
+<div class="envctl-doc-card" markdown>
+### Encryption
 
--   **Projection**
+Go deeper into protection for local stored values.
 
-    Understand why `.env.local` is output, not storage.
-
-    [Read about projection](projection.md)
+[Open encryption reference](../reference/encryption.md)
+</div>
 
 </div>

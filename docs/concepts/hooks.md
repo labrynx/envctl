@@ -1,95 +1,95 @@
 # Hooks
 
-envctl can install and manage a minimal set of Git hooks to ensure that sensitive data never gets committed by mistake.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Concept</span>
+  <p class="envctl-section-intro__body">
+    <code>envctl</code> can manage a very small Git-hook safety layer.
+    The point is not generic automation. The point is narrow local protection against committing or pushing envctl-managed secret material by mistake.
+  </p>
+</div>
 
-This is not a general-purpose hook system. It is a very focused safety mechanism.
+## What hooks are
 
-## What envctl does
+In the `envctl` model, managed hooks are local wrappers around:
 
-envctl manages only two hooks:
-
-- `pre-commit`
-- `pre-push`
-
-Both run:
-
-```
+```text
 envctl guard secrets
 ```
 
-This means:
+They exist to stop obvious secret-handling mistakes before commit and push.
 
-- your commits are checked before they are created
-- your pushes are checked before they leave your machine
+## Why they matter
 
-If a secret is detected, the operation is blocked.
+Hooks add a lightweight local safety net:
+
+- before a commit is created
+- before a push leaves the machine
+
+That makes them useful, especially for teams, but they remain a narrow protection layer.
+
+## What problem they solve
+
+Managed hooks solve one focused problem:
+
+> prevent accidental local Git operations from carrying envctl-managed secret material forward unnoticed
+
+They do not try to solve broader CI policy, arbitrary automation, or multi-tool hook orchestration.
+
+## What hooks are not
+
+Managed hooks are not:
+
+- a general-purpose automation framework
+- a hook-merging system
+- a replacement for CI enforcement
+- a guarantee against `--no-verify`
+
+That narrow scope is intentional. It avoids hidden behavior and fragile integrations.
 
 ## Managed vs foreign hooks
 
-envctl classifies hooks into two categories:
+`envctl` distinguishes:
 
-### Managed hooks
+- **managed hooks**: created by `envctl`, marked as `managed-by: envctl`, and fully controlled by it
+- **foreign hooks**: created by something else or manually modified
 
-Hooks created by envctl:
+If a hook is not managed by `envctl`, it is left alone by default.
 
-- contain the marker `managed-by: envctl`
-- match the expected wrapper exactly
-- are fully controlled by envctl
+## How hooks fit in the system
 
-### Foreign hooks
+Managed hooks sit beside the core model, not inside it:
 
-Any hook that:
+- the **contract** defines requirements
+- the **vault** stores local values
+- **resolution** and **projection** govern runtime truth
+- **hooks** add a local Git safety layer around that model
 
-- does not contain the envctl marker
-- or has been modified manually
-- or comes from another tool (Husky, Git LFS, etc.)
+## Read next
 
-envctl will not modify these by default.
+<div class="envctl-doc-card-grid" markdown>
 
-## Why envctl does not merge hooks
+<div class="envctl-doc-card" markdown>
+### Using hooks
 
-envctl does **not** try to merge its logic into existing hooks.
+See the operational workflow for install, status, repair, and removal.
 
-That is intentional.
+[Open hooks guide](../guides/hooks.md)
+</div>
 
-Hook scripts can be fragile:
+<div class="envctl-doc-card" markdown>
+### hooks reference
 
-- execution order matters
-- shell flags (`set -e`) can change behavior
-- some scripts use `exec`
-- others depend on environment variables
+See the exact command surface for the hook management commands.
 
-Trying to automatically inject logic would make the system unreliable.
+[Open hooks reference](../reference/commands/hooks.md)
+</div>
 
-Instead, envctl follows a simple rule:
+<div class="envctl-doc-card" markdown>
+### Security reference
 
-> If a hook is not managed by envctl, it is left untouched.
+Connect hook protection back to the broader security model and its limits.
 
-## What happens on conflict
+[Open security reference](../reference/security.md)
+</div>
 
-If a hook already exists and is not managed by envctl:
-
-- envctl reports a conflict
-- envctl does not overwrite it
-- the system is considered partially configured
-
-You can then decide how to proceed:
-
-- keep the existing hook and integrate manually
-- or let envctl take control with `--force`
-
-## Scope and limitations
-
-envctl hooks are designed to:
-
-- prevent accidental leaks of secrets
-- provide consistent behavior across environments
-
-They are **not** designed to:
-
-- replace other hook systems
-- run arbitrary commands
-- enforce policies in CI
-- guarantee enforcement against `--no-verify`
-
-They are a local safety layer, not a complete enforcement system.
+</div>

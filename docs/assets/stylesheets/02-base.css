@@ -1,0 +1,64 @@
+/* ── Base ───────────────────────────────────────────────────── */
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--envctl-font-body);
+  color: var(--envctl-text);
+}
+
+.md-grid {
+  max-width: var(--envctl-max-width);
+}
+
+.md-main__inner {
+  overflow: visible;
+}
+
+.md-content {
+  background: transparent;
+}
+
+.md-content__inner {
+  max-width: var(--envctl-doc-max-width);
+}
+
+/* Landing layout reset inside MkDocs Material */
+.md-content__inner > .envctl-landing {
+  display: block;
+  width: 100%;
+  margin: 0;
+  position: relative;
+}
+
+.md-content__inner:has(> .envctl-landing) {
+  margin: 0;
+  padding: 0;
+  max-width: 100%;
+}
+
+.md-content__inner:has(> .envctl-landing)::before {
+  display: none;
+}
+
+.md-content__inner:has(> .envctl-landing) > h1:first-child {
+  display: none;
+}
+
+@keyframes envctlFadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+@media (max-width: 960px) {
+  .md-content__inner {
+    max-width: 100%;
+  }
+}

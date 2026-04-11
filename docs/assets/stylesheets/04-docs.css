@@ -1,0 +1,143 @@
+/* ── Docs typography and content ───────────────────────────── */
+
+.md-typeset {
+  font-size: 0.94rem;
+  line-height: 1.7;
+  color: var(--envctl-text);
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4 {
+  font-family: var(--envctl-font-heading);
+  letter-spacing: -0.02em;
+  color: var(--envctl-text);
+}
+
+.md-typeset h1 {
+  margin: 0 0 1.25rem;
+  font-size: clamp(2rem, 3.4vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1.08;
+}
+
+.md-typeset h2 {
+  margin: 3rem 0 1rem;
+  font-size: clamp(1.45rem, 2.2vw, 1.9rem);
+  font-weight: 700;
+  line-height: 1.15;
+  padding-top: 0.2rem;
+}
+
+.md-typeset h3 {
+  margin: 2rem 0 0.7rem;
+  font-size: 1.12rem;
+  font-weight: 700;
+}
+
+.md-typeset h4 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.md-typeset p,
+.md-typeset ul,
+.md-typeset ol,
+.md-typeset blockquote,
+.md-typeset .admonition,
+.md-typeset details {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.md-typeset p code,
+.md-typeset li code,
+.md-typeset td code,
+.md-typeset h1 code,
+.md-typeset h2 code,
+.md-typeset h3 code,
+.md-typeset h4 code {
+  font-family: var(--envctl-font-mono);
+  font-size: 0.85em;
+  background: rgba(0, 47, 167, 0.07);
+  color: var(--envctl-accent);
+  border: 1px solid rgba(0, 47, 167, 0.08);
+  border-radius: 6px;
+  padding: 0.15em 0.4em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.md-typeset pre code,
+.md-typeset .highlight code {
+  background: none !important;
+  border: 0 !important;
+  padding: 0 !important;
+  color: inherit !important;
+  border-radius: 0 !important;
+}
+
+.md-typeset a {
+  color: var(--envctl-accent);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.16em;
+}
+
+.md-typeset a:hover {
+  color: var(--envctl-accent-light);
+}
+
+/* ── Tables ────────────────────────────────────────────────── */
+
+.md-typeset table:not([class]) {
+  border: 1px solid var(--envctl-border);
+  border-radius: 12px;
+  overflow: hidden;
+  display: table;
+}
+
+.md-typeset table:not([class]) th {
+  font-weight: 700;
+  color: var(--envctl-text);
+  background: rgba(9, 9, 11, 0.03);
+}
+
+.md-typeset table:not([class]) th,
+.md-typeset table:not([class]) td {
+  border-color: var(--envctl-border);
+}
+
+/* ── Tabs ──────────────────────────────────────────────────── */
+
+.md-typeset .tabbed-set {
+  border-radius: 14px;
+}
+
+.md-typeset .tabbed-labels {
+  gap: 0.5rem;
+}
+
+.md-typeset .tabbed-labels > label {
+  border-radius: 8px 8px 0 0;
+  font-weight: 600;
+}
+
+.md-typeset .tabbed-content {
+  border: 1px solid var(--envctl-border);
+  border-radius: 0 12px 12px 12px;
+  padding: 1rem 1rem 0.25rem;
+  background: var(--envctl-surface-strong);
+}
+
+/* ── Blockquotes ───────────────────────────────────────────── */
+
+.md-typeset blockquote {
+  margin-left: 0;
+  padding: 0.8rem 1rem;
+  border-left: 3px solid var(--envctl-accent);
+  background: rgba(0, 47, 167, 0.035);
+  border-radius: 0 10px 10px 0;
+  color: var(--envctl-text-secondary);
+}

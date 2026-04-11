@@ -264,10 +264,13 @@ DOCS_DEPS ?= pip install -e ".[docs]"
 docs-install: ## Install documentation dependencies
 	$(PIP) install -e ".[docs]"
 
+docs-check: ## Build MkDocs site in strict mode for CI/local validation
+	mkdocs build --strict
+
 docs-build: ## Build MkDocs site locally
 	mkdocs build --strict
 
-docs-serve: ## Serve MkDocs site locally with live reload
+docs-serve: docs-build ## Serve MkDocs site locally with live reload
 	mkdocs serve
 
 docs-deploy: ## Deploy MkDocs site to GitHub Pages (requires write access)

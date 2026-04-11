@@ -1,10 +1,14 @@
 # Commands
 
-`envctl` commands are easier to understand when grouped by responsibility.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    This page organizes the CLI by intent rather than by alphabet.
+    Use it when you know roughly what you want to do and need the exact command surface for that job.
+  </p>
+</div>
 
-If you want practical examples, see the [guides](../../guides/index.md).
-If you want the model behind the commands, see the [concepts section](../../concepts/index.md).
-For legacy behavior and migration notes, see the [compatibility guide](../../internals/compatibility.md).
+If you want examples and workflow context, see [Guides](../../guides/index.md). If you want the model behind these commands, see [Concepts](../../concepts/index.md).
 
 ## Global options
 
@@ -26,8 +30,6 @@ Available global options:
 3. config `default_profile`
 4. `local`
 
-Named profiles must be created explicitly before use with `envctl profile create <name>`.
-
 ### Contract scope selectors
 
 - `--group LABEL` targets variables whose normalized `groups` include `LABEL`
@@ -36,32 +38,35 @@ Named profiles must be created explicitly before use with `envctl profile create
 
 These selectors are mutually exclusive.
 
-When none is provided, `envctl` uses the full contract.
-
-Scope selectors operate on the current contract model. For legacy field behavior such as `group`, `required`, or older root contract names, see the [compatibility guide](../../internals/compatibility.md).
-
 ## Command groups
 
 <div class="grid cards" markdown>
 
--   :material-file-document-outline:{ .lg .middle } **Contract mutation**
+-   :material-rocket-launch-outline:{ .lg .middle } **Bootstrap**
 
-    Change the shared project contract.
+    Prepare local config and repository state.
+
+    - [config](config.md)
+    - [init](init.md)
+
+-   :material-file-document-edit-outline:{ .lg .middle } **Shared contract**
+
+    Change the repository-owned environment requirements.
 
     - [add](add.md)
     - [remove](remove.md)
 
--   :material-pencil-outline:{ .lg .middle } **Value mutation**
+-   :material-pencil-outline:{ .lg .middle } **Local values**
 
-    Change local values only.
+    Change only the values stored for the active profile.
 
     - [set](set.md)
     - [unset](unset.md)
     - [fill](fill.md)
 
--   :material-magnify:{ .lg .middle } **Resolution**
+-   :material-magnify:{ .lg .middle } **Inspect and validate**
 
-    Inspect or validate resolved state.
+    Understand or validate resolved state before runtime.
 
     - [check](check.md)
     - [inspect](inspect.md)
@@ -69,67 +74,38 @@ Scope selectors operate on the current contract model. For legacy field behavior
 
 -   :material-export:{ .lg .middle } **Projection**
 
-    Expose resolved state to other tools.
+    Hand resolved state to subprocesses, files, or stdout.
 
     - [run](run.md)
     - [sync](sync.md)
     - [export](export.md)
 
--   :material-account-cog-outline:{ .lg .middle } **Profiles**
+-   :material-layers-triple-outline:{ .lg .middle } **Profiles**
 
-    Manage local value namespaces.
+    Manage named local value contexts.
 
     - [profile](profile.md)
 
 -   :material-database-lock-outline:{ .lg .middle } **Vault**
 
-    Inspect or maintain physical local vault files.
+    Inspect and maintain physical local storage.
 
     - [vault](vault.md)
 
 -   :material-identifier:{ .lg .middle } **Project identity**
 
-    Manage binding and recovery.
+    Manage binding and local project recovery.
 
     - [project](project.md)
 
--   :material-shield-alert-outline:{ .lg .middle } **Security**
+-   :material-shield-alert-outline:{ .lg .middle } **Hooks and guard**
 
-    Prevent secret material from being committed.
+    Operate the local Git safety layer.
 
     - [guard](guard.md)
     - [hooks](hooks.md)
 
 </div>
-
-## Command pages
-
-### Bootstrap and config
-
-- [init](init.md)
-- [config](config.md)
-
-### Must-have commands
-
-- [add](add.md)
-- [set](set.md)
-- [unset](unset.md)
-- [remove](remove.md)
-- [fill](fill.md)
-- [check](check.md)
-- [inspect](inspect.md)
-- [run](run.md)
-- [sync](sync.md)
-- [export](export.md)
-
-### Important supporting commands
-
-- [status](status.md)
-- [profile](profile.md)
-- [project](project.md)
-- [vault](vault.md)
-- [guard](guard.md)
-- [hooks](hooks.md)
 
 ## Deprecated aliases
 
@@ -139,9 +115,37 @@ The canonical diagnostic path is:
 - `envctl inspect`
 - `envctl inspect KEY`
 
-For compatibility, the following aliases still work:
+Deprecated compatibility aliases still work, but should not be used in new docs or scripts:
 
 - `envctl doctor` → `envctl inspect`
 - `envctl explain KEY` → `envctl inspect KEY`
 
-They are deprecated and should not be used in new documentation or scripts.
+## Read next
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### check
+
+Start here for the fastest pass/fail validation answer.
+
+[Open check reference](check.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### run
+
+Start here for the default in-memory projection path.
+
+[Open run reference](run.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Concepts
+
+Go back here when the behavior only makes sense once the layers are clear.
+
+[Open concepts](../../concepts/index.md)
+</div>
+
+</div>

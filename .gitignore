@@ -39,3 +39,4 @@ master.key
 .envctl/observability/
 .release-venv/
 .release-venv-sdist/
+.sbom-venv/

@@ -1,232 +1,103 @@
 # Resolution
 
-Resolution is how `envctl` decides what value each variable actually has at runtime.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Concept</span>
+  <p class="envctl-section-intro__body">
+    Resolution is the step where <code>envctl</code> determines what is actually true for the current run.
+    It is the bridge between the shared contract and the currently selected local values.
+  </p>
+</div>
 
-If the contract says what should exist, resolution answers the next question:
+## What it is
 
-> what is the effective value right now, and why?
+Resolution answers one question:
 
-That makes resolution the bridge between shared intent and usable runtime state.
+> Given this contract and this local context, what is the effective environment right now?
 
-!!! important "Resolution does not read arbitrary host environment variables"
-    Resolution only uses declared contract data, active profile values, and contract defaults. It does not silently pull undeclared shell state into the model.
+It is the point where the model stops being abstract.
 
-## TL;DR
+## Why it matters
 
-Resolution is where `envctl` combines the contract with local vault state and decides the effective environment.
+A contract can look fine and local values can look fine, yet runtime behavior can still be surprising. What matters is not only what exists, but how it becomes effective.
 
-- The contract defines what must exist and what defaults are allowed.
-- The vault supplies local values for the active profile.
-- Resolution is deterministic: it does not quietly read arbitrary host shell state.
-- Projection only happens after resolution succeeds.
+That is what resolution defines.
 
-```mermaid
-flowchart TD
-    contract["Contract<br/>declared keys + defaults"]
-    vault["Vault<br/>active profile values"]
-    selection["1. Selection"]
-    expansion["2. Expansion"]
-    validation["3. Validation"]
-    runtime["Resolved runtime view"]
+<div class="envctl-callout" markdown>
+The contract defines shared requirements. Resolution computes current truth inside that model.
+</div>
 
-    contract --> selection
-    vault --> selection
-    selection --> expansion
-    expansion --> validation
-    validation --> runtime
-```
+## What problem it solves
 
-## What resolution is
+Resolution gives `envctl` one explicit place to answer:
 
-Resolution is the process that turns:
+- which concrete values are in play now
+- whether the selected local context satisfies the contract
+- what should be validated or projected next
 
-* contract declarations
-* active profile values
-* contract defaults
+That is why `check` depends on resolution:
 
-into one validated runtime view.
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">validation</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl check</span></code></pre>
+</div>
 
-It is where `envctl` stops being a storage model and becomes an executable environment model.
+Underneath, that asks whether the resolved environment satisfies the contract.
 
-## What resolution is not
+## What it is not
 
 Resolution is not:
 
-* projection
-* file generation
-* shell inheritance magic
-* “whatever the current host environment happens to contain”
+- the contract itself
+- a random merge of files
+- inherited shell state by accident
+- projection into a subprocess or file
 
-If something is not declared in the contract or selected by the resolution rules, it does not quietly appear just because it exists in your shell.
+It computes what is true. It does not decide how that truth is handed off.
 
-## The observable flow
+## How it fits in the system
 
-At a high level, resolution does three things:
+The sequence is:
 
-```text
-selection
--> expansion
--> validation
-```
+- the **contract** defines requirements
+- local values and **profiles** provide the current context
+- **resolution** computes the effective environment
+- **projection** hands that result to a process, file, or tool
 
-That is the flow you should keep in your head when debugging.
-
-## 1. Selection
-
-Selection decides the raw value source for each variable.
-
-The effective order is:
-
-```text
-active profile values
--> contract defaults
-```
-
-That means:
-
-* local values in the active profile win first
-* if a value is not present there, the contract may provide a default
-* arbitrary host process variables do not participate in selection
-
-This is one of the places where `envctl` becomes easier to reason about than ad hoc dotenv conventions.
-
-## 2. Expansion
-
-After selection, `envctl` resolves supported placeholders inside the chosen raw values.
-
-In v1, the supported placeholder form is:
-
-```text
-${VAR}
-```
-
-That means:
-
-* `${VAR}` is meaningful
-* `$VAR` stays literal
-* malformed placeholders are invalid
-
-### Contract-only expansion
-
-Expansion is contract-only.
-
-If a value references `${VAR}`:
-
-* `VAR` must be a declared contract key
-* that referenced key is resolved through the same model
-* if the referenced key has no selected value, resolution becomes invalid
-* if the placeholder points to an unknown key, resolution becomes invalid
-
-This is deliberate. It avoids hidden dependence on arbitrary machine state.
-
-So an expression like `${HOME}` is only valid if `HOME` is part of the contract.
-
-## 3. Validation
-
-Once selection and expansion have produced an effective value, resolution validates the result against the contract.
-
-Typical checks include:
-
-* missing required values
-* placeholder syntax and reference validity
-* type correctness
-* declared formats such as `json`, `url`, or `csv`
-* allowed choices
-* patterns
-
-So resolution is not just “pick a value”. It is “pick a value and confirm it still makes sense”.
-
-## What the output looks like
-
-The output of resolution is one resolved environment:
-
-* values are selected
-* placeholders are expanded
-* invalid states are surfaced
-* the result is ready to inspect, validate, or project
-
-This is the state that commands like `check`, `inspect`, `run`, `sync`, and `export` work from.
-
-## What resolution makes observable
-
-A good resolution model should make these questions answerable:
-
-* where did this value come from?
-* was a default used?
-* did a placeholder chain resolve cleanly?
-* why did this variable fail validation?
-* why did projection get blocked?
-
-That is why resolution matters so much to the product. It is where “environment configuration” becomes something you can reason about instead of guess.
-
-## Common failure modes
-
-Resolution usually fails in a few predictable ways:
-
-* a required variable has no selected value
-* a placeholder points to an undeclared key
-* a placeholder references a key that also cannot resolve
-* a value exists but fails type or format validation
-* a user expects host environment inheritance that the model does not allow
-
-These failures are useful because they reveal bad assumptions early.
-
-## Why there is no magic
-
-`envctl` is deliberately conservative here.
-
-It does not quietly:
-
-* inherit undeclared shell variables into resolution
-* invent values to make a command pass
-* let one profile bleed into another
-* let groups redefine how expansion works
-
-That strictness is the reason the system stays explainable.
-
-## Relation to selectors
-
-Selectors such as `--group`, `--set`, and `--var` change the active scope a command is concerned with.
-
-They do not change the basic resolution model itself.
-
-That distinction matters: selection affects what output or validation target you asked for, but expansion still follows contract-defined references.
-
-## Why this matters
-
-When resolution is explicit:
-
-* debugging gets faster
-* CI becomes more trustworthy
-* local workflows stop depending on hidden machine quirks
-* projection outputs stop feeling mysterious
-
-In short, resolution answers:
-
-> given the contract and my selected local state, what is actually true right now?
+That separation is why validation, inspection, and runtime handoff can stay clear instead of collapsing into one fuzzy step.
 
 ## Read next
 
-Move from the runtime model to the places where it becomes visible:
+<div class="envctl-doc-card-grid" markdown>
 
-<div class="grid cards envctl-read-next" markdown>
+<div class="envctl-doc-card" markdown>
+### Projection
 
--   **Projection**
+See how resolved truth reaches subprocesses, files, and downstream tools.
 
-    See how resolved state is handed to a process, file, or stdout.
+[Read about projection](projection.md)
+</div>
 
-    [Read about projection](projection.md)
+<div class="envctl-doc-card" markdown>
+### inspect
 
--   **check**
+Use inspection commands when you need to make resolution visible.
 
-    Use the fast diagnostic path when you want a short readiness answer.
+[Open inspect reference](../reference/commands/inspect.md)
+</div>
 
-    [Open the `check` command](../reference/commands/check.md)
+<div class="envctl-doc-card" markdown>
+### Debugging
 
--   **inspect**
+Use a methodical flow when the resolved environment is not what you expected.
 
-    Use the deeper diagnostic path when you need to understand one value.
-
-    [Open the `inspect` command](../reference/commands/inspect.md)
+[Open debugging guide](../guides/debugging.md)
+</div>
 
 </div>

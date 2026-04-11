@@ -1,0 +1,190 @@
+/* ── Visual primitives ─────────────────────────────────────── */
+
+.envctl-page {
+  position: relative;
+  overflow: visible;
+  background: var(--envctl-bg);
+}
+
+.envctl-surface {
+  position: relative;
+  z-index: 1;
+}
+
+.envctl-glass {
+  background: var(--envctl-glass-bg);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+.envctl-shadow-hover {
+  transition:
+    transform var(--envctl-transition-base),
+    box-shadow var(--envctl-transition-base),
+    border-color var(--envctl-transition-base),
+    background-color var(--envctl-transition-base),
+    color var(--envctl-transition-base);
+}
+
+.envctl-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: none;
+}
+
+.envctl-reveal.envctl-reveal--visible {
+  animation: envctlFadeUp 0.72s cubic-bezier(0.2, 1, 0.22, 1) forwards;
+}
+
+.envctl-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(24px);
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.envctl-orb--blue {
+  background: rgba(0, 47, 167, 0.12);
+}
+
+.envctl-orb--amber {
+  background: rgba(244, 182, 67, 0.14);
+}
+
+.envctl-code-line {
+  display: flex;
+  gap: 0.875rem;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.envctl-code-line > :last-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.envctl-code-index {
+  width: 2ch;
+  min-width: 2ch;
+  text-align: right;
+  flex: 0 0 2ch;
+  color: rgba(228, 228, 231, 0.34);
+  user-select: none;
+}
+
+.envctl-terminal__rows {
+  display: grid;
+  gap: 0.18rem;
+}
+
+/* ── JS-enhanced interactions ──────────────────────────────── */
+
+.envctl-terminal__copy {
+  margin-left: 0.75rem;
+  padding: 0.32rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #a1a1aa;
+  font-family: var(--envctl-font-mono);
+  font-size: 0.68rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color var(--envctl-transition-base),
+    border-color var(--envctl-transition-base),
+    background-color var(--envctl-transition-base);
+}
+
+.envctl-terminal__copy:hover,
+.envctl-terminal__copy:focus-visible {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.envctl-terminal__copy--done {
+  color: #ffffff;
+  border-color: rgba(0, 47, 167, 0.45);
+  background: rgba(0, 47, 167, 0.18);
+}
+
+.envctl-backtotop {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--envctl-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--envctl-text);
+  font-family: var(--envctl-font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  box-shadow: 0 10px 24px rgba(9, 9, 11, 0.12);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  cursor: pointer;
+  transition:
+    opacity var(--envctl-transition-base),
+    visibility var(--envctl-transition-base),
+    transform var(--envctl-transition-base),
+    box-shadow var(--envctl-transition-base);
+}
+
+.envctl-backtotop--visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.envctl-backtotop:hover,
+.envctl-backtotop:focus-visible {
+  box-shadow: 0 14px 28px rgba(9, 9, 11, 0.16);
+}
+
+.envctl-header--scrolled {
+  box-shadow: 0 10px 28px rgba(9, 9, 11, 0.08);
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .envctl-backtotop {
+    right: 1rem;
+    bottom: 1rem;
+  }
+
+  .envctl-terminal__copy {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.64rem;
+  }
+}
+
+/* ── Reduced motion ─────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .envctl-reveal {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    animation: none !important;
+  }
+
+  .envctl-shadow-hover,
+  .envctl-terminal__copy,
+  .envctl-backtotop {
+    transition: none !important;
+  }
+
+  .envctl-shadow-hover:hover {
+    transform: none !important;
+  }
+}

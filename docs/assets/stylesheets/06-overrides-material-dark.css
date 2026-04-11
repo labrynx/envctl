@@ -1,0 +1,11 @@
+/* ── Material dark mode ────────────────────────────────────── */
+
+[data-md-color-scheme="slate"] body,
+[data-md-color-scheme="slate"] .md-container,
+[data-md-color-scheme="slate"] .md-main,
+[data-md-color-scheme="slate"] .md-main__inner,
+[data-md-color-scheme="slate"] .md-content,
+[data-md-color-scheme="slate"] .md-sidebar--primary,
+[data-md-color-scheme="slate"] .md-sidebar--secondary {
+  background: #05070b;
+}

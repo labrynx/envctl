@@ -1,5 +1,13 @@
 # init
 
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    <code>init</code> is the repository bootstrap command.
+    Use it when a checkout needs to establish local state, binding, and optional managed-hook setup before normal workflows begin.
+  </p>
+</div>
+
 ```bash
 envctl init
 envctl init PROJECT
@@ -70,3 +78,33 @@ envctl init --contract starter
 * use [`project`](project.md) when you need lower-level binding operations
 * use [`fill`](fill.md) after initialization to add missing required values
 * use [`hooks`](hooks.md) to inspect, repair, or remove managed Git hooks explicitly
+
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### First project
+
+See where `init` appears in the onboarding flow.
+
+[Open first project](../../getting-started/first-project.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Binding
+
+Reconnect bootstrap behavior to repository identity and recovery.
+
+[Read about binding](../../concepts/binding.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Hooks
+
+See the exact command group for managed hook operations after bootstrap.
+
+[Open hooks reference](hooks.md)
+</div>
+
+</div>

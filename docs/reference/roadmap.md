@@ -1,5 +1,13 @@
 # Roadmap
 
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Supporting reference</span>
+  <p class="envctl-section-intro__body">
+    This page captures the product direction that current documentation and implementation are reinforcing.
+    It is for orientation, not for exact command behavior or release-by-release promises.
+  </p>
+</div>
+
 This page is a high-level view of where `envctl` came from and what direction the product is reinforcing.
 
 ## What the product has already clarified
@@ -68,3 +76,33 @@ Feature work should only displace this priority when it directly reduces risk, m
 This is not a version-by-version changelog and it is not a promise of exact future releases.
 
 For concrete release detail, use the changelog and release notes instead.
+
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Concepts
+
+Go back to the model the roadmap is reinforcing.
+
+[Open concepts](../concepts/index.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Architecture
+
+See the maintainers’ view of the boundaries that support this direction.
+
+[Open architecture overview](../architecture/index.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Distribution
+
+Connect roadmap direction to the current release-hardening policy.
+
+[Open distribution reference](distribution.md)
+</div>
+
+</div>

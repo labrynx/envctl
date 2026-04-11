@@ -1,5 +1,13 @@
 # hooks
 
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    <code>hooks</code> manages the small set of Git hooks that <code>envctl</code> owns.
+    Use it when you need exact behavior for hook status, install, repair, or removal.
+  </p>
+</div>
+
 ```bash
 envctl hooks status
 envctl hooks install [--force]
@@ -117,6 +125,36 @@ The hooks JSON contract is versioned independently and currently emits:
 * `data.overall_status`
 * `data.changed` for mutating operations
 * `data.results[]`
+
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Hooks concept
+
+Reconnect the command surface to the conceptual scope and limits.
+
+[Read about hooks](../../concepts/hooks.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### guard
+
+See the policy command the managed wrappers actually execute.
+
+[Open guard reference](guard.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Hooks troubleshooting
+
+Open this when hook state is missing, drifted, foreign, or unsupported.
+
+[Open hooks troubleshooting](../../troubleshooting/hooks.md)
+</div>
+
+</div>
 
 ## Relationship to `init`
 

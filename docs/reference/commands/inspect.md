@@ -1,5 +1,13 @@
 # inspect
 
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    <code>inspect</code> is the detailed diagnostic view.
+    Use it when the short validation answer is not enough and you need to see what the resolved environment actually looks like.
+  </p>
+</div>
+
 ```bash
 envctl inspect
 envctl inspect KEY
@@ -100,3 +108,33 @@ envctl inspect --groups
 * use [`check`](check.md) for the short pass-or-fail answer
 * use [`status`](status.md) for a smaller readiness snapshot
 * use [`run`](run.md) after you understand the resolved state you want to project
+
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Resolution
+
+Reconnect inspection to the step that computes effective runtime truth.
+
+[Read about resolution](../../concepts/resolution.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### check
+
+Use this when you only need the fast validation answer.
+
+[Open check reference](check.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Debugging
+
+Use the broader workflow when you are isolating the wrong layer.
+
+[Open debugging guide](../../guides/debugging.md)
+</div>
+
+</div>

@@ -1,224 +1,136 @@
 # Recovery
 
-Recovery is for situations where the local state is not just “failing one check”, but has become unhealthy enough that normal workflows no longer feel reliable.
-
-This page is a playbook for getting back to a sane state.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Troubleshooting</span>
+  <p class="envctl-section-intro__body">
+    Recovery in <code>envctl</code> should be deliberate.
+    The goal is not to poke files until something works, but to return to a known-good state with the smallest possible blast radius.
+  </p>
+</div>
 
 ## When to use this page
 
 Use this page when:
 
-* local binding feels broken or ambiguous
-* the vault looks inconsistent
-* a profile exists but no longer behaves the way you expect
-* the contract and local state appear out of sync
+- the model has become unclear or inconsistent
+- you no longer trust one local layer
+- you need a controlled way back instead of random fixes
 
-If you are only debugging one command failure, start with [Common errors](common-errors.md) first.
+<div class="envctl-callout" markdown>
+Good recovery is usually **narrow**. Do not reset more than the layer that is actually broken.
+</div>
 
-## Recovery path 1: contract changed, local values are now incomplete
+## Start by identifying the broken layer
 
-This is the most common recovery case.
+Usually the issue is one of these:
 
-### What happened
+- contract validation
+- local profile values
+- hooks
+- projection
+- local expectations rather than actual state
 
-The project contract evolved, but your machine has not yet caught up.
+The safe recovery path depends on that distinction.
 
-### What to do
-
-Validate first:
+## Recovery path 1: validation fails after a contract change
 
 ```bash
 envctl check
-```
-
-Then fill only what is now missing:
-
-```bash
 envctl fill
+envctl check
 ```
 
-If one key is still confusing:
+Use this when the contract evolved but the local profile has not caught up yet.
+
+## Recovery path 2: the wrong profile is active
 
 ```bash
-envctl inspect KEY
+envctl --profile local check
+envctl --profile dev-alt check
+envctl --profile local run -- python app.py
 ```
 
-### Healthy end state
+Often nothing is corrupted at all. The wrong local context was simply selected.
 
-`check` passes again and the selected profile satisfies the current contract.
-
-## Recovery path 2: wrong or missing explicit profile
-
-### What happened
-
-You expected one local setup, but the active profile is different, missing, or underfilled.
-
-### What to do
-
-Create the profile if needed:
+## Recovery path 3: one profile is no longer worth trusting
 
 ```bash
-envctl profile create dev
+envctl profile remove dev-alt
+envctl profile create dev-alt
+envctl --profile dev-alt fill
+envctl --profile dev-alt check
 ```
 
-Then refill and validate it explicitly:
+Use this when a profile has drifted so far that patching it is more confusing than rebuilding it cleanly.
+
+## Recovery path 4: hooks are missing or drifted
 
 ```bash
-envctl --profile dev fill
-envctl --profile dev check
+envctl hooks status
+envctl hooks repair
+envctl hooks status
 ```
 
-### Healthy end state
+If a foreign hook intentionally owns that name and you want envctl to take over again, only then consider a forced repair.
 
-The intended profile exists, validates cleanly, and can be selected explicitly in normal workflows.
-
-## Recovery path 3: projected file is misleading or stale
-
-### What happened
-
-A generated dotenv file has drifted away from the current resolved state or has started being treated as the source of truth.
-
-### What to do
-
-Regenerate it from the current model:
+## Recovery path 5: validation passes but runtime behavior is still wrong
 
 ```bash
-envctl sync
-```
-
-If the file is not actually required, switch back to direct runtime projection:
-
-```bash
+envctl inspect DATABASE_URL
 envctl run -- python app.py
+envctl export --format dotenv
 ```
 
-### Healthy end state
+At that point, recovery is usually about re-establishing the exact projection path, not changing the contract or stored values.
 
-Projection artifacts are back to being disposable outputs instead of hand-edited state.
-
-## Recovery path 4: Docker or downstream tooling still does not see the right environment
-
-### What happened
-
-The resolved environment is valid, but the downstream tool is consuming it through the wrong interface.
-
-This is common with Docker, shell chaining, or tools that explicitly expect a file.
-
-### What to do
-
-Choose the handoff shape that the downstream tool actually consumes:
+## Recovery path 6: onboarding got messy
 
 ```bash
-envctl run -- make test
-envctl export --format dotenv > /tmp/app.env
-docker run --env-file /tmp/app.env my-image
-```
-
-Do not assume that host-side process injection automatically becomes container-side state.
-
-### Healthy end state
-
-The downstream tool receives the resolved environment through an explicit interface that matches its own expectations.
-
-## Recovery path 5: binding is broken or ambiguous
-
-### What happened
-
-The current checkout no longer points cleanly at the expected local project state.
-
-Typical triggers include:
-
-* moved repositories
-* copied checkouts
-* partially restored local state
-* local Git config no longer matching the vault state
-
-### What to do
-
-Start with the safest repair path:
-
-```bash
-envctl project repair
-```
-
-If you know you need lower-level control:
-
-* `envctl project bind ID`
-* `envctl project unbind`
-* `envctl project rebind`
-
-Use those only when you understand which local project identity you want to restore.
-
-### Healthy end state
-
-The current checkout resolves to one clear local project identity and normal commands can trust the local context again.
-
-## Recovery path 6: vault contents look wrong
-
-### What happened
-
-The question is no longer “what is the resolved runtime state?” but “what is physically stored right now?”.
-
-### What to do
-
-Inspect the physical stored values:
-
-```bash
-envctl vault show
-```
-
-If you need the exact storage location:
-
-```bash
-envctl vault path
-```
-
-If old or undeclared keys are cluttering the vault:
-
-```bash
-envctl vault prune
-```
-
-Use `vault edit` only when you intentionally need low-level repair of the stored file itself.
-
-### Healthy end state
-
-The stored vault data matches the contract shape you actually expect, and higher-level commands stop surfacing confusing state.
-
-## Recovery path 7: start from known-good basics
-
-If the local setup is deeply confusing and you no longer trust what changed where, fall back to a simple recovery sequence:
-
-```bash
+envctl config init
+envctl init
 envctl check
-envctl inspect
 envctl fill
-envctl check
 ```
 
-If the problem is clearly lower-level than resolution:
+Use this when the machine’s local state is so unclear that the safest move is to walk the intended bootstrap path again.
 
-```bash
-envctl vault show
-envctl project repair
-```
+## What not to do
 
-This gives you a path back from:
+Avoid:
 
-* validation
-* to full context
-* to missing-value recovery
-* to binding or storage repair if needed
+- editing multiple layers at once
+- deleting local state before checking the active profile
+- forcing hook replacement before understanding ownership
+- treating exported dotenv files as the source of truth
 
-## The recovery rule that matters most
+Those moves usually make the next diagnosis worse.
 
-Always recover toward the model, not around it.
+## Read next
 
-That means:
+<div class="envctl-doc-card-grid" markdown>
 
-* fix the contract if the shared requirements are wrong
-* fix local values if the machine state is incomplete
-* fix binding if the checkout identity is wrong
-* regenerate projection artifacts instead of editing them into existence
+<div class="envctl-doc-card" markdown>
+### Common errors
 
-Recovery is easiest when each layer returns to its proper responsibility.
+Use pattern-based diagnosis before choosing a recovery path.
+
+[Open common errors](common-errors.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Hooks troubleshooting
+
+Go deeper when the issue is clearly in local Git protection.
+
+[Open hooks troubleshooting](hooks.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Debugging guide
+
+Use the full step-by-step model when the failure layer is still unclear.
+
+[Open debugging guide](../guides/debugging.md)
+</div>
+
+</div>

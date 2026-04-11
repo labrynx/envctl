@@ -1,0 +1,584 @@
+{% extends "main.html" %}
+
+{% block tabs %}
+{{ super() }}
+{% endblock %}
+
+{% block content %}
+<section class="envctl-landing envctl-page">
+    <div class="envctl-orb envctl-orb--blue envctl-hero__orb envctl-hero__orb--blue" aria-hidden="true"></div>
+    <div class="envctl-orb envctl-orb--amber envctl-hero__orb envctl-hero__orb--amber" aria-hidden="true"></div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+       HERO
+       ═══════════════════════════════════════════════════════════════ -->
+    <div class="envctl-hero envctl-surface">
+        <div class="envctl-hero__inner">
+            <div class="envctl-hero__text envctl-reveal">
+                <span class="envctl-overline">Environment Coherence</span>
+                <h1 class="envctl-hero__h1">
+                    Your <code>.env.local</code> works&hellip;<br>until it doesn't.
+                </h1>
+                <p class="envctl-hero__sub">
+                    A local-first CLI that makes environment configuration deterministic.
+                    No cloud dependency. No guessing which value won.
+                </p>
+                <div class="envctl-hero__actions">
+                    <a href="{{ base_url }}/getting-started/quickstart/"
+                        class="md-button md-button--primary envctl-btn--solid">
+                        Get Started
+                    </a>
+                    <a href="https://github.com/labrynx/envctl" class="md-button envctl-btn--outline" target="_blank"
+                        rel="noopener noreferrer">
+                        {% set class_name = "envctl-icon envctl-icon--github" %}
+                        {% include "partials/icons/github.html" %}
+                        <span>GitHub</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="envctl-hero__terminal envctl-reveal">
+                <div class="envctl-terminal">
+                    <div class="envctl-terminal__bar">
+                        <span class="envctl-terminal__dot envctl-terminal__dot--red"></span>
+                        <span class="envctl-terminal__dot envctl-terminal__dot--yellow"></span>
+                        <span class="envctl-terminal__dot envctl-terminal__dot--green"></span>
+                        <span class="envctl-terminal__title">terminal</span>
+                    </div>
+
+                    <div class="envctl-terminal__code envctl-terminal__rows">
+                        <div class="envctl-code-line">
+                            <span class="envctl-code-index">1</span>
+                            <span><span class="envctl-t-comment"># install</span></span>
+                        </div>
+                        <div class="envctl-code-line">
+                            <span class="envctl-code-index">2</span>
+                            <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">pip install
+                                    envctl</span></span>
+                        </div>
+
+                        <div class="envctl-code-line">
+                            <span class="envctl-code-index">3</span>
+                            <span></span>
+                        </div>
+
+                        <div class="envctl-code-line">
+                            <span class="envctl-code-index">4</span>
+                            <span><span class="envctl-t-comment"># initialize</span></span>
+                        </div>
+                        <div class="envctl-code-line">
+                            <span class="envctl-code-index">5</span>
+                            <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl config
+                                    init</span></span>
+                        </div>
+                        <div class="envctl-code-line">
+                            <span class="envctl-code-index">6</span>
+                            <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl
+                                    init</span></span>
+                        </div>
+
+                        <div class="envctl-code-line">
+                            <span class="envctl-code-index">7</span>
+                            <span></span>
+                        </div>
+
+                        <div class="envctl-code-line">
+                            <span class="envctl-code-index">8</span>
+                            <span><span class="envctl-t-comment"># fill missing values, validate and...</span></span>
+                        </div>
+                        <div class="envctl-code-line">
+                            <span class="envctl-code-index">9</span>
+                            <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl
+                                    fill</span></span>
+                        </div>
+                        <div class="envctl-code-line">
+                            <span class="envctl-code-index">10</span>
+                            <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl
+                                    check</span></span>
+                        </div>
+
+                        <div class="envctl-code-line">
+                            <span class="envctl-code-index">11</span>
+                            <span></span>
+                        </div>
+
+                        <div class="envctl-code-line">
+                            <span class="envctl-code-index">12</span>
+                            <span><span class="envctl-t-comment"># run your app</span></span>
+                        </div>
+
+                        <div class="envctl-code-line">
+                            <span class="envctl-code-index">13</span>
+                            <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl run -- python
+                                    app.py</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="envctl-hero__stats envctl-reveal">
+            <span>Python CLI</span>
+            <span class="envctl-hero__stats-sep">&middot;</span>
+            <span>MIT License</span>
+            <span class="envctl-hero__stats-sep">&middot;</span>
+            <span>Local-first</span>
+            <span class="envctl-hero__stats-sep">&middot;</span>
+            <span>Open source</span>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+       PROBLEM
+       ═══════════════════════════════════════════════════════════════ -->
+    <div class="envctl-section envctl-problem envctl-surface">
+        <div class="envctl-section__inner">
+            <div class="envctl-problem__block envctl-reveal">
+                <p class="envctl-problem__line">It works on your machine.</p>
+                <p class="envctl-problem__line">It fails in CI.</p>
+                <p class="envctl-problem__line">Your teammate asks: <em>“what's <code>DATABASE_URL</code>?”</em></p>
+                <p class="envctl-problem__line">Onboarding depends on tribal knowledge.</p>
+                <p class="envctl-problem__line"><code>.env.local</code> gets copied around until nobody trusts it.</p>
+            </div>
+            <p class="envctl-problem__close envctl-reveal">
+                That is not a secret-storage problem.<br>
+                <strong>It is an environment-consistency problem.</strong>
+            </p>
+            <p class="envctl-problem__accent envctl-reveal">envctl fixes this.</p>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+       ARCHITECTURE — MENTAL MODEL
+       ═══════════════════════════════════════════════════════════════ -->
+    <div class="envctl-section envctl-arch envctl-surface">
+        <div class="envctl-section__inner">
+            <span class="envctl-overline">Mental model</span>
+            <h2 class="envctl-section__h2">From contract to projection</h2>
+            <p class="envctl-section__lead">
+                Every step has a clear responsibility. No hidden source of truth.
+            </p>
+
+            <div class="envctl-arch__timeline envctl-reveal" aria-label="envctl mental model flow">
+                <div class="envctl-arch__line" aria-hidden="true"></div>
+
+                <div class="envctl-arch__step envctl-shadow-hover">
+                    <div class="envctl-arch__step-top">
+                        <span class="envctl-arch__step-number">01</span>
+                        <span class="envctl-arch__step-marker" aria-hidden="true"></span>
+                    </div>
+                    <div class="envctl-arch__step-body">
+                        <h3 class="envctl-arch__step-title">Contract</h3>
+                        <p class="envctl-arch__step-text">What the project requires</p>
+                    </div>
+                </div>
+
+                <div class="envctl-arch__step envctl-shadow-hover">
+                    <div class="envctl-arch__step-top">
+                        <span class="envctl-arch__step-number">02</span>
+                        <span class="envctl-arch__step-marker" aria-hidden="true"></span>
+                    </div>
+                    <div class="envctl-arch__step-body">
+                        <h3 class="envctl-arch__step-title">Vault</h3>
+                        <p class="envctl-arch__step-text">What each machine stores locally</p>
+                    </div>
+                </div>
+
+                <div class="envctl-arch__step envctl-shadow-hover">
+                    <div class="envctl-arch__step-top">
+                        <span class="envctl-arch__step-number">03</span>
+                        <span class="envctl-arch__step-marker" aria-hidden="true"></span>
+                    </div>
+                    <div class="envctl-arch__step-body">
+                        <h3 class="envctl-arch__step-title">Profiles</h3>
+                        <p class="envctl-arch__step-text">Which local value set is active</p>
+                    </div>
+                </div>
+
+                <div class="envctl-arch__step envctl-shadow-hover">
+                    <div class="envctl-arch__step-top">
+                        <span class="envctl-arch__step-number">04</span>
+                        <span class="envctl-arch__step-marker" aria-hidden="true"></span>
+                    </div>
+                    <div class="envctl-arch__step-body">
+                        <h3 class="envctl-arch__step-title">Resolution</h3>
+                        <p class="envctl-arch__step-text">What is actually true at runtime</p>
+                    </div>
+                </div>
+
+                <div class="envctl-arch__step envctl-shadow-hover">
+                    <div class="envctl-arch__step-top">
+                        <span class="envctl-arch__step-number">05</span>
+                        <span class="envctl-arch__step-marker" aria-hidden="true"></span>
+                    </div>
+                    <div class="envctl-arch__step-body">
+                        <h3 class="envctl-arch__step-title">Projection</h3>
+                        <p class="envctl-arch__step-text">How the resolved environment reaches your tools</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="envctl-arch__summary envctl-reveal">
+                <div class="envctl-arch__summary-item">
+                    <strong>The repo</strong> defines shared requirements
+                </div>
+                <div class="envctl-arch__summary-item">
+                    <strong>Each machine</strong> keeps real values local
+                </div>
+                <div class="envctl-arch__summary-item">
+                    <strong>The runtime</strong> environment is explicit and checkable
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+       CLI USAGE — TABS
+       ═══════════════════════════════════════════════════════════════ -->
+    <div class="envctl-section envctl-cli envctl-surface">
+        <div class="envctl-section__inner">
+            <span class="envctl-overline">Usage</span>
+            <h2 class="envctl-section__h2">A deterministic CLI flow</h2>
+            <p class="envctl-section__lead">
+                From install to runtime — every command has a clear purpose.
+            </p>
+
+            <div class="envctl-cli__tabs" role="tablist" aria-label="CLI usage flows">
+                <button class="envctl-cli__tab envctl-cli__tab--active" type="button" role="tab" aria-selected="true"
+                    aria-controls="panel-quickstart" id="tab-quickstart" data-tab="quickstart">
+                    Quickstart
+                </button>
+                <button class="envctl-cli__tab" type="button" role="tab" aria-selected="false"
+                    aria-controls="panel-team" id="tab-team" data-tab="team">
+                    Team flow
+                </button>
+                <button class="envctl-cli__tab" type="button" role="tab" aria-selected="false"
+                    aria-controls="panel-security" id="tab-security" data-tab="security">
+                    Security
+                </button>
+            </div>
+
+            <div class="envctl-cli__panels">
+                <div class="envctl-cli__panel envctl-cli__panel--active" data-panel="quickstart" id="panel-quickstart"
+                    role="tabpanel" aria-labelledby="tab-quickstart">
+                    <div class="envctl-cli__split">
+                        <div class="envctl-cli__explain envctl-reveal">
+                            <h3>Get running in 60 seconds</h3>
+                            <ul>
+                                <li><code>config init</code> — creates your user-level config</li>
+                                <li><code>init</code> — prepares the repo and installs Git hooks</li>
+                                <li><code>fill</code> — asks only for missing required values</li>
+                                <li><code>check</code> — validates the resolved environment</li>
+                                <li><code>run</code> — executes with resolved env injected</li>
+                            </ul>
+                        </div>
+
+                        <div class="envctl-terminal envctl-cli__terminal envctl-reveal">
+                            <div class="envctl-terminal__bar">
+                                <span class="envctl-terminal__dot envctl-terminal__dot--red"></span>
+                                <span class="envctl-terminal__dot envctl-terminal__dot--yellow"></span>
+                                <span class="envctl-terminal__dot envctl-terminal__dot--green"></span>
+                                <span class="envctl-terminal__title">quickstart</span>
+                            </div>
+
+                            <div class="envctl-terminal__code envctl-terminal__rows">
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">1</span>
+                                    <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">pip install
+                                            envctl</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">2</span>
+                                    <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl
+                                            config init</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">3</span>
+                                    <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl
+                                            init</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">4</span>
+                                    <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl
+                                            fill</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">5</span>
+                                    <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl
+                                            check</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">6</span>
+                                    <span><span class="envctl-t-output">✓ all variables resolved</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">7</span>
+                                    <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl run
+                                            -- python app.py</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="envctl-cli__panel" data-panel="team" id="panel-team" role="tabpanel"
+                    aria-labelledby="tab-team">
+                    <div class="envctl-cli__split">
+                        <div class="envctl-cli__explain">
+                            <h3>Share requirements, not secrets</h3>
+                            <ul>
+                                <li><code>add</code> — adds a variable to the shared contract</li>
+                                <li>Commit the contract to Git — teammates pull it</li>
+                                <li>Each dev runs <code>fill</code> to provide their own local values</li>
+                                <li>Real values never leave the machine</li>
+                            </ul>
+                        </div>
+
+                        <div class="envctl-terminal envctl-cli__terminal">
+                            <div class="envctl-terminal__bar">
+                                <span class="envctl-terminal__dot envctl-terminal__dot--red"></span>
+                                <span class="envctl-terminal__dot envctl-terminal__dot--yellow"></span>
+                                <span class="envctl-terminal__dot envctl-terminal__dot--green"></span>
+                                <span class="envctl-terminal__title">team workflow</span>
+                            </div>
+
+                            <div class="envctl-terminal__code envctl-terminal__rows">
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">1</span>
+                                    <span><span class="envctl-t-comment"># developer A adds a requirement</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">2</span>
+                                    <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl add
+                                            API_KEY sk-example</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">3</span>
+                                    <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">git add
+                                            .envctl.yaml</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">4</span>
+                                    <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">git commit
+                                            -m "require API_KEY"</span></span>
+                                </div>
+
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">5</span>
+                                    <span></span>
+                                </div>
+
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">6</span>
+                                    <span><span class="envctl-t-comment"># developer B pulls and fills</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">7</span>
+                                    <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">git
+                                            pull</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">8</span>
+                                    <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl
+                                            check</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">9</span>
+                                    <span><span class="envctl-t-output">✗ API_KEY: missing</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">10</span>
+                                    <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl
+                                            fill</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">11</span>
+                                    <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl run
+                                            -- python app.py</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="envctl-cli__panel" data-panel="security" id="panel-security" role="tabpanel"
+                    aria-labelledby="tab-security">
+                    <div class="envctl-cli__split">
+                        <div class="envctl-cli__explain">
+                            <h3>Guard secrets automatically</h3>
+                            <ul>
+                                <li>Managed Git hooks run <code>guard secrets</code> before commit and push</li>
+                                <li>No secrets in the contract — ever</li>
+                                <li>Local values stay on the machine</li>
+                                <li>Sensitive output is masked</li>
+                                <li>Optional encryption at rest</li>
+                            </ul>
+                        </div>
+
+                        <div class="envctl-terminal envctl-cli__terminal">
+                            <div class="envctl-terminal__bar">
+                                <span class="envctl-terminal__dot envctl-terminal__dot--red"></span>
+                                <span class="envctl-terminal__dot envctl-terminal__dot--yellow"></span>
+                                <span class="envctl-terminal__dot envctl-terminal__dot--green"></span>
+                                <span class="envctl-terminal__title">security</span>
+                            </div>
+
+                            <div class="envctl-terminal__code envctl-terminal__rows">
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">1</span>
+                                    <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl hooks
+                                            install</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">2</span>
+                                    <span><span class="envctl-t-output">✓ pre-commit hook installed</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">3</span>
+                                    <span><span class="envctl-t-output">✓ pre-push hook installed</span></span>
+                                </div>
+
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">4</span>
+                                    <span></span>
+                                </div>
+
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">5</span>
+                                    <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl hooks
+                                            status</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">6</span>
+                                    <span><span class="envctl-t-output">pre-commit: active (guard secrets)</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">7</span>
+                                    <span><span class="envctl-t-output">pre-push: active (guard secrets)</span></span>
+                                </div>
+
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">8</span>
+                                    <span></span>
+                                </div>
+
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">9</span>
+                                    <span><span class="envctl-t-prompt">$</span> <span class="envctl-t-cmd">envctl guard
+                                            secrets</span></span>
+                                </div>
+                                <div class="envctl-code-line">
+                                    <span class="envctl-code-index">10</span>
+                                    <span><span class="envctl-t-output">✓ no secrets detected in staged
+                                            files</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+       DOCS GRID — DECISION PATHS
+       ═══════════════════════════════════════════════════════════════ -->
+    <div class="envctl-section envctl-docs envctl-surface">
+        <div class="envctl-section__inner">
+            <span class="envctl-overline">Documentation</span>
+            <h2 class="envctl-section__h2">Choose your path</h2>
+            <p class="envctl-section__lead">
+                Without losing the bigger picture.
+            </p>
+
+            <div class="envctl-docs__grid">
+                <a href="{{ base_url }}/getting-started/quickstart/" class="envctl-docs__card envctl-shadow-hover">
+                    <div class="envctl-docs__card-kicker">Start</div>
+                    <h3 class="envctl-docs__card-title">I just want it working</h3>
+                    <p class="envctl-docs__card-desc">Install, init, fill, check, run. Done in 60 seconds.</p>
+                </a>
+
+                <a href="{{ base_url }}/getting-started/mental-model/" class="envctl-docs__card envctl-shadow-hover">
+                    <div class="envctl-docs__card-kicker">Model</div>
+                    <h3 class="envctl-docs__card-title">I need to understand the model</h3>
+                    <p class="envctl-docs__card-desc">
+                        Contract, vault, profiles, resolution, projection — the full mental model.
+                    </p>
+                </a>
+
+                <a href="{{ base_url }}/reference/commands/" class="envctl-docs__card envctl-shadow-hover">
+                    <div class="envctl-docs__card-kicker">Reference</div>
+                    <h3 class="envctl-docs__card-title">I need exact commands</h3>
+                    <p class="envctl-docs__card-desc">Every CLI command, every flag, every option documented.</p>
+                </a>
+
+                <a href="{{ base_url }}/guides/" class="envctl-docs__card envctl-shadow-hover">
+                    <div class="envctl-docs__card-kicker">Guides</div>
+                    <h3 class="envctl-docs__card-title">I have a specific scenario</h3>
+                    <p class="envctl-docs__card-desc">Docker, CI, profiles, teams, hooks — practical guides.</p>
+                </a>
+
+                <a href="{{ base_url }}/troubleshooting/" class="envctl-docs__card envctl-shadow-hover">
+                    <div class="envctl-docs__card-kicker">Troubleshooting</div>
+                    <h3 class="envctl-docs__card-title">Something broke</h3>
+                    <p class="envctl-docs__card-desc">Common errors, recovery steps, debugging tips.</p>
+                </a>
+
+                <a href="{{ base_url }}/architecture/" class="envctl-docs__card envctl-shadow-hover">
+                    <div class="envctl-docs__card-kicker">Internals</div>
+                    <h3 class="envctl-docs__card-title">I want to understand the internals</h3>
+                    <p class="envctl-docs__card-desc">Architecture layers, boundaries, and design decisions.</p>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════════ -->
+    <!-- ═══════════════════════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════════════════════ -->
+    <div class="envctl-landing-footer">
+        <div class="envctl-landing-footer__inner">
+            <div class="envctl-landing-footer__main">
+                <div class="envctl-landing-footer__brand-block">
+                    <div class="envctl-landing-footer__eyebrow">Open source env tooling</div>
+                    <div class="envctl-landing-footer__brand">envctl</div>
+                    <p class="envctl-landing-footer__tagline">
+                        Contract-driven environment management without drift,<br>
+                        local and deterministic by design.
+                    </p>
+                </div>
+
+                <div class="envctl-landing-footer__nav">
+                    <div class="envctl-landing-footer__card">
+                        <a href="{{ base_url }}/getting-started/quickstart/">Get started</a>
+                        <a href="{{ base_url }}/reference/commands/">CLI reference</a>
+                    </div>
+
+                    <div class="envctl-landing-footer__card">
+                        <a href="https://github.com/labrynx/envctl" target="_blank" rel="noopener">GitHub repo</a>
+                        <a href="https://github.com/labrynx/envctl/blob/main/LICENSE" target="_blank" rel="noopener">MIT
+                            License</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="envctl-landing-footer__bottom">
+            <div class="envctl-landing-footer__bottom-inner">
+                <p class="envctl-landing-footer__copy">Local-first by design.</p>
+
+                <a class="envctl-landing-footer__bottom-link" href="https://github.com/labrynx/envctl" target="_blank"
+                    rel="noopener noreferrer" aria-label="envctl on GitHub" title="GitHub repository">
+                    {% set class_name = "envctl-icon envctl-icon--github" %}
+                    {% include "partials/icons/github.html" %}
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block footer %}{% endblock %}

@@ -1,8 +1,20 @@
-# Daily Workflow
+# Daily workflow
 
-This is the most common way to use `envctl` day to day.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Guide</span>
+  <p class="envctl-section-intro__body">
+    This is the normal day-to-day rhythm once a repository is already set up.
+    It is intentionally small: run, change one local value, inspect, validate, and debug only when needed.
+  </p>
+</div>
 
-Once a project is initialized and your values are in place, most work comes down to a small set of repeated actions: run the app, change a value, inspect the current state, and debug a variable when something feels off.
+## When to use this page
+
+Use this guide when:
+
+- the repository is already initialized
+- your local values mostly exist already
+- you want the commands you repeat most often, not onboarding detail
 
 ## Run your app
 
@@ -10,15 +22,15 @@ Once a project is initialized and your values are in place, most work comes down
 envctl run -- <command>
 ```
 
-For most day-to-day work, `run` is the default choice. It injects the resolved environment directly into the subprocess, so you usually do not need to materialize `.env.local`.
+For most daily work, `run` is the default choice. It injects the resolved environment directly into the subprocess, so you usually do not need to materialize a dotenv file.
 
-## Change a value
+## Change one local value
 
 ```bash
 envctl set KEY VALUE
 ```
 
-Use `set` when you want to change a local value in the active profile without changing the shared project contract.
+Use `set` when the contract stays the same and only your current local value changes.
 
 ## Inspect the current state
 
@@ -26,36 +38,58 @@ Use `set` when you want to change a local value in the active profile without ch
 envctl inspect
 ```
 
-Use `inspect` when you want to understand what the runtime view looks like right now.
+Use `inspect` when you want to see the runtime view that `envctl` has actually resolved.
 
-This is especially useful if a value is coming from a default, a profile, or the process environment and you want to see the result clearly.
-
-## Debug one variable
+## Validate before blaming the runtime
 
 ```bash
-envctl inspect KEY
+envctl check
 ```
 
-Use `inspect KEY` when the problem is really about one key, not the whole environment. `explain KEY` still works for now, but it is deprecated.
+If something feels off, start here. A passing `check` tells you the contract-level state is valid before you debug the target tool.
 
-## Switch environment
+## Switch local context explicitly
 
 ```bash
 envctl --profile dev run -- app
 ```
 
-Use a profile when you want the same project contract with a different local value set.
+Use a named profile when the same project needs a different local value set.
 
-## Summary
-
-A simple rule of thumb is:
-
-* use `run` to execute
-* use `set` for local changes
-* use `inspect` to understand what is going on
-
-If you need to verify the local Git safety net itself, add:
+## Keep the Git safety net healthy
 
 ```bash
 envctl hooks status
 ```
+
+Use this when your team relies on envctl-managed hooks and you want to confirm the local wrappers are still healthy.
+
+## Read next
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Quickstart
+
+Go back if you need the original first-run flow.
+
+[Open quickstart](../getting-started/quickstart.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Debugging
+
+Use the methodical flow when one command starts behaving differently than you expected.
+
+[Open debugging guide](../guides/debugging.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Commands reference
+
+Look up exact syntax and options once the workflow already makes sense.
+
+[Open command reference](../reference/commands/index.md)
+</div>
+
+</div>

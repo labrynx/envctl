@@ -1,88 +1,82 @@
 # Metadata and Local State
 
-This page exists to answer one narrower question than the core concepts:
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Concept</span>
+  <p class="envctl-section-intro__body">
+    This page covers the supporting metadata that <code>envctl</code> keeps locally.
+    Its job is operational continuity and recovery, not becoming a second source of truth.
+  </p>
+</div>
 
-> what local metadata does `envctl` keep around, and why does it not become part of the source of truth?
+## What metadata is
 
-## The main idea
+Local metadata is the helper state that lets `envctl` reconnect a checkout to the right local project state and recover more safely when paths or local context change.
 
-`envctl` keeps a clean split between:
+## Why it matters
 
-* the contract in the repository
-* local values in storage
-* generated artifacts such as `.env.local`
-* local metadata that helps identity and recovery
+`envctl` needs a small amount of local support data for things like:
 
-That last category matters, but it is still secondary.
+- project identity
+- recovery after a repository move or clone
+- continuity across checkouts
+- known local paths and related recovery hints
 
-Metadata helps `envctl` reconnect a checkout to the right local state. It does not redefine the contract, replace the vault, or become the source of truth for secrets.
+That support layer matters operationally, but it still stays secondary.
 
-## What local metadata is for
+## What problem it solves
 
-Local metadata supports things like:
+Metadata solves continuity and recovery. It does not solve shared requirements or local secret storage.
 
-* project identity
-* recovery after a repository move or clone
-* continuity across checkouts
-* known local paths and related recovery hints
+That distinction prevents a common failure mode:
 
-In other words, metadata exists so that `envctl` can answer “which local project state belongs to this checkout?” more reliably.
+> a helper file quietly becomes the real system model
 
 ## What metadata is not
 
 Metadata is not:
 
-* the contract
-* the secret store
-* the resolved runtime environment
-* a replacement for profiles
+- the contract
+- the vault
+- the resolved environment
+- a replacement for profiles
 
-If metadata started doing those jobs, it would become a second hidden model and make the system harder to trust.
+If it started doing those jobs, `envctl` would gain a hidden second model that would be harder to trust and harder to debug.
 
-## Relation to binding
+## How it fits in the system
 
-Most of the important metadata story is really about binding.
+Keep the roles separate:
 
-Binding connects a repository checkout to the correct local project identity. Metadata helps that process stay recoverable.
-
-If you care mainly about how the current checkout finds the right local project state, read [Binding](binding.md) first.
-
-## Relation to local values
-
-Local values are still the real local truth.
-
-Metadata may describe or support that truth operationally, but it does not replace it. That is why generated files and helper state remain safe to delete and regenerate, while local values themselves remain the meaningful stored state.
-
-## Why this matters
-
-Keeping metadata secondary helps avoid a common failure mode:
-
-* a helper file quietly becomes the real system model
-
-`envctl` avoids that by keeping metadata in a support role only.
+- the **contract** is shared repository truth
+- the **vault** stores local values
+- **binding** connects the checkout to the right project state
+- **metadata** helps that binding and recovery story remain stable
 
 ## Read next
 
-Keep metadata in its support role by connecting it back to the main model:
+<div class="envctl-doc-card-grid" markdown>
 
-<div class="grid cards envctl-read-next" markdown>
+<div class="envctl-doc-card" markdown>
+### Binding
 
--   **Binding**
+Start with the identity model that metadata supports.
 
-    Start with the identity model that metadata supports.
+[Read about binding](binding.md)
+</div>
 
-    [Read about binding](binding.md)
+<div class="envctl-doc-card" markdown>
+### Vault
 
--   **Vault**
+Revisit the actual local value layer that metadata never replaces.
 
-    Revisit the actual local storage layer that metadata never replaces.
+[Read about the vault](vault.md)
+</div>
 
-    [Read about the vault](vault.md)
+<div class="envctl-doc-card" markdown>
+### First project
 
--   **Resolution**
+See how local metadata stays in a support role during onboarding.
 
-    See where metadata stops and the runtime model begins.
-
-    [Read about resolution](resolution.md)
+[Open first project](../getting-started/first-project.md)
+</div>
 
 </div>

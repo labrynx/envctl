@@ -1,5 +1,13 @@
 # export
 
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    <code>export</code> is stdout-oriented projection.
+    Use it when another shell command or tool wants the resolved environment rendered directly to standard output.
+  </p>
+</div>
+
 ```bash
 envctl export
 envctl export --format shell
@@ -49,3 +57,33 @@ envctl --json export
 * use [`run`](run.md) for in-memory subprocess injection
 * use [`sync`](sync.md) for generated dotenv files
 * use [`check`](check.md) when you only need pass-or-fail validation
+
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Projection
+
+Reconnect `export` to the projection layer it implements.
+
+[Read about projection](../../concepts/projection.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### run
+
+Use this when the target tool can consume environment variables directly.
+
+[Open run reference](run.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### sync
+
+Use this when the target tool needs a file on disk.
+
+[Open sync reference](sync.md)
+</div>
+
+</div>

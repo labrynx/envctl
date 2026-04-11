@@ -1,140 +1,112 @@
 # Quickstart
 
-This is the fastest way to get productive with `envctl`.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Getting started</span>
+  <p class="envctl-section-intro__body">
+    This page is the shortest safe path from zero to a validated first run.
+    It is intentionally practical: install <code>envctl</code>, initialize local state, fill what is missing, validate, and run.
+  </p>
+</div>
 
-It skips most of the deeper theory on purpose. The goal here is simple: get one repository working with the minimum number of steps.
+## When to use this page
 
-If you want the bigger picture afterwards, read [Mental model](mental-model.md).
+Use this page when:
 
-## 1. Install
+- you want the fastest successful setup
+- you do not need the deeper theory first
+- you are comfortable following a short command sequence
 
-If you are using `envctl` as a tool, the shortest path is:
+If you want more context before touching a repository, read [Mental model](mental-model.md) first.
 
-```bash
-python3 -m pip install envctl
-```
+## Shortest safe path
 
-If you are working from the repository itself, use an editable install instead:
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">quickstart</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl config init</span>
+<span class="envctl-doc-terminal__line">$ envctl init</span>
+<span class="envctl-doc-terminal__line">$ envctl fill</span>
+<span class="envctl-doc-terminal__line">$ envctl check</span>
+<span class="envctl-doc-terminal__line">$ envctl run -- python app.py</span></code></pre>
+</div>
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .[dev]
-```
+## What each step is doing
 
-If you have not installed it yet, see [Installation](installation.md).
+### 1. `envctl config init`
 
-## 2. Initialize your local config
+Creates your user-level config file so the CLI has machine-local defaults such as vault location and default profile.
 
-```bash
-envctl config init
-```
+### 2. `envctl init`
 
-This creates your user-level config file.
+Prepares the repository for contract-based workflows and establishes local state where needed.
 
-A typical location is:
+### 3. `envctl fill`
 
-```text
-~/.config/envctl/config.json
-```
+Prompts only for required values that are still missing from the active profile.
 
-That config tells `envctl` how to behave on your machine. It does not store project secrets and it does not replace the project contract.
+### 4. `envctl check`
 
-## 3. Initialize the repository
+Validates the resolved environment against the shared contract.
 
-```bash
-envctl init
-```
+### 5. `envctl run -- …`
 
-This prepares the repository for contract-based workflows and establishes local state when needed.
+Projects the resolved environment into one subprocess without writing a dotenv file by default.
 
-If the repository has never been used with `envctl` before, this is the step that gets the local structure into a sensible starting state.
+<div class="envctl-callout" markdown>
+Prefer `run` unless another tool explicitly needs a file on disk. Use `sync` only for file-based consumers.
+</div>
 
-It also attempts to install the managed `pre-commit` and `pre-push` wrappers that run `envctl guard secrets`.
+## Optional next step: use a named profile
 
-## 4. Fill missing values
+If one machine needs more than one local setup, make that explicit:
 
-```bash
-envctl fill
-```
-
-This asks only for required variables that are missing from the active profile.
-
-By default, the active profile is `local` unless you select another one.
-
-## 5. Validate everything
-
-```bash
-envctl check
-```
-
-This validates the resolved environment against the contract.
-
-If the contract is satisfied, you are ready to run the project with confidence. If not, `check` shows what still needs attention.
-
-## 6. Run your application
-
-```bash
-envctl run -- python app.py
-```
-
-This injects the resolved values into the subprocess environment without needing `.env.local`.
-
-For many workflows, that is the cleanest way to use `envctl`.
-
-!!! tip "Prefer `run` unless another tool explicitly needs a file"
-    Use `sync` only when a downstream tool really requires `.env.local` or another env file on disk.
-
-## Optional: work with a different profile
-
-```bash
-envctl --profile dev fill
-envctl --profile dev check
-envctl --profile dev run -- python app.py
-```
-
-This is useful when one machine needs more than one local setup.
-
-## Optional: verify local Git protection
-
-```bash
-envctl hooks status
-```
-
-Use this when you want to confirm that the managed hooks are still healthy after setup or after changing local Git configuration.
-
-## Optional: create `.env.local`
-
-```bash
-envctl sync
-```
-
-Use this only when another tool really needs an env file on disk.
-
-The file is generated output. It is not the main source of truth.
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">named profile</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl profile create dev</span>
+<span class="envctl-doc-terminal__line">$ envctl --profile dev fill</span>
+<span class="envctl-doc-terminal__line">$ envctl --profile dev check</span>
+<span class="envctl-doc-terminal__line">$ envctl --profile dev run -- python app.py</span></code></pre>
+</div>
 
 ## Read next
 
-Continue the onboarding path or deepen your model of what just happened:
+<div class="envctl-doc-card-grid" markdown>
 
-<div class="grid cards envctl-read-next" markdown>
+<div class="envctl-doc-card" markdown>
+### First project
 
--   **First project**
+Follow the same flow with more repository context and a few realistic checks.
 
-    Follow the same flow with more context and a more realistic repository setup.
+[Open first project](first-project.md)
+</div>
 
-    [Open first project](first-project.md)
+<div class="envctl-doc-card" markdown>
+### Mental model
 
--   **Mental model**
+Learn why the quickstart steps work the way they do.
 
-    Learn the concepts that make the quickstart steps feel predictable.
+[Open mental model](mental-model.md)
+</div>
 
-    [Open mental model](mental-model.md)
+<div class="envctl-doc-card" markdown>
+### Daily workflow
 
--   **Commands reference**
+Move from first setup into the normal day-to-day command rhythm.
 
-    Look up exact command behavior once the basic flow already makes sense.
-
-    [Open command reference](../reference/commands/index.md)
+[Open daily workflow](../workflows/daily.md)
+</div>
 
 </div>

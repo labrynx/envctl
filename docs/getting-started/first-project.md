@@ -1,184 +1,186 @@
-# First Project
+# First project
 
-This guide walks through the normal first-run flow in a repository.
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Getting started</span>
+  <p class="envctl-section-intro__body">
+    Use this page when you have cloned a real repository and want a little more context than the quickstart.
+    The goal is still practical: get from fresh checkout to a validated, runnable local setup without mixing shared requirements and local values.
+  </p>
+</div>
 
-It is a little more detailed than the quickstart and is meant for real onboarding. If you have just cloned a project and want to get from “nothing is set up” to “I can validate and run this”, this is the guide to follow.
+## Starting point
 
-## Goal
+This page assumes:
 
-Prepare one repository so you can validate, inspect, and run it with `envctl`.
+- the repository already uses `envctl`
+- you want to prepare your machine, not redesign the project contract
+- you want a first successful run and a reliable next step if something is missing
 
 ## Step 1: create your local config
 
-```bash
-envctl config init
-```
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">config</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl config init</span></code></pre>
+</div>
 
-This creates your personal config file.
-
-That config controls local tool behavior, such as where the vault lives and which profile is used by default. It does **not** define the project contract, and it does **not** store secrets.
+This creates your machine-level config. It controls tool behavior such as vault location and default profile. It does not define the project contract and it does not store the project’s shared requirements.
 
 ## Step 2: initialize the repository
 
-```bash
-envctl init
-```
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">init</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl init</span></code></pre>
+</div>
 
-`init` is the main bootstrap command.
+`init` prepares the checkout for normal `envctl` use. It may establish local structure, binding, and managed hook wrappers where supported.
 
-!!! note "`init` prepares the repository; it does not invent secrets"
-    `init` can establish local structure and normalize project state, but it does not silently make the environment valid or generate real secret values for you.
+!!! note "`init` prepares local state, not secrets"
+    `init` can normalize local structure and recover project state. It does not invent or guess the real values your machine needs.
 
-Depending on the repository and the current local state, it may:
+## Step 3: inspect what is already ready
 
-* prepare local vault structure
-* establish binding and persisted state
-* create or normalize contract metadata
-* infer a starter contract from `.env.example` when supported
-* install envctl-managed `pre-commit` and `pre-push` wrappers when the effective hooks path is supported
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">status</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl status</span></code></pre>
+</div>
 
-A few things are worth calling out here:
+This is the fastest way to answer the practical question:
 
-* `init` does **not** invent secrets
-* `init` does **not** automatically write `.env.local`
-* `init` is safe to run repeatedly
+> what is already ready, and what is still missing?
 
-So think of `init` as “prepare this repository for `envctl`”, not as “magically make everything ready with guessed values”.
+If you also want to confirm the managed hook layer, check it directly:
 
-## Step 3: inspect where you are
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">hooks</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl hooks status</span></code></pre>
+</div>
 
-When `envctl` inspects the repository, it now discovers the root contract at the repo root. It prefers `.envctl.yaml` and still accepts `.envctl.schema.yaml` as a legacy fallback. If the root contract imports other files, `inspect` shows the composed contract view as well as the runtime state. In practice, new projects should standardize on `.envctl.yaml`, while existing projects can keep using `.envctl.schema.yaml` until they are ready to migrate.
+## Step 4: fill missing required values
 
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">fill</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl fill</span></code></pre>
+</div>
 
-```bash
-envctl status
-```
+This prompts only for values that are both:
 
-At this point, it helps to ask: what is already ready, and what is still missing?
-
-`status` gives you that overview. It is meant to answer the practical question, “What should I do next?”
-
-If you specifically want to verify the managed Git protection layer, inspect it directly:
-
-```bash
-envctl hooks status
-```
-
-## Step 4: provide missing required values
-
-```bash
-envctl fill
-```
-
-This prompts only for values that are required by the contract and missing from the active profile.
-
-That means you are not asked for everything under the sun. You are only asked for what the project actually needs and what your current local setup does not yet provide.
+- required by the contract
+- missing from the active profile
 
 ## Step 5: validate
 
-```bash
-envctl check
-```
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">check</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl check</span></code></pre>
+</div>
 
-This confirms that the resolved environment satisfies the contract.
-
-If something is missing or invalid, `check` will tell you. If everything looks good, you know the project has the values it expects.
+If validation fails, stay at this layer first. Fix the model before debugging a downstream runtime.
 
 ## Step 6: run the project
 
-```bash
-envctl run -- <command>
-```
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">run</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl run -- python app.py</span>
+<span class="envctl-doc-terminal__line">$ envctl run -- npm start</span>
+<span class="envctl-doc-terminal__line">$ envctl run -- make dev</span></code></pre>
+</div>
 
-Examples:
+For most local workflows, `run` is the right default because it keeps projection explicit and ephemeral.
 
-```bash
-envctl run -- python app.py
-envctl run -- npm start
-envctl run -- make dev
-```
+## If you need a second local context
 
-This runs the command with the resolved environment injected directly into the subprocess. In many cases, that means you do not need a `.env.local` file at all.
+Create a named profile instead of mutating one local setup in place:
 
-## Working with profiles from day one
-
-If you already know you want a second local setup, create an explicit profile early.
-
-For example:
-
-```bash
-envctl profile create dev
-envctl --profile dev fill
-envctl --profile dev check
-envctl --profile dev run -- python app.py
-```
-
-This is useful when you want one setup for normal local work and another one for testing something closer to staging.
-
-## Common follow-up tasks
-
-### Add a new variable
-
-```bash
-envctl add REDIS_URL redis://localhost:6379
-```
-
-Use this when the project itself now requires a new variable.
-
-### Change only your local value
-
-```bash
-envctl set PORT 4000
-```
-
-Use this when the contract stays the same, but you want a different value in your current profile.
-
-### Debug one key
-
-```bash
-envctl inspect DATABASE_URL
-```
-
-Use this when a single variable is confusing or behaving differently than expected.
-
-You can also inspect contract composition directly:
-
-```bash
-envctl inspect --contracts
-envctl inspect --sets
-envctl inspect --groups
-```
-
-### Inspect physical stored values
-
-```bash
-envctl vault show
-```
-
-Use this when you want to look at the current profile’s stored vault data rather than the resolved runtime view.
+<div class="envctl-doc-terminal">
+  <div class="envctl-doc-terminal__bar">
+    <div class="envctl-doc-terminal__dots">
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--red"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
+      <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
+    </div>
+    <span class="envctl-doc-terminal__title">profiles</span>
+  </div>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line">$ envctl profile create dev</span>
+<span class="envctl-doc-terminal__line">$ envctl --profile dev fill</span>
+<span class="envctl-doc-terminal__line">$ envctl --profile dev check</span>
+<span class="envctl-doc-terminal__line">$ envctl --profile dev run -- python app.py</span></code></pre>
+</div>
 
 ## Read next
 
-Continue from first-run onboarding into the model and the normal day-to-day loop:
+<div class="envctl-doc-card-grid" markdown>
 
-<div class="grid cards envctl-read-next" markdown>
+<div class="envctl-doc-card" markdown>
+### Mental model
 
--   **Mental model**
+See the compact explanation of the layers you just used.
 
-    See the compact explanation of the layers you just used.
+[Open mental model](mental-model.md)
+</div>
 
-    [Open mental model](mental-model.md)
+<div class="envctl-doc-card" markdown>
+### Daily workflow
 
--   **Contract**
+Move from first setup into the normal rhythm of working with `envctl`.
 
-    Understand the shared project definition behind the onboarding flow.
+[Open daily workflow](../workflows/daily.md)
+</div>
 
-    [Read about the contract](../concepts/contract.md)
+<div class="envctl-doc-card" markdown>
+### Command reference
 
--   **Daily workflow**
+Look up exact command behavior once the onboarding flow already makes sense.
 
-    Move from first setup into the normal rhythm of working with `envctl`.
-
-    [Open the daily workflow guide](../workflows/daily.md)
+[Open command reference](../reference/commands/index.md)
+</div>
 
 </div>

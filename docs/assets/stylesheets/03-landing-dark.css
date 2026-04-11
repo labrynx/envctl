@@ -1,0 +1,68 @@
+/* ── Landing dark mode ─────────────────────────────────────── */
+
+[data-md-color-scheme="slate"] .envctl-landing {
+    background: linear-gradient(180deg, #05070b 0%, #06080c 100%);
+}
+[data-md-color-scheme="slate"] .envctl-hero {
+    background: linear-gradient(180deg, #05070b 0%, #070a0f 100%);
+}
+[data-md-color-scheme="slate"] .envctl-problem {
+    background: linear-gradient(180deg, #0a0d12 0%, #0b0f14 100%);
+    border-top-color: var(--envctl-border);
+    border-bottom-color: var(--envctl-border);
+}
+[data-md-color-scheme="slate"] .envctl-arch {
+    background: linear-gradient(180deg, #05070b 0%, #06080c 100%);
+}
+[data-md-color-scheme="slate"] .envctl-cli {
+    background: linear-gradient(180deg, #0a0d12 0%, #0b0f14 100%);
+    border-top-color: var(--envctl-border);
+}
+[data-md-color-scheme="slate"] .envctl-docs {
+    background: linear-gradient(180deg, #05070b 0%, #06080c 100%);
+    border-top-color: var(--envctl-border);
+}
+[data-md-color-scheme="slate"] .envctl-arch__step,
+[data-md-color-scheme="slate"] .envctl-docs__card,
+[data-md-color-scheme="slate"] .envctl-arch__summary {
+    background: linear-gradient(180deg, #0b0e13 0%, #090c11 100%);
+    border-color: #1b2129;
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.32),
+        0 1px 0 rgba(255, 255, 255, 0.02) inset;
+}
+[data-md-color-scheme="slate"] .envctl-docs__card:hover,
+[data-md-color-scheme="slate"] .envctl-docs__card:focus-visible,
+[data-md-color-scheme="slate"] .envctl-arch__step:hover,
+[data-md-color-scheme="slate"] .envctl-arch__step:focus-visible {
+    border-color: rgba(79, 124, 255, 0.35);
+    box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(79, 124, 255, 0.1) inset;
+}
+[data-md-color-scheme="slate"] .envctl-btn--outline {
+    background: rgba(255, 255, 255, 0.03) !important;
+    color: #f5f7fa !important;
+    border-color: #252b34 !important;
+}
+[data-md-color-scheme="slate"] .envctl-btn--outline:hover,
+[data-md-color-scheme="slate"] .envctl-btn--outline:focus-visible {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: #363e49 !important;
+    color: #ffffff !important;
+}
+[data-md-color-scheme="slate"] .envctl-landing-footer {
+    background: #040608;
+    border-top-color: #14191f;
+}
+[data-md-color-scheme="slate"] .envctl-landing-footer__bottom {
+    background: #020406;
+    border-top-color: #14191f;
+}
+[data-md-color-scheme="slate"] .envctl-landing-footer__card {
+    background: linear-gradient(180deg, #0a0d12 0%, #080b10 100%);
+    border-color: #1a2027;
+}
+[data-md-color-scheme="slate"] .envctl-orb {
+    display: none;
+}

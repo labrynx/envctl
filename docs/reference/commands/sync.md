@@ -1,5 +1,13 @@
 # sync
 
+<div class="envctl-section-intro">
+  <span class="envctl-section-intro__eyebrow">Reference</span>
+  <p class="envctl-section-intro__body">
+    <code>sync</code> is file-based projection.
+    Use it when another tool explicitly needs a generated dotenv file on disk instead of an in-memory subprocess environment.
+  </p>
+</div>
+
 ```bash
 envctl sync
 envctl sync --output-path PATH
@@ -52,3 +60,33 @@ envctl --group Database sync
 * use [`run`](run.md) for in-memory subprocess injection
 * use [`export`](export.md) for stdout-oriented workflows
 * use [`check`](check.md) if you only need validation before projection
+
+## Related pages
+
+<div class="envctl-doc-card-grid" markdown>
+
+<div class="envctl-doc-card" markdown>
+### Projection
+
+Reconnect `sync` to the projection layer it implements.
+
+[Read about projection](../../concepts/projection.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### run
+
+Use this instead when a target can consume environment variables directly.
+
+[Open run reference](run.md)
+</div>
+
+<div class="envctl-doc-card" markdown>
+### Docker guide
+
+See a common file-based handoff workflow in practice.
+
+[Open Docker guide](../../guides/docker.md)
+</div>
+
+</div>
