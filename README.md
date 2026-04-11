@@ -1,4 +1,4 @@
-![envctl](docs/assets/envctl-banner.png)
+![envctl](docs/assets/images/social/envctl-banner.png)
 
 **Your `.env.local` works... until it doesn't.**
 

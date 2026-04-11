@@ -14,7 +14,9 @@ theme:
   custom_dir: overrides
   logo: assets/logo/envctl-logo.png
   favicon: assets/favicon/favicon.ico
-
+  font: false
+  icon:
+    repo: fontawesome/brands/github
 
   features:
     - navigation.instant
@@ -22,7 +24,6 @@ theme:
     - navigation.tracking
     - navigation.sections
     - navigation.expand
-    - navigation.prune
     - navigation.indexes
     - navigation.top
     - navigation.tabs
@@ -36,7 +37,7 @@ theme:
 
   palette:
     - scheme: default
-      primary: black
+      primary: white
       accent: indigo
       toggle:
         icon: material/weather-night
@@ -48,6 +49,76 @@ theme:
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Getting started: getting-started/index.md
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+      - First project: getting-started/first-project.md
+      - Mental model: getting-started/mental-model.md
+  - Guides:
+      - Guides: guides/index.md
+      - Docker: guides/docker.md
+      - CI: guides/ci.md
+      - Hooks: guides/hooks.md
+      - Profiles: guides/profiles.md
+      - Debugging: guides/debugging.md
+      - Team workflows: guides/team.md
+      - Daily workflow: workflows/daily.md
+  - Reference:
+      - Reference: reference/index.md
+      - Commands:
+          - Overview: reference/commands/index.md
+          - init: reference/commands/init.md
+          - add: reference/commands/add.md
+          - set: reference/commands/set.md
+          - unset: reference/commands/unset.md
+          - remove: reference/commands/remove.md
+          - fill: reference/commands/fill.md
+          - check: reference/commands/check.md
+          - inspect: reference/commands/inspect.md
+          - run: reference/commands/run.md
+          - sync: reference/commands/sync.md
+          - export: reference/commands/export.md
+          - status: reference/commands/status.md
+          - config: reference/commands/config.md
+          - profile: reference/commands/profile.md
+          - vault: reference/commands/vault.md
+          - project: reference/commands/project.md
+          - guard: reference/commands/guard.md
+          - hooks: reference/commands/hooks.md
+      - Configuration: reference/configuration.md
+      - Vault: reference/vault.md
+      - Profiles: reference/profiles.md
+      - Security: reference/security.md
+      - Encryption: reference/encryption.md
+      - Observability: reference/observability.md
+      - Platforms: reference/platforms.md
+      - Distribution: reference/distribution.md
+      - Roadmap: reference/roadmap.md
+  - Concepts:
+      - Concepts: concepts/index.md
+      - Contract: concepts/contract.md
+      - Vault: concepts/vault.md
+      - Profiles: concepts/profiles.md
+      - Resolution: concepts/resolution.md
+      - Projection: concepts/projection.md
+      - Binding: concepts/binding.md
+      - Metadata and local state: concepts/metadata.md
+      - Hooks: concepts/hooks.md
+  - Architecture:
+      - Architecture for maintainers: architecture/index.md
+      - Layers: architecture/layers.md
+      - Boundaries: architecture/boundaries.md
+      - Internal architecture: internals/architecture.md
+      - Migration and compatibility: internals/compatibility.md
+  - Troubleshooting:
+      - Troubleshooting: troubleshooting/index.md
+      - Common errors: troubleshooting/common-errors.md
+      - Recovery: troubleshooting/recovery.md
+      - Hooks: troubleshooting/hooks.md
 
 markdown_extensions:
   - admonition
@@ -87,83 +158,19 @@ plugins:
       fallback_to_build_date: true
 
 extra_css:
-  - assets/stylesheets/extra.css
+  - assets/stylesheets/styles.css
 
 extra_javascript:
   - https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js
-  - assets/javascripts/extra.js
+  - assets/javascripts/00-core.js
+  - assets/javascripts/01-header.js
+  - assets/javascripts/02-tabs.js
+  - assets/javascripts/03-reveal.js
+  - assets/javascripts/04-copy.js
+  - assets/javascripts/05-backtotop.js
+  - assets/javascripts/scripts.js
 
 extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/labrynx/envctl
-
-nav:
-  - Home: index.md
-  - Getting started:
-      - Overview: getting-started/index.md
-      - Installation: getting-started/installation.md
-      - Quickstart: getting-started/quickstart.md
-      - First project: getting-started/first-project.md
-      - Mental model: getting-started/mental-model.md
-  - Guides:
-      - Overview: guides/index.md
-      - Docker: guides/docker.md
-      - CI: guides/ci.md
-      - Hooks: guides/hooks.md
-      - Profiles: guides/profiles.md
-      - Debugging: guides/debugging.md
-      - Team: guides/team.md
-      - Daily workflow: workflows/daily.md
-  - Reference:
-      - Overview: reference/index.md
-      - Commands:
-          - Overview: reference/commands/index.md
-          - init: reference/commands/init.md
-          - add: reference/commands/add.md
-          - set: reference/commands/set.md
-          - unset: reference/commands/unset.md
-          - remove: reference/commands/remove.md
-          - fill: reference/commands/fill.md
-          - check: reference/commands/check.md
-          - inspect: reference/commands/inspect.md
-          - run: reference/commands/run.md
-          - sync: reference/commands/sync.md
-          - export: reference/commands/export.md
-          - status: reference/commands/status.md
-          - config: reference/commands/config.md
-          - profile: reference/commands/profile.md
-          - vault: reference/commands/vault.md
-          - project: reference/commands/project.md
-          - guard: reference/commands/guard.md
-          - hooks: reference/commands/hooks.md
-      - Configuration: reference/configuration.md
-      - Vault: reference/vault.md
-      - Profiles: reference/profiles.md
-      - Security: reference/security.md
-      - Encryption: reference/encryption.md
-      - Observability: reference/observability.md
-      - Platforms: reference/platforms.md
-      - Distribution: reference/distribution.md
-      - Roadmap: reference/roadmap.md
-  - Concepts:
-      - Overview: concepts/index.md
-      - Contract: concepts/contract.md
-      - Vault: concepts/vault.md
-      - Profiles: concepts/profiles.md
-      - Resolution: concepts/resolution.md
-      - Projection: concepts/projection.md
-      - Binding: concepts/binding.md
-      - Metadata and local state: concepts/metadata.md
-      - Hooks: concepts/hooks.md
-  - Architecture:
-      - Overview: architecture/index.md
-      - Layers: architecture/layers.md
-      - Boundaries: architecture/boundaries.md
-      - Internals (advanced): internals/architecture.md
-      - Compatibility (advanced): internals/compatibility.md
-  - Troubleshooting:
-      - Overview: troubleshooting/index.md
-      - Common errors: troubleshooting/common-errors.md
-      - Recovery: troubleshooting/recovery.md
-      - Hooks: troubleshooting/hooks.md

@@ -1,0 +1,26 @@
+/* ── Dark mode tokens ─────────────────────────────────────── */
+
+[data-md-color-scheme="slate"] {
+  --envctl-accent: #4f7cff;
+  --envctl-accent-light: #7aa2ff;
+
+  --envctl-bg: #05070b;
+  --envctl-surface: #0a0d12;
+  --envctl-surface-strong: rgba(10, 13, 18, 0.9);
+
+  --envctl-text: #f5f7fa;
+  --envctl-text-secondary: #9aa3af;
+
+  --envctl-border: #181d24;
+  --envctl-border-soft: rgba(255, 255, 255, 0.06);
+  --envctl-grid-line: rgba(255, 255, 255, 0.05);
+  --envctl-glass-bg: rgba(8, 10, 14, 0.78);
+
+  --envctl-code-bg: #030508;
+  --envctl-code-text: #e8edf3;
+  --envctl-terminal-border: rgba(255, 255, 255, 0.08);
+
+  --envctl-shadow-soft: 0 18px 44px rgba(0, 0, 0, 0.34);
+  --envctl-shadow-medium: 0 24px 64px rgba(0, 0, 0, 0.42);
+  --envctl-shadow-strong: 0 28px 80px rgba(0, 0, 0, 0.54);
+}

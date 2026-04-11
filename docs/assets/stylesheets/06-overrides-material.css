@@ -1,0 +1,276 @@
+/* ── Material overrides ────────────────────────────────────── */
+
+:root {
+  --envctl-header-height: 4rem;
+  --envctl-panel-offset: 0.5rem;
+  --envctl-sidebar-width: 12.1rem;
+}
+
+html {
+  scroll-padding-top: calc(var(--envctl-header-height) + 1rem);
+}
+
+.md-typeset :is(h1, h2, h3, h4, h5, h6) {
+  scroll-margin-top: calc(var(--envctl-header-height) + 1rem);
+}
+
+.md-typeset .md-button {
+  border-radius: 8px;
+  font-weight: 600;
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.md-typeset .md-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.md-typeset .envctl-page-context,
+.md-typeset .envctl-advanced-note {
+  margin: 0 0 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--envctl-border);
+  background: linear-gradient(180deg, rgba(0, 47, 167, 0.04), rgba(0, 47, 167, 0.02));
+  box-shadow:
+    0 10px 24px rgba(9, 9, 11, 0.035),
+    0 1px 0 rgba(255, 255, 255, 0.4) inset;
+  position: relative;
+  overflow: hidden;
+}
+
+.md-typeset .envctl-page-context::before,
+.md-typeset .envctl-advanced-note::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 0.18rem;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 47, 167, 0.9) 0%,
+    rgba(26, 71, 194, 0.6) 55%,
+    rgba(59, 108, 245, 0.22) 100%
+  );
+}
+
+.md-typeset .envctl-advanced-note {
+  background: linear-gradient(180deg, rgba(217, 119, 6, 0.07), rgba(217, 119, 6, 0.03));
+  border-color: rgba(217, 119, 6, 0.28);
+}
+
+.md-typeset .envctl-advanced-note::before {
+  background: linear-gradient(
+    90deg,
+    rgba(217, 119, 6, 0.92) 0%,
+    rgba(245, 158, 11, 0.62) 55%,
+    rgba(251, 191, 36, 0.24) 100%
+  );
+}
+
+.md-typeset .envctl-page-context__eyebrow,
+.md-typeset .envctl-advanced-note__eyebrow {
+  margin: 0 0 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.88;
+  position: relative;
+  z-index: 1;
+}
+
+.md-typeset .envctl-page-context__body,
+.md-typeset .envctl-advanced-note__body {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  position: relative;
+  z-index: 1;
+}
+
+.md-typeset .envctl-page-context__link,
+.md-typeset .envctl-advanced-note__link {
+  font-weight: 600;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .envctl-page-context,
+[data-md-color-scheme="slate"] .md-typeset .envctl-advanced-note {
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.18),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .envctl-page-context {
+  background: linear-gradient(180deg, rgba(79, 124, 255, 0.08), rgba(79, 124, 255, 0.03));
+  border-color: rgba(79, 124, 255, 0.16);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .envctl-advanced-note {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.04));
+  border-color: rgba(245, 158, 11, 0.24);
+}
+
+.md-nav--primary .md-nav__title {
+  font-weight: 700;
+  color: var(--envctl-text);
+}
+
+.md-nav__item .md-nav__link {
+  border-radius: 8px;
+  padding: 0.24rem 0.45rem;
+  transition:
+    background-color var(--envctl-transition-base),
+    color var(--envctl-transition-base);
+}
+
+.md-nav__item .md-nav__link:hover {
+  background: rgba(0, 47, 167, 0.04);
+}
+
+.md-nav__item .md-nav__link--active {
+  color: var(--envctl-accent);
+  font-weight: 600;
+  background: rgba(0, 47, 167, 0.06);
+}
+
+.md-nav--secondary .md-nav__title {
+  font-weight: 700;
+  color: var(--envctl-text);
+}
+
+.md-nav--secondary .md-nav__link {
+  border-radius: 6px;
+  padding: 0.14rem 0.4rem;
+}
+
+.md-nav--secondary .md-nav__link:hover {
+  background: rgba(0, 47, 167, 0.04);
+}
+
+.md-nav--secondary .md-nav__link--active {
+  color: var(--envctl-accent);
+  font-weight: 600;
+}
+
+.md-source,
+.md-source__facts {
+  font-size: 0.72rem;
+}
+
+.md-content__button {
+  opacity: 0.78;
+}
+
+.md-content__button:hover {
+  opacity: 1;
+}
+
+.md-footer {
+  background: #050505;
+}
+
+.md-footer-meta {
+  background: #030303;
+}
+
+/* ── Desktop layout: normal document flow + sticky sidebars ─ */
+
+@media (min-width: 1220px) {
+  html,
+  body {
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .md-container,
+  .md-main {
+    height: auto;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .md-main__inner {
+    overflow: visible;
+  }
+
+  .md-sidebar--primary,
+  .md-sidebar--secondary,
+  .md-content {
+    min-height: auto;
+  }
+
+  .md-sidebar,
+  .md-header--lifted ~ .md-container .md-sidebar {
+    top: calc(var(--envctl-header-height) + var(--envctl-panel-offset));
+  }
+
+  .md-sidebar__scrollwrap {
+    position: fixed;
+    top: calc(var(--envctl-header-height) + var(--envctl-panel-offset));
+    width: calc(var(--envctl-sidebar-width) - 0.4rem);
+    margin: 0;
+    max-height: calc(100vh - var(--envctl-header-height) - var(--envctl-panel-offset) - 1.2rem);
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .md-sidebar--primary .md-sidebar__scrollwrap {
+    left: calc((100vw - var(--envctl-max-width)) / 2 + 0.2rem);
+  }
+
+  .md-sidebar--secondary .md-sidebar__scrollwrap {
+    left: auto;
+    right: calc((100vw - var(--envctl-max-width)) / 2 + 0.2rem);
+  }
+
+  .md-sidebar__scrollwrap::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+
+  .md-content {
+    height: auto;
+    overflow: visible;
+    scroll-behavior: smooth;
+  }
+}
+
+/* ── Normal document flow on tablet/mobile ─────────────────── */
+
+@media (max-width: 1219px) {
+  html,
+  body {
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .md-main,
+  .md-main__inner,
+  .md-content,
+  .md-sidebar--primary,
+  .md-sidebar--secondary {
+    height: auto;
+    overflow: visible;
+  }
+}
+
+/* ── Dark mode background coherence ────────────────────────── */
+
+/* ── Reduced motion ─────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .md-typeset .md-button {
+    transition: none !important;
+  }
+
+  .md-typeset .md-button:hover {
+    transform: none !important;
+  }
+}
