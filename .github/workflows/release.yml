@@ -157,10 +157,19 @@ jobs:
         run: |
           $lines = Get-Content dist/SHA256SUMS
           foreach ($line in $lines) {
+            if ([string]::IsNullOrWhiteSpace($line)) {
+              continue
+            }
+
             $parts = $line -split '\s+', 2
+            if ($parts.Count -lt 2) {
+              throw "Invalid checksum line: $line"
+            }
+
             $expected = $parts[0].ToLower()
             $fileName = $parts[1].Trim()
             $actual = (Get-FileHash -Path (Join-Path 'dist' $fileName) -Algorithm SHA256).Hash.ToLower()
+
             if ($actual -ne $expected) {
               throw "Checksum mismatch for $fileName"
             }
@@ -181,8 +190,15 @@ jobs:
         shell: pwsh
         run: |
           .\.release-venv\Scripts\python.exe -m pip install --upgrade pip
-          .\.release-venv\Scripts\python.exe -m pip install dist\*.whl
+
+          $wheel = Get-ChildItem -Path dist\*.whl | Select-Object -First 1
+          if (-not $wheel) {
+            throw "No wheel found in dist/"
+          }
+
+          .\.release-venv\Scripts\python.exe -m pip install $wheel.FullName
           .\.release-venv\Scripts\python.exe -m pip check
+          .\.release-venv\Scripts\python.exe -c "import envctl; print(envctl.__name__)"
           .\.release-venv\Scripts\envctl.exe --version
           .\.release-venv\Scripts\python.exe -m envctl --version
 
@@ -202,8 +218,15 @@ jobs:
         run: |
           python -m venv .release-venv-sdist
           .\.release-venv-sdist\Scripts\python.exe -m pip install --upgrade pip
-          .\.release-venv-sdist\Scripts\python.exe -m pip install dist\*.tar.gz
+
+          $sdist = Get-ChildItem -Path dist\*.tar.gz | Select-Object -First 1
+          if (-not $sdist) {
+            throw "No sdist found in dist/"
+          }
+
+          .\.release-venv-sdist\Scripts\python.exe -m pip install $sdist.FullName
           .\.release-venv-sdist\Scripts\python.exe -m pip check
+          .\.release-venv-sdist\Scripts\python.exe -c "import envctl; print(envctl.__name__)"
           .\.release-venv-sdist\Scripts\envctl.exe --version
           .\.release-venv-sdist\Scripts\python.exe -m envctl --version
 
@@ -218,7 +241,7 @@ jobs:
       id-token: write
       contents: read
 
-    environment: 
+    environment:
       name: pypi
 
     steps:
