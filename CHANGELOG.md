@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [2.5.0] - 2026-04-12
+
 This release makes contracts modular without sacrificing determinism.
 You can now split your contract across files, but envctl still resolves everything into a single, predictable result.
 The CLI is now more consistent across commands, making it easier to understand and reason about what envctl is doing.
@@ -265,7 +269,8 @@ The CLI is now more consistent across commands, making it easier to understand a
 * Limited configuration formats
 * No machine-readable output
 
-[Unreleased]: https://github.com/labrynx/envctl/compare/v2.4.1...HEAD
+[Unreleased]: https://github.com/labrynx/envctl/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/labrynx/envctl/compare/v2.4.1...v2.5.0
 [2.4.1]: https://github.com/labrynx/envctl/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/labrynx/envctl/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/labrynx/envctl/compare/v2.2.0...v2.3.0
