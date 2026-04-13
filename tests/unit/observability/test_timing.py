@@ -28,9 +28,11 @@ def test_observe_span_emits_error_event_on_exception(monkeypatch: pytest.MonkeyP
     context = initialize_observability_context(command_name="check")
 
     assert context is not None
-    with pytest.raises(RuntimeError, match="boom"):
-        with observe_span("resolution", module="tests", operation="test"):
-            raise RuntimeError("boom")
+    with (
+        pytest.raises(RuntimeError, match="boom"),
+        observe_span("resolution", module="tests", operation="test"),
+    ):
+        raise RuntimeError("boom")
 
     assert context.events is not None
     assert [event.event for event in context.events] == ["resolution.start", "resolution.error"]
