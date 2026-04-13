@@ -19,6 +19,10 @@ PRE_COMMIT ?= pre-commit
 BUILD ?= $(PYTHON) -m build
 TWINE ?= $(PYTHON) -m twine
 CYCLONEDX ?= cyclonedx-py
+IMPORTTIME_LOG_DIR ?= .importtime
+ENVCTL_ENTRYPOINT ?= -m envctl
+ENVCTL_TIME ?= /usr/bin/time
+
 
 # -----------------------------------------
 # Project paths
@@ -57,7 +61,13 @@ PYTEST_COV_ARGS ?= --cov=$(COV_TARGET) --cov-report=term-missing:skip-covered --
 	status commit push \
 	pre-commit-install pre-commit-run pre-push-run \
 	imports \
-	docs-check
+	docs-check docs-build docs-serve docs-deploy \
+	startup-version \
+	startup-help \
+	startup-vault-help \
+	startup-importtime-clean \
+	startup-importtime-report \
+	startup-timings
 
 # -----------------------------------------
 # Help
@@ -275,3 +285,56 @@ docs-serve: docs-build ## Serve MkDocs site locally with live reload
 
 docs-deploy: ## Deploy MkDocs site to GitHub Pages (requires write access)
 	mkdocs gh-deploy --force
+
+# -----------------------------------------
+# Startup and import-time analysis
+# -----------------------------------------
+
+startup-importtime-clean: ## Remove import-time analysis artifacts
+	rm -rf $(IMPORTTIME_LOG_DIR)
+
+startup-version: ## Profile import/startup time for `envctl --version`
+	mkdir -p $(IMPORTTIME_LOG_DIR)
+	$(PYTHON) -X importtime $(ENVCTL_ENTRYPOINT) --version 2> $(IMPORTTIME_LOG_DIR)/version.importtime.log
+	@echo ""
+	@echo "Saved import-time log to $(IMPORTTIME_LOG_DIR)/version.importtime.log"
+	@echo ""
+	@grep 'envctl\|cryptography' $(IMPORTTIME_LOG_DIR)/version.importtime.log || true
+
+startup-help: ## Profile import/startup time for `envctl --help`
+	mkdir -p $(IMPORTTIME_LOG_DIR)
+	$(PYTHON) -X importtime $(ENVCTL_ENTRYPOINT) --help 2> $(IMPORTTIME_LOG_DIR)/help.importtime.log
+	@echo ""
+	@echo "Saved import-time log to $(IMPORTTIME_LOG_DIR)/help.importtime.log"
+	@echo ""
+	@grep 'envctl\|cryptography' $(IMPORTTIME_LOG_DIR)/help.importtime.log || true
+
+startup-vault-help: ## Profile import/startup time for `envctl vault --help`
+	mkdir -p $(IMPORTTIME_LOG_DIR)
+	$(PYTHON) -X importtime $(ENVCTL_ENTRYPOINT) vault --help 2> $(IMPORTTIME_LOG_DIR)/vault-help.importtime.log
+	@echo ""
+	@echo "Saved import-time log to $(IMPORTTIME_LOG_DIR)/vault-help.importtime.log"
+	@echo ""
+	@grep 'envctl\|cryptography' $(IMPORTTIME_LOG_DIR)/vault-help.importtime.log || true
+
+startup-importtime-report: ## Show the heaviest envctl/cryptography imports from collected logs
+	@echo ""
+	@for file in $(IMPORTTIME_LOG_DIR)/*.log; do \
+		[ -f "$$file" ] || continue; \
+		echo "==> $$file"; \
+		grep 'envctl\|cryptography' "$$file" | tail -n 40 || true; \
+		echo ""; \
+	done
+
+startup-timings: ## Measure wall-clock and memory for common startup paths
+	@echo ""
+	@echo "==> envctl --version"
+	@$(ENVCTL_TIME) -f "elapsed=%E maxrss=%MKB" $(PYTHON) $(ENVCTL_ENTRYPOINT) --version >/dev/null
+	@echo ""
+	@echo "==> envctl --help"
+	@$(ENVCTL_TIME) -f "elapsed=%E maxrss=%MKB" $(PYTHON) $(ENVCTL_ENTRYPOINT) --help >/dev/null
+	@echo ""
+	@echo "==> envctl vault --help"
+	@$(ENVCTL_TIME) -f "elapsed=%E maxrss=%MKB" $(PYTHON) $(ENVCTL_ENTRYPOINT) vault --help >/dev/null
+
+startup-full: startup-version startup-help startup-vault-help startup-importtime-report startup-timings ## Run all startup/import-time analysis tasks
