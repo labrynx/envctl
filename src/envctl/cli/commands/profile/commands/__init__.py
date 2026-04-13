@@ -1,1 +1,1 @@
-"""Profile command implementations."""
+"""Profile subcommands."""

@@ -9,15 +9,14 @@ from envctl.cli.decorators import (
     requires_writable_runtime,
     text_output_only,
 )
-from envctl.cli.presenters import (
+from envctl.cli.presenters.vault_presenter import (
     render_vault_prune_cancelled,
     render_vault_prune_no_changes,
     render_vault_prune_result,
 )
-from envctl.cli.prompts import build_vault_prune_confirmation_message
+from envctl.cli.prompts.confirmation_prompts import build_vault_prune_confirmation_message
 from envctl.cli.prompts.input import confirm
 from envctl.cli.runtime import get_active_profile
-from envctl.services.vault_service import get_unknown_vault_keys, run_vault_prune
 
 YES_OPTION = typer.Option(
     False,
@@ -33,6 +32,8 @@ def vault_prune_command(
     yes: bool = YES_OPTION,
 ) -> None:
     """Remove vault keys that are not declared in the contract."""
+    from envctl.services.vault_service import get_unknown_vault_keys, run_vault_prune
+
     _context, active_profile, profile_path, unknown_keys = get_unknown_vault_keys(
         get_active_profile()
     )

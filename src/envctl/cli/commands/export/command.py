@@ -11,10 +11,10 @@ from envctl.cli.command_support import (
     render_contract_warnings_if_any,
 )
 from envctl.cli.decorators import handle_errors
-from envctl.cli.presenters import render_export_output
+from envctl.cli.presenters.action_presenter import render_export_output
 from envctl.cli.runtime import get_active_profile, get_contract_selection, is_json_output
-from envctl.cli.serializers import emit_json, serialize_export_result
-from envctl.services.export_service import run_export
+from envctl.cli.serializers.common import emit_json
+from envctl.cli.serializers.export import serialize_export_result
 
 ExportFormat = Literal["shell", "dotenv"]
 
@@ -33,6 +33,8 @@ def export_command(
     format: ExportFormat = FORMAT_OPTION,
 ) -> None:
     """Print the resolved environment as shell export lines."""
+    from envctl.services.export_service import run_export
+
     _context, resolved_profile, values, rendered, warnings = run_export(
         get_active_profile(),
         format=format,

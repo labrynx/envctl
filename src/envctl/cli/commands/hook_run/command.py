@@ -7,7 +7,6 @@ import typer
 from envctl.cli.decorators import handle_errors, text_output_only
 from envctl.domain.hooks import HookName
 from envctl.errors import ExecutionError
-from envctl.services.hook_service import HookExecutionService
 from envctl.utils.output import print_error, print_kv, print_success
 
 HOOK_ARGUMENT = typer.Argument(...)
@@ -24,6 +23,8 @@ def hook_run_command(
         resolved_hook_name = HookName(hook_name)
     except ValueError as exc:
         raise ExecutionError(f"Unsupported hook: {hook_name}") from exc
+
+    from envctl.services.hook_service import HookExecutionService
 
     result = HookExecutionService().run_guarded_hook(resolved_hook_name, ctx.args)
     if result.guard_result.ok:

@@ -5,8 +5,7 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
-from envctl.cli.presenters import render_project_repair_result
-from envctl.services.repair_service import run_repair
+from envctl.cli.presenters.project_presenter import render_project_repair_result
 
 
 @handle_errors
@@ -25,6 +24,8 @@ def project_repair_command(
     ),
 ) -> None:
     """Repair a missing, recovered, or incomplete local binding."""
+    from envctl.services.repair_service import run_repair
+
     context, result = run_repair(
         create_if_missing=create_if_missing,
         recreate_bound_vault=recreate_bound_vault,

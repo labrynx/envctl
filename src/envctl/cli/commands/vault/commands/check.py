@@ -5,15 +5,16 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors, text_output_only
-from envctl.cli.presenters import render_vault_check_result
+from envctl.cli.presenters.vault_presenter import render_vault_check_result
 from envctl.cli.runtime import get_active_profile
-from envctl.services.vault_service import run_vault_check
 
 
 @handle_errors
 @text_output_only("vault check")
 def vault_check_command() -> None:
     """Check the local vault file as a physical artifact."""
+    from envctl.services.vault_service import run_vault_check
+
     _context, active_profile, result = run_vault_check(get_active_profile())
 
     render_vault_check_result(

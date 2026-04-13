@@ -8,9 +8,8 @@ import typer
 
 from envctl.cli.command_support import render_contract_warnings_if_any
 from envctl.cli.decorators import handle_errors, requires_writable_runtime
-from envctl.cli.presenters import render_sync_result
+from envctl.cli.presenters.action_presenter import render_sync_result
 from envctl.cli.runtime import get_active_profile, get_contract_selection
-from envctl.services.sync_service import run_sync
 
 SYNC_OUTPUT_PATH_OPTION = typer.Option(
     None,
@@ -25,6 +24,8 @@ def sync_command(
     output_path: Path | None = SYNC_OUTPUT_PATH_OPTION,
 ) -> None:
     """Write the resolved environment into a repository env file."""
+    from envctl.services.sync_service import run_sync
+
     _context, active_profile, target_path, warnings = run_sync(
         get_active_profile(),
         output_path=output_path,

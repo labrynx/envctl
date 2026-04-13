@@ -5,9 +5,8 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
-from envctl.cli.presenters import render_set_result
+from envctl.cli.presenters.action_presenter import render_set_result
 from envctl.cli.runtime import get_active_profile
-from envctl.services.set_service import run_set
 
 
 @handle_errors
@@ -18,6 +17,8 @@ def set_command(
     value: str = typer.Argument(...),
 ) -> None:
     """Set one local value in the active profile."""
+    from envctl.services.set_service import run_set
+
     _context, active_profile, profile_path = run_set(
         key=key,
         value=value,
