@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
-import typer
+from importlib.metadata import PackageNotFoundError, version
 
-from envctl import __version__
+import typer
 
 
 def version_callback(value: bool | None) -> None:
     """Print the version and exit."""
-    if value:
-        typer.echo(f"envctl {__version__}")
-        raise typer.Exit()
+    if not value:
+        return
+
+    try:
+        resolved_version = version("envctl")
+    except PackageNotFoundError:
+        resolved_version = "unknown"
+
+    typer.echo(f"envctl {resolved_version}")
+    raise typer.Exit()
