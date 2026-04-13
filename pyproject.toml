@@ -56,18 +56,18 @@ Documentation = "https://labrynx.github.io/envctl/"
 
 [project.optional-dependencies]
 dev = [
-  "pytest==9.0.2",
+  "pytest==9.0.3",
   "pytest-cov==7.1.0",
-  "ruff==0.15.9",
-  "mypy==1.20.0",
+  "ruff==0.15.10",
+  "mypy==1.20.1",
   "types-PyYAML==6.0.12.20260408",
-  "build==1.4.2",
+  "build==1.4.3",
   "twine==6.2.0",
   "pkginfo==1.12.1.2",
   "vulture==2.16",
   "bandit[toml]==1.9.4",
   "pre-commit==4.5.1",
-  "import-linter==2.4",
+  "import-linter==2.11",
   "setuptools-scm[simple]>=9.2",
   "cyclonedx-bom==7.3.0",
 ]
