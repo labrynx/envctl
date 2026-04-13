@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from envctl.domain.operations import RemovePlan
+from collections.abc import Sequence
 
 
 def build_profile_remove_confirmation_message(profile: str) -> str:
@@ -15,18 +15,24 @@ def build_project_rebind_confirmation_message() -> str:
     return "This will generate a new project identity for the current checkout. Continue?"
 
 
-def build_remove_confirmation_message(key: str, plan: RemovePlan) -> str:
+def build_remove_confirmation_message(
+    key: str,
+    *,
+    present_in_active_profile: bool,
+    present_in_other_profiles: Sequence[str],
+    absent_in_other_profiles: Sequence[str],
+) -> str:
     """Build the confirmation message for removing a declared key."""
     lines = [f"Remove '{key}' from the contract and all profiles?"]
 
-    if plan.present_in_active_profile:
+    if present_in_active_profile:
         lines.append("- present in the active profile")
 
-    if plan.present_in_other_profiles:
-        lines.append(f"- also present in: {', '.join(plan.present_in_other_profiles)}")
+    if present_in_other_profiles:
+        lines.append(f"- also present in: {', '.join(present_in_other_profiles)}")
 
-    if plan.absent_in_other_profiles:
-        lines.append(f"- not present in: {', '.join(plan.absent_in_other_profiles)}")
+    if absent_in_other_profiles:
+        lines.append(f"- not present in: {', '.join(absent_in_other_profiles)}")
 
     return "\n".join(lines)
 
