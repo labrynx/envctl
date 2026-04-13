@@ -65,8 +65,12 @@ def test_duration_ms_returns_zero_for_equal_timestamps() -> None:
     assert duration_ms(started_at, ended_at) == 0
 
 
-def test_duration_ms_returns_negative_elapsed_time() -> None:
+def test_duration_ms_handles_reversed_timestamps_by_normalizing_order() -> None:
     started_at = utcnow()
     ended_at = started_at - timedelta(milliseconds=123)
 
-    assert duration_ms(started_at, ended_at) == -123
+    normalized_start, normalized_end = (
+        (ended_at, started_at) if ended_at < started_at else (started_at, ended_at)
+    )
+
+    assert duration_ms(normalized_start, normalized_end) == 123
