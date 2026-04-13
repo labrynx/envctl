@@ -5,11 +5,9 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from envctl.cli.presenters import render_contract_deprecation_warnings
-from envctl.cli.serializers import (
-    serialize_command_warnings,
-    serialize_contract_deprecation_warnings,
-)
+from envctl.cli.presenters.deprecation_presenter import render_contract_deprecation_warnings
+from envctl.cli.serializers.deprecations import serialize_contract_deprecation_warnings
+from envctl.cli.serializers.warnings import serialize_command_warnings
 from envctl.domain.deprecations import ContractDeprecationWarning
 from envctl.domain.diagnostics import CommandWarning
 

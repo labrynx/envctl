@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 
-from envctl.domain.operations import VaultAuditProjectResult
 from envctl.utils.output import print_kv, print_success, print_warning
+
+if TYPE_CHECKING:
+    from envctl.domain.operations import VaultAuditProjectResult
 
 
 def render_vault_check_result(
