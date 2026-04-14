@@ -52,16 +52,16 @@ Profiles are explicit and isolated:
 
 ## Contributor workflow policy
 
-The canonical contributor workflow currently uses:
+The canonical contributor workflow uses `uv` and `uv.lock` as the source of truth for dependency resolution:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
+uv sync --dev
 make validate
-```
+````
 
-`uv.lock` is intentionally tracked, but `.venv` plus editable `pip install -e ".[dev]"` remains the default contributor contract unless tooling policy changes explicitly.
+This ensures that all contributors and CI environments operate on the same locked dependency graph.
+
+The `uv.lock` file is part of the repository contract and must be kept in sync with `pyproject.toml` changes.
 
 ## Documentation stack policy
 

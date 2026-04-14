@@ -54,7 +54,7 @@ Issues = "https://github.com/labrynx/envctl/issues"
 Changelog = "https://github.com/labrynx/envctl/releases"
 Documentation = "https://labrynx.github.io/envctl/"
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
   "pytest==9.0.3",
   "pytest-cov==7.1.0",
@@ -72,6 +72,7 @@ dev = [
   "cyclonedx-bom==7.3.0",
 ]
 
+[project.optional-dependencies]
 docs = [
   "mkdocs>=1.6,<2.0",
   "mkdocs-material>=9.7,<10.0",
@@ -95,7 +96,7 @@ pythonpath = ["src"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py311"
 exclude = [
   ".git",
   ".mypy_cache",
@@ -104,7 +105,7 @@ exclude = [
   ".venv",
   "build",
   "dist",
-  "src/*.egg-info",
+  "*.egg-info",
 ]
 
 [tool.ruff.lint]
@@ -138,7 +139,7 @@ quote-style = "double"
 indent-style = "space"
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.11"
 mypy_path = "src"
 files = ["src", "tests"]
 exclude = '(^build/|^dist/|^src/.*\.egg-info/)'

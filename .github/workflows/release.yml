@@ -29,23 +29,24 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup uv
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57
+        with:
+          enable-cache: true
+
       - name: Setup Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
           python-version: "3.12"
-          cache: pip
-          cache-dependency-path: pyproject.toml
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e ".[dev]"
+      - name: Sync dependencies
+        run: uv sync --dev --locked
 
       - name: Show derived package version
-        run: python -m setuptools_scm
+        run: uv run python -m setuptools_scm
 
       - name: Build package
-        run: python -m build
+        run: uv build
 
       - name: Verify distribution contents
         run: |
@@ -54,7 +55,7 @@ jobs:
           test -n "$(find dist -maxdepth 1 -type f -name '*.tar.gz')"
 
       - name: Check package metadata
-        run: python -m twine check dist/*.whl dist/*.tar.gz
+        run: uv run python -m twine check dist/*.whl dist/*.tar.gz
 
       - name: Resolve release artifact paths
         id: artifacts
@@ -209,6 +210,7 @@ jobs:
           ./.release-venv-sdist/bin/python -m pip install --upgrade pip
           ./.release-venv-sdist/bin/python -m pip install dist/*.tar.gz
           ./.release-venv-sdist/bin/python -m pip check
+          ./.release-venv-sdist/bin/python -c "import envctl; print(envctl.__name__)"
           ./.release-venv-sdist/bin/envctl --version
           ./.release-venv-sdist/bin/python -m envctl --version
 
@@ -252,37 +254,98 @@ jobs:
           path: dist
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b
 
   github-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs:
-      - publish
+    needs: publish
 
     permissions:
       contents: write
 
     steps:
-      - name: Download distribution artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: python-dist
           path: dist
 
-      - name: Download release metadata
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: release-metadata
           path: dist
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Build release notes
+        id: notes
+        run: |
+          set -e
+
+          VERSION="${GITHUB_REF_NAME#v}"
+
+          awk -v v="$VERSION" '
+            $0 ~ "^## \\[" v "\\]" {f=1; print; next}
+            f && /^## \[/ {exit}
+            f {print}
+          ' CHANGELOG.md > section.md
+
+          awk '
+            /^### Added/   {section="added"; subsection=0; next}
+            /^### Changed/ {section="changed"; subsection=0; next}
+            /^### Improved/ {section="improved"; subsection=0; next}
+            /^### /        {section=""; subsection=0; next}
+
+            (section == "added" || section == "changed") && /^#### / {
+              subsection=1
+              next
+            }
+
+            (section == "added" || section == "changed") && subsection && /^- / {
+              print
+              subsection=0
+              count++
+              if (count == 3) exit
+            }
+          ' section.md > highlights.md || true
+
+          count=$(wc -l < highlights.md)
+
+          if [ "$count" -lt 3 ]; then
+            awk -v existing="$count" '
+              /^### Improved/ {in_improved=1; next}
+              /^### / && $0 !~ /^### Improved/ {in_improved=0; next}
+
+              in_improved && /^- / {
+                print
+                count++
+                if (count + existing == 3) exit
+              }
+            ' section.md >> highlights.md || true
+          fi
+
+          if [ ! -s highlights.md ]; then
+            head -n 5 section.md > highlights.md
+          fi
+
+          {
+            echo "## envctl $VERSION"
+            echo ""
+            echo "### Highlights"
+            cat highlights.md
+            echo ""
+            echo "---"
+            echo ""
+            cat section.md
+          } > notes.md
+
+          echo "file=notes.md" >> $GITHUB_OUTPUT
+
+      - uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda
         with:
+          body_path: ${{ steps.notes.outputs.file }}
           files: |
             dist/*.whl
             dist/*.tar.gz
             dist/SHA256SUMS
             dist/envctl-wheel.sbom.cdx.json
-          generate_release_notes: true

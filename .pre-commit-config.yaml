@@ -1,3 +1,5 @@
+minimum_pre_commit_version: "3.7.0"
+
 exclude: |
   (?x)^(
     src/.*\.egg-info/.*|
@@ -20,6 +22,11 @@ repos:
       - id: mixed-line-ending
         args: ["--fix=lf"]
 
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.11.6
+    hooks:
+      - id: uv-lock
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.8
     hooks:
@@ -31,21 +38,21 @@ repos:
     hooks:
       - id: mypy
         name: mypy
-        entry: .venv/bin/python -m mypy
+        entry: uv run --locked mypy .
         language: system
         pass_filenames: false
         stages: [pre-push]
 
       - id: bandit
         name: bandit
-        entry: .venv/bin/python -m bandit -c pyproject.toml -r src
+        entry: uv run --locked bandit -c pyproject.toml -r src
         language: system
         pass_filenames: false
         stages: [pre-push]
 
       - id: pytest-fast
         name: pytest-fast
-        entry: .venv/bin/python -m pytest -q --maxfail=1
+        entry: uv run --locked pytest -q --maxfail=1
         language: system
         pass_filenames: false
         stages: [pre-push]
