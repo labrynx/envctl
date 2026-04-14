@@ -24,6 +24,9 @@ def test_observe_span_emits_start_and_finish_events(monkeypatch: pytest.MonkeyPa
     assert event.duration_ms is not None
 
 
+# NOTE:
+# Static analyzers may report unreachable code here due to the combined
+# pytest.raises(...) + observe_span(...) context managers, but the flow is valid.
 def test_observe_span_emits_error_event_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
     clear_observability_context()
     monkeypatch.setenv("ENVCTL_OBSERVABILITY_TRACE", "true")
@@ -65,7 +68,14 @@ def test_observe_span_uses_monotonic_elapsed_time_when_utc_clock_moves_back(
             context.start_time - timedelta(milliseconds=123),
         ]
     )
-    monotonic_values = iter([1_000_000_000, 1_123_000_000])
+    base_monotonic_ns = 1_000_000_000
+    elapsed_ms = 123
+    monotonic_values = iter(
+        [
+            base_monotonic_ns,
+            base_monotonic_ns + elapsed_ms * 1_000_000,
+        ]
+    )
 
     monkeypatch.setattr("envctl.observability.timing.utcnow", lambda: next(utc_values))
     monkeypatch.setattr(
@@ -79,4 +89,4 @@ def test_observe_span_uses_monotonic_elapsed_time_when_utc_clock_moves_back(
     assert context.events is not None
     event = context.events[-1]
     assert event.event == "resolution.finish"
-    assert event.duration_ms == 123
+    assert event.duration_ms == elapsed_ms
