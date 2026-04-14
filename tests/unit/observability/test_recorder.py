@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+import pytest
+
 from envctl.observability.models import ExecutionObservabilityContext, ObservationEvent
 from envctl.observability.recorder import duration_ms, record_event
 from envctl.observability.timing import utcnow
@@ -65,12 +67,9 @@ def test_duration_ms_returns_zero_for_equal_timestamps() -> None:
     assert duration_ms(started_at, ended_at) == 0
 
 
-def test_duration_ms_handles_reversed_timestamps_by_normalizing_order() -> None:
+def test_duration_ms_raises_for_reversed_timestamps() -> None:
     started_at = utcnow()
     ended_at = started_at - timedelta(milliseconds=123)
 
-    normalized_start, normalized_end = (
-        (ended_at, started_at) if ended_at < started_at else (started_at, ended_at)
-    )
-
-    assert duration_ms(normalized_start, normalized_end) == 123
+    with pytest.raises(ValueError, match="ended_at must be greater than or equal to started_at"):
+        duration_ms(started_at, ended_at)

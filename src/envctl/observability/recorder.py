@@ -47,5 +47,7 @@ def record_event(
 
 def duration_ms(started_at: datetime, ended_at: datetime) -> int:
     """Return elapsed milliseconds between two UTC timestamps."""
+    if ended_at < started_at:
+        raise ValueError("ended_at must be greater than or equal to started_at")
     delta = ended_at - started_at
     return int(delta.total_seconds() * 1000)

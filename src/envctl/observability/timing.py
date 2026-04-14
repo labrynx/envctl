@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime
+from time import perf_counter_ns
 from typing import Any
 
 
@@ -12,6 +13,20 @@ def utcnow() -> datetime:
     """Return timezone-aware UTC timestamp."""
 
     return datetime.now(UTC)
+
+
+def monotonic_now_ns() -> int:
+    """Return monotonic time in nanoseconds for elapsed-time measurements."""
+
+    return perf_counter_ns()
+
+
+def elapsed_ms(started_ns: int, ended_ns: int) -> int:
+    """Return elapsed milliseconds between two monotonic timestamps."""
+
+    if ended_ns < started_ns:
+        raise ValueError("ended_ns must be greater than or equal to started_ns")
+    return (ended_ns - started_ns) // 1_000_000
 
 
 @contextmanager
@@ -26,9 +41,9 @@ def observe_span(
 
     from envctl.observability import get_active_observability_context
     from envctl.observability.error_mapping import map_exception_to_error_event
-    from envctl.observability.recorder import duration_ms, record_event
+    from envctl.observability.recorder import record_event
 
-    started_at = utcnow()
+    started_ns = monotonic_now_ns()
     span_fields = dict(fields or {})
     context = get_active_observability_context()
     if context is not None:
@@ -54,7 +69,7 @@ def observe_span(
                 context,
                 event=f"{event_prefix}.error",
                 status="error",
-                duration_ms=duration_ms(started_at, utcnow()),
+                duration_ms=elapsed_ms(started_ns, monotonic_now_ns()),
                 module=module,
                 operation=operation,
                 fields=span_fields,
@@ -65,7 +80,7 @@ def observe_span(
             context,
             event=f"{event_prefix}.finish",
             status="finish",
-            duration_ms=duration_ms(started_at, utcnow()),
+            duration_ms=elapsed_ms(started_ns, monotonic_now_ns()),
             module=module,
             operation=operation,
             fields=span_fields,
