@@ -9,11 +9,10 @@ from envctl.cli.decorators import (
     requires_writable_runtime,
     text_output_only,
 )
-from envctl.cli.presenters import render_remove_result
-from envctl.cli.prompts import build_remove_confirmation_message
+from envctl.cli.presenters.action_presenter import render_remove_result
+from envctl.cli.prompts.confirmation_prompts import build_remove_confirmation_message
 from envctl.cli.prompts.input import confirm
 from envctl.cli.runtime import get_active_profile
-from envctl.services.remove_service import plan_remove, run_remove
 from envctl.utils.output import print_cancelled
 
 KEY_ARGUMENT = typer.Argument(...)
@@ -28,11 +27,18 @@ def remove_command(
     yes: bool = YES_OPTION,
 ) -> None:
     """Remove one key from the contract and all persisted profiles."""
+    from envctl.services.remove_service import plan_remove, run_remove
+
     _context, plan = plan_remove(key, get_active_profile())
 
     if not yes:
         approved = confirm(
-            build_remove_confirmation_message(key, plan),
+            build_remove_confirmation_message(
+                key,
+                present_in_active_profile=plan.present_in_active_profile,
+                present_in_other_profiles=plan.present_in_other_profiles,
+                absent_in_other_profiles=plan.absent_in_other_profiles,
+            ),
             default=False,
         )
         if not approved:

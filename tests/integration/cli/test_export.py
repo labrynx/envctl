@@ -36,7 +36,7 @@ def test_export_command_uses_presenter(
         captured["selection"] = selection
         return _export_result()
 
-    monkeypatch.setattr("envctl.cli.commands.export.command.run_export", fake_run_export)
+    monkeypatch.setattr("envctl.services.export_service.run_export", fake_run_export)
     monkeypatch.setattr(
         "envctl.cli.commands.export.command.render_export_output",
         lambda *, profile, rendered: captured.update({"profile": profile, "rendered": rendered}),
@@ -56,7 +56,7 @@ def test_export_command_uses_presenter(
 def test_export_command_emits_json_payload(monkeypatch: pytest.MonkeyPatch) -> None:
     runner = CliRunner()
     monkeypatch.setattr(
-        "envctl.cli.commands.export.command.run_export",
+        "envctl.services.export_service.run_export",
         lambda *args, **kwargs: _export_result(),
     )
 

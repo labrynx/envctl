@@ -11,8 +11,7 @@ def test_vault_path_command_prints_profile_and_path(
     capsys: CaptureFixture[str],
 ) -> None:
     monkeypatch.setattr(
-        vault_path_module,
-        "run_vault_path",
+        "envctl.services.vault_service.run_vault_path",
         lambda profile: ("context", "staging", "/tmp/vault/profiles/staging.env"),
     )
     monkeypatch.setattr(

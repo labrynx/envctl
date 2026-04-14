@@ -44,8 +44,7 @@ def test_vault_encrypt_command_succeeds(
     result = _make_encrypt_result(encrypted=(encrypted_path,))
 
     monkeypatch.setattr(
-        encrypt_module,
-        "run_vault_encrypt_project",
+        "envctl.services.vault_service.run_vault_encrypt_project",
         lambda include_all_projects=False: (object(), result),
     )
     encrypt_module.vault_encrypt_command(all_projects=False)
@@ -62,8 +61,7 @@ def test_vault_encrypt_command_shows_skipped(
     result = _make_encrypt_result(skipped=(skipped_path,))
 
     monkeypatch.setattr(
-        encrypt_module,
-        "run_vault_encrypt_project",
+        "envctl.services.vault_service.run_vault_encrypt_project",
         lambda include_all_projects=False: (object(), result),
     )
     encrypt_module.vault_encrypt_command(all_projects=False)
@@ -78,10 +76,10 @@ def test_vault_encrypt_command_rejects_json_mode(
 ) -> None:
     captured: dict[str, Any] = {}
 
-    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: True)
-    monkeypatch.setattr("envctl.cli.decorators.get_command_path", lambda: "envctl vault encrypt")
+    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: True)
+    monkeypatch.setattr("envctl.cli.runtime.get_command_path", lambda: "envctl vault encrypt")
     monkeypatch.setattr(
-        "envctl.cli.decorators.emit_json",
+        "envctl.cli.serializers.common.emit_json",
         lambda payload: captured.update({"payload": payload}),
     )
 
@@ -95,8 +93,7 @@ def test_vault_encrypt_command_propagates_execution_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        encrypt_module,
-        "run_vault_encrypt_project",
+        "envctl.services.vault_service.run_vault_encrypt_project",
         lambda include_all_projects=False: (_ for _ in ()).throw(
             ExecutionError("Encryption is not enabled")
         ),
@@ -119,8 +116,7 @@ def test_vault_decrypt_command_succeeds(
     result = _make_decrypt_result(decrypted=(decrypted_path,))
 
     monkeypatch.setattr(
-        decrypt_module,
-        "run_vault_decrypt_project",
+        "envctl.services.vault_service.run_vault_decrypt_project",
         lambda include_all_projects=False: (object(), result),
     )
     decrypt_module.vault_decrypt_command(all_projects=False)
@@ -137,8 +133,7 @@ def test_vault_decrypt_command_shows_no_encrypted_files(
     result = _make_decrypt_result(skipped=(skipped_path,))
 
     monkeypatch.setattr(
-        decrypt_module,
-        "run_vault_decrypt_project",
+        "envctl.services.vault_service.run_vault_decrypt_project",
         lambda include_all_projects=False: (object(), result),
     )
     decrypt_module.vault_decrypt_command(all_projects=False)
@@ -152,10 +147,10 @@ def test_vault_decrypt_command_rejects_json_mode(
 ) -> None:
     captured: dict[str, Any] = {}
 
-    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: True)
-    monkeypatch.setattr("envctl.cli.decorators.get_command_path", lambda: "envctl vault decrypt")
+    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: True)
+    monkeypatch.setattr("envctl.cli.runtime.get_command_path", lambda: "envctl vault decrypt")
     monkeypatch.setattr(
-        "envctl.cli.decorators.emit_json",
+        "envctl.cli.serializers.common.emit_json",
         lambda payload: captured.update({"payload": payload}),
     )
 

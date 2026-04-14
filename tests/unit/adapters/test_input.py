@@ -9,7 +9,7 @@ from envctl.cli.decorators import (
     requires_writable_runtime,
     text_output_only,
 )
-from envctl.cli.presenters import render_add_result, render_inferred_spec
+from envctl.cli.presenters.action_presenter import render_add_result, render_inferred_spec
 from envctl.cli.prompts.input import confirm, prompt_string
 from envctl.cli.runtime import get_active_profile
 from envctl.domain.operations import AddVariableRequest

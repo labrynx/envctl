@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from envctl.domain.hooks import HooksReason
-from envctl.domain.operations import InitResult
 from envctl.utils.masking import mask_value
 from envctl.utils.output import (
     print_kv,
@@ -14,6 +14,9 @@ from envctl.utils.output import (
     print_success,
     print_warning,
 )
+
+if TYPE_CHECKING:
+    from envctl.domain.operations import InitResult
 
 
 def render_config_init_result(config_path: Path) -> None:

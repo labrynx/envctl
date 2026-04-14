@@ -9,15 +9,17 @@ from envctl.cli.command_support import (
     render_contract_warnings_if_any,
 )
 from envctl.cli.decorators import handle_errors
-from envctl.cli.presenters import render_check_result
+from envctl.cli.presenters.check_presenter import render_check_result
 from envctl.cli.runtime import get_active_profile, get_contract_selection, is_json_output
-from envctl.cli.serializers import emit_json, serialize_check_result
-from envctl.services.check_service import run_check
+from envctl.cli.serializers.check import serialize_check_result
+from envctl.cli.serializers.common import emit_json
 
 
 @handle_errors
 def check_command() -> None:
     """Validate the current project environment against the contract."""
+    from envctl.services.check_service import run_check
+
     context, result, warnings = run_check(
         get_active_profile(),
         selection=get_contract_selection(),

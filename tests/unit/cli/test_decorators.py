@@ -49,7 +49,7 @@ def test_handle_errors_converts_envctl_error_to_exit(
     def sample() -> None:
         raise EnvctlError("boom")
 
-    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: False)
+    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: False)
     monkeypatch.setattr(
         "envctl.cli.decorators.print_error",
         lambda message: captured.update({"message": message}),
@@ -71,13 +71,13 @@ def test_handle_errors_emits_structured_json_when_enabled(
     def sample() -> None:
         raise EnvctlError("boom")
 
-    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: True)
+    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: True)
     monkeypatch.setattr(
-        "envctl.cli.decorators.get_command_path",
+        "envctl.cli.runtime.get_command_path",
         lambda: "envctl check",
     )
     monkeypatch.setattr(
-        "envctl.cli.decorators.emit_json",
+        "envctl.cli.serializers.common.emit_json",
         lambda payload: captured.update({"payload": payload}),
     )
 
@@ -102,8 +102,8 @@ def test_handle_errors_hides_unexpected_stacktrace_by_default(
     def sample() -> None:
         raise RuntimeError("kaboom")
 
-    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: False)
-    monkeypatch.setattr("envctl.cli.decorators.is_error_debug_enabled", lambda: False)
+    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: False)
+    monkeypatch.setattr("envctl.cli.runtime.is_error_debug_enabled", lambda: False)
     monkeypatch.setattr(
         "envctl.cli.decorators.print_error",
         lambda message: captured.update({"message": message}),
@@ -126,11 +126,11 @@ def test_handle_errors_emits_json_for_unexpected_errors(
     def sample() -> None:
         raise RuntimeError("kaboom")
 
-    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: True)
-    monkeypatch.setattr("envctl.cli.decorators.is_error_debug_enabled", lambda: False)
-    monkeypatch.setattr("envctl.cli.decorators.get_command_path", lambda: "envctl check")
+    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: True)
+    monkeypatch.setattr("envctl.cli.runtime.is_error_debug_enabled", lambda: False)
+    monkeypatch.setattr("envctl.cli.runtime.get_command_path", lambda: "envctl check")
     monkeypatch.setattr(
-        "envctl.cli.decorators.emit_json",
+        "envctl.cli.serializers.common.emit_json",
         lambda payload: captured.update({"payload": payload}),
     )
 
@@ -164,9 +164,9 @@ def test_handle_errors_renders_projection_validation_diagnostics(
             diagnostics=diagnostics,
         )
 
-    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: False)
+    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: False)
     monkeypatch.setattr(
-        "envctl.cli.decorators.render_projection_validation_failure",
+        "envctl.cli.presenters.projection_error_presenter.render_projection_validation_failure",
         lambda received_diagnostics, *, message: captured.update(
             {"value": (received_diagnostics, message)}
         ),
@@ -200,13 +200,13 @@ def test_handle_errors_emits_validation_details_in_json_when_present(
             ),
         )
 
-    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: True)
+    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: True)
     monkeypatch.setattr(
-        "envctl.cli.decorators.get_command_path",
+        "envctl.cli.runtime.get_command_path",
         lambda: "envctl sync",
     )
     monkeypatch.setattr(
-        "envctl.cli.decorators.emit_json",
+        "envctl.cli.serializers.common.emit_json",
         lambda payload: captured.update({"payload": payload}),
     )
 
@@ -246,9 +246,9 @@ def test_handle_errors_renders_contract_diagnostics(
             diagnostics=diagnostics,
         )
 
-    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: False)
+    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: False)
     monkeypatch.setattr(
-        "envctl.cli.decorators.render_contract_error",
+        "envctl.cli.presenters.contract_error_presenter.render_contract_error",
         lambda received_diagnostics, *, message: captured.update(
             {"value": (received_diagnostics, message)}
         ),
@@ -280,13 +280,13 @@ def test_handle_errors_emits_contract_details_in_json_when_present(
             ),
         )
 
-    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: True)
+    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: True)
     monkeypatch.setattr(
-        "envctl.cli.decorators.get_command_path",
+        "envctl.cli.runtime.get_command_path",
         lambda: "envctl check",
     )
     monkeypatch.setattr(
-        "envctl.cli.decorators.emit_json",
+        "envctl.cli.serializers.common.emit_json",
         lambda payload: captured.update({"payload": payload}),
     )
 
@@ -307,7 +307,7 @@ def test_emit_handled_error_renders_other_structured_families(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: False)
+    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: False)
 
     @handle_errors
     def sample_config() -> None:
@@ -378,7 +378,7 @@ def test_requires_writable_runtime_blocks_ci_mode(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "envctl.cli.decorators.load_config",
+        "envctl.config.loader.load_config",
         lambda: SimpleNamespace(runtime_mode=RuntimeMode.CI),
     )
 
@@ -394,7 +394,7 @@ def test_requires_writable_runtime_blocks_ci_mode(
 
 
 def test_text_output_only_rejects_json(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: True)
+    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: True)
 
     @text_output_only("run")
     def sample() -> None:

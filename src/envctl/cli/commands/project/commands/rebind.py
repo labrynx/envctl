@@ -5,10 +5,9 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
-from envctl.cli.presenters import render_project_rebind_result
-from envctl.cli.prompts import build_project_rebind_confirmation_message
+from envctl.cli.presenters.project_presenter import render_project_rebind_result
+from envctl.cli.prompts.confirmation_prompts import build_project_rebind_confirmation_message
 from envctl.cli.prompts.input import confirm
-from envctl.services.rebind_service import run_rebind
 from envctl.utils.output import print_cancelled
 
 
@@ -36,6 +35,8 @@ def project_rebind_command(
         if not approved:
             print_cancelled()
             return
+
+    from envctl.services.rebind_service import run_rebind
 
     context, result = run_rebind(copy_values=copy_values)
 

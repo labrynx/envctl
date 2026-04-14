@@ -2,42 +2,18 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Literal
 
 import typer
 
 from envctl.cli.callbacks import version_callback
-from envctl.cli.commands.add import add_command
-from envctl.cli.commands.check import check_command
-from envctl.cli.commands.config import config_app
-from envctl.cli.commands.doctor import doctor_command
-from envctl.cli.commands.explain import explain_command
-from envctl.cli.commands.export import export_command
-from envctl.cli.commands.fill import fill_command
-from envctl.cli.commands.guard import guard_app
-from envctl.cli.commands.hook_run import hook_run_command
-from envctl.cli.commands.hooks import hooks_app
-from envctl.cli.commands.init import init_command
-from envctl.cli.commands.inspect import inspect_command
-from envctl.cli.commands.profile import profile_app
-from envctl.cli.commands.project import project_app
-from envctl.cli.commands.remove import remove_command
-from envctl.cli.commands.run import run_command_cli
-from envctl.cli.commands.set import set_command
-from envctl.cli.commands.status import status_command
-from envctl.cli.commands.sync import sync_command
-from envctl.cli.commands.unset import unset_command
-from envctl.cli.commands.vault import vault_app
-from envctl.cli.decorators import emit_handled_error, emit_usage_error
-from envctl.cli.runtime import set_cli_state
 from envctl.cli.typer_theme import create_typer_app
-from envctl.config.loader import load_config
-from envctl.config.profile_resolution import resolve_active_profile
-from envctl.domain.runtime import OutputFormat
-from envctl.domain.selection import ContractSelection
-from envctl.errors import EnvctlError
-from envctl.observability import initialize_observability_context
+
+_PASSTHROUGH_SUBCOMMANDS = {"run", "hook-run"}
+_HELP_FLAGS = {"--help", "-h"}
+
 
 VERSION_OPTION = typer.Option(
     None,
@@ -105,6 +81,28 @@ DEBUG_ERRORS_OPTION = typer.Option(
     help="Show Python traceback for unexpected internal errors.",
 )
 
+
+def _is_help_request(ctx: typer.Context) -> bool:
+    """Return whether the current CLI invocation is rendering CLI help output."""
+    del ctx
+
+    args = sys.argv[1:]
+    if not args:
+        return False
+
+    for arg in args:
+        if arg == "--":
+            return False
+
+        if arg in _PASSTHROUGH_SUBCOMMANDS:
+            return False
+
+        if arg in _HELP_FLAGS:
+            return True
+
+    return False
+
+
 app = create_typer_app(
     help_text=(
         "[bold]envctl[/bold] keeps project environment requirements explicit and local.\n\n"
@@ -112,14 +110,97 @@ app = create_typer_app(
         "  - [bold]check[/bold], [bold]inspect[/bold], [bold]explain[/bold] for resolution\n"
         "  - [bold]run[/bold], [bold]sync[/bold], [bold]export[/bold] for projection\n"
         "  - [bold]set[/bold], [bold]unset[/bold], [bold]fill[/bold] for local values"
-    )
+    ),
+    lazy_subcommands={
+        "config": {
+            "import_path": "envctl.cli.commands.config.app:config_app",
+            "short_help": "Manage envctl configuration.",
+        },
+        "vault": {
+            "import_path": "envctl.cli.commands.vault.app:vault_app",
+            "short_help": "Inspect and maintain the local vault artifact.",
+        },
+        "project": {
+            "import_path": "envctl.cli.commands.project.app:project_app",
+            "short_help": "Operate on project identity, binding, and recovery.",
+        },
+        "profile": {
+            "import_path": "envctl.cli.commands.profile.app:profile_app",
+            "short_help": "Manage local environment profiles.",
+        },
+        "guard": {
+            "import_path": "envctl.cli.commands.guard.app:guard_app",
+            "short_help": "Protect Git history from envctl-specific secrets.",
+        },
+        "hooks": {
+            "import_path": "envctl.cli.commands.hooks.app:hooks_app",
+            "short_help": "Manage envctl-owned Git hooks for local secret protection.",
+        },
+        "doctor": {
+            "import_path": "envctl.cli.commands.doctor.command:doctor_command",
+            "short_help": "Deprecated alias for ``inspect``.",
+        },
+        "hook-run": {
+            "import_path": "envctl.cli.commands.hook_run.command:hook_run_command",
+            "context_settings": {"allow_extra_args": True, "ignore_unknown_options": True},
+        },
+        "init": {
+            "import_path": "envctl.cli.commands.init.command:init_command",
+            "short_help": "Initialize the current project in the local vault.",
+        },
+        "add": {
+            "import_path": "envctl.cli.commands.add.command:add_command",
+            "short_help": (
+                "Add one variable to the contract and store its"
+                " initial value in the active profile."
+            ),
+        },
+        "set": {
+            "import_path": "envctl.cli.commands.set.command:set_command",
+            "short_help": "Set one local value in the active profile.",
+        },
+        "unset": {
+            "import_path": "envctl.cli.commands.unset.command:unset_command",
+            "short_help": "Remove one local value from the active profile.",
+        },
+        "remove": {
+            "import_path": "envctl.cli.commands.remove.command:remove_command",
+            "short_help": "Remove one key from the contract and all persisted profiles.",
+        },
+        "fill": {
+            "import_path": "envctl.cli.commands.fill.command:fill_command",
+            "short_help": "Interactively fill missing required values for the active profile.",
+        },
+        "check": {
+            "import_path": "envctl.cli.commands.check.command:check_command",
+            "short_help": "Validate the current project environment against the contract.",
+        },
+        "inspect": {
+            "import_path": "envctl.cli.commands.inspect.command:inspect_command",
+            "short_help": "Inspect the resolved environment or one key in detail.",
+        },
+        "explain": {
+            "import_path": "envctl.cli.commands.explain.command:explain_command",
+            "short_help": "Deprecated alias for ``inspect KEY``.",
+        },
+        "sync": {
+            "import_path": "envctl.cli.commands.sync.command:sync_command",
+            "short_help": "Write the resolved environment into a repository env file.",
+        },
+        "export": {
+            "import_path": "envctl.cli.commands.export.command:export_command",
+            "short_help": "Print the resolved environment as shell export lines.",
+        },
+        "run": {
+            "import_path": "envctl.cli.commands.run.command:run_command_cli",
+            "context_settings": {"allow_extra_args": True, "ignore_unknown_options": True},
+        },
+        "status": {
+            "import_path": "envctl.cli.commands.status.command:status_command",
+            "short_help": "Show a human-oriented project status summary.",
+        },
+    },
 )
-app.add_typer(config_app, name="config")
-app.add_typer(vault_app, name="vault")
-app.add_typer(project_app, name="project")
-app.add_typer(profile_app, name="profile")
-app.add_typer(guard_app, name="guard")
-app.add_typer(hooks_app, name="hooks")
 
 
 @app.callback()
@@ -140,6 +221,18 @@ def main(
 ) -> None:
     """envctl - local environment control plane."""
     del version
+
+    if _is_help_request(ctx):
+        return
+
+    from envctl.cli.decorators import emit_handled_error, emit_usage_error
+    from envctl.cli.runtime import set_cli_state
+    from envctl.config.loader import load_config
+    from envctl.config.profile_resolution import resolve_active_profile
+    from envctl.domain.runtime import OutputFormat
+    from envctl.domain.selection import ContractSelection
+    from envctl.errors import EnvctlError
+    from envctl.observability import initialize_observability_context
 
     command_name = ctx.invoked_subcommand or "envctl"
     initialize_observability_context(
@@ -163,9 +256,13 @@ def main(
             config_default_profile=config.default_profile,
         )
     except ValueError as exc:
+        from envctl.cli.decorators import emit_usage_error
+
         emit_usage_error(str(exc), command="envctl")
         raise typer.Exit(code=2) from exc
     except EnvctlError as exc:
+        from envctl.cli.decorators import emit_handled_error
+
         command = "envctl"
         if ctx.invoked_subcommand is not None:
             command = f"envctl {ctx.invoked_subcommand}"
@@ -190,26 +287,3 @@ def main(
         profile_observability=profile_observability,
         debug_errors=debug_errors,
     )
-
-
-app.command("doctor")(doctor_command)
-app.command(
-    "hook-run",
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
-)(hook_run_command)
-app.command("init")(init_command)
-app.command("add")(add_command)
-app.command("set")(set_command)
-app.command("unset")(unset_command)
-app.command("remove")(remove_command)
-app.command("fill")(fill_command)
-app.command("check")(check_command)
-app.command("inspect")(inspect_command)
-app.command("explain")(explain_command)
-app.command("sync")(sync_command)
-app.command("export")(export_command)
-app.command(
-    "run",
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
-)(run_command_cli)
-app.command("status")(status_command)

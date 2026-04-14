@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
-from envctl.cli.presenters import render_fill_no_changes, render_fill_result
+from envctl.cli.presenters.action_presenter import (
+    render_fill_no_changes,
+    render_fill_result,
+)
 from envctl.cli.prompts.input import prompt_secret, prompt_string
 from envctl.cli.runtime import get_active_profile
-from envctl.services.fill_service import apply_fill, build_fill_plan
 
 
 @handle_errors
@@ -14,6 +16,8 @@ from envctl.services.fill_service import apply_fill, build_fill_plan
 @text_output_only("fill")
 def fill_command() -> None:
     """Interactively fill missing required values for the active profile."""
+    from envctl.services.fill_service import apply_fill, build_fill_plan
+
     context, active_profile, plan = build_fill_plan(get_active_profile())
 
     if not plan:

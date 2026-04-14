@@ -5,8 +5,8 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
-from envctl.cli.presenters import render_init_result
-from envctl.services.init_service import InitContractMode, run_init
+from envctl.cli.presenters.action_presenter import render_init_result
+from envctl.services.init_service import InitContractMode
 
 CONTRACT_OPTION = typer.Option(
     "ask",
@@ -28,6 +28,8 @@ def init_command(
     contract: InitContractMode = CONTRACT_OPTION,
 ) -> None:
     """Initialize the current project in the local vault."""
+    from envctl.services.init_service import run_init
+
     context, init_result = run_init(
         project_name=project,
         contract_mode=contract,

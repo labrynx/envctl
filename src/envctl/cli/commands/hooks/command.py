@@ -6,10 +6,13 @@ import typer
 
 from envctl.cli.command_support import build_json_command_payload
 from envctl.cli.decorators import handle_errors, requires_writable_runtime
-from envctl.cli.presenters import render_hook_operation, render_hooks_status
+from envctl.cli.presenters.hooks_presenter import (
+    render_hook_operation,
+    render_hooks_status,
+)
 from envctl.cli.runtime import is_json_output
-from envctl.cli.serializers import (
-    emit_json,
+from envctl.cli.serializers.common import emit_json
+from envctl.cli.serializers.hooks import (
     serialize_hook_operation_report,
     serialize_hooks_status_report,
 )
@@ -26,6 +29,7 @@ FORCE_OPTION = typer.Option(
 @handle_errors
 def hooks_status_command() -> None:
     """Show managed hooks status."""
+
     _config, context = load_project_context()
     report = HookService(context.repo_root).get_status()
     exit_code = 0 if report.is_healthy else 1
@@ -50,6 +54,9 @@ def hooks_status_command() -> None:
 @requires_writable_runtime("hooks install")
 def hooks_install_command(force: bool = FORCE_OPTION) -> None:
     """Install envctl-managed hooks."""
+    from envctl.services.context_service import load_project_context
+    from envctl.services.hook_service import HookService
+
     _config, context = load_project_context()
     report = HookService(context.repo_root).install(force=force)
     exit_code = 0 if report.ok else 1

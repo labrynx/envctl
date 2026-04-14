@@ -2,18 +2,14 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import typer
 
-from envctl.cli.command_support import build_json_command_payload
 from envctl.cli.decorators import handle_errors
-from envctl.cli.runtime import is_json_output
-from envctl.cli.serializers import emit_json
-from envctl.services.context_service import load_project_context
-from envctl.services.git_secret_guard_service import GitSecretGuardResult, run_git_secret_guard
-from envctl.utils.output import print_error, print_kv, print_success
 
 
-def _serialize_guard_result(result: GitSecretGuardResult) -> dict[str, object]:
+def _serialize_guard_result(result: Any) -> dict[str, object]:
     findings = []
     for finding in result.findings:
         findings.append(
@@ -33,6 +29,13 @@ def _serialize_guard_result(result: GitSecretGuardResult) -> dict[str, object]:
 @handle_errors
 def guard_secrets_command() -> None:
     """Block staged envctl vault artifacts and master keys."""
+    from envctl.cli.command_support import build_json_command_payload
+    from envctl.cli.runtime import is_json_output
+    from envctl.cli.serializers.common import emit_json
+    from envctl.services.context_service import load_project_context
+    from envctl.services.git_secret_guard_service import run_git_secret_guard
+    from envctl.utils.output import print_error, print_kv, print_success
+
     _config, context = load_project_context()
     result = run_git_secret_guard(context)
 

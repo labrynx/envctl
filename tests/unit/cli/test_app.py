@@ -16,11 +16,7 @@ def test_root_callback_uses_explicit_profile_over_default(
     def fake_load_config() -> object:
         return type("Config", (), {"default_profile": "local"})()
 
-    monkeypatch.setattr(
-        app_module,
-        "load_config",
-        fake_load_config,
-    )
+    monkeypatch.setattr("envctl.config.loader.load_config", fake_load_config)
 
     def fake_set_cli_state(
         ctx: object,
@@ -53,7 +49,7 @@ def test_root_callback_uses_explicit_profile_over_default(
             }
         )
 
-    monkeypatch.setattr(app_module, "set_cli_state", fake_set_cli_state)
+    monkeypatch.setattr("envctl.cli.runtime.set_cli_state", fake_set_cli_state)
 
     original_len = len(app_module.app.registered_commands)
 
@@ -84,11 +80,7 @@ def test_root_callback_rejects_multiple_scope_selectors(
     def fake_load_config() -> object:
         return type("Config", (), {"default_profile": "local"})()
 
-    monkeypatch.setattr(
-        app_module,
-        "load_config",
-        fake_load_config,
-    )
+    monkeypatch.setattr("envctl.config.loader.load_config", fake_load_config)
 
     original_len = len(app_module.app.registered_commands)
 
@@ -119,14 +111,13 @@ def test_root_callback_initializes_observability_context(
     def fake_load_config() -> object:
         return type("Config", (), {"default_profile": "local"})()
 
-    monkeypatch.setattr(app_module, "load_config", fake_load_config)
+    monkeypatch.setattr("envctl.config.loader.load_config", fake_load_config)
 
     def fake_initialize_observability_context(*, command_name: str, **_: object) -> None:
         captured["command_name"] = command_name
 
     monkeypatch.setattr(
-        app_module,
-        "initialize_observability_context",
+        "envctl.observability.initialize_observability_context",
         fake_initialize_observability_context,
     )
 
@@ -154,15 +145,14 @@ def test_root_callback_passes_trace_flags(
     def fake_load_config() -> object:
         return type("Config", (), {"default_profile": "local"})()
 
-    monkeypatch.setattr(app_module, "load_config", fake_load_config)
+    monkeypatch.setattr("envctl.config.loader.load_config", fake_load_config)
 
     def fake_initialize_observability_context(*, command_name: str, **kwargs: object) -> None:
         captured["command_name"] = command_name
         captured.update(kwargs)
 
     monkeypatch.setattr(
-        app_module,
-        "initialize_observability_context",
+        "envctl.observability.initialize_observability_context",
         fake_initialize_observability_context,
     )
 
@@ -212,11 +202,10 @@ def test_root_callback_initializes_observability_before_loading_config(
         return type("Config", (), {"default_profile": "local"})()
 
     monkeypatch.setattr(
-        app_module,
-        "initialize_observability_context",
+        "envctl.observability.initialize_observability_context",
         fake_initialize_observability_context,
     )
-    monkeypatch.setattr(app_module, "load_config", fake_load_config)
+    monkeypatch.setattr("envctl.config.loader.load_config", fake_load_config)
 
     original_len = len(app_module.app.registered_commands)
 

@@ -6,7 +6,6 @@ import pytest
 import typer
 
 import envctl.cli.commands.check.command as check_command_module
-from envctl.cli.commands.check import check_command
 from envctl.domain.diagnostics import CheckResult, DiagnosticProblem, DiagnosticSummary
 from envctl.domain.selection import group_selection
 from tests.support.contexts import make_project_context
@@ -44,11 +43,12 @@ def test_check_command_exits_when_result_is_not_ok(
     result = make_check_result(ok=False)
 
     monkeypatch.setattr(
-        check_command_module,
-        "run_check",
+        "envctl.services.check_service.run_check",
         lambda profile, *, selection=None: (context, result, ()),
     )
-    monkeypatch.setattr(check_command_module, "render_check_result", lambda result: None)
+    monkeypatch.setattr(
+        "envctl.cli.presenters.check_presenter.render_check_result", lambda result: None
+    )
     monkeypatch.setattr(check_command_module, "get_active_profile", lambda: "local")
     monkeypatch.setattr(
         check_command_module,
@@ -58,7 +58,7 @@ def test_check_command_exits_when_result_is_not_ok(
     monkeypatch.setattr(check_command_module, "is_json_output", lambda: False)
 
     with pytest.raises(typer.Exit) as exc_info:
-        check_command()
+        check_command_module.check_command()
 
     assert exc_info.value.exit_code == 1
 
@@ -71,8 +71,7 @@ def test_check_command_emits_json_when_requested(
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        check_command_module,
-        "run_check",
+        "envctl.services.check_service.run_check",
         lambda profile, *, selection=None: (context, result, ()),
     )
     monkeypatch.setattr(check_command_module, "get_active_profile", lambda: "staging")
@@ -88,7 +87,7 @@ def test_check_command_emits_json_when_requested(
         lambda payload: captured.update({"payload": payload}),
     )
 
-    check_command()
+    check_command_module.check_command()
 
     payload = cast(dict[str, Any], captured["payload"])
     assert payload["ok"] is True
@@ -111,8 +110,7 @@ def test_check_command_emits_json_and_exits_when_invalid(
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        check_command_module,
-        "run_check",
+        "envctl.services.check_service.run_check",
         lambda profile, *, selection=None: (context, result, ()),
     )
     monkeypatch.setattr(check_command_module, "get_active_profile", lambda: "local")
@@ -129,7 +127,7 @@ def test_check_command_emits_json_and_exits_when_invalid(
     )
 
     with pytest.raises(typer.Exit) as exc_info:
-        check_command()
+        check_command_module.check_command()
 
     assert exc_info.value.exit_code == 1
     payload = cast(dict[str, Any], captured["payload"])

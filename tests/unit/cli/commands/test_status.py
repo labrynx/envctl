@@ -6,7 +6,6 @@ from typing import Any, cast
 import pytest
 
 import envctl.cli.commands.status.command as status_command_module
-from envctl.cli.commands.status import status_command
 from envctl.domain.status import StatusReport
 from tests.support.paths import normalize_path_str
 
@@ -28,8 +27,7 @@ def test_status_command_renders_status_report(
     called: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        status_command_module,
-        "run_status",
+        "envctl.services.status_service.run_status",
         lambda profile: ("staging", report),
     )
     monkeypatch.setattr(
@@ -48,7 +46,7 @@ def test_status_command_renders_status_report(
         lambda: False,
     )
 
-    status_command()
+    status_command_module.status_command()
 
     assert called["profile"] == "staging"
     assert called["report"] is report
@@ -71,8 +69,7 @@ def test_status_command_emits_json_when_requested(
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        status_command_module,
-        "run_status",
+        "envctl.services.status_service.run_status",
         lambda profile: ("staging", report),
     )
     monkeypatch.setattr(
@@ -91,7 +88,7 @@ def test_status_command_emits_json_when_requested(
         lambda payload: captured.update({"payload": payload}),
     )
 
-    status_command()
+    status_command_module.status_command()
 
     payload = cast(dict[str, Any], captured["payload"])
     assert payload["ok"] is True

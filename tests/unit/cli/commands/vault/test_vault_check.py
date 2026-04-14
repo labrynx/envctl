@@ -27,8 +27,7 @@ def test_vault_check_command_exits_when_file_does_not_exist(
     )()
 
     monkeypatch.setattr(
-        vault_check_module,
-        "run_vault_check",
+        "envctl.services.vault_service.run_vault_check",
         lambda profile=None: ("context", "local", result),
     )
 
@@ -60,8 +59,7 @@ def test_vault_check_command_exits_when_file_is_plaintext(
     )()
 
     monkeypatch.setattr(
-        vault_check_module,
-        "run_vault_check",
+        "envctl.services.vault_service.run_vault_check",
         lambda profile=None: ("context", "local", result),
     )
 
@@ -93,8 +91,7 @@ def test_vault_check_command_succeeds_when_file_is_valid(
     )()
 
     monkeypatch.setattr(
-        vault_check_module,
-        "run_vault_check",
+        "envctl.services.vault_service.run_vault_check",
         lambda profile=None: ("context", "local", result),
     )
 
@@ -127,8 +124,7 @@ def test_vault_check_command_exits_when_permissions_are_not_private(
     )()
 
     monkeypatch.setattr(
-        vault_check_module,
-        "run_vault_check",
+        "envctl.services.vault_service.run_vault_check",
         lambda profile=None: ("context", "local", result),
     )
 
@@ -147,15 +143,15 @@ def test_vault_check_command_rejects_json_mode(
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        "envctl.cli.decorators.is_json_output",
+        "envctl.cli.runtime.is_json_output",
         lambda: True,
     )
     monkeypatch.setattr(
-        "envctl.cli.decorators.get_command_path",
+        "envctl.cli.runtime.get_command_path",
         lambda: "envctl vault check",
     )
     monkeypatch.setattr(
-        "envctl.cli.decorators.emit_json",
+        "envctl.cli.serializers.common.emit_json",
         lambda payload: captured.update({"payload": payload}),
     )
 

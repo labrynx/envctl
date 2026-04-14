@@ -7,8 +7,8 @@ from collections.abc import Sequence
 import typer
 
 from envctl.cli.decorators import handle_errors
-from envctl.cli.presenters import (
-    render_contract_deprecation_warnings,
+from envctl.cli.presenters.deprecation_presenter import render_contract_deprecation_warnings
+from envctl.cli.presenters.inspect_presenter import (
     render_contract_group_result,
     render_contract_groups_summary,
     render_contract_set_result,
@@ -18,23 +18,17 @@ from envctl.cli.presenters import (
     render_inspect_result,
 )
 from envctl.cli.runtime import get_active_profile, get_contract_selection, is_json_output
-from envctl.cli.serializers import (
-    emit_json,
-    serialize_command_warnings,
-    serialize_contract_deprecation_warnings,
+from envctl.cli.serializers.common import emit_json
+from envctl.cli.serializers.deprecations import serialize_contract_deprecation_warnings
+from envctl.cli.serializers.inspect import (
     serialize_inspect_key_result,
     serialize_inspect_result,
 )
+from envctl.cli.serializers.warnings import serialize_command_warnings
 from envctl.domain.deprecations import ContractDeprecationWarning
 from envctl.domain.diagnostics import InspectKeyResult, InspectResult
 from envctl.domain.selection import ContractSelection
 from envctl.errors import ExecutionError
-from envctl.services.inspect_service import (
-    ensure_known_contract_group,
-    ensure_known_contract_set,
-    run_inspect,
-    run_inspect_key,
-)
 
 
 def _normalize_view_flags(
@@ -145,11 +139,15 @@ def _render_inspect_terminal_view(
         return
 
     if selection.mode == "set" and selection.set_name is not None:
+        from envctl.services.inspect_service import ensure_known_contract_set
+
         ensure_known_contract_set(inspect_result, selection.set_name)
         render_contract_set_result(inspect_result, selection.set_name)
         return
 
     if selection.mode == "group" and selection.group is not None:
+        from envctl.services.inspect_service import ensure_known_contract_group
+
         ensure_known_contract_group(inspect_result, selection.group)
         render_contract_group_result(inspect_result, selection.group)
         return
@@ -159,6 +157,8 @@ def _render_inspect_terminal_view(
 
 def _handle_inspect_key(key: str) -> None:
     """Handle `inspect KEY`."""
+    from envctl.services.inspect_service import run_inspect_key
+
     _context, key_result, warnings = run_inspect_key(key, get_active_profile())
 
     if is_json_output():
@@ -179,6 +179,8 @@ def _handle_inspect_overview(
     selection: ContractSelection,
 ) -> None:
     """Handle overview inspect views."""
+    from envctl.services.inspect_service import run_inspect
+
     _context, inspect_result, warnings = run_inspect(
         get_active_profile(),
         selection=selection,

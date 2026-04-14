@@ -10,7 +10,6 @@ import typer
 
 import envctl.cli.commands.hook_run.command as hook_run_command_module
 import envctl.cli.commands.hooks.command as hooks_command_module
-from envctl.cli.commands.hook_run import hook_run_command
 from envctl.domain.hooks import (
     HookAction,
     HookInspectionResult,
@@ -172,7 +171,11 @@ def test_hooks_mutation_commands_cover_json_and_text_paths(
         lambda: (SimpleNamespace(runtime_warnings=("warn",)), context),
     )
     monkeypatch.setattr(
-        "envctl.cli.decorators.load_config",
+        "envctl.services.context_service.load_project_context",
+        lambda: (SimpleNamespace(runtime_warnings=("warn",)), context),
+    )
+    monkeypatch.setattr(
+        "envctl.config.loader.load_config",
         lambda: SimpleNamespace(runtime_mode="local"),
     )
 
@@ -181,6 +184,7 @@ def test_hooks_mutation_commands_cover_json_and_text_paths(
         return SimpleNamespace(**{method_name: lambda **_kwargs: report})
 
     monkeypatch.setattr(hooks_command_module, "HookService", _build_service)
+    monkeypatch.setattr("envctl.services.hook_service.HookService", _build_service)
     monkeypatch.setattr(hooks_command_module, "is_json_output", lambda: json_mode)
     monkeypatch.setattr(hooks_command_module, "emit_json", lambda payload: captured.update(payload))
     monkeypatch.setattr(
@@ -211,10 +215,9 @@ def test_hook_run_command_success_path(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: False)
+    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: False)
     monkeypatch.setattr(
-        hook_run_command_module,
-        "HookExecutionService",
+        "envctl.services.hook_service.HookExecutionService",
         lambda: SimpleNamespace(
             run_guarded_hook=lambda hook_name, argv: SimpleNamespace(
                 exit_code=0,
@@ -226,7 +229,7 @@ def test_hook_run_command_success_path(
     ctx.args = []
 
     with pytest.raises(typer.Exit) as exc_info:
-        hook_run_command(ctx, "pre-commit")
+        hook_run_command_module.hook_run_command(ctx, "pre-commit")
 
     assert exc_info.value.exit_code == 0
     output = capsys.readouterr().out
@@ -238,11 +241,10 @@ def test_hook_run_command_failure_path_prints_findings(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: False)
+    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: False)
     finding = SimpleNamespace(path=".env", message="secret detected", actions=("remove secret",))
     monkeypatch.setattr(
-        hook_run_command_module,
-        "HookExecutionService",
+        "envctl.services.hook_service.HookExecutionService",
         lambda: SimpleNamespace(
             run_guarded_hook=lambda hook_name, argv: SimpleNamespace(
                 exit_code=1,
@@ -254,7 +256,7 @@ def test_hook_run_command_failure_path_prints_findings(
     ctx.args = []
 
     with pytest.raises(typer.Exit) as exc_info:
-        hook_run_command(ctx, "pre-push")
+        hook_run_command_module.hook_run_command(ctx, "pre-push")
 
     assert exc_info.value.exit_code == 1
     captured = capsys.readouterr()
@@ -266,19 +268,19 @@ def test_hook_run_command_rejects_unsupported_hook(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, Any] = {}
-    monkeypatch.setattr("envctl.cli.decorators.is_json_output", lambda: False)
+    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: False)
     monkeypatch.setattr(
         "envctl.cli.decorators.emit_handled_error",
         lambda exc, *, json_output, command: captured.update(
             {"message": str(exc), "json_output": json_output, "command": command}
         ),
     )
-    monkeypatch.setattr("envctl.cli.decorators.get_command_path", lambda: "hook-run")
+    monkeypatch.setattr("envctl.cli.runtime.get_command_path", lambda: "hook-run")
     ctx = typer.Context(click.Command("hook-run"))
     ctx.args = []
 
     with pytest.raises(typer.Exit) as exc_info:
-        hook_run_command(ctx, "post-merge")
+        hook_run_command_module.hook_run_command(ctx, "post-merge")
 
     assert exc_info.value.exit_code == 1
     assert captured["message"] == "Unsupported hook: post-merge"

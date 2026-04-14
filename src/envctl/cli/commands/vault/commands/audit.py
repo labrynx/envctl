@@ -5,14 +5,15 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors, text_output_only
-from envctl.cli.presenters import render_vault_audit_result
-from envctl.services.vault_service import run_vault_audit
+from envctl.cli.presenters.vault_presenter import render_vault_audit_result
 
 
 @handle_errors
 @text_output_only("vault audit")
 def vault_audit_command() -> None:
     """Audit every persisted vault project for plaintext or inconsistent files."""
+    from envctl.services.vault_service import run_vault_audit
+
     _context, projects = run_vault_audit()
     render_vault_audit_result(projects)
 

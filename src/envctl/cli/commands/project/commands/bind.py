@@ -5,8 +5,7 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
-from envctl.cli.presenters import render_project_bind_result
-from envctl.services.bind_service import run_bind
+from envctl.cli.presenters.project_presenter import render_project_bind_result
 
 
 @handle_errors
@@ -16,6 +15,8 @@ def project_bind_command(
     project_id: str = typer.Argument(..., help="Existing canonical project id to bind."),
 ) -> None:
     """Bind the current repository checkout to an existing vault."""
+    from envctl.services.bind_service import run_bind
+
     context, result = run_bind(project_id)
 
     render_project_bind_result(

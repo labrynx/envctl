@@ -5,9 +5,8 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
-from envctl.cli.presenters import render_vault_edit_result
+from envctl.cli.presenters.vault_presenter import render_vault_edit_result
 from envctl.cli.runtime import get_active_profile
-from envctl.services.vault_service import run_vault_edit
 
 
 @handle_errors
@@ -23,6 +22,8 @@ def vault_edit_command(
 ) -> None:
     """Open the local vault file for the selected profile in the configured editor."""
     selected_profile = profile or get_active_profile()
+    from envctl.services.vault_service import run_vault_edit
+
     _context, result = run_vault_edit(selected_profile)
 
     render_vault_edit_result(

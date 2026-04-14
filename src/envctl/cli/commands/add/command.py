@@ -10,11 +10,13 @@ from envctl.cli.decorators import (
     requires_writable_runtime,
     text_output_only,
 )
-from envctl.cli.presenters import render_add_result, render_inferred_spec
+from envctl.cli.presenters.action_presenter import (
+    render_add_result,
+    render_inferred_spec,
+)
 from envctl.cli.prompts.input import confirm, prompt_string
 from envctl.cli.runtime import get_active_profile, get_command_path
 from envctl.domain.operations import AddVariableRequest
-from envctl.services.add_service import run_add
 
 KEY_ARGUMENT = typer.Argument(...)
 VALUE_ARGUMENT = typer.Argument(...)
@@ -218,6 +220,8 @@ def add_command(
     except ValueError as exc:
         emit_usage_error(str(exc), command=get_command_path() or "envctl add")
         raise typer.Exit(code=2) from exc
+
+    from envctl.services.add_service import run_add
 
     context, result = run_add(request, get_active_profile())
 

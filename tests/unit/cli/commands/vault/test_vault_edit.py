@@ -16,8 +16,7 @@ def test_vault_edit_command_prints_profile_and_path(
         lambda: "dev",
     )
     monkeypatch.setattr(
-        vault_edit_module,
-        "run_vault_edit",
+        "envctl.services.vault_service.run_vault_edit",
         lambda profile: (
             "context",
             type(

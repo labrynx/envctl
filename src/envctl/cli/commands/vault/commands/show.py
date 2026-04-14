@@ -5,16 +5,15 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors, text_output_only
-from envctl.cli.presenters import (
+from envctl.cli.presenters.vault_presenter import (
     render_vault_show_cancelled,
     render_vault_show_empty,
     render_vault_show_missing,
     render_vault_show_values,
 )
-from envctl.cli.prompts import build_vault_show_raw_confirmation_message
+from envctl.cli.prompts.confirmation_prompts import build_vault_show_raw_confirmation_message
 from envctl.cli.prompts.input import confirm
 from envctl.cli.runtime import get_active_profile
-from envctl.services.vault_service import run_vault_show
 from envctl.utils.masking import mask_value
 
 RAW_OPTION = typer.Option(
@@ -48,6 +47,8 @@ def vault_show_command(
 ) -> None:
     """Show the current vault file contents, masked by default."""
     selected_profile = profile or get_active_profile()
+    from envctl.services.vault_service import run_vault_show
+
     _context, active_profile, result = run_vault_show(selected_profile)
 
     if not result.exists:

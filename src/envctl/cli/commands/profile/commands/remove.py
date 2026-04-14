@@ -9,10 +9,9 @@ from envctl.cli.decorators import (
     requires_writable_runtime,
     text_output_only,
 )
-from envctl.cli.presenters import render_profile_remove_result
-from envctl.cli.prompts import build_profile_remove_confirmation_message
+from envctl.cli.presenters.profile_presenter import render_profile_remove_result
+from envctl.cli.prompts.confirmation_prompts import build_profile_remove_confirmation_message
 from envctl.cli.prompts.input import confirm
-from envctl.services.profile_service import run_profile_remove
 from envctl.utils.output import print_cancelled
 
 PROFILE_ARGUMENT = typer.Argument(...)
@@ -39,6 +38,8 @@ def profile_remove_command(
         if not approved:
             print_cancelled()
             return
+
+    from envctl.services.profile_service import run_profile_remove
 
     _context, result = run_profile_remove(profile)
 
