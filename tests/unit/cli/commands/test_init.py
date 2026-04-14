@@ -7,7 +7,6 @@ import pytest
 import typer
 
 import envctl.cli.commands.init.command as init_command_module
-from envctl.cli.commands.init import init_command
 from envctl.domain.operations import InitResult
 from envctl.domain.runtime import RuntimeMode
 
@@ -59,7 +58,7 @@ def test_init_command_prints_contract_creation_details(
         lambda project_name=None, contract_mode="ask", confirm=None: (context, init_result),
     )
 
-    init_command()
+    init_command_module.init_command()
 
     output = capsys.readouterr().out
     assert "Initialized demo (prj_aaaaaaaaaaaaaaaa)" in output
@@ -100,7 +99,7 @@ def test_init_command_warns_when_contract_is_skipped(
         lambda project_name=None, contract_mode="ask", confirm=None: (context, init_result),
     )
 
-    init_command()
+    init_command_module.init_command()
 
     output = capsys.readouterr().out
     assert "Initialized demo (prj_aaaaaaaaaaaaaaaa)" in output
@@ -128,7 +127,7 @@ def test_init_command_rejects_ci_mode(
     )
 
     with pytest.raises(typer.Exit) as exc_info:
-        init_command()
+        init_command_module.init_command()
 
     assert exc_info.value.exit_code == 1
     assert "CI read-only mode" in captured["message"]

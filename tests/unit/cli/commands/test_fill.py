@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 import typer
 
-from envctl.cli.commands.fill import fill_command
+import envctl.cli.commands.fill.command as fill_command_module
 from envctl.domain.operations import FillPlanItem
 from envctl.domain.runtime import RuntimeMode
 
@@ -33,7 +33,7 @@ def test_fill_command_outputs_success_when_keys_are_changed(
     answers = iter(["secret-value", ""])
 
     monkeypatch.setattr(
-        "envctl.cli.commands.fill.command.build_fill_plan",
+        "envctl.services.fill_service.build_fill_plan",
         lambda profile: (context, "staging", plan),
     )
     monkeypatch.setattr(
@@ -49,11 +49,11 @@ def test_fill_command_outputs_success_when_keys_are_changed(
         lambda _message, default=None: next(answers),
     )
     monkeypatch.setattr(
-        "envctl.cli.commands.fill.command.apply_fill",
+        "envctl.services.fill_service.apply_fill",
         lambda values, profile: (context, "staging", "/tmp/staging.env", ["API_KEY", "PORT"]),
     )
 
-    fill_command()
+    fill_command_module.fill_command()
 
     output = capsys.readouterr().out
     assert "Filled 2 key(s) for demo-project" in output
@@ -68,7 +68,7 @@ def test_fill_command_outputs_warning_when_nothing_to_fill(
     context = type("Context", (), {"display_name": "demo-project"})()
 
     monkeypatch.setattr(
-        "envctl.cli.commands.fill.command.build_fill_plan",
+        "envctl.services.fill_service.build_fill_plan",
         lambda profile: (context, "local", ()),
     )
     monkeypatch.setattr(
@@ -76,7 +76,7 @@ def test_fill_command_outputs_warning_when_nothing_to_fill(
         lambda: "local",
     )
 
-    fill_command()
+    fill_command_module.fill_command()
 
     output = capsys.readouterr().out
     assert "No keys were changed" in output
@@ -98,7 +98,7 @@ def test_fill_command_outputs_warning_when_apply_fill_changes_nothing(
     )
 
     monkeypatch.setattr(
-        "envctl.cli.commands.fill.command.build_fill_plan",
+        "envctl.services.fill_service.build_fill_plan",
         lambda profile: (context, "dev", plan),
     )
     monkeypatch.setattr(
@@ -110,11 +110,11 @@ def test_fill_command_outputs_warning_when_apply_fill_changes_nothing(
         lambda _message, default=None: "   ",
     )
     monkeypatch.setattr(
-        "envctl.cli.commands.fill.command.apply_fill",
+        "envctl.services.fill_service.apply_fill",
         lambda values, profile: (context, "dev", "/tmp/dev.env", []),
     )
 
-    fill_command()
+    fill_command_module.fill_command()
 
     output = capsys.readouterr().out
     assert "No keys were changed" in output
@@ -140,7 +140,7 @@ def test_fill_command_rejects_ci_mode(
     )
 
     with pytest.raises(typer.Exit) as exc_info:
-        fill_command()
+        fill_command_module.fill_command()
 
     assert exc_info.value.exit_code == 1
     assert "CI read-only mode" in captured["message"]

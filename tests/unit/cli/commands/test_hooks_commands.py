@@ -10,7 +10,6 @@ import typer
 
 import envctl.cli.commands.hook_run.command as hook_run_command_module
 import envctl.cli.commands.hooks.command as hooks_command_module
-from envctl.cli.commands.hook_run import hook_run_command
 from envctl.domain.hooks import (
     HookAction,
     HookInspectionResult,
@@ -226,7 +225,7 @@ def test_hook_run_command_success_path(
     ctx.args = []
 
     with pytest.raises(typer.Exit) as exc_info:
-        hook_run_command(ctx, "pre-commit")
+        hook_run_command_module.hook_run_command(ctx, "pre-commit")
 
     assert exc_info.value.exit_code == 0
     output = capsys.readouterr().out
@@ -254,7 +253,7 @@ def test_hook_run_command_failure_path_prints_findings(
     ctx.args = []
 
     with pytest.raises(typer.Exit) as exc_info:
-        hook_run_command(ctx, "pre-push")
+        hook_run_command_module.hook_run_command(ctx, "pre-push")
 
     assert exc_info.value.exit_code == 1
     captured = capsys.readouterr()
@@ -278,7 +277,7 @@ def test_hook_run_command_rejects_unsupported_hook(
     ctx.args = []
 
     with pytest.raises(typer.Exit) as exc_info:
-        hook_run_command(ctx, "post-merge")
+        hook_run_command_module.hook_run_command(ctx, "post-merge")
 
     assert exc_info.value.exit_code == 1
     assert captured["message"] == "Unsupported hook: post-merge"

@@ -7,7 +7,6 @@ import pytest
 import typer
 
 import envctl.cli.commands.inspect.command as inspect_command_module
-from envctl.cli.commands.inspect import inspect_command
 from envctl.domain.diagnostics import (
     DiagnosticSummary,
     InspectContractGraph,
@@ -90,7 +89,7 @@ def test_inspect_command_renders_report(monkeypatch: pytest.MonkeyPatch) -> None
     )
     monkeypatch.setattr(inspect_command_module, "is_json_output", lambda: False)
 
-    inspect_command(None)
+    inspect_command_module.inspect_command(None)
 
     assert called["result"] is result
 
@@ -120,7 +119,7 @@ def test_inspect_command_emits_json_when_requested(
         lambda payload: captured.update({"payload": payload}),
     )
 
-    inspect_command(None)
+    inspect_command_module.inspect_command(None)
 
     payload = cast(dict[str, Any], captured["payload"])
     assert payload["command"] == "inspect"
@@ -151,7 +150,7 @@ def test_inspect_key_command_emits_json(monkeypatch: pytest.MonkeyPatch) -> None
         lambda payload: captured.update({"payload": payload}),
     )
 
-    inspect_command("APP_NAME")
+    inspect_command_module.inspect_command("APP_NAME")
 
     payload = cast(dict[str, Any], captured["payload"])
     assert payload["data"]["item"]["key"] == "APP_NAME"
@@ -169,7 +168,7 @@ def test_inspect_key_rejects_scope_selectors(
     monkeypatch.setattr(inspect_command_module, "is_json_output", lambda: False)
 
     with pytest.raises(typer.Exit) as exc_info:
-        inspect_command("APP_NAME")
+        inspect_command_module.inspect_command("APP_NAME")
 
     assert exc_info.value.exit_code == 1
 
@@ -185,7 +184,7 @@ def test_inspect_key_rejects_scope_selectors_with_clear_message(
     monkeypatch.setattr(inspect_command_module, "is_json_output", lambda: False)
 
     with pytest.raises(typer.Exit) as exc_info:
-        inspect_command("APP_NAME")
+        inspect_command_module.inspect_command("APP_NAME")
 
     assert exc_info.value.exit_code == 1
 
@@ -214,7 +213,7 @@ def test_inspect_key_json_includes_combined_warnings(
         lambda payload: captured.update({"payload": payload}),
     )
 
-    inspect_command("APP_NAME")
+    inspect_command_module.inspect_command("APP_NAME")
 
     payload = cast(dict[str, Any], captured["payload"])
     assert payload["data"]["warnings"] == []
