@@ -13,7 +13,7 @@ from envctl.cli.presenters.common import (
     section,
     success_message,
 )
-from envctl.cli.presenters.models import CommandOutput
+from envctl.cli.presenters.models import CommandOutput, OutputItem
 from envctl.cli.presenters.payloads import (
     build_contract_selection_payload,
     build_project_context_payload,
@@ -31,10 +31,10 @@ _KIND_TITLES = {
 }
 
 
-def _build_problem_items(problem: DiagnosticProblem) -> list[Any]:
+def _build_problem_items(problem: DiagnosticProblem) -> list[OutputItem]:
     """Build display items for one status/check problem."""
     if problem.kind == "unknown_key":
-        items: list[Any] = [bullet_item(problem.key)]
+        items: list[OutputItem] = [bullet_item(problem.key)]
     else:
         items = [bullet_item(f"{problem.key}: {problem.message}")]
 
@@ -66,7 +66,7 @@ def build_check_output(
         )
     ]
 
-    grouped_items: dict[str, list[Any]] = {}
+    grouped_items: dict[str, list[OutputItem]] = {}
     for problem in result.problems:
         title = _KIND_TITLES.get(problem.kind, "Problems")
         grouped_items.setdefault(title, []).extend(_build_problem_items(problem))

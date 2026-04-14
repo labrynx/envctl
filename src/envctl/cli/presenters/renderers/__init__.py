@@ -1,0 +1,1 @@
+"""Renderer implementations for command presentation."""

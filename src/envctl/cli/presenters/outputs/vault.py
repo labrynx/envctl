@@ -13,7 +13,7 @@ from envctl.cli.presenters.common import (
     success_message,
     warning_message,
 )
-from envctl.cli.presenters.models import CommandOutput, OutputItem
+from envctl.cli.presenters.models import CommandOutput, OutputItem, OutputSection
 from envctl.cli.presenters.payloads import path_to_str
 
 if TYPE_CHECKING:
@@ -28,7 +28,12 @@ def _vault_context_items(*, profile: str, path: Path) -> list[OutputItem]:
     ]
 
 
-def _vault_context_section(*, profile: str, path: Path, title: str = "Vault") -> Any:
+def _vault_context_section(
+    *,
+    profile: str,
+    path: Path,
+    title: str = "Vault",
+) -> OutputSection:
     """Build one common vault context section."""
     return section(title, *_vault_context_items(profile=profile, path=path))
 

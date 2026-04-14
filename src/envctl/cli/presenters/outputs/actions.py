@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from envctl.cli.presenters.common import (
+    bullet_item,
     field_item,
     raw_item,
     section,
@@ -685,7 +686,7 @@ def build_run_warnings_output(warnings: tuple[str, ...]) -> CommandOutput:
     """Build one unified output model for run warnings."""
     return CommandOutput(
         messages=[warning_message(warning) for warning in warnings],
-        sections=[section("Warnings", *(raw_item(warning) for warning in warnings))]
+        sections=[section("Warnings", *(bullet_item(warning) for warning in warnings))]
         if warnings
         else [],
         metadata={

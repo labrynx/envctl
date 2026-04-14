@@ -7,7 +7,7 @@ from typing import Any, Mapping
 
 from envctl.cli.compat.legacy_json import serialize_legacy_inspect_report
 from envctl.cli.presenters.common import bullet_item, field_item, raw_item, section
-from envctl.cli.presenters.models import CommandOutput
+from envctl.cli.presenters.models import CommandOutput, OutputItem
 from envctl.cli.presenters.payloads import (
     build_contract_selection_payload,
     build_project_context_payload,
@@ -62,12 +62,12 @@ def _build_contract_graph_payload(graph: InspectContractGraph) -> dict[str, Any]
     }
 
 
-def _build_variables_section(result: InspectResult) -> list[Any]:
+def _build_variables_section(result: InspectResult) -> list[OutputItem]:
     """Build section items for resolved variables."""
     if not result.variables:
         return [raw_item("None")]
 
-    items: list[Any] = []
+    items: list[OutputItem] = []
     for item in result.variables:
         suffixes: list[str] = []
 
@@ -94,21 +94,21 @@ def _build_variables_section(result: InspectResult) -> list[Any]:
     return items
 
 
-def _build_problem_section(problems: Sequence[DiagnosticProblem]) -> list[Any]:
+def _build_problem_section(problems: Sequence[DiagnosticProblem]) -> list[OutputItem]:
     """Build section items for inspect problems."""
     if not problems:
         return [raw_item("None")]
 
-    items: list[Any] = []
+    items: list[OutputItem] = []
     for problem in problems:
         items.append(bullet_item(f"{problem.key}: {problem.message}"))
         items.extend(raw_item(f"    action: {action}") for action in problem.actions)
     return items
 
 
-def _build_contracts_items(result: InspectResult) -> list[Any]:
+def _build_contracts_items(result: InspectResult) -> list[OutputItem]:
     """Build section items for resolved contracts."""
-    items: list[Any] = [field_item("root", str(result.contract_graph.root_path))]
+    items: list[OutputItem] = [field_item("root", str(result.contract_graph.root_path))]
 
     if not result.contract_graph.contract_paths:
         items.append(raw_item("None"))
@@ -122,7 +122,7 @@ def _build_contracts_items(result: InspectResult) -> list[Any]:
     return items
 
 
-def _build_named_index_items(index: Mapping[str, Sequence[str]]) -> list[Any]:
+def _build_named_index_items(index: Mapping[str, Sequence[str]]) -> list[OutputItem]:
     """Build one summary list for sets/groups style indexes."""
     if not index:
         return [raw_item("None")]
@@ -130,7 +130,7 @@ def _build_named_index_items(index: Mapping[str, Sequence[str]]) -> list[Any]:
     return [bullet_item(f"{name} ({len(keys)})") for name, keys in index.items()]
 
 
-def _build_named_members_items(values: Sequence[str]) -> list[Any]:
+def _build_named_members_items(values: Sequence[str]) -> list[OutputItem]:
     """Build one member list for a selected set/group."""
     if not values:
         return [raw_item("None")]
