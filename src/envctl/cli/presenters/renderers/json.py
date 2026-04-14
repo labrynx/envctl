@@ -54,3 +54,6 @@ def build_json_payload(output: CommandOutput) -> dict[str, Any]:
 def emit_json(output: CommandOutput) -> None:
     """Emit one command output as structured JSON."""
     typer.echo(json.dumps(build_json_payload(output), indent=2, sort_keys=True))
+
+
+__all__ = ["build_json_payload", "emit_json"]

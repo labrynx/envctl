@@ -424,7 +424,7 @@ def build_resolution_output(
 
     sections = []
     if problem_lines:
-        problem_items: list[Any] = []
+        problem_items: list[OutputItem] = []
         for line in problem_lines:
             if not line:
                 continue

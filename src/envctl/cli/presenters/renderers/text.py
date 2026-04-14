@@ -71,3 +71,6 @@ def emit_text(output: CommandOutput) -> None:
     for section in output.sections:
         _emit_section(section, leading_blank=rendered_any)
         rendered_any = True
+
+
+__all__ = ["emit_text"]

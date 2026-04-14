@@ -1,3 +1,5 @@
+"""Core presentation models for CLI output rendering."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

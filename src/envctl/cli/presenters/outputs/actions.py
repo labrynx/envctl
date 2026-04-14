@@ -14,7 +14,7 @@ from envctl.cli.presenters.common import (
     warning_message,
 )
 from envctl.cli.presenters.models import CommandOutput, OutputItem, OutputSection
-from envctl.cli.presenters.payloads import path_to_str
+from envctl.cli.presenters.payloads import optional_path_to_str, path_to_str
 from envctl.domain.hooks import HooksReason
 
 if TYPE_CHECKING:
@@ -29,11 +29,6 @@ def _yes_no(value: bool) -> str:
 def _details_section(*items: OutputItem) -> OutputSection:
     """Build one standard details section."""
     return section("Details", *items)
-
-
-def _optional_path(path: Path | None) -> str | None:
-    """Serialize one optional path."""
-    return path_to_str(path) if path is not None else None
 
 
 def _build_hooks_reason_message(reason: HooksReason) -> str:
@@ -179,7 +174,7 @@ def build_fill_no_changes_output(
         metadata={
             "kind": "fill",
             "profile": profile,
-            "vault_values": _optional_path(profile_path),
+            "vault_values": optional_path_to_str(profile_path),
             "changed": False,
             "changed_keys": [],
         },
@@ -646,9 +641,9 @@ def build_project_repair_output(
             "detail": detail,
             "project_id": project_id,
             "binding_source": binding_source,
-            "repo_root": _optional_path(repo_root),
-            "vault_dir": _optional_path(vault_dir),
-            "vault_values": _optional_path(vault_values_path),
+            "repo_root": optional_path_to_str(repo_root),
+            "vault_dir": optional_path_to_str(vault_dir),
+            "vault_values": optional_path_to_str(vault_values_path),
         },
     )
 

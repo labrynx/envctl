@@ -1,3 +1,5 @@
+"""Public entrypoint for rendering command output."""
+
 from __future__ import annotations
 
 from typing import Literal
