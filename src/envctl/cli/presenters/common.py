@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, TypeVar
 
 from envctl.cli.presenters.models import (
     CommandOutput,
@@ -12,9 +12,20 @@ from envctl.cli.presenters.models import (
     OutputSection,
 )
 
+T = TypeVar("T")
+
+
+def _materialize(items: Iterable[T]) -> list[T]:
+    """Materialize one iterable into a list."""
+    return list(items)
+
 
 def merge_outputs(*outputs: CommandOutput) -> CommandOutput:
-    """Merge multiple command outputs into one."""
+    """Merge multiple command outputs into one.
+
+    Title resolution is first-non-empty wins.
+    Metadata resolution is last-write-wins.
+    """
     title = next((output.title for output in outputs if output.title), None)
 
     messages: list[OutputMessage] = []
@@ -32,6 +43,18 @@ def merge_outputs(*outputs: CommandOutput) -> CommandOutput:
         sections=sections,
         metadata=metadata,
     )
+
+
+def append_message(messages: list[OutputMessage], message: OutputMessage | None) -> None:
+    """Append one message when present."""
+    if message is not None:
+        messages.append(message)
+
+
+def append_section(sections: list[OutputSection], value: OutputSection | None) -> None:
+    """Append one section when present."""
+    if value is not None:
+        sections.append(value)
 
 
 def blank_item(*, err: bool = False) -> OutputItem:
@@ -66,12 +89,12 @@ def raw_item(text: str, *, err: bool = False) -> OutputItem:
 
 def bullet_items(items: Iterable[str], *, err: bool = False) -> list[OutputItem]:
     """Build bullet items from an iterable of strings."""
-    return [bullet_item(item, err=err) for item in items]
+    return [bullet_item(item, err=err) for item in _materialize(items)]
 
 
 def field_items(items: Iterable[tuple[str, str]], *, err: bool = False) -> list[OutputItem]:
     """Build field items from key/value tuples."""
-    return [field_item(key, value, err=err) for key, value in items]
+    return [field_item(key, value, err=err) for key, value in _materialize(items)]
 
 
 def info_message(text: str, *, err: bool = False) -> OutputMessage:
@@ -106,7 +129,7 @@ def action_list_section(
     err: bool = False,
 ) -> OutputSection | None:
     """Build one action-list section when actions are available."""
-    rendered = tuple(actions)
+    rendered = _materialize(actions)
     if not rendered:
         return None
 
@@ -134,9 +157,7 @@ def help_hint_section(
 
 def result_summary_messages(title: str, *, success: bool, err: bool = False) -> list[OutputMessage]:
     """Build summary messages for one action result."""
-    if success:
-        return [success_message(title, err=err)]
-    return [warning_message(title, err=err)]
+    return [success_message(title, err=err)] if success else [warning_message(title, err=err)]
 
 
 def result_summary_section(
@@ -163,7 +184,7 @@ def warnings_section(
     err: bool = False,
 ) -> OutputSection | None:
     """Build one warnings section when warnings are available."""
-    rendered = tuple(warnings)
+    rendered = _materialize(warnings)
     if not rendered:
         return None
 

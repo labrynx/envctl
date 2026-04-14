@@ -9,6 +9,8 @@ SectionItemKind = Literal["field", "bullet", "raw"]
 
 @dataclass(frozen=True)
 class OutputMessage:
+    """One top-level message emitted before sections."""
+
     level: MessageLevel
     text: str
     err: bool = False
@@ -16,6 +18,8 @@ class OutputMessage:
 
 @dataclass(frozen=True)
 class OutputItem:
+    """One renderable item inside a section."""
+
     kind: SectionItemKind
     text: str
     value: str | None = None
@@ -24,6 +28,8 @@ class OutputItem:
 
 @dataclass(frozen=True)
 class OutputSection:
+    """One titled output section."""
+
     title: str
     items: list[OutputItem] = field(default_factory=list)
     err: bool = False
@@ -31,6 +37,8 @@ class OutputSection:
 
 @dataclass(frozen=True)
 class CommandOutput:
+    """One complete command presentation model."""
+
     title: str | None = None
     messages: list[OutputMessage] = field(default_factory=list)
     sections: list[OutputSection] = field(default_factory=list)
