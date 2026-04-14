@@ -59,7 +59,24 @@ cd dist
 sha256sum -c SHA256SUMS
 ```
 
-On Windows, use `Get-FileHash` or the release workflow's equivalent PowerShell check.
+On Windows (PowerShell):
+
+```powershell
+Set-Location dist
+$failed = $false
+Get-Content SHA256SUMS | ForEach-Object {
+  if ($_ -match '^([A-Fa-f0-9]{64})\s+\*?(.+)$') {
+    $expected = $matches[1].ToLower()
+    $file = $matches[2]
+    $actual = (Get-FileHash -Algorithm SHA256 -Path $file).Hash.ToLower()
+    if ($actual -ne $expected) {
+      Write-Error "Checksum mismatch: $file"
+      $failed = $true
+    }
+  }
+}
+if ($failed) { exit 1 } else { Write-Host "All checksums match." }
+```
 
 ## Verifying attestations
 
