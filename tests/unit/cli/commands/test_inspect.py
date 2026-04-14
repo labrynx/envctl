@@ -72,8 +72,7 @@ def test_inspect_command_renders_report(monkeypatch: pytest.MonkeyPatch) -> None
     called: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        inspect_command_module,
-        "run_inspect",
+        "envctl.services.inspect_service.run_inspect",
         lambda profile, *, selection=None: (context, result, ()),
     )
     monkeypatch.setattr(inspect_command_module, "get_active_profile", lambda: "staging")
@@ -102,8 +101,7 @@ def test_inspect_command_emits_json_when_requested(
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        inspect_command_module,
-        "run_inspect",
+        "envctl.services.inspect_service.run_inspect",
         lambda profile, *, selection=None: (context, result, ()),
     )
     monkeypatch.setattr(inspect_command_module, "get_active_profile", lambda: "staging")
@@ -133,8 +131,7 @@ def test_inspect_key_command_emits_json(monkeypatch: pytest.MonkeyPatch) -> None
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        inspect_command_module,
-        "run_inspect_key",
+        "envctl.services.inspect_service.run_inspect_key",
         lambda key, profile: (context, result, ()),
     )
     monkeypatch.setattr(inspect_command_module, "get_active_profile", lambda: "staging")
@@ -196,8 +193,7 @@ def test_inspect_key_json_includes_combined_warnings(
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        inspect_command_module,
-        "run_inspect_key",
+        "envctl.services.inspect_service.run_inspect_key",
         lambda key, profile: (result.project, result, ()),
     )
     monkeypatch.setattr(inspect_command_module, "get_active_profile", lambda: "staging")

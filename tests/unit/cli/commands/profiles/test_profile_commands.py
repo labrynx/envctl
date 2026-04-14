@@ -15,8 +15,7 @@ def test_profile_list_command_prints_profiles(
     capsys: CaptureFixture[str],
 ) -> None:
     monkeypatch.setattr(
-        list_module,
-        "run_profile_list",
+        "envctl.services.profile_service.run_profile_list",
         lambda active_profile: (
             "context",
             type(
@@ -43,8 +42,7 @@ def test_profile_create_command_prints_success(
     capsys: CaptureFixture[str],
 ) -> None:
     monkeypatch.setattr(
-        create_module,
-        "run_profile_create",
+        "envctl.services.profile_service.run_profile_create",
         lambda profile: (
             "context",
             type(
@@ -71,8 +69,7 @@ def test_profile_copy_command_prints_summary(
     capsys: CaptureFixture[str],
 ) -> None:
     monkeypatch.setattr(
-        copy_module,
-        "run_profile_copy",
+        "envctl.services.profile_service.run_profile_copy",
         lambda source, target: (
             "context",
             type(
@@ -113,8 +110,7 @@ def test_profile_path_command_uses_argument_or_active_profile(
     capsys: CaptureFixture[str],
 ) -> None:
     monkeypatch.setattr(
-        path_module,
-        "run_profile_path",
+        "envctl.services.profile_service.run_profile_path",
         lambda profile=None, active_profile=None: (
             "context",
             type(

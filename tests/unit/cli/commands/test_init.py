@@ -53,8 +53,7 @@ def test_init_command_prints_contract_creation_details(
     )
 
     monkeypatch.setattr(
-        init_command_module,
-        "run_init",
+        "envctl.services.init_service.run_init",
         lambda project_name=None, contract_mode="ask", confirm=None: (context, init_result),
     )
 
@@ -94,8 +93,7 @@ def test_init_command_warns_when_contract_is_skipped(
     )
 
     monkeypatch.setattr(
-        init_command_module,
-        "run_init",
+        "envctl.services.init_service.run_init",
         lambda project_name=None, contract_mode="ask", confirm=None: (context, init_result),
     )
 
@@ -114,11 +112,11 @@ def test_init_command_rejects_ci_mode(
     captured: dict[str, str] = {}
 
     monkeypatch.setattr(
-        "envctl.cli.decorators.load_config",
+        "envctl.config.loader.load_config",
         lambda: SimpleNamespace(runtime_mode=RuntimeMode.CI),
     )
     monkeypatch.setattr(
-        "envctl.cli.decorators.is_json_output",
+        "envctl.cli.runtime.is_json_output",
         lambda: False,
     )
     monkeypatch.setattr(

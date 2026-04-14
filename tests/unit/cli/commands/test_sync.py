@@ -36,7 +36,7 @@ def test_sync_command_calls_service_with_default_output_path(
         context = type("Ctx", (), {"repo_root": Path("/tmp/demo")})()
         return (context, "staging", Path("/tmp/demo/.env.staging"), ())
 
-    monkeypatch.setattr(sync_command_module, "run_sync", fake_run_sync)
+    monkeypatch.setattr("envctl.services.sync_service.run_sync", fake_run_sync)
     monkeypatch.setattr(
         sync_command_module,
         "render_sync_result",

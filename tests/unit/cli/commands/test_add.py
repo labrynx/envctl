@@ -102,7 +102,7 @@ def test_add_command_calls_service_and_prints_full_inference(
         captured["active_profile"] = active_profile
         return context, result
 
-    monkeypatch.setattr(add_command_module, "run_add", fake_run_add)
+    monkeypatch.setattr("envctl.services.add_service.run_add", fake_run_add)
     monkeypatch.setattr(add_command_module, "get_active_profile", lambda: "local")
 
     add_command_module.add_command(
@@ -180,7 +180,7 @@ def test_add_command_prints_minimal_output_when_inference_is_missing(
         captured["active_profile"] = active_profile
         return context, result
 
-    monkeypatch.setattr(add_command_module, "run_add", fake_run_add)
+    monkeypatch.setattr("envctl.services.add_service.run_add", fake_run_add)
     monkeypatch.setattr(add_command_module, "get_active_profile", lambda: "local")
 
     add_command_module.add_command(
@@ -240,8 +240,7 @@ def test_add_command_omits_optional_inferred_fields_when_not_present(
     )
 
     monkeypatch.setattr(
-        add_command_module,
-        "run_add",
+        "envctl.services.add_service.run_add",
         lambda request, active_profile=None: (context, result),
     )
     monkeypatch.setattr(add_command_module, "get_active_profile", lambda: "local")
@@ -290,7 +289,7 @@ def test_add_command_passes_format_override(
         captured["active_profile"] = active_profile
         return context, result
 
-    monkeypatch.setattr(add_command_module, "run_add", fake_run_add)
+    monkeypatch.setattr("envctl.services.add_service.run_add", fake_run_add)
     monkeypatch.setattr(add_command_module, "get_active_profile", lambda: "local")
 
     add_command_module.add_command(
@@ -319,11 +318,11 @@ def test_add_command_rejects_ci_mode(
     captured: dict[str, str] = {}
 
     monkeypatch.setattr(
-        "envctl.cli.decorators.load_config",
+        "envctl.config.loader.load_config",
         lambda: SimpleNamespace(runtime_mode=RuntimeMode.CI),
     )
     monkeypatch.setattr(
-        "envctl.cli.decorators.is_json_output",
+        "envctl.cli.runtime.is_json_output",
         lambda: False,
     )
     monkeypatch.setattr(
@@ -347,19 +346,19 @@ def test_add_command_rejects_json_output(
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        "envctl.cli.decorators.load_config",
+        "envctl.config.loader.load_config",
         lambda: SimpleNamespace(runtime_mode=RuntimeMode.LOCAL),
     )
     monkeypatch.setattr(
-        "envctl.cli.decorators.is_json_output",
+        "envctl.cli.runtime.is_json_output",
         lambda: True,
     )
     monkeypatch.setattr(
-        "envctl.cli.decorators.get_command_path",
+        "envctl.cli.runtime.get_command_path",
         lambda: "envctl add",
     )
     monkeypatch.setattr(
-        "envctl.cli.decorators.emit_json",
+        "envctl.cli.serializers.common.emit_json",
         lambda payload: captured.update({"payload": payload}),
     )
 

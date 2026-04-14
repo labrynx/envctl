@@ -56,8 +56,7 @@ def test_export_command_emits_json_payload(
     monkeypatch.setattr(export_command_module, "get_active_profile", lambda: "prod")
     monkeypatch.setattr(export_command_module, "get_contract_selection", lambda: None)
     monkeypatch.setattr(
-        export_command_module,
-        "run_export",
+        "envctl.services.export_service.run_export",
         lambda *args, **kwargs: _export_result(None),
     )
     monkeypatch.setattr(

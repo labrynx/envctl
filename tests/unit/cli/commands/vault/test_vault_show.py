@@ -22,8 +22,7 @@ def test_vault_show_command_exits_when_file_does_not_exist(
     )
 
     monkeypatch.setattr(
-        vault_show_module,
-        "run_vault_show",
+        "envctl.services.vault_service.run_vault_show",
         lambda profile: (context, "staging", result),
     )
     monkeypatch.setattr(
@@ -57,8 +56,7 @@ def test_vault_show_command_warns_when_file_is_empty(
     )
 
     monkeypatch.setattr(
-        vault_show_module,
-        "run_vault_show",
+        "envctl.services.vault_service.run_vault_show",
         lambda profile: (context, "local", result),
     )
     monkeypatch.setattr(
@@ -98,8 +96,7 @@ def test_vault_show_command_masks_sensitive_contract_values_and_unknown_values(
     )
 
     monkeypatch.setattr(
-        vault_show_module,
-        "run_vault_show",
+        "envctl.services.vault_service.run_vault_show",
         lambda profile: (context, "dev", result),
     )
     monkeypatch.setattr(

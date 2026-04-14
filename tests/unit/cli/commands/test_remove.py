@@ -16,8 +16,7 @@ def test_remove_command_prints_profile_cleanup_summary(
         lambda: "staging",
     )
     monkeypatch.setattr(
-        remove_command_module,
-        "plan_remove",
+        "envctl.services.remove_service.plan_remove",
         lambda key, active_profile=None: (
             "context",
             type(
@@ -32,8 +31,7 @@ def test_remove_command_prints_profile_cleanup_summary(
         ),
     )
     monkeypatch.setattr(
-        remove_command_module,
-        "run_remove",
+        "envctl.services.remove_service.run_remove",
         lambda key, active_profile=None: (
             type("Context", (), {"repo_root": "/tmp/repo"})(),
             type(

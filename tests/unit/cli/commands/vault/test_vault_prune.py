@@ -11,8 +11,7 @@ def test_vault_prune_command_warns_when_no_unknown_keys_exist(
     capsys: CaptureFixture[str],
 ) -> None:
     monkeypatch.setattr(
-        vault_prune_module,
-        "get_unknown_vault_keys",
+        "envctl.services.vault_service.get_unknown_vault_keys",
         lambda profile: ("context", "dev", "/tmp/vault/profiles/dev.env", ()),
     )
     monkeypatch.setattr(
@@ -34,13 +33,11 @@ def test_vault_prune_command_prunes_active_profile(
     capsys: CaptureFixture[str],
 ) -> None:
     monkeypatch.setattr(
-        vault_prune_module,
-        "get_unknown_vault_keys",
+        "envctl.services.vault_service.get_unknown_vault_keys",
         lambda profile: ("context", "staging", "/tmp/vault/profiles/staging.env", ("OLD_KEY",)),
     )
     monkeypatch.setattr(
-        vault_prune_module,
-        "run_vault_prune",
+        "envctl.services.vault_service.run_vault_prune",
         lambda profile: (
             "context",
             "staging",

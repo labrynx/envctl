@@ -36,8 +36,7 @@ def test_explain_command_emits_json_when_requested(
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        explain_command_module,
-        "run_inspect_key",
+        "envctl.services.inspect_service.run_inspect_key",
         lambda key, profile: (result.project, result, ()),
     )
     monkeypatch.setattr(explain_command_module, "get_active_profile", lambda: "staging")
@@ -62,8 +61,7 @@ def test_explain_command_renders_alias_warning(
 ) -> None:
     result = make_result()
     monkeypatch.setattr(
-        explain_command_module,
-        "run_inspect_key",
+        "envctl.services.inspect_service.run_inspect_key",
         lambda key, profile: (result.project, result, ()),
     )
     monkeypatch.setattr(explain_command_module, "get_active_profile", lambda: "staging")
@@ -84,8 +82,7 @@ def test_explain_command_json_warns_about_deprecation(
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        explain_command_module,
-        "run_inspect_key",
+        "envctl.services.inspect_service.run_inspect_key",
         lambda key, profile: (result.project, result, ()),
     )
     monkeypatch.setattr(explain_command_module, "get_active_profile", lambda: "staging")
@@ -112,8 +109,7 @@ def test_explain_command_keeps_same_core_payload_as_inspect_key(
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        explain_command_module,
-        "run_inspect_key",
+        "envctl.services.inspect_service.run_inspect_key",
         lambda key, profile: (result.project, result, ()),
     )
     monkeypatch.setattr(explain_command_module, "get_active_profile", lambda: "staging")

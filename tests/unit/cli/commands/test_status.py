@@ -27,8 +27,7 @@ def test_status_command_renders_status_report(
     called: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        status_command_module,
-        "run_status",
+        "envctl.services.status_service.run_status",
         lambda profile: ("staging", report),
     )
     monkeypatch.setattr(
@@ -70,8 +69,7 @@ def test_status_command_emits_json_when_requested(
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        status_command_module,
-        "run_status",
+        "envctl.services.status_service.run_status",
         lambda profile: ("staging", report),
     )
     monkeypatch.setattr(

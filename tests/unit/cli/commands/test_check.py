@@ -43,11 +43,12 @@ def test_check_command_exits_when_result_is_not_ok(
     result = make_check_result(ok=False)
 
     monkeypatch.setattr(
-        check_command_module,
-        "run_check",
+        "envctl.services.check_service.run_check",
         lambda profile, *, selection=None: (context, result, ()),
     )
-    monkeypatch.setattr(check_command_module, "render_check_result", lambda result: None)
+    monkeypatch.setattr(
+        "envctl.cli.presenters.check_presenter.render_check_result", lambda result: None
+    )
     monkeypatch.setattr(check_command_module, "get_active_profile", lambda: "local")
     monkeypatch.setattr(
         check_command_module,
@@ -70,8 +71,7 @@ def test_check_command_emits_json_when_requested(
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        check_command_module,
-        "run_check",
+        "envctl.services.check_service.run_check",
         lambda profile, *, selection=None: (context, result, ()),
     )
     monkeypatch.setattr(check_command_module, "get_active_profile", lambda: "staging")
@@ -110,8 +110,7 @@ def test_check_command_emits_json_and_exits_when_invalid(
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        check_command_module,
-        "run_check",
+        "envctl.services.check_service.run_check",
         lambda profile, *, selection=None: (context, result, ()),
     )
     monkeypatch.setattr(check_command_module, "get_active_profile", lambda: "local")

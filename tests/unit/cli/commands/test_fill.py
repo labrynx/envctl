@@ -127,11 +127,11 @@ def test_fill_command_rejects_ci_mode(
     captured: dict[str, str] = {}
 
     monkeypatch.setattr(
-        "envctl.cli.decorators.load_config",
+        "envctl.config.loader.load_config",
         lambda: SimpleNamespace(runtime_mode=RuntimeMode.CI),
     )
     monkeypatch.setattr(
-        "envctl.cli.decorators.is_json_output",
+        "envctl.cli.runtime.is_json_output",
         lambda: False,
     )
     monkeypatch.setattr(

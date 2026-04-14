@@ -26,7 +26,7 @@ def test_rebind_command_aborts_when_confirmation_is_rejected(
         raise AssertionError("run_rebind should not be called when confirmation is rejected")
 
     monkeypatch.setattr(rebind_command_module, "confirm", fake_confirm)
-    monkeypatch.setattr(rebind_command_module, "run_rebind", fake_run_rebind)
+    monkeypatch.setattr("envctl.services.rebind_service.run_rebind", fake_run_rebind)
 
     rebind_command_module.project_rebind_command(yes=False)
 
@@ -62,8 +62,7 @@ def test_rebind_command_skips_confirmation_when_yes_is_true(
 
     monkeypatch.setattr(rebind_command_module, "confirm", fake_confirm)
     monkeypatch.setattr(
-        rebind_command_module,
-        "run_rebind",
+        "envctl.services.rebind_service.run_rebind",
         lambda *, copy_values=True: (context, result),
     )
 
@@ -96,8 +95,7 @@ def test_rebind_command_prints_rebind_details_with_previous_project_id(
         lambda message, default: True,
     )
     monkeypatch.setattr(
-        rebind_command_module,
-        "run_rebind",
+        "envctl.services.rebind_service.run_rebind",
         lambda *, copy_values=True: (context, result),
     )
 
@@ -130,8 +128,7 @@ def test_rebind_command_prints_no_copy_when_values_are_not_copied(
     )
 
     monkeypatch.setattr(
-        rebind_command_module,
-        "run_rebind",
+        "envctl.services.rebind_service.run_rebind",
         lambda *, copy_values=True: (context, result),
     )
 
@@ -149,11 +146,11 @@ def test_rebind_command_rejects_ci_mode(
     captured: dict[str, str] = {}
 
     monkeypatch.setattr(
-        "envctl.cli.decorators.load_config",
+        "envctl.config.loader.load_config",
         lambda: SimpleNamespace(runtime_mode=RuntimeMode.CI),
     )
     monkeypatch.setattr(
-        "envctl.cli.decorators.is_json_output",
+        "envctl.cli.runtime.is_json_output",
         lambda: False,
     )
     monkeypatch.setattr(
