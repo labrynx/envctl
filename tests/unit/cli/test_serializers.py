@@ -2,13 +2,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from envctl.cli.serializers import (
+from envctl.cli.serializers.diagnostics import (
     serialize_contract_diagnostics,
-    serialize_error,
     serialize_error_diagnostics,
+    serialize_project_binding_diagnostics,
+)
+from envctl.cli.serializers.errors import (
+    serialize_error,
+)
+from envctl.cli.serializers.hooks import (
     serialize_hook_operation_report,
     serialize_hooks_status_report,
-    serialize_project_binding_diagnostics,
 )
 from envctl.domain.error_diagnostics import (
     ConfigDiagnostics,
