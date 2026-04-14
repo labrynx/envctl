@@ -17,7 +17,7 @@ def test_version_callback_prints_version_and_exits(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    monkeypatch.setattr("envctl.cli.callbacks.__version__", "9.9.9")
+    monkeypatch.setattr(callbacks_module, "version", lambda package: "9.9.9")
 
     with pytest.raises(typer.Exit):
         callbacks_module.version_callback(True)
