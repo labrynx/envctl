@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Mapping
 
 from envctl.cli.compat.legacy_json import serialize_legacy_inspect_report
 from envctl.cli.presenters.common import bullet_item, field_item, raw_item, section
@@ -122,7 +122,7 @@ def _build_contracts_items(result: InspectResult) -> list[Any]:
     return items
 
 
-def _build_named_index_items(index: dict[str, Sequence[str]]) -> list[Any]:
+def _build_named_index_items(index: Mapping[str, Sequence[str]]) -> list[Any]:
     """Build one summary list for sets/groups style indexes."""
     if not index:
         return [raw_item("None")]

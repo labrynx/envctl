@@ -1,21 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from envctl.cli.presenters.models import CommandOutput
 from envctl.cli.presenters.outputs.actions import build_init_output as build_actions_init_output
-
-
-@dataclass(frozen=True)
-class _InitResultAdapter:
-    contract_created: bool
-    contract_template: str | None
-    contract_skipped: bool
-    hooks_installed: bool
-    hooks_reason: Any
-    runtime_warnings: tuple[str, ...]
 
 
 def build_init_output(context: Any, init_result: Any) -> CommandOutput:
@@ -55,15 +43,6 @@ def build_init_output(context: Any, init_result: Any) -> CommandOutput:
             }
         )
 
-    adapted_result = _InitResultAdapter(
-        contract_created=getattr(init_result, "contract_created", False),
-        contract_template=getattr(init_result, "contract_template", None),
-        contract_skipped=getattr(init_result, "contract_skipped", False),
-        hooks_installed=getattr(init_result, "hooks_installed", False),
-        hooks_reason=getattr(init_result, "hooks_reason", None),
-        runtime_warnings=tuple(getattr(init_result, "runtime_warnings", ())),
-    )
-
     return build_actions_init_output(
         project_key=getattr(context, "project_key"),
         binding_source=getattr(context, "binding_source"),
@@ -72,6 +51,6 @@ def build_init_output(context: Any, init_result: Any) -> CommandOutput:
         vault_dir=getattr(context, "vault_project_dir"),
         vault_values_path=getattr(context, "vault_values_path"),
         vault_state_path=getattr(context, "vault_state_path"),
-        init_result=adapted_result,
+        init_result=cast(Any, init_result),
         display_name=getattr(context, "display_name"),
     )
