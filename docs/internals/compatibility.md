@@ -57,7 +57,7 @@ The canonical contributor workflow uses `uv` and `uv.lock` as the source of trut
 ```bash
 uv sync --dev
 make validate
-````
+```
 
 This ensures that all contributors and CI environments operate on the same locked dependency graph.
 
