@@ -290,10 +290,9 @@ def build_vault_show_values_output(
         ),
         section(
             "Values",
-            *(
-                bullet_item(f"{key}={values[key]}")
-                for key in sorted(values)
-            ) if values else (raw_item("None"),),
+            *(bullet_item(f"{key}={values[key]}") for key in sorted(values))
+            if values
+            else (raw_item("None"),),
         ),
     ]
 

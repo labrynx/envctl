@@ -117,8 +117,7 @@ def build_resolution_report_payload(report: ResolutionReport) -> dict[str, Any]:
     return {
         "is_valid": report.is_valid,
         "values": {
-            key: build_resolved_value_payload(report.values[key])
-            for key in sorted(report.values)
+            key: build_resolved_value_payload(report.values[key]) for key in sorted(report.values)
         },
         "missing_required": list(report.missing_required),
         "unknown_keys": list(report.unknown_keys),

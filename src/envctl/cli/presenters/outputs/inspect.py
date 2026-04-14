@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any, Mapping
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 from envctl.cli.compat.legacy_json import serialize_legacy_inspect_report
 from envctl.cli.presenters.common import bullet_item, field_item, raw_item, section
@@ -86,9 +86,7 @@ def _build_variables_section(result: InspectResult) -> list[OutputItem]:
 
         suffix = f" — {' — '.join(suffixes)}" if suffixes else ""
         items.append(
-            bullet_item(
-                f"{item.key} = {_format_resolved_value(item)} ({item.source}){suffix}"
-            )
+            bullet_item(f"{item.key} = {_format_resolved_value(item)} ({item.source}){suffix}")
         )
 
     return items
@@ -157,10 +155,7 @@ def build_inspect_output(result: InspectResult) -> CommandOutput:
             field_item("sets", str(result.contract_graph.sets_total)),
             field_item("groups", str(result.contract_graph.groups_total)),
             raw_item("Resolved contracts:"),
-            *(
-                bullet_item(str(path))
-                for path in result.contract_graph.contract_paths
-            ),
+            *(bullet_item(str(path)) for path in result.contract_graph.contract_paths),
         ),
         section(
             "Runtime",
@@ -453,9 +448,7 @@ def build_resolution_output(
                 suffixes.append(f"expansion error: {item.expansion_error.kind}")
 
             suffix = f" — {' — '.join(suffixes)}" if suffixes else ""
-            value_items.append(
-                bullet_item(f"{key} = {shown_value} ({item.source}){suffix}")
-            )
+            value_items.append(bullet_item(f"{key} = {shown_value} ({item.source}){suffix}"))
 
     sections.append(section("Resolved values", *value_items))
 

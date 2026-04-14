@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from envctl.cli.presenters.models import CommandOutput
 from envctl.cli.presenters.outputs.actions import build_init_output as build_actions_init_output
+
+if TYPE_CHECKING:
+    from envctl.domain.operations import InitResult
 
 
 def build_init_output(context: Any, init_result: Any) -> CommandOutput:
@@ -44,13 +47,13 @@ def build_init_output(context: Any, init_result: Any) -> CommandOutput:
         )
 
     return build_actions_init_output(
-        project_key=getattr(context, "project_key"),
-        binding_source=getattr(context, "binding_source"),
-        repo_root=getattr(context, "repo_root"),
+        project_key=context.project_key,
+        binding_source=context.binding_source,
+        repo_root=context.repo_root,
         contract_path=contract_path,
-        vault_dir=getattr(context, "vault_project_dir"),
-        vault_values_path=getattr(context, "vault_values_path"),
-        vault_state_path=getattr(context, "vault_state_path"),
-        init_result=cast(Any, init_result),
-        display_name=getattr(context, "display_name"),
+        vault_dir=context.vault_project_dir,
+        vault_values_path=context.vault_values_path,
+        vault_state_path=context.vault_state_path,
+        init_result=cast("InitResult", init_result),
+        display_name=context.display_name,
     )

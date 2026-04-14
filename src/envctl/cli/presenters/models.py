@@ -45,4 +45,3 @@ class CommandOutput:
     messages: list[OutputMessage] = field(default_factory=list)
     sections: list[OutputSection] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
-    
