@@ -11,6 +11,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.5.1] - 2026-04-14
+
+This release focuses on making `envctl` more predictable for contributors and more maintainable internally.
+
+The development workflow has been standardized around `uv` and a locked environment, removing drift between local setups, hooks, and CI. In parallel, the CLI has been cleaned up to respect architectural boundaries more strictly, reducing hidden coupling across internal layers.
+
+The result is a more reproducible repository, a clearer execution model, and a codebase that is easier to reason about and evolve.
+
+### Changed
+
+#### Dependency and workflow standardization
+- Adopted `uv` as the canonical dependency manager for development and CI
+- Standardized all workflows around `uv.lock` for deterministic dependency resolution
+- Migrated development dependencies from `project.optional-dependencies` to `dependency-groups.dev`
+- Refactored all GitHub Actions workflows to use `uv` for dependency management and execution
+- Updated pre-commit and pre-push hooks to run via `uv run` with locked environments
+- Added `uv-lock` enforcement to pre-commit workflow
+- Reworked Makefile targets to delegate execution to `uv` instead of invoking tools directly
+
+#### CLI architecture
+- Refactored CLI layer to enforce architectural boundaries
+- Reduced direct traversal across internal layers from CLI entry points
+- Aligned CLI import paths with defined `import-linter` contracts
+
+#### Release workflow
+- Reworked GitHub release generation to derive release notes from `CHANGELOG.md`
+- Added automated highlight extraction for GitHub releases
+- Established changelog-driven release notes as the canonical release publication workflow
+
+### Improved
+- Reduced CLI startup surface by avoiding unnecessary imports and deep dependency chains
+- Improved consistency between local development, hooks, and CI environments
+- Reduced dependency drift through strict lockfile usage
+- Improved maintainability of development tooling and release workflows
+
+### Fixed
+- Resolved inconsistencies between `pyproject.toml`, `uv.lock`, and CI environments
+- Fixed execution inconsistencies in Makefile and pre-commit hooks
+- Updated and aligned versions of development tooling (pytest, Ruff, mypy, import-linter, etc.)
+
+### Docs
+- Updated README and CONTRIBUTING to reflect the canonical `uv` workflow
+- Simplified installation and development setup instructions
+- Clarified contributor policy around `uv.lock` as part of the repository contract
+- Updated documentation to match actual CI and local validation flows
+- Added a release playbook documenting how commits, changelog entries, semver decisions, and release notes should stay aligned
+
+---
+
 ## [2.5.0] - 2026-04-12
 
 This release makes contracts modular without sacrificing determinism.
@@ -269,7 +318,8 @@ The CLI is now more consistent across commands, making it easier to understand a
 * Limited configuration formats
 * No machine-readable output
 
-[Unreleased]: https://github.com/labrynx/envctl/compare/v2.5.0...HEAD
+[Unreleased]: https://github.com/labrynx/envctl/compare/v2.5.1...HEAD
+[2.5.1]: https://github.com/labrynx/envctl/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/labrynx/envctl/compare/v2.4.1...v2.5.0
 [2.4.1]: https://github.com/labrynx/envctl/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/labrynx/envctl/compare/v2.3.0...v2.4.0
