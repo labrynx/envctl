@@ -6,23 +6,12 @@
 # Core tools
 # -----------------------------------------
 
+UV ?= uv
 PYTHON ?= python3
-PIP ?= pip
-
-RUFF ?= ruff
-MYPY ?= mypy
-BANDIT ?= bandit
-IMPORT_LINTER ?= lint-imports
 COV_MIN ?= 85
-PYTEST ?= pytest
-PRE_COMMIT ?= pre-commit
-BUILD ?= $(PYTHON) -m build
-TWINE ?= $(PYTHON) -m twine
-CYCLONEDX ?= cyclonedx-py
 IMPORTTIME_LOG_DIR ?= .importtime
 ENVCTL_ENTRYPOINT ?= -m envctl
 ENVCTL_TIME ?= /usr/bin/time
-
 
 # -----------------------------------------
 # Project paths
@@ -49,10 +38,10 @@ PYTEST_COV_ARGS ?= --cov=$(COV_TARGET) --cov-report=term-missing:skip-covered --
 
 .PHONY: \
 	help \
-	install install-dev bootstrap \
-	lint lint-fix format format-check typecheck \
+	sync sync-dev sync-full sync-locked sync-full \
+	lint lint-fix format format-check typecheck security imports deadcode \
 	test test-cov test-ci test-fast test-debug \
-	check check-clean fix \
+	validate check check-clean fix \
 	clean clean-hard \
 	build-package check-package publish-test publish-package \
 	smoke-wheel smoke-sdist smoke-package \
@@ -60,14 +49,10 @@ PYTEST_COV_ARGS ?= --cov=$(COV_TARGET) --cov-report=term-missing:skip-covered --
 	run inspect \
 	status commit push \
 	pre-commit-install pre-commit-run pre-push-run \
-	imports \
-	docs-check docs-build docs-serve docs-deploy \
-	startup-version \
-	startup-help \
-	startup-vault-help \
-	startup-importtime-clean \
-	startup-importtime-report \
-	startup-timings
+	docs-install docs-check docs-build docs-serve docs-deploy \
+	startup-version startup-help startup-vault-help \
+	startup-importtime-clean startup-importtime-report \
+	startup-timings startup-full
 
 # -----------------------------------------
 # Help
@@ -85,59 +70,64 @@ help: ## Show available commands
 # Environment setup
 # -----------------------------------------
 
-install: ## Install package in editable mode
-	$(PIP) install -e .
+sync: ## Sync project environment
+	$(UV) sync
 
-install-dev: ## Install package with development dependencies
-	$(PIP) install -e ".[dev]"
+sync-dev: ## Sync project environment with development dependencies
+	$(UV) sync --dev
 
-bootstrap: ## Bootstrap a local development environment
-	$(PIP) install --upgrade pip
-	$(PIP) install -e ".[dev]"
+sync-full: ## Sync dev + docs
+	$(UV) sync --dev --extra docs
+
+sync-locked: ## Sync project environment with development dependencies from uv.lock without modifying it
+	$(UV) sync --dev --locked
 
 # -----------------------------------------
 # Code quality
 # -----------------------------------------
 
 lint: ## Run Ruff checks
-	$(RUFF) check .
+	$(UV) run ruff check .
 
 lint-fix: ## Run Ruff checks with auto-fix
-	$(RUFF) check . --fix
+	$(UV) run ruff check . --fix
 
 format: ## Format code with Ruff
-	$(RUFF) format .
+	$(UV) run ruff format .
 
 format-check: ## Check code formatting with Ruff
-	$(RUFF) format --check .
+	$(UV) run ruff format --check .
 
 typecheck: ## Run static type checking with mypy
-	$(MYPY)
+	$(UV) run mypy .
 
 security: ## Run security checks with bandit
-	$(BANDIT) -c pyproject.toml -r $(SRC)
+	$(UV) run bandit -c pyproject.toml -r $(SRC)
 
 imports: ## Check architectural import contracts
-	$(IMPORT_LINTER)
+	$(UV) run lint-imports
+
+deadcode: ## Run dead code detection with vulture
+	$(UV) run vulture $(SRC) $(TESTS) --exclude .venv --min-confidence 80
 
 # -----------------------------------------
 # Test suite
 # -----------------------------------------
 
 test: ## Run test suite with readable output
-	$(PYTEST) $(PYTEST_BASE_ARGS)
+	$(UV) run pytest $(PYTEST_BASE_ARGS)
 
 test-cov: ## Run test suite with coverage
-	$(PYTEST) $(PYTEST_BASE_ARGS) $(PYTEST_DEBUG_ARGS) $(PYTEST_COV_ARGS)
+	$(UV) run pytest $(PYTEST_BASE_ARGS) $(PYTEST_DEBUG_ARGS) $(PYTEST_COV_ARGS)
 
 test-ci: ## Run CI-oriented test suite with coverage threshold
-	$(PYTEST) $(PYTEST_BASE_ARGS) $(PYTEST_DEBUG_ARGS) $(PYTEST_COV_ARGS) --cov-fail-under=$(COV_MIN)
+	$(UV) run pytest $(PYTEST_BASE_ARGS) $(PYTEST_DEBUG_ARGS) $(PYTEST_COV_ARGS) --cov-fail-under=$(COV_MIN)
 
 test-fast: ## Run tests quickly without coverage
-	$(PYTEST) -q --maxfail=1
+	$(UV) run pytest -q --maxfail=1
 
 test-debug: ## Run tests with maximum failure detail
-	$(PYTEST) -vv -ra --tb=long --showlocals --maxfail=1 --color=yes
+	$(UV) run pytest -vv -ra --tb=long --showlocals --maxfail=1 --color=yes
 
 # -----------------------------------------
 # Composite workflows
@@ -146,7 +136,7 @@ test-debug: ## Run tests with maximum failure detail
 validate: lint format-check typecheck security test-ci imports ## Validate code quality
 
 check-package: build-package ## Validate built distribution metadata
-	$(TWINE) check dist/*.whl dist/*.tar.gz
+	$(UV) run python -m twine check dist/*.whl dist/*.tar.gz
 
 check: validate build-package check-package smoke-package ## Full validation including build
 
@@ -154,15 +144,12 @@ check-clean: clean check ## Run full validation suite from a clean workspace
 
 fix: lint-fix format ## Auto-fix style and formatting issues
 
-deadcode:
-	vulture ${SRC} ${TESTS} --exclude .venv --min-confidence 80
-
 # -----------------------------------------
 # Build and publish
 # -----------------------------------------
 
 build-package: clean ## Build distribution artifacts
-	$(BUILD)
+	$(UV) build
 
 smoke-wheel: build-package ## Install built wheel in a clean venv and verify import/CLI
 	rm -rf .release-venv
@@ -200,10 +187,10 @@ dist-sbom: build-package ## Generate a CycloneDX SBOM for the built wheel
 	rm -rf .sbom-venv
 
 publish-test: build-package check-package ## Upload package to TestPyPI
-	$(TWINE) upload --repository testpypi dist/*.whl dist/*.tar.gz
+	$(UV) run python -m twine upload --repository testpypi dist/*.whl dist/*.tar.gz
 
 publish-package: build-package check-package ## Upload package to PyPI
-	$(TWINE) upload dist/*.whl dist/*.tar.gz
+	$(UV) run python -m twine upload dist/*.whl dist/*.tar.gz
 
 # -----------------------------------------
 # Cleanup
@@ -229,21 +216,21 @@ clean: ## Remove caches, coverage files, and build artifacts
 	find . -type d -name "*.prof" -prune -exec rm -rf {} +
 
 clean-hard: clean ## Remove additional local environment artifacts
-	rm -rf .tox .nox .cache .sbom-venv .release-venv
+	rm -rf .tox .nox .cache .sbom-venv .release-venv .release-venv-sdist
 
 # -----------------------------------------
 # Git helpers
 # -----------------------------------------
 
 pre-commit-install: ## Install pre-commit hooks
-	$(PRE_COMMIT) install
-	$(PRE_COMMIT) install --hook-type pre-push
+	$(UV) run pre-commit install
+	$(UV) run pre-commit install --hook-type pre-push
 
 pre-commit-run: ## Run pre-commit on all files
-	$(PRE_COMMIT) run --all-files
+	$(UV) run pre-commit run --all-files
 
 pre-push-run: ## Run pre-push hooks on all files
-	$(PRE_COMMIT) run --hook-stage pre-push --all-files
+	$(UV) run pre-commit run --hook-stage pre-push --all-files
 
 status: ## Show git status
 	git status
@@ -260,31 +247,29 @@ push: ## Push current branch to origin
 # -----------------------------------------
 
 run: ## Run envctl CLI
-	envctl
+	$(UV) run envctl
 
 inspect: ## Run envctl inspect
-	envctl inspect
+	$(UV) run envctl inspect
 
 # -----------------------------------------
 # Documentation
 # -----------------------------------------
 
-DOCS_DEPS ?= pip install -e ".[docs]"
-
 docs-install: ## Install documentation dependencies
-	$(PIP) install -e ".[docs]"
+	$(UV) sync --extra docs
 
 docs-check: ## Build MkDocs site in strict mode for CI/local validation
-	mkdocs build --strict
+	$(UV) run mkdocs build --strict
 
 docs-build: ## Build MkDocs site locally
-	mkdocs build --strict
+	$(UV) run mkdocs build --strict
 
-docs-serve: docs-build ## Serve MkDocs site locally with live reload
-	mkdocs serve
+docs-serve: ## Serve MkDocs site locally with live reload
+	$(UV) run mkdocs serve
 
 docs-deploy: ## Deploy MkDocs site to GitHub Pages (requires write access)
-	mkdocs gh-deploy --force
+	$(UV) run mkdocs gh-deploy --force
 
 # -----------------------------------------
 # Startup and import-time analysis
@@ -295,7 +280,7 @@ startup-importtime-clean: ## Remove import-time analysis artifacts
 
 startup-version: ## Profile import/startup time for `envctl --version`
 	mkdir -p $(IMPORTTIME_LOG_DIR)
-	$(PYTHON) -X importtime $(ENVCTL_ENTRYPOINT) --version 2> $(IMPORTTIME_LOG_DIR)/version.importtime.log
+	$(UV) run python -X importtime $(ENVCTL_ENTRYPOINT) --version 2> $(IMPORTTIME_LOG_DIR)/version.importtime.log
 	@echo ""
 	@echo "Saved import-time log to $(IMPORTTIME_LOG_DIR)/version.importtime.log"
 	@echo ""
@@ -303,7 +288,7 @@ startup-version: ## Profile import/startup time for `envctl --version`
 
 startup-help: ## Profile import/startup time for `envctl --help`
 	mkdir -p $(IMPORTTIME_LOG_DIR)
-	$(PYTHON) -X importtime $(ENVCTL_ENTRYPOINT) --help 2> $(IMPORTTIME_LOG_DIR)/help.importtime.log
+	$(UV) run python -X importtime $(ENVCTL_ENTRYPOINT) --help 2> $(IMPORTTIME_LOG_DIR)/help.importtime.log
 	@echo ""
 	@echo "Saved import-time log to $(IMPORTTIME_LOG_DIR)/help.importtime.log"
 	@echo ""
@@ -311,7 +296,7 @@ startup-help: ## Profile import/startup time for `envctl --help`
 
 startup-vault-help: ## Profile import/startup time for `envctl vault --help`
 	mkdir -p $(IMPORTTIME_LOG_DIR)
-	$(PYTHON) -X importtime $(ENVCTL_ENTRYPOINT) vault --help 2> $(IMPORTTIME_LOG_DIR)/vault-help.importtime.log
+	$(UV) run python -X importtime $(ENVCTL_ENTRYPOINT) vault --help 2> $(IMPORTTIME_LOG_DIR)/vault-help.importtime.log
 	@echo ""
 	@echo "Saved import-time log to $(IMPORTTIME_LOG_DIR)/vault-help.importtime.log"
 	@echo ""
@@ -329,12 +314,12 @@ startup-importtime-report: ## Show the heaviest envctl/cryptography imports from
 startup-timings: ## Measure wall-clock and memory for common startup paths
 	@echo ""
 	@echo "==> envctl --version"
-	@$(ENVCTL_TIME) -f "elapsed=%E maxrss=%MKB" $(PYTHON) $(ENVCTL_ENTRYPOINT) --version >/dev/null
+	@$(ENVCTL_TIME) -f "elapsed=%E maxrss=%MKB" $(UV) run python $(ENVCTL_ENTRYPOINT) --version >/dev/null
 	@echo ""
 	@echo "==> envctl --help"
-	@$(ENVCTL_TIME) -f "elapsed=%E maxrss=%MKB" $(PYTHON) $(ENVCTL_ENTRYPOINT) --help >/dev/null
+	@$(ENVCTL_TIME) -f "elapsed=%E maxrss=%MKB" $(UV) run python $(ENVCTL_ENTRYPOINT) --help >/dev/null
 	@echo ""
 	@echo "==> envctl vault --help"
-	@$(ENVCTL_TIME) -f "elapsed=%E maxrss=%MKB" $(PYTHON) $(ENVCTL_ENTRYPOINT) vault --help >/dev/null
+	@$(ENVCTL_TIME) -f "elapsed=%E maxrss=%MKB" $(UV) run python $(ENVCTL_ENTRYPOINT) vault --help >/dev/null
 
 startup-full: startup-version startup-help startup-vault-help startup-importtime-report startup-timings ## Run all startup/import-time analysis tasks
