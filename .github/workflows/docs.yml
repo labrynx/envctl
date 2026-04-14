@@ -12,6 +12,7 @@ on:
       - "mkdocs.yml"
       - "overrides/**"
       - "pyproject.toml"
+      - "uv.lock"
   workflow_dispatch:
 
 concurrency:
@@ -31,20 +32,21 @@ jobs:
           fetch-depth: 0
           lfs: true
 
+      - name: Setup uv
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57
+        with:
+          enable-cache: true
+
       - name: Setup Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
           python-version: "3.12"
-          cache: pip
-          cache-dependency-path: pyproject.toml
 
       - name: Pull Git LFS files
         run: git lfs pull
 
-      - name: Install docs dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e ".[docs]"
+      - name: Sync docs dependencies
+        run: uv sync --extra docs --locked
 
       - name: Configure Git for revision dates
         run: |
@@ -52,7 +54,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Build site (strict mode)
-        run: mkdocs build --strict
+        run: uv run mkdocs build --strict
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa
