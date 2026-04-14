@@ -37,14 +37,12 @@ Use this when you are contributing to `envctl` or testing changes locally.
       <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--yellow"></span>
       <span class="envctl-doc-terminal__dot envctl-doc-terminal__dot--green"></span>
     </div>
-    <span class="envctl-doc-terminal__title">editable install</span>
+    <span class="envctl-doc-terminal__title">development setup</span>
   </div>
-  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line"><span class="envctl-doc-terminal__prompt">$ </span>python3 -m venv .venv</span>
-<span class="envctl-doc-terminal__line"><span class="envctl-doc-terminal__prompt">$ </span>source .venv/bin/activate</span>
-<span class="envctl-doc-terminal__line"><span class="envctl-doc-terminal__prompt">$ </span>pip install -e .[dev]</span></code></pre>
+  <pre class="envctl-doc-terminal__body"><code><span class="envctl-doc-terminal__line"><span class="envctl-doc-terminal__prompt">$ </span>uv sync --dev</span></code></pre>
 </div>
 
-That gives you an editable environment suitable for local development.
+This creates a fully reproducible development environment using the locked dependency set defined in `uv.lock`.
 
 ## Verify that it works
 

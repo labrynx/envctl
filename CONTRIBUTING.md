@@ -35,60 +35,47 @@ This project follows a simple principle: be respectful, provide constructive fee
    cd envctl
    ```
 
-2. **Create a virtual environment**
+2. **Sync the development environment**
 
    ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
+   uv sync --dev
    ```
 
-3. **Install development dependencies**
-
-   ```bash
-   pip install -U pip
-   pip install -e .[dev]
-   ```
-
-4. **Run the canonical local validation flow**
+3. **Run the canonical local validation flow**
 
    ```bash
    make validate
    ```
 
-This is the supported baseline workflow for contributors today.
+This is the supported baseline workflow for contributors.
 
 ### Official local workflow policy
 
-The repository currently supports one canonical local development path:
+The repository uses `uv` as the canonical dependency manager.
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -U pip
-pip install -e ".[dev]"
+uv sync --dev
 make validate
 ```
 
-This is the path that contributors should use first when checking whether the repo is healthy locally.
+This ensures:
 
-`uv.lock` is still tracked intentionally, but its role is narrower:
+* deterministic dependency resolution via `uv.lock`
+* consistent environments across contributors and CI
+* no drift between local and CI execution
 
-- it records one tested dependency resolution state
-- it supports optional local `uv` workflows for contributors who already use `uv`
-- it is not yet the canonical CI input or the primary contributor contract
-
-Until that policy changes explicitly, contributor docs and CI expectations should treat `.venv` + editable `pip install -e ".[dev]"` as the source of truth for local setup.
+`uv.lock` is part of the repository contract and must be updated whenever dependencies change.
 
 ### Docs workflow
 
-If you are editing documentation or site overrides, install docs extras too:
+If you are editing documentation or site overrides:
 
 ```bash
-pip install -e ".[dev,docs]"
+uv sync --extra docs
 make docs-check
 ```
 
-Documentation is expected to build cleanly with strict MkDocs validation.
+Documentation must build cleanly in strict mode.
 
 ## Project structure
 
@@ -221,19 +208,19 @@ If you change managed hook behavior:
 * Run the full suite:
 
   ```bash
-  pytest
+  uv run pytest
   ```
 
 * Run a specific test file:
 
   ```bash
-  pytest tests/test_init.py
+  uv run pytest tests/test_init.py
   ```
 
 * Run with coverage:
 
   ```bash
-  pytest --cov=envctl
+  uv run pytest --cov=envctl
   ```
 
 * Run the canonical validation flow:
@@ -242,7 +229,7 @@ If you change managed hook behavior:
   make validate
   ```
 
-* Run strict docs validation when touching docs or overrides:
+* Run strict docs validation when touching docs:
 
   ```bash
   make docs-check
@@ -258,6 +245,8 @@ The test suite creates temporary directories and sets environment variables to a
 4. Open a pull request explaining what changed and why.
 
 When a change alters command identity or the lifecycle model, explain that explicitly in the pull request.
+
+For release structure and changelog conventions, see `.github/release-playbook.md`.
 
 ## License
 

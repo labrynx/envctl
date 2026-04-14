@@ -220,36 +220,25 @@ The runtime environment stays explicit.
 
 ## Development
 
-The supported contributor baseline is:
+The repository uses `uv` for dependency management and reproducible environments.
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -U pip
-pip install -e ".[dev]"
+uv sync --dev
 make validate
 ```
 
-That is the canonical local workflow for this repository today.
+This ensures that local development and CI use the same locked dependency graph defined in `uv.lock`.
 
-`uv.lock` is tracked to document one tested dependency resolution state and to support optional local workflows, but it is not yet the canonical CI input. Until that policy changes explicitly, local validation and CI should be expected to work from the editable `pip install -e ".[dev]"` path first.
-
-If you are editing documentation locally, install docs extras as well:
+If you are editing documentation locally:
 
 ```bash
-pip install -e ".[dev,docs]"
+uv sync --extra docs
 make docs-check
 ```
 
-The normal contributor validation path should include architecture checks, not only lint and tests:
+The validation flow includes linting, formatting, type checking, security checks, tests with coverage, and architectural constraints.
 
-```bash
-make validate
-```
-
-That flow runs linting, formatting checks, type-checking, Bandit, tests with coverage, and `lint-imports`.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the detailed contributor workflow.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ---
 

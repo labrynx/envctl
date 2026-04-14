@@ -44,10 +44,10 @@ make dist-checksums
 make dist-sbom
 ```
 
-If you are using the documented local contributor workflow, run them from the project virtual environment:
+Run them from the project environment:
 
 ```bash
-make build-package dist-checksums dist-sbom check-package PYTHON=.venv/bin/python
+make build-package dist-checksums dist-sbom check-package
 ```
 
 ## Verifying checksums
