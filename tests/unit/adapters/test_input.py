@@ -1,4 +1,4 @@
-"""Add command."""
+"""Tests for input adapter behavior."""
 
 from __future__ import annotations
 
