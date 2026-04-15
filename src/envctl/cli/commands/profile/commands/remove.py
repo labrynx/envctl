@@ -4,15 +4,14 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.decorators import (
-    handle_errors,
-    requires_writable_runtime,
-    text_output_only,
-)
-from envctl.cli.presenters.profile_presenter import render_profile_remove_result
+from envctl.cli.decorators import handle_errors, requires_writable_runtime
+from envctl.cli.presenters import present
+from envctl.cli.presenters.common import cancelled_output
+from envctl.cli.presenters.outputs.actions import build_profile_remove_output
+from envctl.cli.presenters.presenter import OutputFormat
 from envctl.cli.prompts.confirmation_prompts import build_profile_remove_confirmation_message
 from envctl.cli.prompts.input import confirm
-from envctl.utils.output import print_cancelled
+from envctl.cli.runtime import is_json_output
 
 PROFILE_ARGUMENT = typer.Argument(...)
 YES_OPTION = typer.Option(
@@ -24,27 +23,37 @@ YES_OPTION = typer.Option(
 
 @handle_errors
 @requires_writable_runtime("profile remove")
-@text_output_only("profile remove")
 def profile_remove_command(
     profile: str = PROFILE_ARGUMENT,
     yes: bool = YES_OPTION,
 ) -> None:
     """Remove one explicit profile."""
+    output_format: OutputFormat = "json" if is_json_output() else "text"
+
     if not yes:
         approved = confirm(
             message=build_profile_remove_confirmation_message(profile),
             default=False,
         )
         if not approved:
-            print_cancelled()
+            present(
+                cancelled_output(
+                    kind="profile_remove",
+                    profile=profile,
+                ),
+                output_format=output_format,
+            )
             return
 
     from envctl.services.profile_service import run_profile_remove
 
     _context, result = run_profile_remove(profile)
 
-    render_profile_remove_result(
-        profile=result.profile,
-        path=result.path,
-        removed=result.removed,
+    present(
+        build_profile_remove_output(
+            profile=result.profile,
+            path=result.path,
+            removed=result.removed,
+        ),
+        output_format=output_format,
     )
