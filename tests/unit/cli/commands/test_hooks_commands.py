@@ -312,7 +312,9 @@ def test_hook_run_command_failure_path_captures_findings(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, Any] = {}
-    finding = SimpleNamespace(path=".env", kind="secret", message="secret detected", actions=("remove secret",))
+    finding = SimpleNamespace(
+        path=".env", kind="secret", message="secret detected", actions=("remove secret",)
+    )
 
     monkeypatch.setattr(
         "envctl.cli.runtime.is_json_output",
