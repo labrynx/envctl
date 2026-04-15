@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.command_support import render_contract_warnings_if_any
 from envctl.cli.decorators import handle_errors, text_output_only
-from envctl.cli.presenters.run_presenter import render_run_warnings
+from envctl.cli.presenters import present
+from envctl.cli.presenters.common import merge_outputs
+from envctl.cli.presenters.outputs.actions import build_run_warnings_output
+from envctl.cli.presenters.outputs.warnings import (
+    build_contract_deprecation_warnings_output,
+)
 from envctl.cli.runtime import get_active_profile, get_contract_selection
 
 COMMAND_ARGUMENT = typer.Argument(...)
@@ -24,6 +28,10 @@ def run_command_cli(command: list[str] = COMMAND_ARGUMENT) -> None:
         selection=get_contract_selection(),
     )
 
-    render_contract_warnings_if_any(warnings)
-    render_run_warnings(result.warnings)
+    output = merge_outputs(
+        build_contract_deprecation_warnings_output(warnings),
+        build_run_warnings_output(result.warnings),
+    )
+
+    present(output, output_format="text")
     raise typer.Exit(code=result.exit_code)

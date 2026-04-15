@@ -6,10 +6,18 @@ from pathlib import Path
 
 import typer
 
-from envctl.cli.command_support import render_contract_warnings_if_any
 from envctl.cli.decorators import handle_errors, requires_writable_runtime
-from envctl.cli.presenters.action_presenter import render_sync_result
-from envctl.cli.runtime import get_active_profile, get_contract_selection
+from envctl.cli.presenters import present
+from envctl.cli.presenters.common import merge_outputs
+from envctl.cli.presenters.outputs.actions import build_sync_output
+from envctl.cli.presenters.outputs.warnings import (
+    build_contract_deprecation_warnings_output,
+)
+from envctl.cli.runtime import (
+    get_active_profile,
+    get_contract_selection,
+    is_json_output,
+)
 
 SYNC_OUTPUT_PATH_OPTION = typer.Option(
     None,
@@ -32,8 +40,15 @@ def sync_command(
         selection=get_contract_selection(),
     )
 
-    render_contract_warnings_if_any(warnings, stderr=True)
-    render_sync_result(
-        profile=active_profile,
-        target_path=target_path,
+    output = merge_outputs(
+        build_contract_deprecation_warnings_output(warnings, stderr=not is_json_output()),
+        build_sync_output(
+            profile=active_profile,
+            target_path=target_path,
+        ),
+    )
+
+    present(
+        output,
+        output_format="json" if is_json_output() else "text",
     )

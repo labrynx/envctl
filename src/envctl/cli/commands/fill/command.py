@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
-from envctl.cli.presenters.action_presenter import (
-    render_fill_no_changes,
-    render_fill_result,
+from envctl.cli.presenters import present
+from envctl.cli.presenters.outputs.actions import (
+    build_fill_no_changes_output,
+    build_fill_output,
 )
 from envctl.cli.prompts.input import prompt_secret, prompt_string
 from envctl.cli.runtime import get_active_profile
@@ -21,7 +22,10 @@ def fill_command() -> None:
     context, active_profile, plan = build_fill_plan(get_active_profile())
 
     if not plan:
-        render_fill_no_changes(profile=active_profile)
+        present(
+            build_fill_no_changes_output(profile=active_profile),
+            output_format="text",
+        )
         return
 
     answers: dict[str, str] = {}
@@ -41,9 +45,12 @@ def fill_command() -> None:
         get_active_profile(),
     )
 
-    render_fill_result(
-        project_name=context.display_name,
-        profile=resolved_profile,
-        profile_path=profile_path,
-        changed_keys=changed_keys,
+    present(
+        build_fill_output(
+            project_name=context.display_name,
+            profile=resolved_profile,
+            profile_path=profile_path,
+            changed_keys=changed_keys,
+        ),
+        output_format="text",
     )

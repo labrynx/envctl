@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
-from envctl.cli.presenters.action_presenter import render_init_result
+from envctl.cli.decorators import handle_errors, requires_writable_runtime
+from envctl.cli.presenters import present
+from envctl.cli.presenters.outputs.actions import build_init_output
+from envctl.cli.runtime import is_json_output
 from envctl.services.init_service import InitContractMode
 
 CONTRACT_OPTION = typer.Option(
@@ -22,7 +24,6 @@ def typer_confirm(message: str, default: bool) -> bool:
 
 @handle_errors
 @requires_writable_runtime("init")
-@text_output_only("init")
 def init_command(
     project: str | None = typer.Argument(default=None),
     contract: InitContractMode = CONTRACT_OPTION,
@@ -36,7 +37,7 @@ def init_command(
         confirm=typer_confirm,
     )
 
-    render_init_result(
+    output = build_init_output(
         project_key=context.project_key,
         binding_source=context.binding_source,
         repo_root=context.repo_root,
@@ -46,4 +47,9 @@ def init_command(
         vault_state_path=context.vault_state_path,
         init_result=init_result,
         display_name=context.display_name,
+    )
+
+    present(
+        output,
+        output_format="json" if is_json_output() else "text",
     )
