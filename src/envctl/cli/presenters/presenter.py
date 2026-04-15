@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, TypeAlias
 
 from envctl.cli.presenters.models import CommandOutput
 from envctl.cli.presenters.renderers.json import emit_json
 from envctl.cli.presenters.renderers.text import emit_text
 
-OutputFormat = Literal["text", "json"]
+OutputFormat: TypeAlias = Literal["text", "json"]
 
 
 def present(

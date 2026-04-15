@@ -10,6 +10,7 @@ import typer
 
 from envctl.cli.callbacks import version_callback
 from envctl.cli.typer_theme import create_typer_app
+from envctl.domain.runtime import OutputFormat
 
 _PASSTHROUGH_SUBCOMMANDS = {"run", "hook-run"}
 _HELP_FLAGS = {"--help", "-h"}
@@ -23,10 +24,11 @@ VERSION_OPTION = typer.Option(
     callback=version_callback,
     is_eager=True,
 )
-JSON_OPTION = typer.Option(
-    False,
-    "--json",
-    help="Emit structured JSON output for supported commands.",
+OUTPUT_OPTION = typer.Option(
+    OutputFormat.TEXT,
+    "--output",
+    "-o",
+    help="Output format: json or text. Overrides --json.",
 )
 PROFILE_OPTION = typer.Option(
     None,
@@ -207,7 +209,7 @@ app = create_typer_app(
 def main(
     ctx: typer.Context,
     version: bool = VERSION_OPTION,
-    json_output: bool = JSON_OPTION,
+    output_format: OutputFormat = OutputFormat.TEXT,
     profile: str | None = PROFILE_OPTION,
     group: str | None = GROUP_OPTION,
     set_name: str | None = SET_OPTION,
@@ -229,7 +231,6 @@ def main(
     from envctl.cli.runtime import set_cli_state
     from envctl.config.loader import load_config
     from envctl.config.profile_resolution import resolve_active_profile
-    from envctl.domain.runtime import OutputFormat
     from envctl.domain.selection import ContractSelection
     from envctl.errors import EnvctlError
     from envctl.observability import initialize_observability_context
@@ -268,14 +269,14 @@ def main(
             command = f"envctl {ctx.invoked_subcommand}"
         emit_handled_error(
             exc,
-            json_output=json_output,
+            output_format=OutputFormat.JSON if "json" in ctx.args else OutputFormat.TEXT,
             command=command,
         )
         raise typer.Exit(code=1) from exc
 
     set_cli_state(
         ctx,
-        output_format=OutputFormat.JSON if json_output else OutputFormat.TEXT,
+        output_format=output_format,
         profile=active_profile,
         group=selection.group,
         set_name=selection.set_name,
