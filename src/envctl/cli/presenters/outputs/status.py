@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from envctl.cli.compat.legacy_json import serialize_legacy_check_report
 from envctl.cli.presenters.common import (
     bullet_item,
     failure_message,
@@ -13,10 +12,18 @@ from envctl.cli.presenters.common import (
     section,
     success_message,
 )
+from envctl.cli.presenters.formatters import (
+    render_action_state,
+    render_present_missing,
+    render_valid_invalid,
+)
 from envctl.cli.presenters.models import CommandOutput, OutputItem
 from envctl.cli.presenters.payloads import (
+    build_command_warnings_payload,
     build_contract_selection_payload,
+    build_diagnostic_summary_payload,
     build_project_context_payload,
+    build_resolved_value_payload,
     path_to_str,
 )
 from envctl.domain.diagnostics import CheckResult, DiagnosticProblem
@@ -95,14 +102,12 @@ def build_check_output(
         "ok": result.ok,
         "active_profile": result.active_profile,
         "selection": build_contract_selection_payload(result.selection),
-        "summary": {
-            "total": result.summary.total,
-            "valid": result.summary.valid,
-            "invalid": result.summary.invalid,
-            "unknown": result.summary.unknown,
-        },
+        "summary": build_diagnostic_summary_payload(result.summary),
+        "values": {item.key: build_resolved_value_payload(item) for item in result.values},
         "problems": [build_problem_payload(problem) for problem in result.problems],
-        "report": serialize_legacy_check_report(result),
+        "warnings": build_command_warnings_payload(
+            command_warnings=result.warnings,
+        ),
     }
     if context is not None:
         metadata["context"] = build_project_context_payload(context)
@@ -125,10 +130,7 @@ def build_status_output(report: StatusReport) -> CommandOutput:
     has_issues = _has_status_issues(report)
 
     sections = [
-        section(
-            "Status",
-            field_item("state", "action needed" if has_issues else "healthy"),
-        ),
+        section("Status", field_item("state", render_action_state(has_issues))),
         section(
             "Project",
             field_item("name", report.project_slug),
@@ -137,9 +139,9 @@ def build_status_output(report: StatusReport) -> CommandOutput:
         ),
         section(
             "Checks",
-            field_item("contract", "present" if report.contract_exists else "missing"),
-            field_item("vault values", "present" if report.vault_exists else "missing"),
-            field_item("resolution", "valid" if report.resolved_valid else "invalid"),
+            field_item("contract", render_present_missing(report.contract_exists)),
+            field_item("vault values", render_present_missing(report.vault_exists)),
+            field_item("resolution", render_valid_invalid(report.resolved_valid)),
         ),
         section(
             "Summary",

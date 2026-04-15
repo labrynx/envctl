@@ -5,11 +5,12 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from envctl.cli.compat.legacy_json import serialize_legacy_inspect_report
 from envctl.cli.presenters.common import bullet_item, field_item, raw_item, section
 from envctl.cli.presenters.models import CommandOutput, OutputItem
 from envctl.cli.presenters.payloads import (
+    build_command_warnings_payload,
     build_contract_selection_payload,
+    build_diagnostic_summary_payload,
     build_project_context_payload,
     build_resolution_problem_lines,
     build_resolution_report_payload,
@@ -197,18 +198,15 @@ def build_inspect_output(result: InspectResult) -> CommandOutput:
                 "values_path": result.values_path,
             },
             "contract_graph": _build_contract_graph_payload(result.contract_graph),
-            "summary": {
-                "total": result.summary.total,
-                "valid": result.summary.valid,
-                "invalid": result.summary.invalid,
-                "unknown": result.summary.unknown,
-            },
+            "summary": build_diagnostic_summary_payload(result.summary),
             "variables": {
                 item.key: build_resolved_value_payload(item) for item in result.variables
             },
             "problems": [_build_problem_payload(problem) for problem in result.problems],
+            "warnings": build_command_warnings_payload(
+                command_warnings=result.warnings,
+            ),
             "context": build_project_context_payload(result.project),
-            "report": serialize_legacy_inspect_report(result),
         },
     )
 

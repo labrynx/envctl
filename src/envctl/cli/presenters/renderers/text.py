@@ -1,3 +1,5 @@
+"""Text renderer for command outputs."""
+
 from __future__ import annotations
 
 import typer
@@ -18,8 +20,11 @@ def _emit_message(message: OutputMessage) -> None:
     if message.level == "warning":
         typer.secho(f"[WARN] {message.text}", fg="yellow", bold=True, err=message.err)
         return
-    if message.level in {"failure", "error"}:
-        typer.secho(f"[ERROR] {message.text}", fg="red", bold=True, err=message.err)
+    if message.level == "failure":
+        typer.secho(f"[FAIL] {message.text}", fg="red", bold=True, err=message.err)
+        return
+    if message.level == "error":
+        typer.secho(f"Error: {message.text}", fg="red", bold=True, err=message.err)
         return
     typer.echo(message.text, err=message.err)
 

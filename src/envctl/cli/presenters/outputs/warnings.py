@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
 
 from envctl.cli.presenters.common import bullet_item, section, warning_message
 from envctl.cli.presenters.models import CommandOutput
+from envctl.cli.presenters.payloads import (
+    serialize_command_warnings,
+    serialize_contract_deprecation_warnings,
+)
 from envctl.domain.deprecations import ContractDeprecationWarning
 from envctl.domain.diagnostics import CommandWarning
 
@@ -25,14 +28,7 @@ def build_contract_deprecation_warnings_output(
             }
         )
 
-    payload: list[dict[str, Any]] = [
-        {
-            "key": warning.key,
-            "deprecated_field": warning.deprecated_field,
-            "message": warning.message,
-        }
-        for warning in warnings
-    ]
+    payload = serialize_contract_deprecation_warnings(warnings)
 
     return CommandOutput(
         messages=[warning_message(warning.message, err=stderr) for warning in warnings],
@@ -62,13 +58,7 @@ def build_command_warnings_output(
             }
         )
 
-    payload = [
-        {
-            "kind": warning.kind,
-            "message": warning.message,
-        }
-        for warning in warnings
-    ]
+    payload = serialize_command_warnings(warnings)
 
     return CommandOutput(
         messages=[warning_message(warning.message) for warning in warnings],

@@ -1,8 +1,13 @@
+"""Structured payload builders for presenter metadata."""
+
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+from envctl.domain.deprecations import ContractDeprecationWarning
+from envctl.domain.diagnostics import CommandWarning, DiagnosticSummary
 from envctl.domain.project import ProjectContext
 from envctl.domain.resolution import ResolutionReport, ResolvedValue
 from envctl.domain.selection import ContractSelection
@@ -110,6 +115,66 @@ def build_resolved_value_payload(item: ResolvedValue) -> dict[str, Any]:
         "valid": item.valid,
         "detail": item.detail,
     }
+
+
+def build_diagnostic_summary_payload(summary: DiagnosticSummary) -> dict[str, int]:
+    """Serialize one diagnostic summary."""
+    return {
+        "total": summary.total,
+        "valid": summary.valid,
+        "invalid": summary.invalid,
+        "unknown": summary.unknown,
+    }
+
+
+def build_command_warning_payload(warning: CommandWarning) -> dict[str, str]:
+    """Serialize one command warning."""
+    return {
+        "kind": warning.kind,
+        "message": warning.message,
+    }
+
+
+def serialize_contract_deprecation_warnings(
+    warnings: Sequence[ContractDeprecationWarning],
+) -> list[dict[str, Any]]:
+    """Serialize contract deprecation warnings."""
+    return [
+        {
+            "kind": "contract_deprecation",
+            "key": warning.key,
+            "deprecated_field": warning.deprecated_field,
+            "message": warning.message,
+        }
+        for warning in warnings
+    ]
+
+
+def serialize_command_warnings(
+    warnings: Sequence[CommandWarning],
+) -> list[dict[str, Any]]:
+    """Serialize command warnings."""
+    return [
+        {
+            "kind": warning.kind,
+            "message": warning.message,
+        }
+        for warning in warnings
+    ]
+
+
+def build_command_warnings_payload(
+    *,
+    contract_warnings: Sequence[ContractDeprecationWarning] = (),
+    command_warnings: Sequence[CommandWarning] = (),
+    extra_warnings: Sequence[CommandWarning] = (),
+) -> list[dict[str, Any]]:
+    """Serialize all CLI-visible warnings in a stable order."""
+    return (
+        serialize_contract_deprecation_warnings(contract_warnings)
+        + serialize_command_warnings(command_warnings)
+        + serialize_command_warnings(extra_warnings)
+    )
 
 
 def build_resolution_report_payload(report: ResolutionReport) -> dict[str, Any]:
