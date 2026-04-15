@@ -84,7 +84,7 @@ def test_render_inferred_spec_when_none(capsys: pytest.CaptureFixture[str]) -> N
 
 
 def test_render_inspect_value_masks_when_needed(capsys: pytest.CaptureFixture[str]) -> None:
-    """It should mask sensitive values in explain output."""
+    """It should mask sensitive values in inspect output."""
     render_inspect_value(
         profile="prod",
         key="TOKEN",

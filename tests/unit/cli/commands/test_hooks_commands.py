@@ -2,14 +2,17 @@ from __future__ import annotations
 
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any
 
 import click
-import envctl.cli.commands.hooks.command as hooks_command_module
 import pytest
 import typer
 
 import envctl.cli.commands.hook.commands.run as hook_run_command_module
+import envctl.cli.commands.hooks.commands.install as hooks_install_module
+import envctl.cli.commands.hooks.commands.remove as hooks_remove_module
+import envctl.cli.commands.hooks.commands.repair as hooks_repair_module
+import envctl.cli.commands.hooks.commands.status as hooks_status_module
 from envctl.domain.hooks import (
     HookAction,
     HookInspectionResult,
@@ -22,10 +25,10 @@ from envctl.domain.hooks import (
 )
 from tests.support.contexts import make_project_context
 
-hooks_install_command = hooks_command_module.hooks_install_command
-hooks_remove_command = hooks_command_module.hooks_remove_command
-hooks_repair_command = hooks_command_module.hooks_repair_command
-hooks_status_command = hooks_command_module.hooks_status_command
+hooks_install_command = hooks_install_module.hooks_install_command
+hooks_remove_command = hooks_remove_module.hooks_remove_command
+hooks_repair_command = hooks_repair_module.hooks_repair_command
+hooks_status_command = hooks_status_module.hooks_status_command
 
 
 def _make_status_report(status: HookStatus) -> HooksStatusReport:
@@ -78,82 +81,141 @@ def _make_operation_report(final_status: HooksStatusLevel) -> HookOperationRepor
     )
 
 
-def test_hooks_status_command_renders_text_and_exits_non_zero(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    context = make_project_context(repo_root="/tmp/demo")
-    called: dict[str, Any] = {}
-
-    monkeypatch.setattr(
-        hooks_command_module,
-        "load_project_context",
-        lambda: (SimpleNamespace(), context),
-    )
-    monkeypatch.setattr(
-        hooks_command_module,
-        "HookService",
-        lambda repo_root: SimpleNamespace(
-            get_status=lambda: _make_status_report(HookStatus.MISSING)
-        ),
-    )
-    monkeypatch.setattr(hooks_command_module, "is_json_output", lambda: False)
-    monkeypatch.setattr(
-        hooks_command_module,
-        "render_hooks_status",
-        lambda report, *, repo_root: called.update({"report": report, "repo_root": repo_root}),
-    )
-
-    with pytest.raises(typer.Exit) as exc_info:
-        hooks_status_command()
-
-    assert exc_info.value.exit_code == 1
-    assert called["repo_root"] == context.repo_root
-    assert cast(HooksStatusReport, called["report"]).overall_status == HooksStatusLevel.DEGRADED
-
-
-def test_hooks_status_command_emits_json_payload(
+def test_hooks_status_command_renders_output_and_exits_non_zero(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     context = make_project_context(repo_root="/tmp/demo")
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        hooks_command_module,
+        hooks_status_module,
         "load_project_context",
         lambda: (SimpleNamespace(), context),
     )
     monkeypatch.setattr(
-        hooks_command_module,
+        hooks_status_module,
+        "HookService",
+        lambda repo_root: SimpleNamespace(
+            get_status=lambda: _make_status_report(HookStatus.MISSING)
+        ),
+    )
+    monkeypatch.setattr(hooks_status_module, "is_json_output", lambda: False)
+    monkeypatch.setattr(
+        hooks_status_module,
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
+    )
+
+    with pytest.raises(typer.Exit) as exc_info:
+        hooks_status_command()
+
+    assert exc_info.value.exit_code == 1
+    assert captured["output_format"] == "text"
+    assert captured["output"].metadata["kind"] == "hooks_status"
+    assert captured["output"].metadata["overall_status"] == "degraded"
+    assert captured["output"].metadata["ok"] is False
+
+
+def test_hooks_status_command_emits_presenter_json_payload(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = make_project_context(repo_root="/tmp/demo")
+    captured: dict[str, Any] = {}
+
+    monkeypatch.setattr(
+        hooks_status_module,
+        "load_project_context",
+        lambda: (SimpleNamespace(), context),
+    )
+    monkeypatch.setattr(
+        hooks_status_module,
         "HookService",
         lambda repo_root: SimpleNamespace(
             get_status=lambda: _make_status_report(HookStatus.HEALTHY)
         ),
     )
-    monkeypatch.setattr(hooks_command_module, "is_json_output", lambda: True)
-    monkeypatch.setattr(hooks_command_module, "emit_json", lambda payload: captured.update(payload))
+    monkeypatch.setattr(hooks_status_module, "is_json_output", lambda: True)
+    monkeypatch.setattr(
+        hooks_status_module,
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
+    )
 
     with pytest.raises(typer.Exit) as exc_info:
         hooks_status_command()
 
     assert exc_info.value.exit_code == 0
-    assert captured["ok"] is True
-    assert captured["command"] == "hooks status"
-    assert captured["schema_version"] == 1
-    assert captured["data"]["overall_status"] == "healthy"
+    assert captured["output_format"] == "json"
+    assert captured["output"].metadata["kind"] == "hooks_status"
+    assert captured["output"].metadata["overall_status"] == "healthy"
+    assert captured["output"].metadata["ok"] is True
 
 
 @pytest.mark.parametrize(
-    ("command", "method_name", "operation_name", "json_mode", "final_status", "force"),
+    (
+        "module",
+        "command",
+        "method_name",
+        "operation_name",
+        "json_mode",
+        "final_status",
+        "force",
+    ),
     [
-        (hooks_install_command, "install", "install", True, HooksStatusLevel.HEALTHY, True),
-        (hooks_repair_command, "repair", "repair", True, HooksStatusLevel.CONFLICT, False),
-        (hooks_repair_command, "repair", "repair", False, HooksStatusLevel.CONFLICT, False),
-        (hooks_remove_command, "remove", "remove", True, HooksStatusLevel.HEALTHY, None),
-        (hooks_remove_command, "remove", "remove", False, HooksStatusLevel.HEALTHY, None),
+        (
+            hooks_install_module,
+            hooks_install_command,
+            "install",
+            "install",
+            True,
+            HooksStatusLevel.HEALTHY,
+            True,
+        ),
+        (
+            hooks_repair_module,
+            hooks_repair_command,
+            "repair",
+            "repair",
+            True,
+            HooksStatusLevel.CONFLICT,
+            False,
+        ),
+        (
+            hooks_repair_module,
+            hooks_repair_command,
+            "repair",
+            "repair",
+            False,
+            HooksStatusLevel.CONFLICT,
+            False,
+        ),
+        (
+            hooks_remove_module,
+            hooks_remove_command,
+            "remove",
+            "remove",
+            True,
+            HooksStatusLevel.HEALTHY,
+            None,
+        ),
+        (
+            hooks_remove_module,
+            hooks_remove_command,
+            "remove",
+            "remove",
+            False,
+            HooksStatusLevel.HEALTHY,
+            None,
+        ),
     ],
 )
 def test_hooks_mutation_commands_cover_json_and_text_paths(
     monkeypatch: pytest.MonkeyPatch,
+    module: Any,
     command: Any,
     method_name: str,
     operation_name: str,
@@ -163,10 +225,9 @@ def test_hooks_mutation_commands_cover_json_and_text_paths(
 ) -> None:
     context = make_project_context(repo_root="/tmp/demo")
     captured: dict[str, Any] = {}
-    rendered: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        hooks_command_module,
+        module,
         "load_project_context",
         lambda: (SimpleNamespace(runtime_warnings=("warn",)), context),
     )
@@ -183,15 +244,14 @@ def test_hooks_mutation_commands_cover_json_and_text_paths(
         report = _make_operation_report(final_status)
         return SimpleNamespace(**{method_name: lambda **_kwargs: report})
 
-    monkeypatch.setattr(hooks_command_module, "HookService", _build_service)
+    monkeypatch.setattr(module, "HookService", _build_service)
     monkeypatch.setattr("envctl.services.hook_service.HookService", _build_service)
-    monkeypatch.setattr(hooks_command_module, "is_json_output", lambda: json_mode)
-    monkeypatch.setattr(hooks_command_module, "emit_json", lambda payload: captured.update(payload))
+    monkeypatch.setattr(module, "is_json_output", lambda: json_mode)
     monkeypatch.setattr(
-        hooks_command_module,
-        "render_hook_operation",
-        lambda report, *, repo_root, operation_name: rendered.update(
-            {"report": report, "repo_root": repo_root, "operation_name": operation_name}
+        module,
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
         ),
     )
 
@@ -202,20 +262,22 @@ def test_hooks_mutation_commands_cover_json_and_text_paths(
 
     expected_exit = 0 if final_status == HooksStatusLevel.HEALTHY else 1
     assert exc_info.value.exit_code == expected_exit
-    if json_mode:
-        assert captured["command"] == f"hooks {operation_name}"
-        assert captured["schema_version"] == 1
-        assert captured["ok"] is (expected_exit == 0)
-    else:
-        assert rendered["operation_name"] == operation_name
-        assert rendered["repo_root"] == context.repo_root
+    assert captured["output_format"] == ("json" if json_mode else "text")
+    assert captured["output"].metadata["kind"] == "hooks_operation"
+    assert captured["output"].metadata["operation_name"] == operation_name
+    assert captured["output"].metadata["overall_status"] == final_status.value
+    assert captured["output"].metadata["ok"] is (final_status != HooksStatusLevel.CONFLICT)
 
 
 def test_hook_run_command_success_path(
     monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: False)
+    captured: dict[str, Any] = {}
+
+    monkeypatch.setattr(
+        "envctl.cli.runtime.is_json_output",
+        lambda: False,
+    )
     monkeypatch.setattr(
         "envctl.services.hook_service.HookExecutionService",
         lambda: SimpleNamespace(
@@ -225,24 +287,37 @@ def test_hook_run_command_success_path(
             )
         ),
     )
-    ctx = typer.Context(click.Command("hook-run"))
+    monkeypatch.setattr(
+        hook_run_command_module,
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
+    )
+
+    ctx = typer.Context(click.Command("hook run"))
     ctx.args = []
 
     with pytest.raises(typer.Exit) as exc_info:
         hook_run_command_module.hook_run_command(ctx, "pre-commit")
 
     assert exc_info.value.exit_code == 0
-    output = capsys.readouterr().out
-    assert "No staged envctl secrets detected" in output
-    assert "scanned_paths: 1" in output
+    assert captured["output_format"] == "text"
+    assert captured["output"].metadata["kind"] == "hook_run"
+    assert captured["output"].metadata["hook_name"] == "pre-commit"
+    assert captured["output"].metadata["exit_code"] == 0
 
 
-def test_hook_run_command_failure_path_prints_findings(
+def test_hook_run_command_failure_path_captures_findings(
     monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: False)
-    finding = SimpleNamespace(path=".env", message="secret detected", actions=("remove secret",))
+    captured: dict[str, Any] = {}
+    finding = SimpleNamespace(path=".env", kind="secret", message="secret detected", actions=("remove secret",))
+
+    monkeypatch.setattr(
+        "envctl.cli.runtime.is_json_output",
+        lambda: False,
+    )
     monkeypatch.setattr(
         "envctl.services.hook_service.HookExecutionService",
         lambda: SimpleNamespace(
@@ -252,31 +327,52 @@ def test_hook_run_command_failure_path_prints_findings(
             )
         ),
     )
-    ctx = typer.Context(click.Command("hook-run"))
+    monkeypatch.setattr(
+        hook_run_command_module,
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
+    )
+
+    ctx = typer.Context(click.Command("hook run"))
     ctx.args = []
 
     with pytest.raises(typer.Exit) as exc_info:
-        hook_run_command_module.hook_run_command(ctx, "pre-push")
+        hook_run_command_module.hook_run_command(ctx, "pre-commit")
 
     assert exc_info.value.exit_code == 1
-    captured = capsys.readouterr()
-    assert ".env: secret detected" in captured.err
-    assert "action: remove secret" in captured.out
+    assert captured["output_format"] == "text"
+    assert captured["output"].metadata["kind"] == "hook_run"
+    assert captured["output"].metadata["exit_code"] == 1
+    assert captured["output"].metadata["findings"][0]["message"] == "secret detected"
 
 
 def test_hook_run_command_rejects_unsupported_hook(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, Any] = {}
-    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: False)
+
+    monkeypatch.setattr(
+        "envctl.cli.runtime.is_json_output",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        "envctl.cli.runtime.get_command_path",
+        lambda: "hook run",
+    )
     monkeypatch.setattr(
         "envctl.cli.decorators.emit_handled_error",
-        lambda exc, *, json_output, command: captured.update(
-            {"message": str(exc), "json_output": json_output, "command": command}
+        lambda exc, *, output_format, command: captured.update(
+            {
+                "message": str(exc),
+                "output_format": output_format,
+                "command": command,
+            }
         ),
     )
-    monkeypatch.setattr("envctl.cli.runtime.get_command_path", lambda: "hook-run")
-    ctx = typer.Context(click.Command("hook-run"))
+
+    ctx = typer.Context(click.Command("hook run"))
     ctx.args = []
 
     with pytest.raises(typer.Exit) as exc_info:
@@ -284,3 +380,4 @@ def test_hook_run_command_rejects_unsupported_hook(
 
     assert exc_info.value.exit_code == 1
     assert captured["message"] == "Unsupported hook: post-merge"
+    assert captured["command"] == "hook run"
