@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.decorators import handle_errors, requires_writable_runtime, text_output_only
-from envctl.cli.presenters.vault_presenter import render_vault_decrypt_result
+from envctl.cli.decorators import handle_errors, requires_writable_runtime
+from envctl.cli.presenters import present
+from envctl.cli.presenters.outputs.vault import build_vault_decrypt_output
+from envctl.cli.runtime import is_json_output
 
 ALL_OPTION = typer.Option(
     False,
@@ -16,7 +18,6 @@ ALL_OPTION = typer.Option(
 
 @handle_errors
 @requires_writable_runtime("vault decrypt")
-@text_output_only("vault decrypt")
 def vault_decrypt_command(
     all_projects: bool = ALL_OPTION,
 ) -> None:
@@ -24,4 +25,8 @@ def vault_decrypt_command(
     from envctl.services.vault_service import run_vault_decrypt_project
 
     _context, result = run_vault_decrypt_project(include_all_projects=all_projects)
-    render_vault_decrypt_result(result)
+
+    present(
+        build_vault_decrypt_output(result),
+        output_format="json" if is_json_output() else "text",
+    )

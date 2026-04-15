@@ -4,16 +4,18 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.decorators import handle_errors, text_output_only
-from envctl.cli.presenters.vault_presenter import (
-    render_vault_show_cancelled,
-    render_vault_show_empty,
-    render_vault_show_missing,
-    render_vault_show_values,
+from envctl.cli.decorators import handle_errors
+from envctl.cli.presenters import present
+from envctl.cli.presenters.outputs.vault import (
+    build_vault_show_cancelled_output,
+    build_vault_show_empty_output,
+    build_vault_show_missing_output,
+    build_vault_show_values_output,
 )
+from envctl.cli.presenters.presenter import OutputFormat
 from envctl.cli.prompts.confirmation_prompts import build_vault_show_raw_confirmation_message
 from envctl.cli.prompts.input import confirm
-from envctl.cli.runtime import get_active_profile
+from envctl.cli.runtime import get_active_profile, is_json_output
 from envctl.utils.masking import mask_value
 
 RAW_OPTION = typer.Option(
@@ -40,28 +42,35 @@ def _render_vault_value(
 
 
 @handle_errors
-@text_output_only("vault show")
 def vault_show_command(
     raw: bool = RAW_OPTION,
     profile: str | None = PROFILE_OPTION,
 ) -> None:
     """Show the current vault file contents, masked by default."""
     selected_profile = profile or get_active_profile()
+
     from envctl.services.vault_service import run_vault_show
 
     _context, active_profile, result = run_vault_show(selected_profile)
+    output_format: OutputFormat = "json" if is_json_output() else "text"
 
     if not result.exists:
-        render_vault_show_missing(
-            profile=active_profile,
-            path=result.path,
+        present(
+            build_vault_show_missing_output(
+                profile=active_profile,
+                path=result.path,
+            ),
+            output_format=output_format,
         )
         raise typer.Exit(code=1)
 
     if not result.values:
-        render_vault_show_empty(
-            profile=active_profile,
-            path=result.path,
+        present(
+            build_vault_show_empty_output(
+                profile=active_profile,
+                path=result.path,
+            ),
+            output_format=output_format,
         )
         return
 
@@ -71,9 +80,12 @@ def vault_show_command(
             default=False,
         )
         if not approved:
-            render_vault_show_cancelled(
-                profile=active_profile,
-                path=result.path,
+            present(
+                build_vault_show_cancelled_output(
+                    profile=active_profile,
+                    path=result.path,
+                ),
+                output_format=output_format,
             )
             return
 
@@ -87,10 +99,13 @@ def vault_show_command(
             sensitive=sensitive,
         )
 
-    render_vault_show_values(
-        profile=active_profile,
-        path=result.path,
-        values=rendered_values,
-        state=result.state,
-        detail=result.detail,
+    present(
+        build_vault_show_values_output(
+            profile=active_profile,
+            path=result.path,
+            values=rendered_values,
+            state=result.state,
+            detail=result.detail,
+        ),
+        output_format=output_format,
     )

@@ -4,18 +4,23 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.decorators import handle_errors, text_output_only
-from envctl.cli.presenters.vault_presenter import render_vault_audit_result
+from envctl.cli.decorators import handle_errors
+from envctl.cli.presenters import present
+from envctl.cli.presenters.outputs.vault import build_vault_audit_output
+from envctl.cli.runtime import is_json_output
 
 
 @handle_errors
-@text_output_only("vault audit")
 def vault_audit_command() -> None:
     """Audit every persisted vault project for plaintext or inconsistent files."""
     from envctl.services.vault_service import run_vault_audit
 
     _context, projects = run_vault_audit()
-    render_vault_audit_result(projects)
+
+    present(
+        build_vault_audit_output(projects),
+        output_format="json" if is_json_output() else "text",
+    )
 
     has_issues = any(
         (not project.key_exists)
