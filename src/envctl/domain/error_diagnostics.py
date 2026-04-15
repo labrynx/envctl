@@ -73,6 +73,7 @@ class ProjectionValidationDiagnostics:
     selection: ContractSelection
     report: ResolutionReport
     suggested_actions: tuple[str, ...]
+    category: Literal["projection_validation_failed"] = "projection_validation_failed"
 
 
 @dataclass(frozen=True)
