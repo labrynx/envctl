@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import pytest
-
 from envctl.cli.presenters.projection_error_presenter import render_projection_validation_failure
+
 from envctl.domain.error_diagnostics import ProjectionValidationDiagnostics
 from envctl.domain.selection import group_selection
 from tests.support.builders import make_resolution_report, make_resolved_value

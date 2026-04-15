@@ -3,9 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from envctl.cli.presenters.action_presenter import _render_hooks_reason, render_init_result
 from envctl.cli.presenters.hooks_presenter import render_hook_operation, render_hooks_status
+
 from envctl.domain.hooks import (
     HookAction,
     HookInspectionResult,

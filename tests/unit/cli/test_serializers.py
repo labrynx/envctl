@@ -14,6 +14,7 @@ from envctl.cli.serializers.hooks import (
     serialize_hook_operation_report,
     serialize_hooks_status_report,
 )
+
 from envctl.domain.error_diagnostics import (
     ConfigDiagnostics,
     ContractDiagnosticIssue,

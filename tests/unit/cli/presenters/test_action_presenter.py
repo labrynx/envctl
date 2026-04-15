@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from envctl.cli.presenters.action_presenter import (
     render_add_result,
     render_config_init_result,
@@ -20,6 +19,7 @@ from envctl.cli.presenters.action_presenter import (
     render_sync_result,
     render_unset_result,
 )
+
 from envctl.domain.operations import InitResult
 from tests.support.paths import normalize_path_str
 

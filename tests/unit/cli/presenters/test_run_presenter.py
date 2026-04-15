@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from envctl.cli.presenters.run_presenter import render_run_warnings
 
 

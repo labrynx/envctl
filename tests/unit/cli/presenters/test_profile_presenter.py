@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from envctl.cli.presenters.profile_presenter import (
     render_profile_copy_result,
     render_profile_create_result,
@@ -13,6 +12,7 @@ from envctl.cli.presenters.profile_presenter import (
     render_profile_path_result,
     render_profile_remove_result,
 )
+
 from tests.support.paths import normalize_path_str
 
 

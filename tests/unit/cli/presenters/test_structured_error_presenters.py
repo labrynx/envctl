@@ -3,13 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from envctl.cli.presenters.config_error_presenter import render_config_error
 from envctl.cli.presenters.repository_error_presenter import (
     render_project_binding_error,
     render_repository_discovery_error,
 )
 from envctl.cli.presenters.state_error_presenter import render_state_error
+
 from envctl.domain.error_diagnostics import (
     ConfigDiagnostics,
     ProjectBindingDiagnostics,

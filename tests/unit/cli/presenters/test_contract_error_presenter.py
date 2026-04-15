@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from envctl.cli.presenters.contract_error_presenter import render_contract_error
+
 from envctl.domain.error_diagnostics import ContractDiagnosticIssue, ContractDiagnostics
 from tests.support.paths import normalize_path_str
 

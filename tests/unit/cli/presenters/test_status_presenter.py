@@ -5,11 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from envctl.cli.presenters.status_presenter import (
     render_status,
     render_status_view,
 )
+
 from envctl.domain.status import StatusReport
 
 

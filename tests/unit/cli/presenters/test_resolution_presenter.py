@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import pytest
-
 from envctl.cli.presenters.resolution_presenter import (
     render_resolution,
     render_resolution_view,
 )
+
 from envctl.domain.selection import ContractSelection, group_selection
 from tests.support.builders import make_resolution_report, make_resolved_value
 

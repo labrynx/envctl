@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from envctl.cli.presenters.vault_presenter import (
     render_vault_check_result,
     render_vault_edit_result,
@@ -18,6 +17,7 @@ from envctl.cli.presenters.vault_presenter import (
     render_vault_show_missing,
     render_vault_show_values,
 )
+
 from tests.support.paths import normalize_path_str
 
 

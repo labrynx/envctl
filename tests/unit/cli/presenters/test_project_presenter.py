@@ -5,13 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from envctl.cli.presenters.project_presenter import (
     render_project_bind_result,
     render_project_rebind_result,
     render_project_repair_result,
     render_project_unbind_result,
 )
+
 from tests.support.paths import normalize_path_str
 
 
