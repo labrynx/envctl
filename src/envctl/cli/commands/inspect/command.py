@@ -2,31 +2,28 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-
 import typer
 
 from envctl.cli.decorators import handle_errors
-from envctl.cli.presenters.deprecation_presenter import render_contract_deprecation_warnings
-from envctl.cli.presenters.inspect_presenter import (
-    render_contract_group_result,
-    render_contract_groups_summary,
-    render_contract_set_result,
-    render_contract_sets_summary,
-    render_contracts_result,
-    render_inspect_key_result,
-    render_inspect_result,
+from envctl.cli.presenters import OutputFormat, present
+from envctl.cli.presenters.common import merge_outputs
+from envctl.cli.presenters.models import CommandOutput
+from envctl.cli.presenters.outputs.inspect import (
+    build_contract_group_output,
+    build_contract_groups_summary_output,
+    build_contract_set_output,
+    build_contract_sets_summary_output,
+    build_contracts_output,
+    build_inspect_key_output,
+    build_inspect_output,
+)
+from envctl.cli.presenters.outputs.warnings import (
+    build_command_warnings_output,
+    build_contract_deprecation_warnings_output,
 )
 from envctl.cli.runtime import get_active_profile, get_contract_selection, is_json_output
-from envctl.cli.serializers.common import emit_json
-from envctl.cli.serializers.deprecations import serialize_contract_deprecation_warnings
-from envctl.cli.serializers.inspect import (
-    serialize_inspect_key_result,
-    serialize_inspect_result,
-)
-from envctl.cli.serializers.warnings import serialize_command_warnings
 from envctl.domain.deprecations import ContractDeprecationWarning
-from envctl.domain.diagnostics import InspectKeyResult, InspectResult
+from envctl.domain.diagnostics import CommandWarning, InspectResult
 from envctl.domain.selection import ContractSelection
 from envctl.errors import ExecutionError
 
@@ -81,94 +78,85 @@ def _validate_inspect_arguments(
         )
 
 
-def _emit_inspect_key_json(
-    key_result: InspectKeyResult,
-    warnings: Sequence[ContractDeprecationWarning],
-) -> None:
-    """Emit JSON output for `inspect KEY`."""
-    emit_json(
-        {
-            "ok": True,
-            "command": "inspect",
-            "data": {
-                **serialize_inspect_key_result(key_result),
-                "warnings": serialize_contract_deprecation_warnings(warnings)
-                + serialize_command_warnings(key_result.warnings),
-            },
-        }
-    )
+def _build_warning_output(
+    *,
+    contract_warnings: tuple[ContractDeprecationWarning, ...],
+    command_warnings: tuple[CommandWarning, ...],
+) -> CommandOutput | None:
+    """Build one merged warnings output when needed."""
+    outputs: list[CommandOutput] = []
+
+    if contract_warnings:
+        outputs.append(
+            build_contract_deprecation_warnings_output(contract_warnings),
+        )
+
+    if command_warnings:
+        outputs.append(
+            build_command_warnings_output(command_warnings),
+        )
+
+    if not outputs:
+        return None
+
+    return merge_outputs(*outputs)
 
 
-def _emit_inspect_json(
-    inspect_result: InspectResult,
-    warnings: Sequence[ContractDeprecationWarning],
-) -> None:
-    """Emit JSON output for `inspect`."""
-    emit_json(
-        {
-            "ok": True,
-            "command": "inspect",
-            "data": {
-                **serialize_inspect_result(inspect_result),
-                "warnings": serialize_contract_deprecation_warnings(warnings)
-                + serialize_command_warnings(inspect_result.warnings),
-            },
-        }
-    )
+def _present_output(output: CommandOutput) -> None:
+    """Render one command output using the active CLI format."""
+    output_format: OutputFormat = "json" if is_json_output() else "text"
+    present(output, output_format=output_format)
 
 
-def _render_inspect_terminal_view(
+def _build_overview_output(
     inspect_result: InspectResult,
     *,
     contracts: bool,
     sets: bool,
     groups: bool,
     selection: ContractSelection,
-) -> None:
-    """Render the selected terminal inspect view."""
+) -> CommandOutput:
+    """Build the selected inspect overview output."""
     if contracts:
-        render_contracts_result(inspect_result)
-        return
+        return build_contracts_output(inspect_result)
 
     if sets:
-        render_contract_sets_summary(inspect_result)
-        return
+        return build_contract_sets_summary_output(inspect_result)
 
     if groups:
-        render_contract_groups_summary(inspect_result)
-        return
+        return build_contract_groups_summary_output(inspect_result)
 
     if selection.mode == "set" and selection.set_name is not None:
         from envctl.services.inspect_service import ensure_known_contract_set
 
         ensure_known_contract_set(inspect_result, selection.set_name)
-        render_contract_set_result(inspect_result, selection.set_name)
-        return
+        return build_contract_set_output(inspect_result, selection.set_name)
 
     if selection.mode == "group" and selection.group is not None:
         from envctl.services.inspect_service import ensure_known_contract_group
 
         ensure_known_contract_group(inspect_result, selection.group)
-        render_contract_group_result(inspect_result, selection.group)
-        return
+        return build_contract_group_output(inspect_result, selection.group)
 
-    render_inspect_result(inspect_result)
+    return build_inspect_output(inspect_result)
 
 
 def _handle_inspect_key(key: str) -> None:
     """Handle `inspect KEY`."""
     from envctl.services.inspect_service import run_inspect_key
 
-    _context, key_result, warnings = run_inspect_key(key, get_active_profile())
+    _context, key_result, contract_warnings = run_inspect_key(key, get_active_profile())
 
-    if is_json_output():
-        _emit_inspect_key_json(key_result, warnings)
-        return
+    main_output = build_inspect_key_output(key_result)
+    warning_output = _build_warning_output(
+        contract_warnings=tuple(contract_warnings),
+        command_warnings=tuple(key_result.warnings),
+    )
 
-    if warnings:
-        render_contract_deprecation_warnings(warnings)
-
-    render_inspect_key_result(key_result)
+    output = (
+        merge_outputs(warning_output, main_output) if warning_output is not None else main_output
+    )
+    _present_output(output)
 
 
 def _handle_inspect_overview(
@@ -181,25 +169,27 @@ def _handle_inspect_overview(
     """Handle overview inspect views."""
     from envctl.services.inspect_service import run_inspect
 
-    _context, inspect_result, warnings = run_inspect(
+    _context, inspect_result, contract_warnings = run_inspect(
         get_active_profile(),
         selection=selection,
     )
 
-    if is_json_output():
-        _emit_inspect_json(inspect_result, warnings)
-        return
-
-    if warnings:
-        render_contract_deprecation_warnings(warnings)
-
-    _render_inspect_terminal_view(
+    main_output = _build_overview_output(
         inspect_result,
         contracts=contracts,
         sets=sets,
         groups=groups,
         selection=selection,
     )
+    warning_output = _build_warning_output(
+        contract_warnings=tuple(contract_warnings),
+        command_warnings=tuple(inspect_result.warnings),
+    )
+
+    output = (
+        merge_outputs(warning_output, main_output) if warning_output is not None else main_output
+    )
+    _present_output(output)
 
 
 @handle_errors

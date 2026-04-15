@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.command_support import (
-    build_json_command_payload,
-    render_contract_warnings_if_any,
-)
 from envctl.cli.decorators import handle_errors
-from envctl.cli.presenters.check_presenter import render_check_result
+from envctl.cli.presenters import present
+from envctl.cli.presenters.common import merge_outputs
+from envctl.cli.presenters.outputs.status import build_check_output
+from envctl.cli.presenters.outputs.warnings import (
+    build_command_warnings_output,
+    build_contract_deprecation_warnings_output,
+)
 from envctl.cli.runtime import get_active_profile, get_contract_selection, is_json_output
-from envctl.cli.serializers.check import serialize_check_result
-from envctl.cli.serializers.common import emit_json
 
 
 @handle_errors
@@ -25,22 +25,16 @@ def check_command() -> None:
         selection=get_contract_selection(),
     )
 
-    if is_json_output():
-        emit_json(
-            build_json_command_payload(
-                command="check",
-                ok=result.ok,
-                data=serialize_check_result(result, context=context),
-                contract_warnings=warnings,
-                command_warnings=result.warnings,
-            )
-        )
-        if not result.ok:
-            raise typer.Exit(code=1)
-        return
+    output = merge_outputs(
+        build_contract_deprecation_warnings_output(warnings),
+        build_command_warnings_output(result.warnings),
+        build_check_output(result, context=context),
+    )
 
-    render_contract_warnings_if_any(warnings)
-    render_check_result(result)
+    present(
+        output,
+        output_format="json" if is_json_output() else "text",
+    )
 
     if not result.ok:
         raise typer.Exit(code=1)
