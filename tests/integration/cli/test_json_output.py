@@ -297,7 +297,7 @@ def test_inspect_json_outputs_structured_resolution_report(
     assert data["report"]["values"]["APP_NAME"]["source"] == "vault"
 
 
-def test_explain_json_outputs_one_resolved_item(
+def test_inspect_json_outputs_one_resolved_item(
     runner: CliRunner,
     workspace: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -310,13 +310,13 @@ def test_explain_json_outputs_one_resolved_item(
         },
     )
 
-    result = runner.invoke(app, ["--json", "explain", "DATABASE_URL"])
+    result = runner.invoke(app, ["--json", "inspect", "DATABASE_URL"])
 
     assert result.exit_code == 0
 
     payload = parse_json_output(result.output)
     assert payload["ok"] is True
-    assert payload["command"] == "explain"
+    assert payload["command"] == "inspect"
 
     data = cast(dict[str, Any], payload["data"])
     item = cast(dict[str, Any], data["item"])
@@ -327,7 +327,7 @@ def test_explain_json_outputs_one_resolved_item(
     assert str(item["value"]).startswith("po")
 
 
-def test_explain_json_outputs_structured_error_for_unresolved_key(
+def test_inspect_json_outputs_structured_error_for_unresolved_key(
     runner: CliRunner,
     workspace: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -339,14 +339,14 @@ def test_explain_json_outputs_structured_error_for_unresolved_key(
         },
     )
 
-    result = runner.invoke(app, ["--json", "explain", "MISSING_KEY"])
+    result = runner.invoke(app, ["--json", "inspect", "MISSING_KEY"])
 
     assert result.exit_code == 1
 
     payload = parse_json_output(result.output)
     assert payload == {
         "ok": False,
-        "command": "envctl explain",
+        "command": "envctl inspect",
         "error": {
             "type": "ValidationError",
             "message": "Key is not resolved: MISSING_KEY",
@@ -378,12 +378,12 @@ def test_doctor_json_outputs_structured_checks(
     runner: CliRunner,
     workspace: Path,
 ) -> None:
-    result = runner.invoke(app, ["--json", "doctor"])
+    result = runner.invoke(app, ["--json", "inspect"])
 
     assert result.exit_code == 0
 
     payload = parse_json_output(result.output)
-    assert payload["command"] == "doctor"
+    assert payload["command"] == "inspect"
     assert payload["ok"] is True
 
     data = payload["data"]

@@ -14,7 +14,7 @@ def test_doctor_reports_active_profile_in_json(
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
     runner.invoke(app, ["profile", "create", "staging"], catch_exceptions=False)
 
-    result = runner.invoke(app, ["--profile", "staging", "--json", "doctor"])
+    result = runner.invoke(app, ["--profile", "staging", "--json", "inspect"])
 
     assert result.exit_code == 0
     assert '"active_profile": "staging"' in result.stdout

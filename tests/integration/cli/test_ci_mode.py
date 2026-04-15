@@ -183,13 +183,13 @@ def test_doctor_is_allowed_in_ci_mode_json_output(
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
 
-    result = runner.invoke(app, ["--json", "doctor"])
+    result = runner.invoke(app, ["--json", "inspect"])
 
     assert result.exit_code == 0
 
     payload = parse_json_output(result.output)
     assert payload["ok"] is True
-    assert payload["command"] == "doctor"
+    assert payload["command"] == "inspect"
 
 
 def test_run_remains_allowed_in_ci_mode_text_output(

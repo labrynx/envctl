@@ -42,6 +42,6 @@ def test_explicit_profile_commands_fail_until_profile_is_created(
     assert set_result.exit_code == 1
     assert "Create it with 'envctl profile create staging'" in set_result.output
 
-    doctor_result = runner.invoke(app, ["--profile", "staging", "--json", "doctor"])
-    assert doctor_result.exit_code == 1
-    assert '"message": "Profile does not exist: staging. Create it with' in doctor_result.stdout
+    inspect_result = runner.invoke(app, ["--profile", "staging", "--json", "inspect"])
+    assert inspect_result.exit_code == 1
+    assert '"message": "Profile does not exist: staging. Create it with' in inspect_result.stdout

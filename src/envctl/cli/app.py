@@ -109,7 +109,7 @@ app = create_typer_app(
     help_text=(
         "[bold]envctl[/bold] keeps project environment requirements explicit and local.\n\n"
         "[bright_blue]Core flows[/bright_blue]\n"
-        "  - [bold]check[/bold], [bold]inspect[/bold], [bold]explain[/bold] for resolution\n"
+        "  - [bold]check[/bold], [bold]inspect[/bold], [bold]inspect KEY[/bold] for resolution\n"
         "  - [bold]run[/bold], [bold]sync[/bold], [bold]export[/bold] for projection\n"
         "  - [bold]set[/bold], [bold]unset[/bold], [bold]fill[/bold] for local values"
     ),
@@ -138,13 +138,9 @@ app = create_typer_app(
             "import_path": "envctl.cli.commands.hooks.app:hooks_app",
             "short_help": "Manage envctl-owned Git hooks for local secret protection.",
         },
-        "doctor": {
-            "import_path": "envctl.cli.commands.doctor.command:doctor_command",
-            "short_help": "Deprecated alias for ``inspect``.",
-        },
-        "hook-run": {
-            "import_path": "envctl.cli.commands.hook_run.command:hook_run_command",
-            "context_settings": {"allow_extra_args": True, "ignore_unknown_options": True},
+        "hook": {
+            "import_path": "envctl.cli.commands.hook.app:hook_app",
+            "short_help": "Manages envctl-owned individual hook policies.",
         },
         "init": {
             "import_path": "envctl.cli.commands.init.command:init_command",
@@ -180,10 +176,6 @@ app = create_typer_app(
         "inspect": {
             "import_path": "envctl.cli.commands.inspect.command:inspect_command",
             "short_help": "Inspect the resolved environment or one key in detail.",
-        },
-        "explain": {
-            "import_path": "envctl.cli.commands.explain.command:explain_command",
-            "short_help": "Deprecated alias for ``inspect KEY``.",
         },
         "sync": {
             "import_path": "envctl.cli.commands.sync.command:sync_command",

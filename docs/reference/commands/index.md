@@ -107,19 +107,6 @@ These selectors are mutually exclusive.
 
 </div>
 
-## Deprecated aliases
-
-The canonical diagnostic path is:
-
-- `envctl check`
-- `envctl inspect`
-- `envctl inspect KEY`
-
-Deprecated compatibility aliases still work, but should not be used in new docs or scripts:
-
-- `envctl doctor` → `envctl inspect`
-- `envctl explain KEY` → `envctl inspect KEY`
-
 ## Read next
 
 <div class="envctl-doc-card-grid" markdown>
