@@ -5,11 +5,11 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 import click
+import envctl.cli.commands.hooks.command as hooks_command_module
 import pytest
 import typer
 
-import envctl.cli.commands.hook_run.command as hook_run_command_module
-import envctl.cli.commands.hooks.command as hooks_command_module
+import envctl.cli.commands.hook.commands.run as hook_run_command_module
 from envctl.domain.hooks import (
     HookAction,
     HookInspectionResult,

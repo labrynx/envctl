@@ -8,7 +8,7 @@ guard_app = create_typer_app(
     help_text="Protect Git history from [bold]envctl[/bold]-specific secrets.",
     lazy_subcommands={
         "secrets": {
-            "import_path": "envctl.cli.commands.guard.command:guard_secrets_command",
+            "import_path": "envctl.cli.commands.guard.commands.secrets:guard_secrets_command",
             "short_help": "Block staged envctl vault artifacts and master keys.",
         },
     },
