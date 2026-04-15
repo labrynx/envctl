@@ -87,7 +87,7 @@ def test_hooks_install_force_overwrites_foreign_hook(
     result = runner.invoke(app, ["hooks", "install", "--force"], catch_exceptions=False)
 
     assert result.exit_code == 0
-    assert "envctl hook-run pre-commit" in hook_path.read_text(encoding="utf-8")
+    assert "envctl hook run pre-commit" in hook_path.read_text(encoding="utf-8")
 
 
 def test_hook_wrapper_executes_via_sh_with_envctl_on_path(

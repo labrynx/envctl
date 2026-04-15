@@ -44,7 +44,7 @@ This is the policy command used by the managed Git wrappers installed through:
 * `envctl hooks install`
 * `envctl hooks repair`
 
-`envctl` keeps those wrappers intentionally minimal and routes the real logic back through Python with `envctl hook-run <hook>`.
+`envctl` keeps those wrappers intentionally minimal and routes the real logic back through Python with `envctl hook run <hook>`.
 
 ## Related pages
 

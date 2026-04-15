@@ -12,7 +12,7 @@ from envctl.cli.callbacks import version_callback
 from envctl.cli.typer_theme import create_typer_app
 from envctl.domain.runtime import OutputFormat
 
-_PASSTHROUGH_SUBCOMMANDS = {"run", "hook-run"}
+_PASSTHROUGH_SUBCOMMANDS = {"run", "hook run"}
 _HELP_FLAGS = {"--help", "-h"}
 
 
