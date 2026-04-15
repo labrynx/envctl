@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import Literal
 
@@ -11,10 +10,6 @@ import typer
 from envctl.cli.callbacks import version_callback
 from envctl.cli.typer_theme import create_typer_app
 from envctl.domain.runtime import OutputFormat
-
-_PASSTHROUGH_SUBCOMMANDS = {"run", "hook run"}
-_HELP_FLAGS = {"--help", "-h"}
-
 
 VERSION_OPTION = typer.Option(
     None,
@@ -28,7 +23,7 @@ OUTPUT_OPTION = typer.Option(
     OutputFormat.TEXT,
     "--output",
     "-o",
-    help="Output format: json or text. Overrides --json.",
+    help="Output format: json or text.",
 )
 PROFILE_OPTION = typer.Option(
     None,
@@ -84,27 +79,6 @@ DEBUG_ERRORS_OPTION = typer.Option(
 )
 
 
-def _is_help_request(ctx: typer.Context) -> bool:
-    """Return whether the current CLI invocation is rendering CLI help output."""
-    del ctx
-
-    args = sys.argv[1:]
-    if not args:
-        return False
-
-    for arg in args:
-        if arg == "--":
-            return False
-
-        if arg in _PASSTHROUGH_SUBCOMMANDS:
-            return False
-
-        if arg in _HELP_FLAGS:
-            return True
-
-    return False
-
-
 app = create_typer_app(
     help_text=(
         "[bold]envctl[/bold] keeps project environment requirements explicit and local.\n\n"
@@ -140,7 +114,7 @@ app = create_typer_app(
         },
         "hook": {
             "import_path": "envctl.cli.commands.hook.app:hook_app",
-            "short_help": "Manages envctl-owned individual hook policies.",
+            "short_help": "Manage envctl-owned individual hook policies.",
         },
         "init": {
             "import_path": "envctl.cli.commands.init.command:init_command",
@@ -200,8 +174,8 @@ app = create_typer_app(
 @app.callback()
 def main(
     ctx: typer.Context,
-    version: bool = VERSION_OPTION,
-    output_format: OutputFormat = OutputFormat.TEXT,
+    version: bool | None = VERSION_OPTION,
+    output_format: OutputFormat = OUTPUT_OPTION,
     profile: str | None = PROFILE_OPTION,
     group: str | None = GROUP_OPTION,
     set_name: str | None = SET_OPTION,
@@ -216,67 +190,23 @@ def main(
     """envctl - local environment control plane."""
     del version
 
-    if _is_help_request(ctx):
-        return
-
-    from envctl.cli.decorators import emit_handled_error, emit_usage_error
     from envctl.cli.runtime import set_cli_state
     from envctl.config.loader import load_config
-    from envctl.config.profile_resolution import resolve_active_profile
-    from envctl.domain.selection import ContractSelection
-    from envctl.errors import EnvctlError
-    from envctl.observability import initialize_observability_context
 
-    command_name = ctx.invoked_subcommand or "envctl"
-    initialize_observability_context(
-        command_name=command_name,
-        trace_enabled=trace_enabled,
-        trace_format=trace_format,
-        trace_output=trace_output,
-        trace_file=trace_file,
-        profile_observability=profile_observability,
-    )
-
-    try:
-        selection = ContractSelection.from_selectors(
-            group=group,
-            set_name=set_name,
-            variable=variable,
-        )
-        config = load_config()
-        active_profile = resolve_active_profile(
-            profile,
-            config_default_profile=config.default_profile,
-        )
-    except ValueError as exc:
-        from envctl.cli.decorators import emit_usage_error
-
-        emit_usage_error(str(exc), command="envctl")
-        raise typer.Exit(code=2) from exc
-    except EnvctlError as exc:
-        from envctl.cli.decorators import emit_handled_error
-
-        command = "envctl"
-        if ctx.invoked_subcommand is not None:
-            command = f"envctl {ctx.invoked_subcommand}"
-        emit_handled_error(
-            exc,
-            output_format=OutputFormat.JSON if "json" in ctx.args else OutputFormat.TEXT,
-            command=command,
-        )
-        raise typer.Exit(code=1) from exc
+    config = load_config()
 
     set_cli_state(
         ctx,
         output_format=output_format,
-        profile=active_profile,
-        group=selection.group,
-        set_name=selection.set_name,
-        variable=selection.variable,
+        requested_profile=profile,
+        requested_group=group,
+        requested_set_name=set_name,
+        requested_variable=variable,
         trace_enabled=trace_enabled,
         trace_format=trace_format,
         trace_output=trace_output,
         trace_file=trace_file,
         profile_observability=profile_observability,
         debug_errors=debug_errors,
+        config=config,
     )

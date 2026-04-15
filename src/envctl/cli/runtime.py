@@ -9,7 +9,7 @@ from typing import Literal
 import click
 import typer
 
-from envctl.constants import DEFAULT_PROFILE
+from envctl.domain.app_config import AppConfig
 from envctl.domain.runtime import OutputFormat
 from envctl.domain.selection import ContractSelection
 
@@ -19,46 +19,49 @@ class CliState:
     """Current CLI execution state."""
 
     output_format: OutputFormat = OutputFormat.TEXT
-    profile: str = DEFAULT_PROFILE
-    group: str | None = None
-    set_name: str | None = None
-    variable: str | None = None
+    requested_profile: str | None = None
+    requested_group: str | None = None
+    requested_set_name: str | None = None
+    requested_variable: str | None = None
     trace_enabled: bool | None = None
     trace_format: Literal["jsonl", "human"] | None = None
     trace_output: Literal["stderr", "file", "both"] | None = None
     trace_file: Path | None = None
     profile_observability: bool | None = None
     debug_errors: bool = False
+    config: AppConfig | None = None
 
 
 def set_cli_state(
     ctx: typer.Context,
     *,
     output_format: OutputFormat,
-    profile: str = DEFAULT_PROFILE,
-    group: str | None = None,
-    set_name: str | None = None,
-    variable: str | None = None,
+    requested_profile: str | None = None,
+    requested_group: str | None = None,
+    requested_set_name: str | None = None,
+    requested_variable: str | None = None,
     trace_enabled: bool | None = None,
     trace_format: Literal["jsonl", "human"] | None = None,
     trace_output: Literal["stderr", "file", "both"] | None = None,
     trace_file: Path | None = None,
     profile_observability: bool | None = None,
     debug_errors: bool = False,
+    config: AppConfig | None = None,
 ) -> None:
     """Persist the CLI state on the Typer/Click context."""
     ctx.obj = CliState(
         output_format=output_format,
-        profile=profile,
-        group=group,
-        set_name=set_name,
-        variable=variable,
+        requested_profile=requested_profile,
+        requested_group=requested_group,
+        requested_set_name=requested_set_name,
+        requested_variable=requested_variable,
         trace_enabled=trace_enabled,
         trace_format=trace_format,
         trace_output=trace_output,
         trace_file=trace_file,
         profile_observability=profile_observability,
         debug_errors=debug_errors,
+        config=config,
     )
 
 
@@ -82,31 +85,38 @@ def is_json_output() -> bool:
 
 def get_active_profile() -> str:
     """Return the active CLI profile."""
-    return get_cli_state().profile
+    from envctl.config.profile_resolution import resolve_active_profile
+
+    state = get_cli_state()
+    config = get_config()
+    return resolve_active_profile(
+        state.requested_profile,
+        config_default_profile=config.default_profile,
+    )
 
 
 def get_selected_group() -> str | None:
     """Return the active CLI group filter."""
-    return get_cli_state().group
+    return get_cli_state().requested_group
 
 
 def get_selected_set() -> str | None:
     """Return the active CLI set selector."""
-    return get_cli_state().set_name
+    return get_cli_state().requested_set_name
 
 
 def get_selected_var() -> str | None:
     """Return the active CLI variable selector."""
-    return get_cli_state().variable
+    return get_cli_state().requested_variable
 
 
 def get_contract_selection() -> ContractSelection:
     """Return the normalized active contract selection."""
     state = get_cli_state()
     return ContractSelection.from_selectors(
-        group=state.group,
-        set_name=state.set_name,
-        variable=state.variable,
+        group=state.requested_group,
+        set_name=state.requested_set_name,
+        variable=state.requested_variable,
     )
 
 
@@ -161,3 +171,13 @@ def get_command_path() -> str | None:
 def is_error_debug_enabled() -> bool:
     """Return whether detailed error tracebacks should be shown."""
     return get_cli_state().debug_errors
+
+
+def get_config() -> AppConfig:
+    """Return the active CLI config, loading it only when no CLI state is available."""
+    from envctl.config.loader import load_config
+
+    state = get_cli_state()
+    if state.config is not None:
+        return state.config
+    return load_config()

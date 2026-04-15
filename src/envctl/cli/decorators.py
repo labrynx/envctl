@@ -8,6 +8,7 @@ from typing import Any
 
 import typer
 
+from envctl.domain.runtime import OutputFormat
 from envctl.errors import EnvctlError, ExecutionError
 from envctl.utils.output import print_error
 
@@ -15,7 +16,7 @@ from envctl.utils.output import print_error
 def emit_handled_error(
     exc: EnvctlError,
     *,
-    output_format: str,
+    output_format: OutputFormat,
     command: str | None,
 ) -> None:
     """Emit one handled application error in text or JSON mode."""
@@ -39,7 +40,7 @@ def emit_handled_error(
         StateDiagnostics,
     )
 
-    if output_format == "json":
+    if output_format == OutputFormat.JSON:
         details = (
             build_error_diagnostics_payload(exc.diagnostics)
             if exc.diagnostics is not None
@@ -123,18 +124,36 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         from envctl.cli.runtime import (
             get_command_path,
+            get_profile_observability,
+            get_trace_enabled,
+            get_trace_file,
+            get_trace_format,
+            get_trace_output,
             is_error_debug_enabled,
             is_json_output,
         )
-        from envctl.observability import get_active_observability_context
+        from envctl.observability import (
+            get_active_observability_context,
+            initialize_observability_context,
+        )
         from envctl.observability.error_mapping import map_exception_to_error_event
         from envctl.observability.events import ERROR_HANDLED, ERROR_UNHANDLED
         from envctl.observability.recorder import record_event
         from envctl.observability.renderers import render_profile_summary
         from envctl.observability.timing import observe_span
 
+        command = get_command_path() or "envctl"
+
+        initialize_observability_context(
+            command_name=command,
+            trace_enabled=get_trace_enabled(),
+            trace_format=get_trace_format(),
+            trace_output=get_trace_output(),
+            trace_file=get_trace_file(),
+            profile_observability=get_profile_observability(),
+        )
+
         obs_context = get_active_observability_context()
-        command = get_command_path()
         span_fields: dict[str, Any] = {"command": command}
         result: Any = None
 
@@ -182,7 +201,7 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
 
             emit_handled_error(
                 exc,
-                output_format="json" if is_json_output() else "text",
+                output_format=OutputFormat.JSON if is_json_output() else OutputFormat.TEXT,
                 command=command,
             )
             raise typer.Exit(code=1) from exc
@@ -275,10 +294,10 @@ def requires_writable_runtime(
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            from envctl.config.loader import load_config
+            from envctl.cli.runtime import get_config
             from envctl.domain.runtime import RuntimeMode
 
-            config = load_config()
+            config = get_config()
             if config.runtime_mode == RuntimeMode.CI:
                 raise ExecutionError(
                     f"Command '{command_name}' is not available in CI read-only mode."
