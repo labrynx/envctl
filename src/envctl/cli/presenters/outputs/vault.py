@@ -18,6 +18,7 @@ from envctl.cli.presenters.payloads import path_to_str
 
 if TYPE_CHECKING:
     from envctl.domain.operations import VaultAuditProjectResult
+    from envctl.domain.vault import VaultAuditSummary
 
 
 def _vault_context_items(*, profile: str, path: Path) -> list[OutputItem]:
@@ -388,19 +389,45 @@ def build_vault_decrypt_output(result: object) -> CommandOutput:
     )
 
 
-def build_vault_audit_output(projects: tuple[VaultAuditProjectResult, ...]) -> CommandOutput:
+def build_vault_audit_output(
+    projects: tuple[VaultAuditProjectResult, ...],
+    *,
+    summary: VaultAuditSummary,
+) -> CommandOutput:
     """Build one unified output model for ``vault audit``."""
+    summary_payload = {
+        "total_projects": summary.total_projects,
+        "healthy_projects": summary.healthy_projects,
+        "projects_with_issues": summary.projects_with_issues,
+        "missing_keys": summary.missing_keys,
+        "plaintext_files": summary.plaintext_files,
+        "insecure_files": summary.insecure_files,
+        "missing_files": summary.missing_files,
+    }
+
     if not projects:
         return CommandOutput(
             messages=[warning_message("No persisted vault projects were found")],
             metadata={
                 "kind": "vault_audit",
                 "projects": [],
-                "ok": True,
+                "summary": summary_payload,
+                "ok": summary.ok,
             },
         )
 
-    sections = []
+    messages = (
+        [success_message("All persisted vault projects look healthy")]
+        if summary.ok
+        else [warning_message("Vault audit found issues")]
+    )
+
+    if summary.missing_files > 0:
+        messages.append(
+            warning_message(f"{summary.missing_files} project(s) do not have persisted vault files")
+        )
+
+    sections: list[OutputSection] = []
     projects_payload: list[dict[str, Any]] = []
 
     for project in projects:
@@ -419,7 +446,7 @@ def build_vault_audit_output(projects: tuple[VaultAuditProjectResult, ...]) -> C
         ]
 
         if not project.files:
-            items.append(raw_item("No vault files found"))
+            items.append(field_item("files", "none"))
             sections.append(section("Project", *items))
             projects_payload.append(project_payload)
             continue
@@ -448,11 +475,26 @@ def build_vault_audit_output(projects: tuple[VaultAuditProjectResult, ...]) -> C
         sections.append(section("Project", *items))
         projects_payload.append(project_payload)
 
+    sections.append(
+        section(
+            "Summary",
+            field_item("projects", str(summary.total_projects)),
+            field_item("healthy", str(summary.healthy_projects)),
+            field_item("with_issues", str(summary.projects_with_issues)),
+            field_item("missing_keys", str(summary.missing_keys)),
+            field_item("plaintext_files", str(summary.plaintext_files)),
+            field_item("insecure_files", str(summary.insecure_files)),
+            field_item("missing_files", str(summary.missing_files)),
+        )
+    )
+
     return CommandOutput(
+        messages=messages,
         sections=sections,
         metadata={
             "kind": "vault_audit",
             "projects": projects_payload,
-            "ok": True,
+            "summary": summary_payload,
+            "ok": summary.ok,
         },
     )
