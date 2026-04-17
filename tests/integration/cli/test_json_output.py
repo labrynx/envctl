@@ -8,6 +8,7 @@ import pytest
 from typer.testing import CliRunner
 
 from envctl.cli.app import app
+from tests.support.paths import normalize_path_str
 from tests.support.profile_values import patch_loaded_profile_values
 
 
@@ -171,7 +172,7 @@ def test_check_json_outputs_structured_contract_error(
     assert metadata["error"]["message"] == f"Invalid YAML contract: {contract_path}"
     assert metadata["error"]["details"] == {
         "category": "invalid_yaml",
-        "path": str(contract_path),
+        "path": normalize_path_str(contract_path),
         "key": None,
         "field": None,
         "issues": [],
@@ -194,7 +195,7 @@ def test_callback_json_outputs_structured_config_error(
     metadata = cast(dict[str, Any], payload["metadata"])
     assert metadata["error"]["type"] == "ConfigError"
     assert metadata["error"]["details"]["category"] == "invalid_runtime_mode"
-    assert metadata["error"]["details"]["path"] == str(config_path)
+    assert metadata["error"]["details"]["path"] == normalize_path_str(config_path)
     assert metadata["error"]["details"]["source_label"] == "config file"
 
 
@@ -267,7 +268,7 @@ def test_status_json_outputs_structured_project_binding_error(
     metadata = cast(dict[str, Any], payload_json["metadata"])
     assert metadata["error"]["type"] == "ProjectDetectionError"
     assert metadata["error"]["details"]["category"] == "ambiguous_vault_identity"
-    assert metadata["error"]["details"]["repo_root"] == str(workspace)
+    assert metadata["error"]["details"]["repo_root"] == normalize_path_str(workspace)
 
 
 def test_inspect_json_outputs_structured_resolution_report(
