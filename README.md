@@ -16,14 +16,15 @@ CI fails in ways you can't reproduce.
 
 [![Tests](https://github.com/labrynx/envctl/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/ci-tests.yml)
 [![Coverage](https://github.com/labrynx/envctl/actions/workflows/ci-coverage.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/ci-coverage.yml)
+[![codecov](https://codecov.io/gh/labrynx/envctl/graph/badge.svg?token=40UASA18HL)](https://codecov.io/gh/labrynx/envctl)
 
 [![PyPI version](https://img.shields.io/pypi/v/envctl.svg)](https://pypi.org/project/envctl/)
 [![Python versions](https://img.shields.io/pypi/pyversions/envctl.svg)](https://pypi.org/project/envctl/)
 [![License](https://img.shields.io/pypi/l/envctl.svg)](https://github.com/labrynx/envctl/blob/main/LICENSE)
 
-[![Code style: ruff](https://img.shields.io/badge/style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
-[![Type checked: mypy](https://img.shields.io/badge/types-mypy-blue.svg)](https://mypy-lang.org/)
-[![Security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://bandit.readthedocs.io/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
+[![security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
 [![Imports: import-linter](https://img.shields.io/badge/imports-linter-purple.svg)](https://github.com/seddonym/import-linter)
 
 [![Release](https://github.com/labrynx/envctl/actions/workflows/release.yml/badge.svg)](https://github.com/labrynx/envctl/actions/workflows/release.yml)
