@@ -288,8 +288,7 @@ def test_hook_run_command_success_path(
         ),
     )
     monkeypatch.setattr(
-        hook_run_command_module,
-        "present",
+        "envctl.cli.presenters.present",
         lambda output, *, output_format: captured.update(
             {"output": output, "output_format": output_format}
         ),
@@ -330,8 +329,7 @@ def test_hook_run_command_failure_path_captures_findings(
         ),
     )
     monkeypatch.setattr(
-        hook_run_command_module,
-        "present",
+        "envctl.cli.presenters.present",
         lambda output, *, output_format: captured.update(
             {"output": output, "output_format": output_format}
         ),

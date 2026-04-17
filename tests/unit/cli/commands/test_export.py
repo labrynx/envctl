@@ -35,8 +35,10 @@ def test_export_command_uses_presenter(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("envctl.services.export_service.run_export", fake_run_export)
     monkeypatch.setattr(
         export_command_module,
-        "render_export_output",
-        lambda *, profile, rendered: captured.update({"profile": profile, "rendered": rendered}),
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
     )
 
     export_command_module.export_command(format="shell")
@@ -44,7 +46,9 @@ def test_export_command_uses_presenter(monkeypatch: pytest.MonkeyPatch) -> None:
     selection = captured["selection"]
     assert isinstance(selection, ContractSelection)
     assert selection.describe() == "group=Application"
-    assert captured["rendered"] == "export APP_NAME='demo'\n"
+    assert captured["output_format"] == "text"
+    assert captured["output"].metadata["active_profile"] == "prod"
+    assert captured["output"].metadata["rendered"] == "export APP_NAME='demo'\n"
 
 
 def test_export_command_emits_json_payload(
@@ -61,15 +65,16 @@ def test_export_command_emits_json_payload(
     )
     monkeypatch.setattr(
         export_command_module,
-        "emit_json",
-        lambda payload: captured.update(payload),
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
     )
 
     export_command_module.export_command(format="shell")
 
-    assert captured["ok"] is True
-    assert captured["command"] == "export"
-    assert captured["data"]["active_profile"] == "prod"
-    assert captured["data"]["format"] == "shell"
-    assert captured["data"]["values"] == {"APP_NAME": "demo"}
-    assert captured["data"]["rendered"] == "export APP_NAME='demo'\n"
+    assert captured["output_format"] == "json"
+    assert captured["output"].metadata["active_profile"] == "prod"
+    assert captured["output"].metadata["format"] == "shell"
+    assert captured["output"].metadata["values"] == {"APP_NAME": "demo"}
+    assert captured["output"].metadata["rendered"] == "export APP_NAME='demo'\n"

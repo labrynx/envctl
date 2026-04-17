@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
@@ -64,33 +65,25 @@ def test_handle_errors_converts_envctl_error_to_exit(
 
 def test_handle_errors_emits_structured_json_when_enabled(
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    captured: dict[str, Any] = {}
-
     @handle_errors
     def sample() -> None:
         raise EnvctlError("boom")
 
     monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: True)
-    monkeypatch.setattr(
-        "envctl.cli.runtime.get_command_path",
-        lambda: "envctl check",
-    )
-    monkeypatch.setattr(
-        "envctl.cli.serializers.common.emit_json",
-        lambda payload: captured.update({"payload": payload}),
-    )
+    monkeypatch.setattr("envctl.cli.runtime.get_command_path", lambda: "envctl check")
 
     with pytest.raises(typer.Exit) as exc_info:
         sample()
 
     assert exc_info.value.exit_code == 1
-    payload = cast(dict[str, Any], captured["payload"])
-    assert payload == {
-        "ok": False,
-        "command": "envctl check",
-        "error": {"type": "EnvctlError", "message": "boom"},
-    }
+
+    payload = cast(dict[str, Any], json.loads(capsys.readouterr().out))
+    assert payload["metadata"]["command"] == "envctl check"
+    assert payload["metadata"]["ok"] is False
+    assert payload["messages"]
+    assert any("boom" in message["text"] for message in payload["messages"])
 
 
 def test_handle_errors_hides_unexpected_stacktrace_by_default(
@@ -119,9 +112,8 @@ def test_handle_errors_hides_unexpected_stacktrace_by_default(
 
 def test_handle_errors_emits_json_for_unexpected_errors(
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    captured: dict[str, Any] = {}
-
     @handle_errors
     def sample() -> None:
         raise RuntimeError("kaboom")
@@ -129,26 +121,22 @@ def test_handle_errors_emits_json_for_unexpected_errors(
     monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: True)
     monkeypatch.setattr("envctl.cli.runtime.is_error_debug_enabled", lambda: False)
     monkeypatch.setattr("envctl.cli.runtime.get_command_path", lambda: "envctl check")
-    monkeypatch.setattr(
-        "envctl.cli.serializers.common.emit_json",
-        lambda payload: captured.update({"payload": payload}),
-    )
 
     with pytest.raises(typer.Exit) as exc_info:
         sample()
 
     assert exc_info.value.exit_code == 1
-    payload = cast(dict[str, Any], captured["payload"])
-    assert payload["ok"] is False
-    assert payload["command"] == "envctl check"
-    assert payload["error"]["type"] == "RuntimeError"
-    assert "Unexpected internal error" in payload["error"]["message"]
+
+    payload = cast(dict[str, Any], json.loads(capsys.readouterr().out))
+    assert payload["metadata"]["command"] == "envctl check"
+    assert payload["metadata"]["ok"] is False
+    assert any("Unexpected internal error" in message["text"] for message in payload["messages"])
 
 
 def test_handle_errors_renders_projection_validation_diagnostics(
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    captured: dict[str, tuple[ProjectionValidationDiagnostics, str]] = {}
     diagnostics = ProjectionValidationDiagnostics(
         operation="sync",
         active_profile="staging",
@@ -165,28 +153,21 @@ def test_handle_errors_renders_projection_validation_diagnostics(
         )
 
     monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: False)
-    monkeypatch.setattr(
-        "envctl.cli.presenters.projection_error_presenter.render_projection_validation_failure",
-        lambda received_diagnostics, *, message: captured.update(
-            {"value": (received_diagnostics, message)}
-        ),
-    )
 
     with pytest.raises(typer.Exit) as exc_info:
         sample()
 
     assert exc_info.value.exit_code == 1
-    assert captured["value"] == (
-        diagnostics,
-        "Cannot sync because the environment contract is not satisfied.",
-    )
+    captured = capsys.readouterr()
+    assert "Cannot sync because the environment contract is not satisfied." in captured.err
+    assert "DATABASE_URL" in captured.err
+    assert "envctl fill" in captured.err
 
 
 def test_handle_errors_emits_validation_details_in_json_when_present(
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    captured: dict[str, Any] = {}
-
     @handle_errors
     def sample() -> None:
         raise ValidationError(
@@ -201,20 +182,19 @@ def test_handle_errors_emits_validation_details_in_json_when_present(
         )
 
     monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: True)
-    monkeypatch.setattr(
-        "envctl.cli.runtime.get_command_path",
-        lambda: "envctl sync",
-    )
-    monkeypatch.setattr(
-        "envctl.cli.serializers.common.emit_json",
-        lambda payload: captured.update({"payload": payload}),
-    )
+    monkeypatch.setattr("envctl.cli.runtime.get_command_path", lambda: "envctl sync")
 
     with pytest.raises(typer.Exit):
         sample()
 
-    payload = cast(dict[str, Any], captured["payload"])
-    assert payload["error"]["details"] == {
+    payload = cast(dict[str, Any], json.loads(capsys.readouterr().out))
+
+    assert payload["metadata"]["command"] == "envctl sync"
+    assert payload["metadata"]["ok"] is False
+    metadata = payload["metadata"]
+    details = cast(dict[str, Any], metadata["error"]["details"])
+    assert details == {
+        "category": "projection_validation_failed",
         "operation": "sync",
         "active_profile": "staging",
         "selection": {"mode": "full", "group": None, "set": None, "var": None},
@@ -231,8 +211,8 @@ def test_handle_errors_emits_validation_details_in_json_when_present(
 
 def test_handle_errors_renders_contract_diagnostics(
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    captured: dict[str, tuple[ContractDiagnostics, str]] = {}
     diagnostics = ContractDiagnostics(
         category="missing_contract_file",
         path=Path("/tmp/demo/.envctl.yaml"),
@@ -247,28 +227,20 @@ def test_handle_errors_renders_contract_diagnostics(
         )
 
     monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: False)
-    monkeypatch.setattr(
-        "envctl.cli.presenters.contract_error_presenter.render_contract_error",
-        lambda received_diagnostics, *, message: captured.update(
-            {"value": (received_diagnostics, message)}
-        ),
-    )
 
     with pytest.raises(typer.Exit) as exc_info:
         sample()
 
     assert exc_info.value.exit_code == 1
-    assert captured["value"] == (
-        diagnostics,
-        "Contract file not found: /tmp/demo/.envctl.yaml",
-    )
+    captured = capsys.readouterr()
+    assert "Contract file not found: /tmp/demo/.envctl.yaml" in captured.err
+    assert "envctl check" in captured.err
 
 
 def test_handle_errors_emits_contract_details_in_json_when_present(
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    captured: dict[str, Any] = {}
-
     @handle_errors
     def sample() -> None:
         raise ContractError(
@@ -281,20 +253,16 @@ def test_handle_errors_emits_contract_details_in_json_when_present(
         )
 
     monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: True)
-    monkeypatch.setattr(
-        "envctl.cli.runtime.get_command_path",
-        lambda: "envctl check",
-    )
-    monkeypatch.setattr(
-        "envctl.cli.serializers.common.emit_json",
-        lambda payload: captured.update({"payload": payload}),
-    )
+    monkeypatch.setattr("envctl.cli.runtime.get_command_path", lambda: "envctl check")
 
     with pytest.raises(typer.Exit):
         sample()
 
-    payload = cast(dict[str, Any], captured["payload"])
-    details = cast(dict[str, Any], payload["error"]["details"])
+    payload = cast(dict[str, Any], json.loads(capsys.readouterr().out))
+    assert payload["metadata"]["command"] == "envctl check"
+    assert payload["metadata"]["ok"] is False
+
+    details = cast(dict[str, Any], payload["metadata"]["error"]["details"])
     assert details["category"] == "invalid_yaml"
     assert normalize_path_str(details["path"]) == "/tmp/demo/.envctl.yaml"
     assert details["key"] is None

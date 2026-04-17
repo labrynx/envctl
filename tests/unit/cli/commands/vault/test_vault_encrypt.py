@@ -71,22 +71,31 @@ def test_vault_encrypt_command_shows_skipped(
     assert "skipped" in out
 
 
-def test_vault_encrypt_command_rejects_json_mode(
+def test_vault_encrypt_command_emits_json_mode(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, Any] = {}
 
-    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: True)
-    monkeypatch.setattr("envctl.cli.runtime.get_command_path", lambda: "envctl vault encrypt")
+    monkeypatch.setattr(encrypt_module, "is_json_output", lambda: True)
     monkeypatch.setattr(
-        "envctl.cli.serializers.common.emit_json",
-        lambda payload: captured.update({"payload": payload}),
+        "envctl.services.vault_service.run_vault_encrypt_project",
+        lambda include_all_projects=False: (
+            object(),
+            _make_encrypt_result(encrypted=(Path("/tmp/vault/values.env"),)),
+        ),
+    )
+    monkeypatch.setattr(
+        encrypt_module,
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
     )
 
-    with pytest.raises(typer.Exit) as exc_info:
-        encrypt_module.vault_encrypt_command(all_projects=False)
-
-    assert exc_info.value.exit_code == 1
+    encrypt_module.vault_encrypt_command(all_projects=False)
+    assert captured["output_format"] == "json"
+    assert captured["output"].metadata["kind"] == "vault_encrypt"
+    assert captured["output"].metadata["encrypted_files"] == ["/tmp/vault/values.env"]
 
 
 def test_vault_encrypt_command_propagates_execution_error(
@@ -142,19 +151,28 @@ def test_vault_decrypt_command_shows_no_encrypted_files(
     assert "No encrypted vault files found to decrypt" in out
 
 
-def test_vault_decrypt_command_rejects_json_mode(
+def test_vault_decrypt_command_emits_json_mode(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, Any] = {}
 
-    monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: True)
-    monkeypatch.setattr("envctl.cli.runtime.get_command_path", lambda: "envctl vault decrypt")
+    monkeypatch.setattr(decrypt_module, "is_json_output", lambda: True)
     monkeypatch.setattr(
-        "envctl.cli.serializers.common.emit_json",
-        lambda payload: captured.update({"payload": payload}),
+        "envctl.services.vault_service.run_vault_decrypt_project",
+        lambda include_all_projects=False: (
+            object(),
+            _make_decrypt_result(decrypted=(Path("/tmp/vault/values.env"),)),
+        ),
+    )
+    monkeypatch.setattr(
+        decrypt_module,
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
     )
 
-    with pytest.raises(typer.Exit) as exc_info:
-        decrypt_module.vault_decrypt_command(all_projects=False)
-
-    assert exc_info.value.exit_code == 1
+    decrypt_module.vault_decrypt_command(all_projects=False)
+    assert captured["output_format"] == "json"
+    assert captured["output"].metadata["kind"] == "vault_decrypt"
+    assert captured["output"].metadata["decrypted_files"] == ["/tmp/vault/values.env"]

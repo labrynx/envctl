@@ -51,11 +51,11 @@ def test_inspect_json_outputs_contract_graph_for_composed_contracts(
         },
     )
 
-    result = runner.invoke(app, ["--json", "inspect"])
+    result = runner.invoke(app, ["--output", "json", "inspect"])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    graph = payload["data"]["contract_graph"]
+    graph = payload["metadata"]["contract_graph"]
     assert graph["contracts_total"] == 3
     assert sorted(graph["declared_in"]) == ["API_URL", "APP_NAME", "DATABASE_URL"]
     assert "runtime" in graph["groups_index"] or "infra" in graph["groups_index"]

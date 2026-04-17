@@ -118,11 +118,11 @@ source_modules =
 forbidden_modules =
     envctl.services
 
-[importlinter:contract:serializers_do_not_import_services]
-name = Serializers must not import services
+[importlinter:contract:renderers_do_not_import_services]
+name = Renderers must not import services
 type = forbidden
 source_modules =
-    envctl.cli.serializers
+    envctl.cli.presenters.renderers
 forbidden_modules =
     envctl.services
 

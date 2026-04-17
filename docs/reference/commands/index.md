@@ -19,7 +19,7 @@ Available global options:
 - `--group`, `-g`
 - `--set`
 - `--var`
-- `--json`
+- `--output json|text`
 - `--install-completion`
 - `--show-completion`
 

@@ -38,8 +38,10 @@ def test_export_command_uses_presenter(
 
     monkeypatch.setattr("envctl.services.export_service.run_export", fake_run_export)
     monkeypatch.setattr(
-        "envctl.cli.commands.export.command.render_export_output",
-        lambda *, profile, rendered: captured.update({"profile": profile, "rendered": rendered}),
+        "envctl.cli.commands.export.command.present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
     )
 
     export_command_module.export_command(format="shell")
@@ -49,8 +51,9 @@ def test_export_command_uses_presenter(
     assert selection.describe() == "group=Application"
     assert captured["active_profile"] == "prod"
     assert captured["format"] == "shell"
-    assert captured["profile"] == "prod"
-    assert captured["rendered"] == "export APP_NAME='demo'\n"
+    assert captured["output_format"] == "text"
+    assert captured["output"].metadata["active_profile"] == "prod"
+    assert captured["output"].metadata["rendered"] == "export APP_NAME='demo'\n"
 
 
 def test_export_command_emits_json_payload(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -60,11 +63,10 @@ def test_export_command_emits_json_payload(monkeypatch: pytest.MonkeyPatch) -> N
         lambda *args, **kwargs: _export_result(),
     )
 
-    result = runner.invoke(app, ["--json", "export"])
+    result = runner.invoke(app, ["--output", "json", "export"])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert payload["ok"] is True
-    assert payload["command"] == "export"
-    assert payload["data"]["format"] == "shell"
-    assert payload["data"]["values"]["APP_NAME"] == "demo"
+    assert payload["metadata"]["kind"] == "export"
+    assert payload["metadata"]["format"] == "shell"
+    assert payload["metadata"]["values"]["APP_NAME"] == "demo"

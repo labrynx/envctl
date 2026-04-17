@@ -116,7 +116,7 @@ def test_vault_show_command_masks_sensitive_contract_values_and_unknown_values(
     assert "profile: dev" in output
     assert "vault_values: /tmp/vault/profiles/dev.env" in output
     assert "state: plaintext" in output
-    assert "Values:" in output
-    assert "  APP_NAME=demo" in output
-    assert "  API_KEY=<masked:super-secret>" in output
-    assert "  UNKNOWN=<masked:mystery-value>" in output
+    assert "Values" in output
+    assert "  - APP_NAME=demo" in output
+    assert "  - API_KEY=<masked:super-secret>" in output
+    assert "  - UNKNOWN=<masked:mystery-value>" in output

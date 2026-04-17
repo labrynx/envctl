@@ -67,20 +67,18 @@ def test_check_json_outputs_structured_payload_for_invalid_environment(
         },
     )
 
-    result = runner.invoke(app, ["--json", "check"])
+    result = runner.invoke(app, ["--output", "json", "check"])
 
     assert result.exit_code == 1
 
     payload = parse_json_output(result.output)
-    assert payload["ok"] is False
-    assert payload["command"] == "check"
-
-    data = cast(dict[str, Any], payload["data"])
-    assert data["context"]["project_slug"] == "repo"
-    assert data["report"]["is_valid"] is False
-    assert data["report"]["missing_required"] == ["DATABASE_URL"]
-    assert data["report"]["unknown_keys"] == []
-    assert data["report"]["invalid_keys"] == []
+    metadata = cast(dict[str, Any], payload["metadata"])
+    assert metadata["ok"] is False
+    assert metadata["kind"] == "check"
+    assert metadata["context"]["project_slug"] == "repo"
+    assert metadata["summary"]["invalid"] == 1
+    assert metadata["problems"][0]["key"] == "DATABASE_URL"
+    assert metadata["problems"][0]["kind"] == "missing_required"
 
 
 def test_sync_json_outputs_structured_projection_validation_error(
@@ -95,18 +93,19 @@ def test_sync_json_outputs_structured_projection_validation_error(
         },
     )
 
-    result = runner.invoke(app, ["--json", "sync"])
+    result = runner.invoke(app, ["--output", "json", "sync"])
 
     assert result.exit_code == 1
 
     payload = parse_json_output(result.output)
-    assert payload["ok"] is False
-    assert payload["command"] == "envctl sync"
-    assert payload["error"]["type"] == "ValidationError"
-    assert payload["error"]["message"] == (
+    metadata = cast(dict[str, Any], payload["metadata"])
+    assert metadata["ok"] is False
+    assert metadata["command"] == "envctl sync"
+    assert metadata["error"]["type"] == "ValidationError"
+    assert metadata["error"]["message"] == (
         "Cannot sync because the environment contract is not satisfied."
     )
-    details = cast(dict[str, Any], payload["error"]["details"])
+    details = cast(dict[str, Any], metadata["error"]["details"])
     assert details["operation"] == "sync"
     assert details["active_profile"] == "local"
     assert details["selection"] == {
@@ -141,18 +140,16 @@ def test_check_json_outputs_success_payload_when_environment_is_valid(
         },
     )
 
-    result = runner.invoke(app, ["--json", "check"])
+    result = runner.invoke(app, ["--output", "json", "check"])
 
     assert result.exit_code == 0
 
     payload = parse_json_output(result.output)
-    assert payload["ok"] is True
-    assert payload["command"] == "check"
-
-    data = cast(dict[str, Any], payload["data"])
-    assert data["report"]["is_valid"] is True
-    assert data["report"]["missing_required"] == []
-    assert sorted(data["report"]["values"]) == ["APP_NAME", "DATABASE_URL", "PORT"]
+    metadata = cast(dict[str, Any], payload["metadata"])
+    assert metadata["ok"] is True
+    assert metadata["kind"] == "check"
+    assert metadata["summary"]["invalid"] == 0
+    assert sorted(metadata["values"]) == ["APP_NAME", "DATABASE_URL", "PORT"]
 
 
 def test_check_json_outputs_structured_contract_error(
@@ -162,16 +159,17 @@ def test_check_json_outputs_structured_contract_error(
     contract_path = workspace / ".envctl.yaml"
     contract_path.write_text(":\n- bad", encoding="utf-8")
 
-    result = runner.invoke(app, ["--json", "check"])
+    result = runner.invoke(app, ["--output", "json", "check"])
 
     assert result.exit_code == 1
 
     payload = parse_json_output(result.output)
-    assert payload["ok"] is False
-    assert payload["command"] == "envctl check"
-    assert payload["error"]["type"] == "ContractError"
-    assert payload["error"]["message"] == f"Invalid YAML contract: {contract_path}"
-    assert payload["error"]["details"] == {
+    metadata = cast(dict[str, Any], payload["metadata"])
+    assert metadata["ok"] is False
+    assert metadata["command"] == "envctl check"
+    assert metadata["error"]["type"] == "ContractError"
+    assert metadata["error"]["message"] == f"Invalid YAML contract: {contract_path}"
+    assert metadata["error"]["details"] == {
         "category": "invalid_yaml",
         "path": str(contract_path),
         "key": None,
@@ -189,14 +187,15 @@ def test_callback_json_outputs_structured_config_error(
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text('{"runtime_mode":"banana"}', encoding="utf-8")
 
-    result = runner.invoke(app, ["--json", "check"])
+    result = runner.invoke(app, ["--output", "json", "check"])
 
     assert result.exit_code == 1
     payload = parse_json_output(result.output)
-    assert payload["error"]["type"] == "ConfigError"
-    assert payload["error"]["details"]["category"] == "invalid_runtime_mode"
-    assert payload["error"]["details"]["path"] == str(config_path)
-    assert payload["error"]["details"]["source_label"] == "config file"
+    metadata = cast(dict[str, Any], payload["metadata"])
+    assert metadata["error"]["type"] == "ConfigError"
+    assert metadata["error"]["details"]["category"] == "invalid_runtime_mode"
+    assert metadata["error"]["details"]["path"] == str(config_path)
+    assert metadata["error"]["details"]["source_label"] == "config file"
 
 
 def test_status_json_outputs_structured_state_error(
@@ -209,12 +208,13 @@ def test_status_json_outputs_structured_state_error(
     state_path = find_single_state_path(workspace)
     state_path.write_text("{not-json", encoding="utf-8")
 
-    result = runner.invoke(app, ["--json", "status"])
+    result = runner.invoke(app, ["--output", "json", "status"])
 
     assert result.exit_code == 1
     payload = parse_json_output(result.output)
-    assert payload["error"]["type"] == "StateError"
-    assert payload["error"]["details"]["category"] == "corrupted_state"
+    metadata = cast(dict[str, Any], payload["metadata"])
+    assert metadata["error"]["type"] == "StateError"
+    assert metadata["error"]["details"]["category"] == "corrupted_state"
 
 
 def test_status_json_outputs_structured_project_binding_error(
@@ -260,13 +260,14 @@ def test_status_json_outputs_structured_project_binding_error(
         encoding="utf-8",
     )
 
-    result = runner.invoke(app, ["--json", "status"])
+    result = runner.invoke(app, ["--output", "json", "status"])
 
     assert result.exit_code == 1
     payload_json = parse_json_output(result.output)
-    assert payload_json["error"]["type"] == "ProjectDetectionError"
-    assert payload_json["error"]["details"]["category"] == "ambiguous_vault_identity"
-    assert payload_json["error"]["details"]["repo_root"] == str(workspace)
+    metadata = cast(dict[str, Any], payload_json["metadata"])
+    assert metadata["error"]["type"] == "ProjectDetectionError"
+    assert metadata["error"]["details"]["category"] == "ambiguous_vault_identity"
+    assert metadata["error"]["details"]["repo_root"] == str(workspace)
 
 
 def test_inspect_json_outputs_structured_resolution_report(
@@ -281,20 +282,18 @@ def test_inspect_json_outputs_structured_resolution_report(
         },
     )
 
-    result = runner.invoke(app, ["--json", "inspect"])
+    result = runner.invoke(app, ["--output", "json", "inspect"])
 
     assert result.exit_code == 0
 
     payload = parse_json_output(result.output)
-    assert payload["ok"] is True
-    assert payload["command"] == "inspect"
-
-    data = cast(dict[str, Any], payload["data"])
-    assert data["context"]["project_slug"] == "repo"
-    assert data["report"]["missing_required"] == ["DATABASE_URL"]
-    assert "APP_NAME" in data["report"]["values"]
-    assert data["report"]["values"]["APP_NAME"]["value"] == "demo-app"
-    assert data["report"]["values"]["APP_NAME"]["source"] == "vault"
+    metadata = cast(dict[str, Any], payload["metadata"])
+    assert metadata["kind"] == "inspect"
+    assert metadata["context"]["project_slug"] == "repo"
+    assert metadata["problems"][0]["key"] == "DATABASE_URL"
+    assert "APP_NAME" in metadata["variables"]
+    assert metadata["variables"]["APP_NAME"]["value"] == "demo-app"
+    assert metadata["variables"]["APP_NAME"]["source"] == "vault"
 
 
 def test_inspect_json_outputs_one_resolved_item(
@@ -310,16 +309,14 @@ def test_inspect_json_outputs_one_resolved_item(
         },
     )
 
-    result = runner.invoke(app, ["--json", "inspect", "DATABASE_URL"])
+    result = runner.invoke(app, ["--output", "json", "inspect", "DATABASE_URL"])
 
     assert result.exit_code == 0
 
     payload = parse_json_output(result.output)
-    assert payload["ok"] is True
-    assert payload["command"] == "inspect"
-
-    data = cast(dict[str, Any], payload["data"])
-    item = cast(dict[str, Any], data["item"])
+    metadata = cast(dict[str, Any], payload["metadata"])
+    assert metadata["kind"] == "inspect_key"
+    item = cast(dict[str, Any], metadata["item"])
     assert item["key"] == "DATABASE_URL"
     assert item["source"] == "vault"
     assert item["masked"] is True
@@ -339,73 +336,63 @@ def test_inspect_json_outputs_structured_error_for_unresolved_key(
         },
     )
 
-    result = runner.invoke(app, ["--json", "inspect", "MISSING_KEY"])
+    result = runner.invoke(app, ["--output", "json", "inspect", "MISSING_KEY"])
 
     assert result.exit_code == 1
 
     payload = parse_json_output(result.output)
-    assert payload == {
-        "ok": False,
-        "command": "envctl inspect",
-        "error": {
-            "type": "ValidationError",
-            "message": "Key is not resolved: MISSING_KEY",
-        },
-    }
+    metadata = cast(dict[str, Any], payload["metadata"])
+    assert metadata["ok"] is False
+    assert metadata["command"] == "envctl inspect"
+    assert metadata["error"]["type"] == "ValidationError"
+    assert metadata["error"]["message"] == "Key is not resolved: MISSING_KEY"
 
 
 def test_status_json_outputs_structured_status_payload(
     runner: CliRunner,
     workspace: Path,
 ) -> None:
-    result = runner.invoke(app, ["--json", "status"])
+    result = runner.invoke(app, ["--output", "json", "status"])
 
     assert result.exit_code == 0
 
     payload = parse_json_output(result.output)
-    assert payload["ok"] is True
-    assert payload["command"] == "status"
-
-    data = cast(dict[str, Any], payload["data"])
-    assert data["project_slug"] == "repo"
-    assert data["contract_exists"] is True
-    assert data["vault_exists"] is False
-    assert data["resolved_valid"] is False
-    assert isinstance(data["issues"], list)
+    metadata = cast(dict[str, Any], payload["metadata"])
+    assert metadata["kind"] == "status"
+    assert metadata["ok"] is False
+    assert metadata["project_slug"] == "repo"
+    assert metadata["contract_exists"] is True
+    assert metadata["vault_exists"] is False
+    assert metadata["resolved_valid"] is False
+    assert isinstance(metadata["issues"], list)
 
 
 def test_doctor_json_outputs_structured_checks(
     runner: CliRunner,
     workspace: Path,
 ) -> None:
-    result = runner.invoke(app, ["--json", "inspect"])
+    result = runner.invoke(app, ["--output", "json", "inspect"])
 
     assert result.exit_code == 0
 
     payload = parse_json_output(result.output)
-    assert payload["command"] == "inspect"
-    assert payload["ok"] is True
-
-    data = payload["data"]
-    assert "context" in data
-    assert "project" in data
-    assert "problems" in data
+    metadata = cast(dict[str, Any], payload["metadata"])
+    assert metadata["kind"] == "inspect"
+    assert "context" in metadata
+    assert "project" in metadata
+    assert "problems" in metadata
 
 
-def test_json_is_rejected_for_unsupported_text_only_command(
+def test_vault_show_json_outputs_structured_missing_payload(
     runner: CliRunner,
     workspace: Path,
 ) -> None:
-    result = runner.invoke(app, ["--json", "vault", "show"])
+    result = runner.invoke(app, ["--output", "json", "vault", "show"])
 
     assert result.exit_code == 1
 
     payload = parse_json_output(result.output)
-    assert payload == {
-        "ok": False,
-        "command": "envctl vault show",
-        "error": {
-            "type": "ExecutionError",
-            "message": "JSON output is not supported for 'vault show' yet.",
-        },
-    }
+    metadata = cast(dict[str, Any], payload["metadata"])
+    assert metadata["kind"] == "vault_show"
+    assert metadata["state"] == "missing"
+    assert metadata["ok"] is False

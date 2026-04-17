@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
 import pytest
 import typer
@@ -137,34 +137,39 @@ def test_vault_check_command_exits_when_permissions_are_not_private(
     assert "keys: 2" in output
 
 
-def test_vault_check_command_rejects_json_mode(
+def test_vault_check_command_emits_json_mode(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, Any] = {}
-
-    monkeypatch.setattr(
-        "envctl.cli.runtime.is_json_output",
-        lambda: True,
-    )
-    monkeypatch.setattr(
-        "envctl.cli.runtime.get_command_path",
-        lambda: "envctl vault check",
-    )
-    monkeypatch.setattr(
-        "envctl.cli.serializers.common.emit_json",
-        lambda payload: captured.update({"payload": payload}),
-    )
-
-    with pytest.raises(typer.Exit) as exc_info:
-        vault_check_module.vault_check_command()
-
-    assert exc_info.value.exit_code == 1
-    payload = cast(dict[str, Any], captured["payload"])
-    assert payload == {
-        "ok": False,
-        "command": "envctl vault check",
-        "error": {
-            "type": "ExecutionError",
-            "message": "JSON output is not supported for 'vault check' yet.",
+    result = type(
+        "Result",
+        (),
+        {
+            "exists": True,
+            "parseable": True,
+            "private_permissions": True,
+            "key_count": 3,
+            "path": "/tmp/vault/values.env",
+            "state": "encrypted",
+            "detail": "Vault file is encrypted and readable.",
         },
-    }
+    )()
+
+    monkeypatch.setattr(vault_check_module, "is_json_output", lambda: True)
+    monkeypatch.setattr(
+        "envctl.services.vault_service.run_vault_check",
+        lambda profile=None: ("context", "local", result),
+    )
+    monkeypatch.setattr(
+        vault_check_module,
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
+    )
+
+    vault_check_module.vault_check_command()
+
+    assert captured["output_format"] == "json"
+    assert captured["output"].metadata["kind"] == "vault_check"
+    assert captured["output"].metadata["ok"] is True

@@ -39,9 +39,9 @@ def test_sync_command_calls_service_with_default_output_path(
     monkeypatch.setattr("envctl.services.sync_service.run_sync", fake_run_sync)
     monkeypatch.setattr(
         sync_command_module,
-        "render_sync_result",
-        lambda profile, target_path: captured.update(
-            {"profile": profile, "target_path": target_path}
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
         ),
     )
 
@@ -52,5 +52,6 @@ def test_sync_command_calls_service_with_default_output_path(
     assert captured["active_profile"] == "staging"
     assert captured["output_path"] is None
     assert selection.describe() == "group=Application"
-    assert captured["profile"] == "staging"
-    assert captured["target_path"] == Path("/tmp/demo/.env.staging")
+    assert captured["output_format"] == "text"
+    assert captured["output"].metadata["profile"] == "staging"
+    assert captured["output"].metadata["target"] == "/tmp/demo/.env.staging"

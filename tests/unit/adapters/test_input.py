@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import typer
-from envctl.cli.presenters.action_presenter import render_add_result, render_inferred_spec
 
 from envctl.cli.decorators import (
     handle_errors,
     requires_writable_runtime,
     text_output_only,
 )
+from envctl.cli.presenters.outputs.actions import build_add_output, build_inferred_spec_output
 from envctl.cli.prompts.input import confirm, prompt_string
 from envctl.cli.runtime import get_active_profile
 from envctl.domain.operations import AddVariableRequest
@@ -204,7 +204,7 @@ def add_command(
 
     context, result = run_add(request, get_active_profile())
 
-    render_add_result(
+    build_add_output(
         key=key,
         profile=result.active_profile,
         profile_path=result.profile_path,
@@ -213,4 +213,4 @@ def add_command(
         contract_updated=result.contract_updated,
         contract_entry_created=result.contract_entry_created,
     )
-    render_inferred_spec(result.inferred_spec)
+    build_inferred_spec_output(result.inferred_spec)
