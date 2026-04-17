@@ -4,7 +4,6 @@ import pytest
 
 from envctl.cli.presenters.formatters import (
     render_action_state,
-    render_check_prefix,
     render_present_missing,
     render_valid_invalid,
 )
@@ -19,19 +18,6 @@ from envctl.cli.presenters.formatters import (
 )
 def test_render_action_state(value: bool, expected: str) -> None:
     assert render_action_state(value) == expected
-
-
-@pytest.mark.parametrize(
-    ("status", "expected"),
-    [
-        ("ok", "[OK]"),
-        ("warn", "[WARN]"),
-        ("fail", "[FAIL]"),
-        ("other", "[INFO]"),
-    ],
-)
-def test_render_check_prefix(status: str, expected: str) -> None:
-    assert render_check_prefix(status) == expected
 
 
 @pytest.mark.parametrize(

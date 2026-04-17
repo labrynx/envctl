@@ -2,22 +2,19 @@
 
 from __future__ import annotations
 
-from typing import Literal, TypeAlias
-
 from envctl.cli.presenters.models import CommandOutput
 from envctl.cli.presenters.renderers.json import emit_json
 from envctl.cli.presenters.renderers.text import emit_text
-
-OutputFormat: TypeAlias = Literal["text", "json"]
+from envctl.domain.runtime import OutputFormat
 
 
 def present(
     output: CommandOutput,
     *,
-    output_format: OutputFormat = "text",
+    output_format: OutputFormat | str = OutputFormat.TEXT,
 ) -> None:
     """Render one command output using the selected output format."""
-    if output_format == "json":
+    if output_format == OutputFormat.JSON:
         emit_json(output)
         return
 

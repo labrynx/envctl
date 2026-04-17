@@ -14,6 +14,8 @@ __pycache__/
 coverage.xml
 .ruff_cache
 .mypy_cache
+.importtime
+.import_linter_cache
 htmlcov
 
 dist/
@@ -31,9 +33,8 @@ codereview
 
 *.log
 
-tmp/
-.import_linter_cache
 # envctl
+tmp/
 master.key
 *.prof
 .envctl/observability/

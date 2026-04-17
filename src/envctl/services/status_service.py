@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from envctl.domain.status import StatusReport
+from envctl.domain.status import StatusActionKind, StatusIssue, StatusReport
 from envctl.errors import ContractError
 from envctl.observability.timing import observe_span
 from envctl.repository.profile_repository import require_persisted_profile, resolve_profile_path
@@ -32,13 +32,11 @@ def run_status(active_profile: str | None = None) -> tuple[str, StatusReport]:
             )
         vault_exists = profile_env_path.exists()
 
-        issues: list[str] = []
-        suggested_action: str | None = None
+        issues: list[StatusIssue] = []
+        suggested_action_kind: StatusActionKind | None = None
 
         if not contract_exists:
-            issues.append("Contract file is missing")
-            suggested_action = "Create .envctl.yaml or run 'envctl add KEY VALUE'"
-            summary = "The project is not ready because no contract file was found."
+            issues.append(StatusIssue(kind="contract_missing"))
             span_fields["selected_profile"] = resolved_profile
             span_fields["exists"] = vault_exists
             return (
@@ -50,9 +48,9 @@ def run_status(active_profile: str | None = None) -> tuple[str, StatusReport]:
                     contract_exists=False,
                     vault_exists=vault_exists,
                     resolved_valid=False,
-                    summary=summary,
-                    issues=issues,
-                    suggested_action=suggested_action,
+                    summary_kind="missing_contract",
+                    issues=tuple(issues),
+                    suggested_action_kind="create_contract_or_add_key",
                 ),
             )
 
@@ -60,8 +58,7 @@ def run_status(active_profile: str | None = None) -> tuple[str, StatusReport]:
             contract = load_contract_for_context(context)
             report = resolve_environment(context, contract, active_profile=resolved_profile)
         except ContractError as exc:
-            issues.append(str(exc))
-            summary = "The project contract is invalid."
+            issues.append(StatusIssue(kind="contract_error", detail=str(exc)))
             span_fields["selected_profile"] = resolved_profile
             span_fields["problem_count"] = len(issues)
             return (
@@ -73,31 +70,26 @@ def run_status(active_profile: str | None = None) -> tuple[str, StatusReport]:
                     contract_exists=True,
                     vault_exists=vault_exists,
                     resolved_valid=False,
-                    summary=summary,
-                    issues=issues,
-                    suggested_action="Fix the contract file",
+                    summary_kind="invalid_contract",
+                    issues=tuple(issues),
+                    suggested_action_kind="fix_contract_file",
                 ),
             )
 
         if report.missing_required:
-            issues.append(f"Missing required keys: {', '.join(report.missing_required)}")
-            suggested_action = "Run 'envctl fill' or 'envctl set KEY VALUE'"
+            issues.append(StatusIssue(kind="missing_required", keys=tuple(report.missing_required)))
+            suggested_action_kind = "fill_or_set_values"
 
         if report.invalid_keys:
-            issues.append(f"Invalid values: {', '.join(report.invalid_keys)}")
-            suggested_action = "Fix the invalid values in the local vault"
+            issues.append(StatusIssue(kind="invalid_values", keys=tuple(report.invalid_keys)))
+            suggested_action_kind = "fix_invalid_values"
 
         if report.unknown_keys:
-            issues.append(f"Unknown keys in vault: {', '.join(report.unknown_keys)}")
-            if suggested_action is None:
-                suggested_action = "Use 'envctl add KEY VALUE' or remove unknown keys"
+            issues.append(StatusIssue(kind="unknown_keys", keys=tuple(report.unknown_keys)))
+            if suggested_action_kind is None:
+                suggested_action_kind = "add_or_remove_unknown_keys"
 
         resolved_valid = report.is_valid
-        summary = (
-            "The project contract is satisfied and the environment can be projected safely."
-            if resolved_valid
-            else "The project contract is not satisfied yet."
-        )
         span_fields["selected_profile"] = resolved_profile
         span_fields["problem_count"] = len(issues)
         span_fields["missing_required_count"] = len(report.missing_required)
@@ -112,8 +104,8 @@ def run_status(active_profile: str | None = None) -> tuple[str, StatusReport]:
                 contract_exists=True,
                 vault_exists=vault_exists,
                 resolved_valid=resolved_valid,
-                summary=summary,
-                issues=issues,
-                suggested_action=suggested_action,
+                summary_kind="satisfied" if resolved_valid else "unsatisfied",
+                issues=tuple(issues),
+                suggested_action_kind=suggested_action_kind,
             ),
         )

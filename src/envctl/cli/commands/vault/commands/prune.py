@@ -11,10 +11,10 @@ from envctl.cli.presenters.outputs.vault import (
     build_vault_prune_no_changes_output,
     build_vault_prune_output,
 )
-from envctl.cli.presenters.presenter import OutputFormat
 from envctl.cli.prompts.confirmation_prompts import build_vault_prune_confirmation_message
 from envctl.cli.prompts.input import confirm
 from envctl.cli.runtime import get_active_profile, is_json_output
+from envctl.domain.runtime import OutputFormat
 
 YES_OPTION = typer.Option(
     False,
@@ -35,7 +35,7 @@ def vault_prune_command(
         get_active_profile()
     )
 
-    output_format: OutputFormat = "json" if is_json_output() else "text"
+    output_format: OutputFormat = OutputFormat.JSON if is_json_output() else OutputFormat.TEXT
 
     if not unknown_keys:
         present(

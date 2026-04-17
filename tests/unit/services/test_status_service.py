@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 import envctl.services.status_service as status_service
+from envctl.domain.status import StatusIssue
 from envctl.errors import ContractError, ExecutionError
 from tests.support.builders import make_resolution_report, make_resolved_value
 from tests.support.contexts import make_status_context
@@ -30,9 +31,9 @@ def test_run_status_reports_missing_contract(
     assert report.contract_exists is False
     assert report.vault_exists is False
     assert report.resolved_valid is False
-    assert report.summary == "The project is not ready because no contract file was found."
-    assert report.issues == ["Contract file is missing"]
-    assert report.suggested_action == "Create .envctl.yaml or run 'envctl add KEY VALUE'"
+    assert report.summary_kind == "missing_contract"
+    assert report.issues == (StatusIssue(kind="contract_missing"),)
+    assert report.suggested_action_kind == "create_contract_or_add_key"
 
 
 def test_run_status_reports_invalid_contract(
@@ -58,9 +59,9 @@ def test_run_status_reports_invalid_contract(
     assert report.contract_exists is True
     assert report.vault_exists is True
     assert report.resolved_valid is False
-    assert report.summary == "The project contract is invalid."
-    assert report.issues == ["Contract is broken"]
-    assert report.suggested_action == "Fix the contract file"
+    assert report.summary_kind == "invalid_contract"
+    assert report.issues == (StatusIssue(kind="contract_error", detail="Contract is broken"),)
+    assert report.suggested_action_kind == "fix_contract_file"
 
 
 def test_run_status_reports_valid_environment(
@@ -98,12 +99,9 @@ def test_run_status_reports_valid_environment(
     assert report.contract_exists is True
     assert report.vault_exists is True
     assert report.resolved_valid is True
-    assert report.issues == []
-    assert report.suggested_action is None
-    assert (
-        report.summary
-        == "The project contract is satisfied and the environment can be projected safely."
-    )
+    assert report.summary_kind == "satisfied"
+    assert report.issues == ()
+    assert report.suggested_action_kind is None
 
 
 def test_run_status_reports_missing_invalid_and_unknown_values(
@@ -143,13 +141,13 @@ def test_run_status_reports_missing_invalid_and_unknown_values(
 
     assert active_profile == "local"
     assert report.resolved_valid is False
-    assert report.summary == "The project contract is not satisfied yet."
-    assert report.issues == [
-        "Missing required keys: APP_NAME, DATABASE_URL",
-        "Invalid values: PORT",
-        "Unknown keys in vault: OLD_KEY",
-    ]
-    assert report.suggested_action == "Fix the invalid values in the local vault"
+    assert report.summary_kind == "unsatisfied"
+    assert report.issues == (
+        StatusIssue(kind="missing_required", keys=("APP_NAME", "DATABASE_URL")),
+        StatusIssue(kind="invalid_values", keys=("PORT",)),
+        StatusIssue(kind="unknown_keys", keys=("OLD_KEY",)),
+    )
+    assert report.suggested_action_kind == "fix_invalid_values"
 
 
 def test_run_status_fails_when_explicit_profile_file_is_missing(

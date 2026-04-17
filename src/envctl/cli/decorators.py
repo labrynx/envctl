@@ -10,7 +10,6 @@ import typer
 
 from envctl.domain.runtime import OutputFormat
 from envctl.errors import EnvctlError, ExecutionError
-from envctl.utils.output import print_error
 
 
 def emit_handled_error(
@@ -95,7 +94,14 @@ def emit_handled_error(
         )
         return
 
-    print_error(f"Error: {exc}")
+    present(
+        build_error_output(
+            error_type=exc.__class__.__name__,
+            message=str(exc),
+            command=command,
+        ),
+        output_format="text",
+    )
 
 
 def emit_usage_error(
@@ -251,10 +257,10 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
             if is_error_debug_enabled():
                 raise
 
-            if is_json_output():
-                from envctl.cli.presenters import present
-                from envctl.cli.presenters.outputs.errors import build_error_output
+            from envctl.cli.presenters import present
+            from envctl.cli.presenters.outputs.errors import build_error_output
 
+            if is_json_output():
                 present(
                     build_error_output(
                         error_type=exc.__class__.__name__,
@@ -264,7 +270,14 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
                     output_format="json",
                 )
             else:
-                print_error("Error: Unexpected internal error. Re-run with --debug-errors.")
+                present(
+                    build_error_output(
+                        error_type=exc.__class__.__name__,
+                        message="Unexpected internal error. Re-run with --debug-errors.",
+                        command=command,
+                    ),
+                    output_format="text",
+                )
 
             raise typer.Exit(code=1) from exc
         finally:

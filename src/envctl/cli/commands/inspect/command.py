@@ -5,7 +5,7 @@ from __future__ import annotations
 import typer
 
 from envctl.cli.decorators import handle_errors
-from envctl.cli.presenters import OutputFormat, present
+from envctl.cli.presenters import present
 from envctl.cli.presenters.common import merge_outputs
 from envctl.cli.presenters.models import CommandOutput
 from envctl.cli.presenters.outputs.inspect import (
@@ -24,6 +24,7 @@ from envctl.cli.presenters.outputs.warnings import (
 from envctl.cli.runtime import get_active_profile, get_contract_selection, is_json_output
 from envctl.domain.deprecations import ContractDeprecationWarning
 from envctl.domain.diagnostics import CommandWarning, InspectResult
+from envctl.domain.runtime import OutputFormat
 from envctl.domain.selection import ContractSelection
 from envctl.errors import ExecutionError
 
@@ -104,7 +105,7 @@ def _build_warning_output(
 
 def _present_output(output: CommandOutput) -> None:
     """Render one command output using the active CLI format."""
-    output_format: OutputFormat = "json" if is_json_output() else "text"
+    output_format: OutputFormat = OutputFormat.JSON if is_json_output() else OutputFormat.TEXT
     present(output, output_format=output_format)
 
 

@@ -189,28 +189,6 @@ def merge_outputs(*outputs: CommandOutput) -> CommandOutput:
     )
 
 
-def append_message(messages: list[OutputMessage], message: OutputMessage | None) -> None:
-    """Append one message when present."""
-    if message is not None:
-        messages.append(message)
-
-
-def append_section(sections: list[OutputSection], value: OutputSection | None) -> None:
-    """Append one section when present."""
-    if value is not None:
-        sections.append(value)
-
-
-def blank_item(*, err: bool = False) -> OutputItem:
-    """Build one blank raw line."""
-    return OutputItem(kind="raw", text="", err=err)
-
-
-def title_item(text: str, *, err: bool = False) -> OutputItem:
-    """Build one title raw line."""
-    return OutputItem(kind="raw", text=text, err=err)
-
-
 def section(title: str, *items: OutputItem, err: bool = False) -> OutputSection:
     """Build one output section."""
     return OutputSection(title=title, items=list(items), err=err)
@@ -229,16 +207,6 @@ def bullet_item(text: str, *, err: bool = False) -> OutputItem:
 def raw_item(text: str, *, err: bool = False) -> OutputItem:
     """Build one raw text item."""
     return OutputItem(kind="raw", text=text, err=err)
-
-
-def bullet_items(items: Iterable[str], *, err: bool = False) -> list[OutputItem]:
-    """Build bullet items from an iterable of strings."""
-    return [bullet_item(item, err=err) for item in _materialize(items)]
-
-
-def field_items(items: Iterable[tuple[str, str]], *, err: bool = False) -> list[OutputItem]:
-    """Build field items from key/value tuples."""
-    return [field_item(key, value, err=err) for key, value in _materialize(items)]
 
 
 def info_message(text: str, *, err: bool = False) -> OutputMessage:
@@ -295,46 +263,6 @@ def help_hint_section(
     return section(
         title,
         bullet_item(f"Run `{target}`", err=err),
-        err=err,
-    )
-
-
-def result_summary_messages(title: str, *, success: bool, err: bool = False) -> list[OutputMessage]:
-    """Build summary messages for one action result."""
-    return [success_message(title, err=err)] if success else [warning_message(title, err=err)]
-
-
-def result_summary_section(
-    metadata: dict[str, str],
-    *,
-    title: str = "Details",
-    err: bool = False,
-) -> OutputSection | None:
-    """Build one metadata section for a result summary."""
-    if not metadata:
-        return None
-
-    return section(
-        title,
-        *(field_item(key, value, err=err) for key, value in metadata.items()),
-        err=err,
-    )
-
-
-def warnings_section(
-    warnings: Iterable[str],
-    *,
-    title: str = "Warnings",
-    err: bool = False,
-) -> OutputSection | None:
-    """Build one warnings section when warnings are available."""
-    rendered = _materialize(warnings)
-    if not rendered:
-        return None
-
-    return section(
-        title,
-        *(bullet_item(warning, err=err) for warning in rendered),
         err=err,
     )
 

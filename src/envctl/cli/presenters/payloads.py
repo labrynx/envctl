@@ -127,14 +127,6 @@ def build_diagnostic_summary_payload(summary: DiagnosticSummary) -> dict[str, in
     }
 
 
-def build_command_warning_payload(warning: CommandWarning) -> dict[str, str]:
-    """Serialize one command warning."""
-    return {
-        "kind": warning.kind,
-        "message": warning.message,
-    }
-
-
 def serialize_contract_deprecation_warnings(
     warnings: Sequence[ContractDeprecationWarning],
 ) -> list[dict[str, Any]]:

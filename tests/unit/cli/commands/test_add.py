@@ -317,9 +317,8 @@ def test_add_command_passes_format_override(
 
 def test_add_command_rejects_ci_mode(
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    captured: dict[str, str] = {}
-
     monkeypatch.setattr(
         "envctl.config.loader.load_config",
         lambda: SimpleNamespace(runtime_mode=RuntimeMode.CI),
@@ -327,10 +326,6 @@ def test_add_command_rejects_ci_mode(
     monkeypatch.setattr(
         "envctl.cli.runtime.is_json_output",
         lambda: False,
-    )
-    monkeypatch.setattr(
-        "envctl.cli.decorators.print_error",
-        lambda message: captured.update({"message": message}),
     )
 
     with pytest.raises(typer.Exit) as exc_info:
@@ -340,7 +335,8 @@ def test_add_command_rejects_ci_mode(
         )
 
     assert exc_info.value.exit_code == 1
-    assert "CI read-only mode" in captured["message"]
+    captured = capsys.readouterr()
+    assert "CI read-only mode" in captured.err
 
 
 def test_add_command_emits_json_output() -> None:

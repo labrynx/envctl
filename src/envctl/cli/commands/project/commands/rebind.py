@@ -8,10 +8,10 @@ from envctl.cli.decorators import handle_errors, requires_writable_runtime
 from envctl.cli.presenters import present
 from envctl.cli.presenters.common import cancelled_output
 from envctl.cli.presenters.outputs.actions import build_project_rebind_output
-from envctl.cli.presenters.presenter import OutputFormat
 from envctl.cli.prompts.confirmation_prompts import build_project_rebind_confirmation_message
 from envctl.cli.prompts.input import confirm
 from envctl.cli.runtime import is_json_output
+from envctl.domain.runtime import OutputFormat
 
 
 @handle_errors
@@ -29,7 +29,7 @@ def project_rebind_command(
     ),
 ) -> None:
     """Rebind the current checkout to a fresh project identity."""
-    output_format: OutputFormat = "json" if is_json_output() else "text"
+    output_format: OutputFormat = OutputFormat.JSON if is_json_output() else OutputFormat.TEXT
 
     if not yes:
         approved = confirm(

@@ -43,24 +43,20 @@ def test_handle_errors_returns_wrapped_result() -> None:
 
 def test_handle_errors_converts_envctl_error_to_exit(
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    captured: dict[str, str] = {}
-
     @handle_errors
     def sample() -> None:
         raise EnvctlError("boom")
 
     monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: False)
-    monkeypatch.setattr(
-        "envctl.cli.decorators.print_error",
-        lambda message: captured.update({"message": message}),
-    )
 
     with pytest.raises(typer.Exit) as exc_info:
         sample()
 
     assert exc_info.value.exit_code == 1
-    assert captured["message"] == "Error: boom"
+    captured = capsys.readouterr()
+    assert "Error: boom" in captured.err
 
 
 def test_handle_errors_emits_structured_json_when_enabled(
@@ -88,26 +84,22 @@ def test_handle_errors_emits_structured_json_when_enabled(
 
 def test_handle_errors_hides_unexpected_stacktrace_by_default(
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    captured: dict[str, str] = {}
-
     @handle_errors
     def sample() -> None:
         raise RuntimeError("kaboom")
 
     monkeypatch.setattr("envctl.cli.runtime.is_json_output", lambda: False)
     monkeypatch.setattr("envctl.cli.runtime.is_error_debug_enabled", lambda: False)
-    monkeypatch.setattr(
-        "envctl.cli.decorators.print_error",
-        lambda message: captured.update({"message": message}),
-    )
 
     with pytest.raises(typer.Exit) as exc_info:
         sample()
 
     assert exc_info.value.exit_code == 1
-    assert "Unexpected internal error" in captured["message"]
-    assert "--debug-errors" in captured["message"]
+    captured = capsys.readouterr()
+    assert "Unexpected internal error" in captured.err
+    assert "--debug-errors" in captured.err
 
 
 def test_handle_errors_emits_json_for_unexpected_errors(

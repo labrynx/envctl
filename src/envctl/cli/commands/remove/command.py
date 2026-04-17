@@ -8,10 +8,10 @@ from envctl.cli.decorators import handle_errors, requires_writable_runtime
 from envctl.cli.presenters import present
 from envctl.cli.presenters.common import cancelled_output
 from envctl.cli.presenters.outputs.actions import build_remove_output
-from envctl.cli.presenters.presenter import OutputFormat
 from envctl.cli.prompts.confirmation_prompts import build_remove_confirmation_message
 from envctl.cli.prompts.input import confirm
 from envctl.cli.runtime import get_active_profile, is_json_output
+from envctl.domain.runtime import OutputFormat
 
 KEY_ARGUMENT = typer.Argument(...)
 YES_OPTION = typer.Option(False, "--yes", help="Skip confirmation.")
@@ -27,7 +27,7 @@ def remove_command(
     from envctl.services.remove_service import plan_remove, run_remove
 
     active_profile = get_active_profile()
-    output_format: OutputFormat = "json" if is_json_output() else "text"
+    output_format: OutputFormat = OutputFormat.JSON if is_json_output() else OutputFormat.TEXT
 
     _context, plan = plan_remove(key, active_profile)
 

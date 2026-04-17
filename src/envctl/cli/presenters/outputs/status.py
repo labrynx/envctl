@@ -28,13 +28,26 @@ from envctl.cli.presenters.payloads import (
 )
 from envctl.domain.diagnostics import CheckResult, DiagnosticProblem
 from envctl.domain.project import ProjectContext
-from envctl.domain.status import StatusReport
+from envctl.domain.status import StatusActionKind, StatusIssue, StatusReport
 
 _KIND_TITLES = {
     "missing_required": "Missing required keys",
     "invalid_value": "Invalid keys",
     "expansion_reference_error": "Expansion reference errors",
     "unknown_key": "Unknown keys",
+}
+_STATUS_SUMMARY_TEXT: dict[str, str] = {
+    "missing_contract": "The project is not ready because no contract file was found.",
+    "invalid_contract": "The project contract is invalid.",
+    "satisfied": "The project contract is satisfied and the environment can be projected safely.",
+    "unsatisfied": "The project contract is not satisfied yet.",
+}
+_STATUS_ACTION_TEXT: dict[StatusActionKind, str] = {
+    "create_contract_or_add_key": "Create .envctl.yaml or run 'envctl add KEY VALUE'",
+    "fix_contract_file": "Fix the contract file",
+    "fill_or_set_values": "Run 'envctl fill' or 'envctl set KEY VALUE'",
+    "fix_invalid_values": "Fix the invalid values in the local vault",
+    "add_or_remove_unknown_keys": "Use 'envctl add KEY VALUE' or remove unknown keys",
 }
 
 
@@ -125,9 +138,37 @@ def _has_status_issues(report: StatusReport) -> bool:
     return bool(report.issues) or not report.contract_exists or not report.resolved_valid
 
 
+def _render_status_issue(issue: StatusIssue) -> str:
+    """Render one status issue line for terminal and metadata output."""
+    if issue.kind == "contract_missing":
+        return "Contract file is missing"
+    if issue.kind == "contract_error":
+        return issue.detail or "Contract error"
+    if issue.kind == "missing_required":
+        return f"Missing required keys: {', '.join(issue.keys)}"
+    if issue.kind == "invalid_values":
+        return f"Invalid values: {', '.join(issue.keys)}"
+    return f"Unknown keys in vault: {', '.join(issue.keys)}"
+
+
+def _render_status_summary(report: StatusReport) -> str:
+    """Render one status summary line from structured report data."""
+    return _STATUS_SUMMARY_TEXT.get(report.summary_kind, "The project status is unknown.")
+
+
+def _render_status_action(action: StatusActionKind | None) -> str | None:
+    """Render one optional status action hint."""
+    if action is None:
+        return None
+    return _STATUS_ACTION_TEXT[action]
+
+
 def build_status_output(report: StatusReport) -> CommandOutput:
     """Build one unified output model for ``status``."""
     has_issues = _has_status_issues(report)
+    summary = _render_status_summary(report)
+    rendered_issues = [_render_status_issue(issue) for issue in report.issues]
+    suggested_action = _render_status_action(report.suggested_action_kind)
 
     sections = [
         section("Status", field_item("state", render_action_state(has_issues))),
@@ -145,23 +186,23 @@ def build_status_output(report: StatusReport) -> CommandOutput:
         ),
         section(
             "Summary",
-            raw_item(report.summary),
+            raw_item(summary),
         ),
     ]
 
-    if report.issues:
+    if rendered_issues:
         sections.append(
             section(
                 "Issues",
-                *(bullet_item(issue) for issue in report.issues),
+                *(bullet_item(issue) for issue in rendered_issues),
             )
         )
 
-    if report.suggested_action:
+    if suggested_action:
         sections.append(
             section(
                 "Next step",
-                raw_item(report.suggested_action),
+                raw_item(suggested_action),
             )
         )
 
@@ -174,9 +215,9 @@ def build_status_output(report: StatusReport) -> CommandOutput:
         "contract_exists": report.contract_exists,
         "vault_exists": report.vault_exists,
         "resolved_valid": report.resolved_valid,
-        "summary": report.summary,
-        "issues": list(report.issues),
-        "suggested_action": report.suggested_action,
+        "summary": summary,
+        "issues": rendered_issues,
+        "suggested_action": suggested_action,
     }
 
     return CommandOutput(

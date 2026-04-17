@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 
 import envctl.cli.commands.status.command as status_command_module
-from envctl.domain.status import StatusReport
+from envctl.domain.status import StatusIssue, StatusReport
 from tests.support.paths import normalize_path_str
 
 
@@ -20,9 +20,9 @@ def test_status_command_renders_status_report(
         contract_exists=True,
         vault_exists=False,
         resolved_valid=False,
-        summary="The project contract is not satisfied yet.",
-        issues=["Missing required keys: DATABASE_URL"],
-        suggested_action="Run 'envctl fill'",
+        summary_kind="unsatisfied",
+        issues=(StatusIssue(kind="missing_required", keys=("DATABASE_URL",)),),
+        suggested_action_kind="fill_or_set_values",
     )
     called: dict[str, Any] = {}
 
@@ -65,9 +65,12 @@ def test_status_command_emits_json_when_requested(
         contract_exists=True,
         vault_exists=False,
         resolved_valid=False,
-        summary="The project contract is not satisfied yet.",
-        issues=["Missing required keys: DATABASE_URL", "Unknown keys in vault: OLD_KEY"],
-        suggested_action="Run 'envctl fill'",
+        summary_kind="unsatisfied",
+        issues=(
+            StatusIssue(kind="missing_required", keys=("DATABASE_URL",)),
+            StatusIssue(kind="unknown_keys", keys=("OLD_KEY",)),
+        ),
+        suggested_action_kind="fill_or_set_values",
     )
     captured: dict[str, Any] = {}
 
@@ -109,4 +112,4 @@ def test_status_command_emits_json_when_requested(
         "Missing required keys: DATABASE_URL",
         "Unknown keys in vault: OLD_KEY",
     ]
-    assert output.metadata["suggested_action"] == "Run 'envctl fill'"
+    assert output.metadata["suggested_action"] == "Run 'envctl fill' or 'envctl set KEY VALUE'"

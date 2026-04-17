@@ -8,10 +8,10 @@ from envctl.cli.decorators import handle_errors, requires_writable_runtime
 from envctl.cli.presenters import present
 from envctl.cli.presenters.common import cancelled_output
 from envctl.cli.presenters.outputs.actions import build_profile_remove_output
-from envctl.cli.presenters.presenter import OutputFormat
 from envctl.cli.prompts.confirmation_prompts import build_profile_remove_confirmation_message
 from envctl.cli.prompts.input import confirm
 from envctl.cli.runtime import is_json_output
+from envctl.domain.runtime import OutputFormat
 
 PROFILE_ARGUMENT = typer.Argument(...)
 YES_OPTION = typer.Option(
@@ -28,7 +28,7 @@ def profile_remove_command(
     yes: bool = YES_OPTION,
 ) -> None:
     """Remove one explicit profile."""
-    output_format: OutputFormat = "json" if is_json_output() else "text"
+    output_format: OutputFormat = OutputFormat.JSON if is_json_output() else OutputFormat.TEXT
 
     if not yes:
         approved = confirm(

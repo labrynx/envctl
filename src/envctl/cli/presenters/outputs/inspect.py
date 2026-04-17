@@ -12,8 +12,6 @@ from envctl.cli.presenters.payloads import (
     build_contract_selection_payload,
     build_diagnostic_summary_payload,
     build_project_context_payload,
-    build_resolution_problem_lines,
-    build_resolution_report_payload,
     build_resolved_value_payload,
 )
 from envctl.domain.diagnostics import (
@@ -22,8 +20,7 @@ from envctl.domain.diagnostics import (
     InspectKeyResult,
     InspectResult,
 )
-from envctl.domain.resolution import ResolutionReport, ResolvedValue
-from envctl.domain.selection import ContractSelection
+from envctl.domain.resolution import ResolvedValue
 from envctl.utils.masking import mask_value
 
 
@@ -344,142 +341,5 @@ def build_inspect_key_output(result: InspectKeyResult) -> CommandOutput:
                 "default": result.default,
                 "sensitive": result.sensitive,
             },
-        },
-    )
-
-
-def build_inspect_value_output(
-    *,
-    profile: str,
-    key: str,
-    source: str,
-    raw_value: str | None,
-    value: str,
-    masked: bool,
-    expansion_status: str,
-    expansion_refs: tuple[str, ...],
-    expansion_error: str | None,
-    valid: bool,
-    detail: str | None,
-) -> CommandOutput:
-    """Build one unified output model for inspected variable value."""
-    shown_value = mask_value(value) if masked else value
-
-    sections = [
-        section(
-            "Variable",
-            field_item("profile", profile),
-            field_item("key", key),
-            field_item("source", source),
-            *([field_item("raw_value", raw_value)] if raw_value is not None else []),
-            field_item("value", shown_value),
-            field_item("expansion_status", expansion_status),
-            *([field_item("expansion_refs", ", ".join(expansion_refs))] if expansion_refs else []),
-            *(
-                [field_item("expansion_error", expansion_error)]
-                if expansion_error is not None
-                else []
-            ),
-            field_item("valid", "yes" if valid else "no"),
-            *([field_item("detail", detail)] if detail else []),
-        )
-    ]
-
-    return CommandOutput(
-        sections=sections,
-        metadata={
-            "kind": "inspect_value",
-            "profile": profile,
-            "key": key,
-            "source": source,
-            "raw_value": raw_value,
-            "value": shown_value,
-            "masked": masked,
-            "expansion_status": expansion_status,
-            "expansion_refs": list(expansion_refs),
-            "expansion_error": expansion_error,
-            "valid": valid,
-            "detail": detail,
-        },
-    )
-
-
-def build_resolution_output(
-    report: ResolutionReport,
-    *,
-    unknown_keys_title: str = "Unknown keys in vault",
-) -> CommandOutput:
-    """Build one unified output model for one resolution report."""
-    problem_lines = build_resolution_problem_lines(
-        report,
-        unknown_keys_title=unknown_keys_title,
-    )
-
-    sections = []
-    if problem_lines:
-        problem_items: list[OutputItem] = []
-        for line in problem_lines:
-            if not line:
-                continue
-            if line.startswith("  - "):
-                problem_items.append(bullet_item(line[4:]))
-            else:
-                problem_items.append(raw_item(line))
-        sections.append(section("Problems", *problem_items))
-
-    if not report.values:
-        value_items = [raw_item("None")]
-    else:
-        value_items = []
-        for key in sorted(report.values):
-            item = report.values[key]
-            shown_value = mask_value(item.value) if item.masked else item.value
-
-            suffixes: list[str] = []
-            if not item.valid:
-                suffixes.append(f"invalid: {item.detail or 'unknown reason'}")
-
-            if item.expansion_status == "expanded":
-                refs = ", ".join(item.expansion_refs)
-                suffixes.append(f"expanded{': ' + refs if refs else ''}")
-            elif item.expansion_status == "error" and item.expansion_error is not None:
-                suffixes.append(f"expansion error: {item.expansion_error.kind}")
-
-            suffix = f" — {' — '.join(suffixes)}" if suffixes else ""
-            value_items.append(bullet_item(f"{key} = {shown_value} ({item.source}){suffix}"))
-
-    sections.append(section("Resolved values", *value_items))
-
-    return CommandOutput(
-        sections=sections,
-        metadata={
-            "kind": "resolution",
-            "report": build_resolution_report_payload(report),
-        },
-    )
-
-
-def build_resolution_view_output(
-    *,
-    profile: str,
-    selection: ContractSelection,
-    report: ResolutionReport,
-) -> CommandOutput:
-    """Build one unified output model for one resolution view including profile."""
-    output = build_resolution_output(report)
-    context = section(
-        "Context",
-        field_item("profile", profile),
-        field_item("scope", selection.describe()),
-    )
-
-    return CommandOutput(
-        title=output.title,
-        messages=output.messages,
-        sections=[context, *output.sections],
-        metadata={
-            **output.metadata,
-            "profile": profile,
-            "selection": build_contract_selection_payload(selection),
         },
     )

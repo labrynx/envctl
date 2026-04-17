@@ -12,10 +12,10 @@ from envctl.cli.presenters.outputs.vault import (
     build_vault_show_missing_output,
     build_vault_show_values_output,
 )
-from envctl.cli.presenters.presenter import OutputFormat
 from envctl.cli.prompts.confirmation_prompts import build_vault_show_raw_confirmation_message
 from envctl.cli.prompts.input import confirm
 from envctl.cli.runtime import get_active_profile, is_json_output
+from envctl.domain.runtime import OutputFormat
 from envctl.utils.masking import mask_value
 
 RAW_OPTION = typer.Option(
@@ -52,7 +52,7 @@ def vault_show_command(
     from envctl.services.vault_service import run_vault_show
 
     _context, active_profile, result = run_vault_show(selected_profile)
-    output_format: OutputFormat = "json" if is_json_output() else "text"
+    output_format: OutputFormat = OutputFormat.JSON if is_json_output() else OutputFormat.TEXT
 
     if not result.exists:
         present(
