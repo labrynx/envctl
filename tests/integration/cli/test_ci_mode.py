@@ -101,19 +101,17 @@ def test_add_is_blocked_in_ci_mode_json_output(
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
 
-    result = runner.invoke(app, ["--json", "add", "APP_NAME", "demo"])
+    result = runner.invoke(app, ["--output", "json", "add", "APP_NAME", "demo"])
 
     assert result.exit_code == 1
 
     payload = parse_json_output(result.output)
-    assert payload == {
-        "ok": False,
-        "command": "envctl add",
-        "error": {
-            "type": "ExecutionError",
-            "message": "Command 'add' is not available in CI read-only mode.",
-        },
-    }
+    assert payload["metadata"]["ok"] is False
+    assert payload["metadata"]["command"] == "envctl add"
+    assert payload["metadata"]["error"]["type"] == "ExecutionError"
+    assert payload["metadata"]["error"]["message"] == (
+        "Command 'add' is not available in CI read-only mode."
+    )
 
 
 def test_sync_is_blocked_in_ci_mode_json_output(
@@ -123,19 +121,17 @@ def test_sync_is_blocked_in_ci_mode_json_output(
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
 
-    result = runner.invoke(app, ["--json", "sync"])
+    result = runner.invoke(app, ["--output", "json", "sync"])
 
     assert result.exit_code == 1
 
     payload = parse_json_output(result.output)
-    assert payload == {
-        "ok": False,
-        "command": "envctl sync",
-        "error": {
-            "type": "ExecutionError",
-            "message": "Command 'sync' is not available in CI read-only mode.",
-        },
-    }
+    assert payload["metadata"]["ok"] is False
+    assert payload["metadata"]["command"] == "envctl sync"
+    assert payload["metadata"]["error"]["type"] == "ExecutionError"
+    assert payload["metadata"]["error"]["message"] == (
+        "Command 'sync' is not available in CI read-only mode."
+    )
 
 
 def test_check_is_allowed_in_ci_mode_json_output(
@@ -151,13 +147,13 @@ def test_check_is_allowed_in_ci_mode_json_output(
         },
     )
 
-    result = runner.invoke(app, ["--json", "check"])
+    result = runner.invoke(app, ["--output", "json", "check"])
 
     assert result.exit_code == 1
 
     payload = parse_json_output(result.output)
-    assert payload["command"] == "check"
-    assert payload["data"]["report"]["missing_required"] == ["DATABASE_URL"]
+    assert payload["metadata"]["kind"] == "check"
+    assert payload["metadata"]["problems"][0]["key"] == "DATABASE_URL"
 
 
 def test_status_is_allowed_in_ci_mode_json_output(
@@ -167,13 +163,13 @@ def test_status_is_allowed_in_ci_mode_json_output(
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
 
-    result = runner.invoke(app, ["--json", "status"])
+    result = runner.invoke(app, ["--output", "json", "status"])
 
     assert result.exit_code == 0
 
     payload = parse_json_output(result.output)
-    assert payload["ok"] is True
-    assert payload["command"] == "status"
+    assert payload["metadata"]["kind"] == "status"
+    assert payload["metadata"]["ok"] is False
 
 
 def test_doctor_is_allowed_in_ci_mode_json_output(
@@ -183,13 +179,13 @@ def test_doctor_is_allowed_in_ci_mode_json_output(
 ) -> None:
     monkeypatch.setenv("ENVCTL_RUNTIME_MODE", "ci")
 
-    result = runner.invoke(app, ["--json", "doctor"])
+    result = runner.invoke(app, ["--output", "json", "inspect"])
 
     assert result.exit_code == 0
 
     payload = parse_json_output(result.output)
-    assert payload["ok"] is True
-    assert payload["command"] == "doctor"
+    assert payload["metadata"]["kind"] == "inspect"
+    assert payload["metadata"]["runtime"]["active_profile"] == "local"
 
 
 def test_run_remains_allowed_in_ci_mode_text_output(

@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.decorators import handle_errors, text_output_only
-from envctl.cli.presenters.profile_presenter import render_profile_path_result
-from envctl.cli.runtime import get_active_profile
+from envctl.cli.decorators import handle_errors
+from envctl.cli.presenters import present
+from envctl.cli.presenters.outputs.actions import build_profile_path_output
+from envctl.cli.runtime import get_active_profile, is_json_output
 
 PROFILE_ARGUMENT = typer.Argument(None)
 
 
 @handle_errors
-@text_output_only("profile path")
 def profile_path_command(
     profile: str | None = PROFILE_ARGUMENT,
 ) -> None:
@@ -24,7 +24,10 @@ def profile_path_command(
         active_profile=get_active_profile(),
     )
 
-    render_profile_path_result(
-        profile=result.profile,
-        path=result.path,
+    present(
+        build_profile_path_output(
+            profile=result.profile,
+            path=result.path,
+        ),
+        output_format="json" if is_json_output() else "text",
     )

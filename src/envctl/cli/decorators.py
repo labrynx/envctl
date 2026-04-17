@@ -4,25 +4,32 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from functools import wraps
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import typer
 
-from envctl.cli.presenters.common import print_error_title, print_help_hint
+from envctl.domain.runtime import OutputFormat
 from envctl.errors import EnvctlError, ExecutionError
-from envctl.utils.output import print_error
-
-if TYPE_CHECKING:
-    pass
 
 
 def emit_handled_error(
     exc: EnvctlError,
     *,
-    json_output: bool,
+    output_format: OutputFormat,
     command: str | None,
 ) -> None:
     """Emit one handled application error in text or JSON mode."""
+    from envctl.cli.presenters import present
+    from envctl.cli.presenters.outputs.errors import (
+        build_config_error_output,
+        build_contract_error_output,
+        build_error_diagnostics_payload,
+        build_error_output,
+        build_project_binding_error_output,
+        build_projection_validation_failure_output,
+        build_repository_discovery_error_output,
+        build_state_error_output,
+    )
     from envctl.domain.error_diagnostics import (
         ConfigDiagnostics,
         ContractDiagnostics,
@@ -32,63 +39,69 @@ def emit_handled_error(
         StateDiagnostics,
     )
 
-    if json_output:
-        from envctl.cli.serializers.common import emit_json
-        from envctl.cli.serializers.diagnostics import serialize_error_diagnostics
-        from envctl.cli.serializers.errors import serialize_error
-
+    if output_format == OutputFormat.JSON:
         details = (
-            serialize_error_diagnostics(exc.diagnostics) if exc.diagnostics is not None else None
+            build_error_diagnostics_payload(exc.diagnostics)
+            if exc.diagnostics is not None
+            else None
         )
-        emit_json(
-            serialize_error(
+        present(
+            build_error_output(
                 error_type=exc.__class__.__name__,
                 message=str(exc),
                 command=command,
                 details=details,
-            )
+            ),
+            output_format="json",
         )
         return
 
     diagnostics = exc.diagnostics
     if isinstance(diagnostics, ProjectionValidationDiagnostics):
-        from envctl.cli.presenters.projection_error_presenter import (
-            render_projection_validation_failure,
+        present(
+            build_projection_validation_failure_output(diagnostics, message=str(exc)),
+            output_format="text",
         )
-
-        render_projection_validation_failure(diagnostics, message=str(exc))
         return
     if isinstance(diagnostics, ContractDiagnostics):
-        from envctl.cli.presenters.contract_error_presenter import render_contract_error
-
-        render_contract_error(diagnostics, message=str(exc))
+        present(
+            build_contract_error_output(diagnostics, message=str(exc)),
+            output_format="text",
+        )
         return
     if isinstance(diagnostics, ConfigDiagnostics):
-        from envctl.cli.presenters.config_error_presenter import render_config_error
-
-        render_config_error(diagnostics, message=str(exc))
+        present(
+            build_config_error_output(diagnostics, message=str(exc)),
+            output_format="text",
+        )
         return
     if isinstance(diagnostics, StateDiagnostics):
-        from envctl.cli.presenters.state_error_presenter import render_state_error
-
-        render_state_error(diagnostics, message=str(exc))
+        present(
+            build_state_error_output(diagnostics, message=str(exc)),
+            output_format="text",
+        )
         return
     if isinstance(diagnostics, RepositoryDiscoveryDiagnostics):
-        from envctl.cli.presenters.repository_error_presenter import (
-            render_repository_discovery_error,
+        present(
+            build_repository_discovery_error_output(diagnostics, message=str(exc)),
+            output_format="text",
         )
-
-        render_repository_discovery_error(diagnostics, message=str(exc))
         return
     if isinstance(diagnostics, ProjectBindingDiagnostics):
-        from envctl.cli.presenters.repository_error_presenter import (
-            render_project_binding_error,
+        present(
+            build_project_binding_error_output(diagnostics, message=str(exc)),
+            output_format="text",
         )
-
-        render_project_binding_error(diagnostics, message=str(exc))
         return
 
-    print_error(f"Error: {exc}")
+    present(
+        build_error_output(
+            error_type=exc.__class__.__name__,
+            message=str(exc),
+            command=command,
+        ),
+        output_format="text",
+    )
 
 
 def emit_usage_error(
@@ -97,8 +110,46 @@ def emit_usage_error(
     command: str | None,
 ) -> None:
     """Emit one styled usage error for text-mode CLI validation failures."""
-    print_error_title(message)
-    print_help_hint(command, err=True)
+    from envctl.cli.presenters import present
+    from envctl.cli.presenters.common import help_hint_section
+    from envctl.cli.presenters.models import CommandOutput, OutputMessage
+
+    present(
+        CommandOutput(
+            messages=[OutputMessage(level="error", text=message, err=True)],
+            sections=[help_hint_section(command, err=True)],
+        ),
+        output_format="text",
+    )
+
+
+def _get_or_initialize_observability_context(command: str) -> Any:
+    """Return an active observability context, creating one when needed."""
+    from envctl.cli.runtime import (
+        get_profile_observability,
+        get_trace_enabled,
+        get_trace_file,
+        get_trace_format,
+        get_trace_output,
+    )
+    from envctl.observability import (
+        get_active_observability_context,
+        initialize_observability_context,
+    )
+
+    context = get_active_observability_context()
+    if context is not None:
+        return context
+
+    initialize_observability_context(
+        command_name=command,
+        trace_enabled=get_trace_enabled(),
+        trace_format=get_trace_format(),
+        trace_output=get_trace_output(),
+        trace_file=get_trace_file(),
+        profile_observability=get_profile_observability(),
+    )
+    return get_active_observability_context()
 
 
 def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -111,15 +162,15 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
             is_error_debug_enabled,
             is_json_output,
         )
-        from envctl.observability import get_active_observability_context
         from envctl.observability.error_mapping import map_exception_to_error_event
         from envctl.observability.events import ERROR_HANDLED, ERROR_UNHANDLED
         from envctl.observability.recorder import record_event
         from envctl.observability.renderers import render_profile_summary
         from envctl.observability.timing import observe_span
 
-        obs_context = get_active_observability_context()
-        command = get_command_path()
+        command = get_command_path() or "envctl"
+
+        obs_context = _get_or_initialize_observability_context(command)
         span_fields: dict[str, Any] = {"command": command}
         result: Any = None
 
@@ -167,7 +218,7 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
 
             emit_handled_error(
                 exc,
-                json_output=is_json_output(),
+                output_format=OutputFormat.JSON if is_json_output() else OutputFormat.TEXT,
                 command=command,
             )
             raise typer.Exit(code=1) from exc
@@ -206,19 +257,27 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
             if is_error_debug_enabled():
                 raise
 
-            if is_json_output():
-                from envctl.cli.serializers.common import emit_json
-                from envctl.cli.serializers.errors import serialize_error
+            from envctl.cli.presenters import present
+            from envctl.cli.presenters.outputs.errors import build_error_output
 
-                emit_json(
-                    serialize_error(
+            if is_json_output():
+                present(
+                    build_error_output(
                         error_type=exc.__class__.__name__,
                         message="Unexpected internal error. Re-run with --debug-errors.",
                         command=command,
-                    )
+                    ),
+                    output_format="json",
                 )
             else:
-                print_error("Error: Unexpected internal error. Re-run with --debug-errors.")
+                present(
+                    build_error_output(
+                        error_type=exc.__class__.__name__,
+                        message="Unexpected internal error. Re-run with --debug-errors.",
+                        command=command,
+                    ),
+                    output_format="text",
+                )
 
             raise typer.Exit(code=1) from exc
         finally:
@@ -259,10 +318,10 @@ def requires_writable_runtime(
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            from envctl.config.loader import load_config
+            from envctl.cli.runtime import get_config
             from envctl.domain.runtime import RuntimeMode
 
-            config = load_config()
+            config = get_config()
             if config.runtime_mode == RuntimeMode.CI:
                 raise ExecutionError(
                     f"Command '{command_name}' is not available in CI read-only mode."

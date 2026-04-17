@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import pytest
 import typer
@@ -21,21 +21,21 @@ from tests.support.contexts import make_project_context
 def make_inspect_result() -> InspectResult:
     context = make_project_context(repo_root="/tmp/demo")
     return InspectResult(
-        project=context,
-        active_profile="staging",
-        selection=group_selection("Application"),
-        contract_path=str(context.repo_contract_path),
-        values_path=str(context.vault_values_path),
-        summary=DiagnosticSummary(total=1, valid=1, invalid=0, unknown=0),
-        variables=(
+        context,
+        "staging",
+        group_selection("Application"),
+        str(context.repo_contract_path),
+        str(context.vault_values_path),
+        DiagnosticSummary(total=1, valid=1, invalid=0, unknown=0),
+        (
             make_resolved_value(
                 key="APP_NAME",
                 value="demo",
                 source="vault",
             ),
         ),
-        problems=(),
-        contract_graph=InspectContractGraph(
+        (),
+        InspectContractGraph(
             root_path=Path(context.repo_contract_path),
             contract_paths=(Path(context.repo_contract_path),),
             contracts_total=1,
@@ -53,16 +53,16 @@ def make_inspect_result() -> InspectResult:
 def make_key_result() -> InspectKeyResult:
     context = make_project_context(repo_root="/tmp/demo")
     return InspectKeyResult(
-        project=context,
-        active_profile="staging",
-        item=make_resolved_value(key="APP_NAME", value="demo", source="vault"),
-        contract_type="string",
-        contract_format=None,
-        declared_in=Path(context.repo_contract_path),
-        sets=(),
-        groups=("Application",),
-        default=None,
-        sensitive=False,
+        context,
+        "staging",
+        make_resolved_value(key="APP_NAME", value="demo", source="vault"),
+        "string",
+        None,
+        Path(context.repo_contract_path),
+        (),
+        ("Application",),
+        None,
+        False,
     )
 
 
@@ -83,14 +83,18 @@ def test_inspect_command_renders_report(monkeypatch: pytest.MonkeyPatch) -> None
     )
     monkeypatch.setattr(
         inspect_command_module,
-        "render_inspect_result",
-        lambda result: called.update({"result": result}),
+        "present",
+        lambda output, *, output_format: called.update(
+            {"output": output, "output_format": output_format}
+        ),
     )
     monkeypatch.setattr(inspect_command_module, "is_json_output", lambda: False)
 
     inspect_command_module.inspect_command(None)
 
-    assert called["result"] is result
+    assert called["output_format"] == "text"
+    assert called["output"].metadata["kind"] == "inspect"
+    assert called["output"].metadata["runtime"]["active_profile"] == "staging"
 
 
 def test_inspect_command_emits_json_when_requested(
@@ -108,21 +112,22 @@ def test_inspect_command_emits_json_when_requested(
     monkeypatch.setattr(
         inspect_command_module,
         "get_contract_selection",
-        lambda: group_selection("Application"),
+        ContractSelection,
     )
     monkeypatch.setattr(inspect_command_module, "is_json_output", lambda: True)
     monkeypatch.setattr(
         inspect_command_module,
-        "emit_json",
-        lambda payload: captured.update({"payload": payload}),
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
     )
 
     inspect_command_module.inspect_command(None)
 
-    payload = cast(dict[str, Any], captured["payload"])
-    assert payload["command"] == "inspect"
-    assert payload["data"]["runtime"]["active_profile"] == "staging"
-    assert payload["data"]["variables"]["APP_NAME"]["value"] == "demo"
+    assert captured["output_format"] == "json"
+    assert captured["output"].metadata["runtime"]["active_profile"] == "staging"
+    assert captured["output"].metadata["variables"]["APP_NAME"]["value"] == "demo"
 
 
 def test_inspect_key_command_emits_json(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -143,15 +148,17 @@ def test_inspect_key_command_emits_json(monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setattr(inspect_command_module, "is_json_output", lambda: True)
     monkeypatch.setattr(
         inspect_command_module,
-        "emit_json",
-        lambda payload: captured.update({"payload": payload}),
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
     )
 
     inspect_command_module.inspect_command("APP_NAME")
 
-    payload = cast(dict[str, Any], captured["payload"])
-    assert payload["data"]["item"]["key"] == "APP_NAME"
-    assert payload["data"]["contract"]["type"] == "string"
+    assert captured["output_format"] == "json"
+    assert captured["output"].metadata["item"]["key"] == "APP_NAME"
+    assert captured["output"].metadata["contract"]["type"] == "string"
 
 
 def test_inspect_key_rejects_scope_selectors(
@@ -205,11 +212,13 @@ def test_inspect_key_json_includes_combined_warnings(
     monkeypatch.setattr(inspect_command_module, "is_json_output", lambda: True)
     monkeypatch.setattr(
         inspect_command_module,
-        "emit_json",
-        lambda payload: captured.update({"payload": payload}),
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
     )
 
     inspect_command_module.inspect_command("APP_NAME")
 
-    payload = cast(dict[str, Any], captured["payload"])
-    assert payload["data"]["warnings"] == []
+    assert captured["output_format"] == "json"
+    assert captured["output"].metadata["kind"] == "inspect_key"

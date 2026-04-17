@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from envctl.cli.command_support import build_json_command_payload
 from envctl.cli.decorators import handle_errors
-from envctl.cli.presenters.status_presenter import render_status_view
+from envctl.cli.presenters import present
+from envctl.cli.presenters.outputs.status import build_status_view_output
 from envctl.cli.runtime import get_active_profile, is_json_output
-from envctl.cli.serializers.common import emit_json
-from envctl.cli.serializers.status import serialize_status_report
 
 
 @handle_errors
@@ -17,18 +15,10 @@ def status_command() -> None:
 
     active_profile, report = run_status(get_active_profile())
 
-    if is_json_output():
-        payload = serialize_status_report(report)
-        payload["active_profile"] = active_profile
-        emit_json(
-            build_json_command_payload(
-                command="status",
-                data=payload,
-            )
-        )
-        return
-
-    render_status_view(
-        profile=active_profile,
-        report=report,
+    present(
+        build_status_view_output(
+            profile=active_profile,
+            report=report,
+        ),
+        output_format="json" if is_json_output() else "text",
     )

@@ -46,7 +46,7 @@ def test_render_managed_hook_uses_minimal_wrapper() -> None:
     assert "# managed-by: envctl\n" in rendered
     assert f"# hook: {spec.name.value}\n" in rendered
     assert "command -v envctl >/dev/null 2>&1" in rendered
-    assert f'envctl hook-run {spec.name.value} "$@"' in rendered
+    assert f'envctl hook run {spec.name.value} "$@"' in rendered
     assert "\r" not in rendered
 
 
@@ -163,7 +163,7 @@ def test_install_force_overwrites_foreign(
 
     assert report.final_status == HooksStatusLevel.HEALTHY
     assert pre_commit.action == HookAction.REWRITTEN
-    assert "envctl hook-run pre-commit" in hook_path.read_text(encoding="utf-8")
+    assert "envctl hook run pre-commit" in hook_path.read_text(encoding="utf-8")
 
 
 def test_status_marks_external_hooks_path_as_unsupported(

@@ -114,7 +114,7 @@ This is an intentional product boundary.
 
 ## JSON output
 
-`hooks` commands support `--json`.
+`hooks` commands support `--output json`.
 
 The hooks JSON contract is versioned independently and currently emits:
 

@@ -30,7 +30,7 @@ def test_get_cli_state_returns_default_when_no_context_exists() -> None:
 
     assert state == CliState()
     assert state.output_format == OutputFormat.TEXT
-    assert state.profile == "local"
+    assert state.requested_profile is None
 
 
 def test_set_cli_state_persists_profile_output_and_selection() -> None:
@@ -40,10 +40,10 @@ def test_set_cli_state_persists_profile_output_and_selection() -> None:
         set_cli_state(
             cast(Any, ctx),
             output_format=OutputFormat.JSON,
-            profile="staging",
-            group="Application",
-            set_name=None,
-            variable=None,
+            requested_profile="staging",
+            requested_group="Application",
+            requested_set_name=None,
+            requested_variable=None,
             trace_enabled=True,
             trace_format="human",
             trace_output="both",
@@ -55,8 +55,8 @@ def test_set_cli_state_persists_profile_output_and_selection() -> None:
         state = get_cli_state()
 
         assert state.output_format == OutputFormat.JSON
-        assert state.profile == "staging"
-        assert state.group == "Application"
+        assert state.requested_profile == "staging"
+        assert state.requested_group == "Application"
         assert get_output_format() == OutputFormat.JSON
         assert is_json_output() is True
         assert get_active_profile() == "staging"
@@ -80,4 +80,4 @@ def test_get_cli_state_ignores_non_clistate_context_obj() -> None:
         state = get_cli_state()
 
     assert state == CliState()
-    assert state.profile == "local"
+    assert state.requested_profile is None

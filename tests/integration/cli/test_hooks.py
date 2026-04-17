@@ -46,15 +46,13 @@ def test_hooks_status_json_reports_missing_hooks(
 ) -> None:
     runner.invoke(app, ["config", "init"], catch_exceptions=False)
 
-    result = runner.invoke(app, ["--json", "hooks", "status"], catch_exceptions=False)
+    result = runner.invoke(app, ["--output", "json", "hooks", "status"], catch_exceptions=False)
 
     assert result.exit_code == 1
     payload = _parse_json(result.output)
-    assert payload["ok"] is False
-    assert payload["schema_version"] == 1
-    assert payload["command"] == "hooks status"
-    data = cast(dict[str, Any], payload["data"])
-    assert data["overall_status"] == "degraded"
+    assert payload["metadata"]["ok"] is False
+    assert payload["metadata"]["kind"] == "hooks_status"
+    assert payload["metadata"]["overall_status"] == "degraded"
 
 
 def test_hooks_install_without_force_keeps_foreign_hook_visible(
@@ -87,7 +85,7 @@ def test_hooks_install_force_overwrites_foreign_hook(
     result = runner.invoke(app, ["hooks", "install", "--force"], catch_exceptions=False)
 
     assert result.exit_code == 0
-    assert "envctl hook-run pre-commit" in hook_path.read_text(encoding="utf-8")
+    assert "envctl hook run pre-commit" in hook_path.read_text(encoding="utf-8")
 
 
 def test_hook_wrapper_executes_via_sh_with_envctl_on_path(

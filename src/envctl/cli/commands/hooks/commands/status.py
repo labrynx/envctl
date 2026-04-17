@@ -1,0 +1,36 @@
+"""Managed hooks status command."""
+
+from __future__ import annotations
+
+import typer
+
+from envctl.cli.decorators import handle_errors
+from envctl.cli.presenters import present
+from envctl.cli.presenters.common import merge_outputs
+from envctl.cli.presenters.outputs.hooks import build_hooks_status_output
+from envctl.cli.presenters.outputs.warnings import build_command_warnings_output
+from envctl.cli.runtime import is_json_output
+from envctl.services.context_service import load_project_context
+from envctl.services.hook_service import HookService
+
+
+@handle_errors
+def hooks_status_command() -> None:
+    """Show managed hooks status."""
+    _config, context = load_project_context()
+    report = HookService(context.repo_root).get_status()
+    exit_code = 0 if report.is_healthy else 1
+
+    output = build_hooks_status_output(
+        report,
+        repo_root=context.repo_root,
+    )
+
+    if context.runtime_warnings:
+        output = merge_outputs(
+            build_command_warnings_output(context.runtime_warnings),
+            output,
+        )
+
+    present(output, output_format="json" if is_json_output() else "text")
+    raise typer.Exit(code=exit_code)

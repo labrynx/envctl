@@ -1,0 +1,1 @@
+"""Managed hooks subcommands."""

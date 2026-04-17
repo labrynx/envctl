@@ -8,5 +8,5 @@ if ! command -v envctl >/dev/null 2>&1; then
   exit 1
 fi
 
-envctl hook-run pre-commit "$@"
+envctl hook run pre-commit "$@"
 exit $?

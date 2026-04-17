@@ -4,19 +4,16 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.decorators import (
-    handle_errors,
-    requires_writable_runtime,
-    text_output_only,
-)
-from envctl.cli.presenters.profile_presenter import render_profile_create_result
+from envctl.cli.decorators import handle_errors, requires_writable_runtime
+from envctl.cli.presenters import present
+from envctl.cli.presenters.outputs.actions import build_profile_create_output
+from envctl.cli.runtime import is_json_output
 
 PROFILE_ARGUMENT = typer.Argument(...)
 
 
 @handle_errors
 @requires_writable_runtime("profile create")
-@text_output_only("profile create")
 def profile_create_command(
     profile: str = PROFILE_ARGUMENT,
 ) -> None:
@@ -25,8 +22,11 @@ def profile_create_command(
 
     _context, result = run_profile_create(profile)
 
-    render_profile_create_result(
-        profile=result.profile,
-        path=result.path,
-        created=result.created,
+    present(
+        build_profile_create_output(
+            profile=result.profile,
+            path=result.path,
+            created=result.created,
+        ),
+        output_format="json" if is_json_output() else "text",
     )

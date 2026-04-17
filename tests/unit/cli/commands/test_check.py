@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
 import pytest
 import typer
@@ -41,13 +41,18 @@ def test_check_command_exits_when_result_is_not_ok(
 ) -> None:
     context = make_project_context(repo_root="/tmp/demo")
     result = make_check_result(ok=False)
+    captured: dict[str, Any] = {}
 
     monkeypatch.setattr(
         "envctl.services.check_service.run_check",
         lambda profile, *, selection=None: (context, result, ()),
     )
     monkeypatch.setattr(
-        "envctl.cli.presenters.check_presenter.render_check_result", lambda result: None
+        check_command_module,
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
     )
     monkeypatch.setattr(check_command_module, "get_active_profile", lambda: "local")
     monkeypatch.setattr(
@@ -61,6 +66,9 @@ def test_check_command_exits_when_result_is_not_ok(
         check_command_module.check_command()
 
     assert exc_info.value.exit_code == 1
+    assert captured["output_format"] == "text"
+    assert captured["output"].metadata["kind"] == "check"
+    assert captured["output"].metadata["ok"] is False
 
 
 def test_check_command_emits_json_when_requested(
@@ -83,23 +91,25 @@ def test_check_command_emits_json_when_requested(
     monkeypatch.setattr(check_command_module, "is_json_output", lambda: True)
     monkeypatch.setattr(
         check_command_module,
-        "emit_json",
-        lambda payload: captured.update({"payload": payload}),
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
     )
 
     check_command_module.check_command()
 
-    payload = cast(dict[str, Any], captured["payload"])
-    assert payload["ok"] is True
-    assert payload["command"] == "check"
-    assert payload["data"]["active_profile"] == "staging"
-    assert payload["data"]["selection"] == {
+    assert captured["output_format"] == "json"
+    metadata = captured["output"].metadata
+    assert metadata["ok"] is True
+    assert metadata["active_profile"] == "staging"
+    assert metadata["selection"] == {
         "mode": "group",
         "group": "Application",
         "set": None,
         "var": None,
     }
-    assert payload["data"]["summary"]["valid"] == 3
+    assert metadata["summary"]["valid"] == 3
 
 
 def test_check_command_emits_json_and_exits_when_invalid(
@@ -122,14 +132,16 @@ def test_check_command_emits_json_and_exits_when_invalid(
     monkeypatch.setattr(check_command_module, "is_json_output", lambda: True)
     monkeypatch.setattr(
         check_command_module,
-        "emit_json",
-        lambda payload: captured.update({"payload": payload}),
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
     )
 
     with pytest.raises(typer.Exit) as exc_info:
         check_command_module.check_command()
 
     assert exc_info.value.exit_code == 1
-    payload = cast(dict[str, Any], captured["payload"])
-    assert payload["ok"] is False
-    assert payload["data"]["problems"][0]["key"] == "DATABASE_URL"
+    assert captured["output_format"] == "json"
+    assert captured["output"].metadata["ok"] is False
+    assert captured["output"].metadata["problems"][0]["key"] == "DATABASE_URL"

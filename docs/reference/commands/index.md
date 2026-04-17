@@ -19,7 +19,7 @@ Available global options:
 - `--group`, `-g`
 - `--set`
 - `--var`
-- `--json`
+- `--output json|text`
 - `--install-completion`
 - `--show-completion`
 
@@ -106,19 +106,6 @@ These selectors are mutually exclusive.
     - [hooks](hooks.md)
 
 </div>
-
-## Deprecated aliases
-
-The canonical diagnostic path is:
-
-- `envctl check`
-- `envctl inspect`
-- `envctl inspect KEY`
-
-Deprecated compatibility aliases still work, but should not be used in new docs or scripts:
-
-- `envctl doctor` → `envctl inspect`
-- `envctl explain KEY` → `envctl inspect KEY`
 
 ## Read next
 

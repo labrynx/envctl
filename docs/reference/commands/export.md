@@ -12,7 +12,7 @@
 envctl export
 envctl export --format shell
 envctl export --format dotenv
-envctl --json export
+envctl --output json export
 ```
 
 ## Purpose
@@ -26,7 +26,7 @@ It prints the resolved environment to standard output instead of creating a file
 * resolves the active environment first
 * prints shell export lines by default
 * prints dotenv `KEY=value` lines with `--format dotenv`
-* emits structured JSON with the global `--json` flag
+* emits structured JSON with the global `--output json` flag
 * prints the final expanded values, not the original placeholder expressions
 * respects global selectors such as `--group`, `--set`, and `--var`
 * fails fast if the selected explicit profile does not exist
@@ -35,7 +35,7 @@ It prints the resolved environment to standard output instead of creating a file
 
 Use `export` when another shell command or script wants the resolved result directly from stdout.
 
-If the caller is another tool and you want a stable structured payload, use `envctl --json export`.
+If the caller is another tool and you want a stable structured payload, use `envctl --output json export`.
 
 ## When not to use it
 
@@ -49,7 +49,7 @@ If another tool needs a file on disk, use [`sync`](sync.md). If you want to exec
 envctl export
 envctl export --format dotenv
 envctl --group Runtime export --format dotenv
-envctl --json export
+envctl --output json export
 ```
 
 ## Related commands

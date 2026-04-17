@@ -18,13 +18,6 @@ The canonical root contract file is:
 
 For compatibility, `envctl` still accepts `.envctl.schema.yaml`.
 
-## Deprecated commands
-
-| Deprecated | Use instead |
-| --- | --- |
-| `envctl doctor` | `envctl inspect` |
-| `envctl explain KEY` | `envctl inspect KEY` |
-
 ## Contract fields
 
 ### `group` → `groups`

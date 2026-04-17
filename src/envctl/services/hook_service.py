@@ -51,12 +51,12 @@ _MANAGED_HOOK_SPECS = (
     ManagedHookSpec(
         name=HookName.PRE_COMMIT,
         version=1,
-        command=("envctl", "hook-run", HookName.PRE_COMMIT.value),
+        command=("envctl", "hook run", HookName.PRE_COMMIT.value),
     ),
     ManagedHookSpec(
         name=HookName.PRE_PUSH,
         version=1,
-        command=("envctl", "hook-run", HookName.PRE_PUSH.value),
+        command=("envctl", "hook run", HookName.PRE_PUSH.value),
     ),
 )
 

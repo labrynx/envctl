@@ -4,25 +4,25 @@ from __future__ import annotations
 
 import typer
 
-from envctl.cli.decorators import handle_errors, text_output_only
-from envctl.cli.presenters.vault_presenter import render_vault_audit_result
+from envctl.cli.decorators import handle_errors
+from envctl.cli.presenters import present
+from envctl.cli.presenters.outputs.vault import build_vault_audit_output
+from envctl.cli.runtime import is_json_output
 
 
 @handle_errors
-@text_output_only("vault audit")
 def vault_audit_command() -> None:
     """Audit every persisted vault project for plaintext or inconsistent files."""
+    from envctl.domain.vault import summarize_vault_audit
     from envctl.services.vault_service import run_vault_audit
 
     _context, projects = run_vault_audit()
-    render_vault_audit_result(projects)
+    summary = summarize_vault_audit(projects)
 
-    has_issues = any(
-        (not project.key_exists)
-        or any(
-            (item.state != "encrypted") or (not item.private_permissions) for item in project.files
-        )
-        for project in projects
+    present(
+        build_vault_audit_output(projects, summary=summary),
+        output_format="json" if is_json_output() else "text",
     )
-    if has_issues:
+
+    if not summary.ok:
         raise typer.Exit(code=1)

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import pytest
 
 import envctl.cli.commands.status.command as status_command_module
-from envctl.domain.status import StatusReport
+from envctl.domain.status import StatusIssue, StatusReport
 from tests.support.paths import normalize_path_str
 
 
@@ -20,9 +20,9 @@ def test_status_command_renders_status_report(
         contract_exists=True,
         vault_exists=False,
         resolved_valid=False,
-        summary="The project contract is not satisfied yet.",
-        issues=["Missing required keys: DATABASE_URL"],
-        suggested_action="Run 'envctl fill'",
+        summary_kind="unsatisfied",
+        issues=(StatusIssue(kind="missing_required", keys=("DATABASE_URL",)),),
+        suggested_action_kind="fill_or_set_values",
     )
     called: dict[str, Any] = {}
 
@@ -37,8 +37,10 @@ def test_status_command_renders_status_report(
     )
     monkeypatch.setattr(
         status_command_module,
-        "render_status_view",
-        lambda *, profile, report: called.update({"profile": profile, "report": report}),
+        "present",
+        lambda output, *, output_format: called.update(
+            {"output": output, "output_format": output_format}
+        ),
     )
     monkeypatch.setattr(
         status_command_module,
@@ -48,8 +50,9 @@ def test_status_command_renders_status_report(
 
     status_command_module.status_command()
 
-    assert called["profile"] == "staging"
-    assert called["report"] is report
+    assert called["output_format"] == "text"
+    assert called["output"].metadata["active_profile"] == "staging"
+    assert called["output"].metadata["project_slug"] == "demo"
 
 
 def test_status_command_emits_json_when_requested(
@@ -62,9 +65,12 @@ def test_status_command_emits_json_when_requested(
         contract_exists=True,
         vault_exists=False,
         resolved_valid=False,
-        summary="The project contract is not satisfied yet.",
-        issues=["Missing required keys: DATABASE_URL", "Unknown keys in vault: OLD_KEY"],
-        suggested_action="Run 'envctl fill'",
+        summary_kind="unsatisfied",
+        issues=(
+            StatusIssue(kind="missing_required", keys=("DATABASE_URL",)),
+            StatusIssue(kind="unknown_keys", keys=("OLD_KEY",)),
+        ),
+        suggested_action_kind="fill_or_set_values",
     )
     captured: dict[str, Any] = {}
 
@@ -84,24 +90,26 @@ def test_status_command_emits_json_when_requested(
     )
     monkeypatch.setattr(
         status_command_module,
-        "emit_json",
-        lambda payload: captured.update({"payload": payload}),
+        "present",
+        lambda output, *, output_format: captured.update(
+            {"output": output, "output_format": output_format}
+        ),
     )
 
     status_command_module.status_command()
 
-    payload = cast(dict[str, Any], captured["payload"])
-    assert payload["ok"] is True
-    assert payload["command"] == "status"
-    assert payload["data"]["active_profile"] == "staging"
-    assert payload["data"]["project_slug"] == "demo"
-    assert payload["data"]["project_id"] == "prj_aaaaaaaaaaaaaaaa"
-    assert normalize_path_str(payload["data"]["repo_root"]) == "/tmp/demo"
-    assert payload["data"]["contract_exists"] is True
-    assert payload["data"]["vault_exists"] is False
-    assert payload["data"]["resolved_valid"] is False
-    assert payload["data"]["issues"] == [
+    output = captured["output"]
+    assert captured["output_format"] == "json"
+    assert output.metadata["ok"] is False
+    assert output.metadata["active_profile"] == "staging"
+    assert output.metadata["project_slug"] == "demo"
+    assert output.metadata["project_id"] == "prj_aaaaaaaaaaaaaaaa"
+    assert normalize_path_str(output.metadata["repo_root"]) == "/tmp/demo"
+    assert output.metadata["contract_exists"] is True
+    assert output.metadata["vault_exists"] is False
+    assert output.metadata["resolved_valid"] is False
+    assert output.metadata["issues"] == [
         "Missing required keys: DATABASE_URL",
         "Unknown keys in vault: OLD_KEY",
     ]
-    assert payload["data"]["suggested_action"] == "Run 'envctl fill'"
+    assert output.metadata["suggested_action"] == "Run 'envctl fill' or 'envctl set KEY VALUE'"

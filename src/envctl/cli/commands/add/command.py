@@ -8,14 +8,15 @@ from envctl.cli.decorators import (
     emit_usage_error,
     handle_errors,
     requires_writable_runtime,
-    text_output_only,
 )
-from envctl.cli.presenters.action_presenter import (
-    render_add_result,
-    render_inferred_spec,
+from envctl.cli.presenters import present
+from envctl.cli.presenters.common import merge_outputs
+from envctl.cli.presenters.outputs.actions import (
+    build_add_output,
+    build_inferred_spec_output,
 )
 from envctl.cli.prompts.input import confirm, prompt_string
-from envctl.cli.runtime import get_active_profile, get_command_path
+from envctl.cli.runtime import get_active_profile, get_command_path, is_json_output
 from envctl.domain.operations import AddVariableRequest
 
 KEY_ARGUMENT = typer.Argument(...)
@@ -182,7 +183,6 @@ def _build_add_request(
 
 @handle_errors
 @requires_writable_runtime("add")
-@text_output_only("add")
 def add_command(
     key: str = KEY_ARGUMENT,
     value: str = VALUE_ARGUMENT,
@@ -225,13 +225,20 @@ def add_command(
 
     context, result = run_add(request, get_active_profile())
 
-    render_add_result(
-        key=key,
-        profile=result.active_profile,
-        profile_path=result.profile_path,
-        contract_path=context.repo_contract_path,
-        contract_created=result.contract_created,
-        contract_updated=result.contract_updated,
-        contract_entry_created=result.contract_entry_created,
+    output = merge_outputs(
+        build_add_output(
+            key=key,
+            profile=result.active_profile,
+            profile_path=result.profile_path,
+            contract_path=context.repo_contract_path,
+            contract_created=result.contract_created,
+            contract_updated=result.contract_updated,
+            contract_entry_created=result.contract_entry_created,
+        ),
+        build_inferred_spec_output(result.inferred_spec),
     )
-    render_inferred_spec(result.inferred_spec)
+
+    present(
+        output,
+        output_format="json" if is_json_output() else "text",
+    )

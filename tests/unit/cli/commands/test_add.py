@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -7,6 +8,8 @@ import pytest
 import typer
 
 import envctl.cli.commands.add.command as add_command_module
+from envctl.cli.presenters.outputs.actions import build_add_output
+from envctl.cli.presenters.renderers.json import build_json_payload
 from envctl.domain.operations import AddVariableRequest
 from envctl.domain.runtime import RuntimeMode
 
@@ -314,9 +317,8 @@ def test_add_command_passes_format_override(
 
 def test_add_command_rejects_ci_mode(
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    captured: dict[str, str] = {}
-
     monkeypatch.setattr(
         "envctl.config.loader.load_config",
         lambda: SimpleNamespace(runtime_mode=RuntimeMode.CI),
@@ -325,10 +327,6 @@ def test_add_command_rejects_ci_mode(
         "envctl.cli.runtime.is_json_output",
         lambda: False,
     )
-    monkeypatch.setattr(
-        "envctl.cli.decorators.print_error",
-        lambda message: captured.update({"message": message}),
-    )
 
     with pytest.raises(typer.Exit) as exc_info:
         add_command_module.add_command(
@@ -337,44 +335,24 @@ def test_add_command_rejects_ci_mode(
         )
 
     assert exc_info.value.exit_code == 1
-    assert "CI read-only mode" in captured["message"]
+    captured = capsys.readouterr()
+    assert "CI read-only mode" in captured.err
 
 
-def test_add_command_rejects_json_output(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    captured: dict[str, Any] = {}
-
-    monkeypatch.setattr(
-        "envctl.config.loader.load_config",
-        lambda: SimpleNamespace(runtime_mode=RuntimeMode.LOCAL),
-    )
-    monkeypatch.setattr(
-        "envctl.cli.runtime.is_json_output",
-        lambda: True,
-    )
-    monkeypatch.setattr(
-        "envctl.cli.runtime.get_command_path",
-        lambda: "envctl add",
-    )
-    monkeypatch.setattr(
-        "envctl.cli.serializers.common.emit_json",
-        lambda payload: captured.update({"payload": payload}),
-    )
-
-    with pytest.raises(typer.Exit) as exc_info:
-        add_command_module.add_command(
+def test_add_command_emits_json_output() -> None:
+    payload = build_json_payload(
+        build_add_output(
             key="APP_NAME",
-            value="demo",
+            profile="local",
+            profile_path=Path("/tmp/vault/values.env"),
+            contract_path=Path("/tmp/repo/.envctl.yaml"),
+            contract_created=False,
+            contract_updated=False,
+            contract_entry_created=True,
         )
+    )
 
-    assert exc_info.value.exit_code == 1
-    payload = cast(dict[str, Any], captured["payload"])
-    assert payload == {
-        "ok": False,
-        "command": "envctl add",
-        "error": {
-            "type": "ExecutionError",
-            "message": "JSON output is not supported for 'add' yet.",
-        },
-    }
+    assert payload["metadata"]["key"] == "APP_NAME"
+    assert payload["metadata"]["profile"] == "local"
+    assert payload["metadata"]["vault_values"] == "/tmp/vault/values.env"
+    assert payload["metadata"]["contract"] == "/tmp/repo/.envctl.yaml"

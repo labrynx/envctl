@@ -6,15 +6,14 @@ from typing import Literal
 
 import typer
 
-from envctl.cli.command_support import (
-    build_json_command_payload,
-    render_contract_warnings_if_any,
-)
 from envctl.cli.decorators import handle_errors
-from envctl.cli.presenters.action_presenter import render_export_output
+from envctl.cli.presenters import present
+from envctl.cli.presenters.common import merge_outputs
+from envctl.cli.presenters.outputs.actions import build_export_output
+from envctl.cli.presenters.outputs.warnings import (
+    build_contract_deprecation_warnings_output,
+)
 from envctl.cli.runtime import get_active_profile, get_contract_selection, is_json_output
-from envctl.cli.serializers.common import emit_json
-from envctl.cli.serializers.export import serialize_export_result
 
 ExportFormat = Literal["shell", "dotenv"]
 
@@ -41,25 +40,24 @@ def export_command(
         selection=get_contract_selection(),
     )
 
-    if is_json_output():
-        emit_json(
-            build_json_command_payload(
-                command="export",
-                data=serialize_export_result(
-                    active_profile=resolved_profile,
-                    format=format,
-                    values=values,
-                    rendered=rendered,
-                ),
-                contract_warnings=warnings,
-            )
-        )
-        return
-
-    render_contract_warnings_if_any(warnings, stderr=True)
-
-    if format == "dotenv":
+    if not is_json_output() and format == "dotenv":
         print(rendered, end="")
         return
 
-    render_export_output(profile=resolved_profile, rendered=rendered)
+    output = build_export_output(
+        active_profile=resolved_profile,
+        format=format,
+        values=values,
+        rendered=rendered,
+    )
+
+    if warnings:
+        output = merge_outputs(
+            build_contract_deprecation_warnings_output(warnings, stderr=not is_json_output()),
+            output,
+        )
+
+    present(
+        output,
+        output_format="json" if is_json_output() else "text",
+    )
