@@ -68,7 +68,8 @@ def test_observe_span_uses_monotonic_elapsed_time_when_utc_clock_moves_back(
             context.start_time - timedelta(milliseconds=123),
         ]
     )
-    base_monotonic_ns = 1_000_000_000
+    ONE_SECOND_NS = 1_000_000_000  # 1 second in nanoseconds
+    base_monotonic_ns = ONE_SECOND_NS
     elapsed_ms = 123
     monotonic_values = iter(
         [
