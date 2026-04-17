@@ -14,12 +14,12 @@ from envctl.domain.selection import ContractSelection
 from envctl.utils.masking import mask_value
 
 
-def path_to_str(path: Path) -> str:
-    """Serialize one path to string."""
-    return str(path)
+def path_to_str(path: str | Path) -> str:
+    """Serialize one path using stable POSIX-like separators."""
+    return str(path).replace("\\", "/")
 
 
-def optional_path_to_str(path: Path | None) -> str | None:
+def optional_path_to_str(path: str | Path | None) -> str | None:
     """Serialize one optional path to string."""
     return None if path is None else path_to_str(path)
 
