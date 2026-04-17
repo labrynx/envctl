@@ -9,6 +9,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+This unreleased cycle consolidates the CLI around one output-first presenter architecture and
+removes legacy compatibility paths that were still mixing formatting concerns across layers.
+It also finalizes the hook command reshaping, improves observability initialization ordering,
+and raises confidence through broader CLI test coverage and cross-platform output normalization.
+
+### Added
+
+- Added vault audit aggregation primitives:
+  - `VaultAuditSummary` domain model
+  - summary aggregation logic for audited vault projects
+- Added richer vault audit command behavior with consistent summary metadata and exit status signaling.
+- Added focused CLI tests for project bind/repair/unbind and vault audit scenarios to increase command coverage.
+
+### Changed
+
+- Completed migration to a unified presenter-driven CLI output flow across core, diagnostic, profile,
+  project, vault, hook(s), and guard command families.
+- Finalized shared presenter contracts:
+  - stable `CommandOutput`/section/item/message model usage
+  - centralized warning and diagnostic payload builders
+  - normalized renderer behavior for text and JSON output
+- Replaced legacy global `--json` behavior with explicit `--output` format selection semantics.
+- Standardized command/module layout for hook and guard flows, including nested command organization.
+- Renamed internal hook execution flow from `hook-run` to `hook run` and aligned command wiring/tests.
+- Centralized runtime initialization responsibilities for config loading and observability context setup.
+- Normalized status reporting boundaries:
+  - status service now emits structured semantic state
+  - presenters derive human-facing summary/issues/action text
+  - external command output shape remains stable
+- Unified CLI output format typing around one canonical `OutputFormat` source.
+
+### Removed
+
+- Removed legacy CLI output helpers in `utils/output.py`; presenter builders/renderers are now the single path.
+- Removed obsolete `command_support` module and stale compatibility helpers no longer used by active command flows.
+- Removed deprecated legacy aliases:
+  - `envctl doctor`
+  - `envctl explain`
+- Removed obsolete JSON compatibility serializer paths replaced by the unified presenter payload layer.
+- Removed orphan presenter helper/builders that no longer had production consumers.
+
+### Fixed
+
+- Fixed initialization order issues by ensuring observability context is initialized before config loading where required.
+- Fixed cross-platform JSON/path payload consistency by normalizing path serialization (notably Windows path assertions).
+- Fixed presenter typing and status rendering edge cases discovered during strict typing/linting passes.
+- Fixed hook command test wiring to match the final nested module structure and command registration shape.
+
+### Tests
+
+- Expanded and aligned CLI unit/integration coverage for the output-first architecture migration.
+- Updated CI-oriented and cross-platform assertions to validate normalized output payloads consistently.
+
 ---
 
 ## [2.5.1] - 2026-04-14
