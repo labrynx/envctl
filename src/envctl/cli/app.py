@@ -8,8 +8,11 @@ from typing import Literal
 import typer
 
 from envctl.cli.callbacks import version_callback
+from envctl.cli.decorators import emit_handled_error
 from envctl.cli.typer_theme import create_typer_app
 from envctl.domain.runtime import OutputFormat
+from envctl.errors import EnvctlError
+from envctl.observability import initialize_observability_context
 
 VERSION_OPTION = typer.Option(
     None,
@@ -190,10 +193,43 @@ def main(
     """envctl - local environment control plane."""
     del version
 
-    from envctl.cli.runtime import set_cli_state
+    from envctl.cli.runtime import get_command_path, set_cli_state
     from envctl.config.loader import load_config
 
-    config = load_config()
+    initialize_observability_context(
+        command_name=ctx.invoked_subcommand or "envctl",
+        trace_enabled=trace_enabled,
+        trace_format=trace_format,
+        trace_output=trace_output,
+        trace_file=trace_file,
+        profile_observability=profile_observability,
+    )
+
+    set_cli_state(
+        ctx,
+        output_format=output_format,
+        requested_profile=profile,
+        requested_group=group,
+        requested_set_name=set_name,
+        requested_variable=variable,
+        trace_enabled=trace_enabled,
+        trace_format=trace_format,
+        trace_output=trace_output,
+        trace_file=trace_file,
+        profile_observability=profile_observability,
+        debug_errors=debug_errors,
+        config=None,
+    )
+
+    try:
+        config = load_config()
+    except EnvctlError as exc:
+        emit_handled_error(
+            exc,
+            output_format=output_format,
+            command=get_command_path(),
+        )
+        raise typer.Exit(code=1) from exc
 
     set_cli_state(
         ctx,

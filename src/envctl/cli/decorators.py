@@ -117,6 +117,35 @@ def emit_usage_error(
     )
 
 
+def _get_or_initialize_observability_context(command: str) -> Any:
+    """Return an active observability context, creating one when needed."""
+    from envctl.cli.runtime import (
+        get_profile_observability,
+        get_trace_enabled,
+        get_trace_file,
+        get_trace_format,
+        get_trace_output,
+    )
+    from envctl.observability import (
+        get_active_observability_context,
+        initialize_observability_context,
+    )
+
+    context = get_active_observability_context()
+    if context is not None:
+        return context
+
+    initialize_observability_context(
+        command_name=command,
+        trace_enabled=get_trace_enabled(),
+        trace_format=get_trace_format(),
+        trace_output=get_trace_output(),
+        trace_file=get_trace_file(),
+        profile_observability=get_profile_observability(),
+    )
+    return get_active_observability_context()
+
+
 def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
     """Convert application errors into exit code 1."""
 
@@ -124,17 +153,8 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         from envctl.cli.runtime import (
             get_command_path,
-            get_profile_observability,
-            get_trace_enabled,
-            get_trace_file,
-            get_trace_format,
-            get_trace_output,
             is_error_debug_enabled,
             is_json_output,
-        )
-        from envctl.observability import (
-            get_active_observability_context,
-            initialize_observability_context,
         )
         from envctl.observability.error_mapping import map_exception_to_error_event
         from envctl.observability.events import ERROR_HANDLED, ERROR_UNHANDLED
@@ -144,16 +164,7 @@ def handle_errors(func: Callable[..., Any]) -> Callable[..., Any]:
 
         command = get_command_path() or "envctl"
 
-        initialize_observability_context(
-            command_name=command,
-            trace_enabled=get_trace_enabled(),
-            trace_format=get_trace_format(),
-            trace_output=get_trace_output(),
-            trace_file=get_trace_file(),
-            profile_observability=get_profile_observability(),
-        )
-
-        obs_context = get_active_observability_context()
+        obs_context = _get_or_initialize_observability_context(command)
         span_fields: dict[str, Any] = {"command": command}
         result: Any = None
 

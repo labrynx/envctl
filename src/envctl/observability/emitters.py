@@ -28,6 +28,12 @@ class NullEmitter:
 class StreamEmitter:
     """Emit observability events to one writable stream."""
 
+    _trace_format: TraceFormat
+    _stream: TextIO | None
+    _sanitization_policy: SanitizationPolicy
+    _header_emitted: bool
+    _command_started: bool
+
     def __init__(
         self,
         *,
@@ -71,6 +77,12 @@ class StreamEmitter:
 
 class FileEmitter:
     """Emit observability events to one file, truncating on first event."""
+
+    _path: Path
+    _trace_format: TraceFormat
+    _sanitization_policy: SanitizationPolicy
+    _initialized: bool
+    _command_started: bool
 
     def __init__(
         self,
@@ -120,4 +132,4 @@ def _should_skip_human_event(
     """Hide repetitive startup phases after command lifecycle begins."""
     if not command_started:
         return False
-    return event.operation in {"load_config", "resolve_active_profile"}
+    return event.operation in {"load_config"}

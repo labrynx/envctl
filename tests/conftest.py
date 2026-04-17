@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -9,6 +11,7 @@ import yaml
 from typer.testing import CliRunner
 
 import envctl.adapters.git as git_adapters
+from envctl.observability import clear_observability_context
 
 
 def write_sample_contract(repo: Path) -> None:
@@ -95,6 +98,23 @@ def reset_vault_crypto_runtime_state() -> None:
     from envctl.vault_crypto import VaultCrypto
 
     VaultCrypto._legacy_warning_emitted = False
+
+
+@pytest.fixture(autouse=True)
+def reset_observability_runtime_state() -> Iterator[None]:
+    """Reset observability globals and env overrides between tests."""
+    clear_observability_context()
+    for key in (
+        "ENVCTL_OBSERVABILITY_TRACE",
+        "ENVCTL_OBSERVABILITY_PROFILE",
+        "ENVCTL_OBSERVABILITY_TRACE_FORMAT",
+        "ENVCTL_OBSERVABILITY_TRACE_OUTPUT",
+        "ENVCTL_OBSERVABILITY_TRACE_FILE",
+        "ENVCTL_OBSERVABILITY_SANITIZATION",
+    ):
+        os.environ.pop(key, None)
+    yield
+    clear_observability_context()
 
 
 @pytest.fixture
